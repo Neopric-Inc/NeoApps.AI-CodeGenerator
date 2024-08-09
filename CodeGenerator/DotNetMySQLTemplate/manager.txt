@@ -1,0 +1,188 @@
+﻿using {projectName}.Manager.RabitMQAPI.API;
+using {projectName}.DataAccess.Interface;
+using {projectName}.Manager.Interface;
+using {projectName}.Model;
+using {projectName}.Utility;
+using System;
+using System.Collections.Generic;
+using System.Text;
+
+namespace {projectName}.Manager.Impl
+{
+    public class {tableName}Manager : I{tableName}Manager
+    {
+        private readonly I{tableName}DataAccess DataAccess = null;
+	private readonly IRabitMQAsyncProducer _rabitMQAsyncProducer;
+        public {tableName}Manager(I{tableName}DataAccess dataAccess,IRabitMQAsyncProducer rabitMQAsyncProducer)
+        {
+            DataAccess = dataAccess;
+	    _rabitMQAsyncProducer = rabitMQAsyncProducer;
+        }
+
+        public APIResponse Get{tableName}(int page = 1, int itemsPerPage = 100,List<OrderByModel> orderBy = null)
+        {
+            var result = DataAccess.GetAll{tableName}(page,itemsPerPage,orderBy);
+            if (result != null && result.Count > 0)
+            { 
+                var totalRecords = DataAccess.GetAllTotalRecord{tableName}();
+                var response = new { records = result, pageNumber = page, pageSize = itemsPerPage, totalRecords = totalRecords };
+                return new APIResponse(ResponseCode.SUCCESS, "Record Found", response);
+            }
+            else
+            {
+                return new APIResponse(ResponseCode.ERROR, "No Record Found");
+            }
+        }
+        public APIResponse Get{tableName}ByCreatedBy(string ownername,int page = 1, int itemsPerPage = 100,List<OrderByModel> orderBy = null)
+        {
+            
+            var result = DataAccess.GetAll{tableName}ByCreatedBy(ownername,page,itemsPerPage,orderBy);
+            if (result != null && result.Count > 0)
+            { 
+                var totalRecords = DataAccess.GetAllTotalRecord{tableName}ByCreatedBy(ownername);
+                var response = new { records = result, pageNumber = page, pageSize = itemsPerPage, totalRecords = totalRecords };
+                return new APIResponse(ResponseCode.SUCCESS, "Record Found", response);
+            }
+            else
+            {
+                return new APIResponse(ResponseCode.ERROR, "No Record Found");
+            }
+        }
+        public APIResponse Get{tableName}ByID({primaryKeyListParam})
+        {
+            var result = DataAccess.Get{tableName}ByID({primaryKeyList});
+            if (result != null)
+            {
+                return new APIResponse(ResponseCode.SUCCESS, "Record Found", result);
+            }
+            else
+            {
+                return new APIResponse(ResponseCode.ERROR, "No Record Found");
+            }
+        }
+        public APIResponse Get{tableName}ByIDByCreatedBy(string ownername,{primaryKeyListParam})
+        {
+            
+            var result = DataAccess.Get{tableName}ByIDByCreatedBy(ownername,{primaryKeyList});
+            if (result != null)
+            {
+                return new APIResponse(ResponseCode.SUCCESS, "Record Found", result);
+            }
+            else
+            {
+                return new APIResponse(ResponseCode.ERROR, "No Record Found");
+            }
+        }
+        {RelationalApiInegrationManager}
+        {ReportingApiInegrationManager}
+        {TransactionalApiInegrationManager}
+
+        public APIResponse Update{tableName}WithToken({primaryKeyListParam}, {tableName}Model model,string token)
+        {
+			{updatePrimaryKeyList}
+           
+            var result = DataAccess.Update{tableName}(model);
+            if (result)
+            {
+                Dictionary<string, int> primary_key = new Dictionary<string, int>();
+                {primaryKeyListSingle}
+ 		_rabitMQAsyncProducer.SendAsyncMessage(model, primary_key, model.GetType().Name,token);
+                return new APIResponse(ResponseCode.SUCCESS, "Record Updated");
+            }
+            else
+            {
+                return new APIResponse(ResponseCode.ERROR, "Record Not Updated");
+            }
+        }
+
+        public APIResponse Add{tableName}WithToken({tableName}Model model,string token)
+        {
+            var result = DataAccess.Add{tableName}(model);
+            if (result > 0)
+            {
+		{addPrimaryKeyList}
+		_rabitMQAsyncProducer.SendAsyncMessage(model, model.GetType().Name,token);
+                return new APIResponse(ResponseCode.SUCCESS, "Record Created", result);
+            }
+            else
+            {
+                return new APIResponse(ResponseCode.ERROR, "Record Not Created");
+            }
+        }
+
+        public APIResponse Search{tableName}(string searchKey,int page=1,int itemsPerPage=100,List<OrderByModel> orderBy = null)
+        {
+            var result = DataAccess.Search{tableName}(searchKey,page,itemsPerPage,orderBy);
+            if (result != null && result.Count > 0)
+            {	
+				var totalRecords = DataAccess.GetSearchTotalRecord{tableName}(searchKey);
+                var response = new { records = result, pageNumber = page, pageSize = itemsPerPage, totalRecords = totalRecords };
+                return new APIResponse(ResponseCode.SUCCESS, "Record Found", response);
+            }
+            else
+            {
+                return new APIResponse(ResponseCode.ERROR, "No Record Found");
+            }
+        }
+
+        public APIResponse Search{tableName}ByCreatedBy(string ownername,string searchKey,int page=1,int itemsPerPage=100,List<OrderByModel> orderBy = null)
+        {
+            var result = DataAccess.Search{tableName}ByCreatedBy(ownername,searchKey,page,itemsPerPage,orderBy);
+            if (result != null && result.Count > 0)
+            {	
+				var totalRecords = DataAccess.GetSearchTotalRecord{tableName}ByCreatedBy(ownername,searchKey);
+                var response = new { records = result, pageNumber = page, pageSize = itemsPerPage, totalRecords = totalRecords };
+                return new APIResponse(ResponseCode.SUCCESS, "Record Found", response);
+            }
+            else
+            {
+                return new APIResponse(ResponseCode.ERROR, "No Record Found");
+            }
+        }
+		public APIResponse Delete{tableName}WithToken({primaryKeyListParam},string token)
+        {
+            var result = DataAccess.Delete{tableName}({primaryKeyList});
+            if (result)
+            {
+                Dictionary<string, int> primary_key = new Dictionary<string, int>();
+                {primaryKeyListSingle}
+		var className = GetType().Name.Replace("Manager", "Model");
+ 		_rabitMQAsyncProducer.SendAsyncMessage(primary_key, className,token);
+                return new APIResponse(ResponseCode.SUCCESS, "Record Deleted");
+            }
+            else
+            {
+                return new APIResponse(ResponseCode.ERROR, "Record Not Deleted");
+            }
+        }
+		
+		public APIResponse DeleteMultiple{tableName}WithToken(List<DeleteMultipleModel> deleteParam, string andOr,string token)
+        {
+            var result = DataAccess.DeleteMultiple{tableName}(deleteParam, andOr);
+            if (result)
+            {
+                _rabitMQAsyncProducer.SendAsyncMessage(deleteParam, GetType().Name,token);
+                return new APIResponse(ResponseCode.SUCCESS, "Record Deleted");
+            }
+            else
+            {
+                return new APIResponse(ResponseCode.ERROR, "Record Not Deleted");
+            }
+        }
+
+        public APIResponse Filter{tableName}(string ownername,List<FilterModel> filterModels, string andOr, int page = 1, int itemsPerPage = 100, List<OrderByModel> orderBy = null)
+        {
+            var result = DataAccess.Filter{tableName}(ownername,filterModels, andOr, page, itemsPerPage, orderBy);
+            if (result != null && result.Count > 0)
+            {
+                var totalRecords = DataAccess.GetFilterTotalRecord{tableName}(ownername,filterModels, andOr);
+                var response = new { records = result, pageNumber = page, pageSize = itemsPerPage, totalRecords = totalRecords };
+                return new APIResponse(ResponseCode.SUCCESS, "Record Found", response);
+            }
+            else
+            {
+                return new APIResponse(ResponseCode.ERROR, "No Record Found");
+            }
+        }
+    }
+}

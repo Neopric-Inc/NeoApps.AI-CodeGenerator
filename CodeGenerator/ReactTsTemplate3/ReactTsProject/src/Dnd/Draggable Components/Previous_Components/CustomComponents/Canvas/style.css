@@ -1,0 +1,28 @@
+#navbarComponent {
+    /* min-height: 10%; */
+    /* position: fixed; */
+    /* top: 10px; */
+    /* left: 10px; */
+    height: 50px;
+    width: auto;
+    min-width: 10vw;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    background-color: rgb(171, 241, 177);
+}
+
+/* #navbarComponent {
+    background-color: rgb(171, 241, 177);
+    height: 200px;
+    width: 400px;
+} */
+
+#siderComponent {
+    height: 80vh;
+    width: 150px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    background-color: rgb(171, 241, 177);
+}

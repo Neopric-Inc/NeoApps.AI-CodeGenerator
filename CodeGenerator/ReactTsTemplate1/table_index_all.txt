@@ -1,0 +1,153 @@
+﻿
+import React, { useState, useEffect } from "react";
+import { {modelName}DefaultView } from "./DefaultView";
+import { {modelName}GridView1 } from "./GridView1";
+import { {modelName}GridView2 } from "./GridView2";
+import { {modelName}GridView3 } from "./GridView3";
+import { {modelName}GridView4 } from "./GridView4";
+import { {modelName}GridView5 } from "./GridView5";
+import { {modelName}GridView6 } from "./GridView6";
+import { {modelName}DetailList1 } from "./DetailList1";
+import { {modelName}DetailList2 } from "./DetailList2";
+import { {modelName}DetailList3 } from "./DetailList3";
+import { {modelName}DetailList6 } from "./DetailList6";
+import { {modelName}DetailList7 } from "./DetailList7";
+import { {modelName}GroupList1 } from "./GroupList1";
+import { {modelName}GroupList2 } from "./GroupList2";
+import { {modelName}GroupList3 } from "./GroupList3";
+import { {modelName}GroupList4 } from "./GroupList4";
+import { {modelName}GroupList5 } from "./GroupList5";
+import { {modelName}GroupList6 } from "./GroupList6";
+import { {modelName}GroupList7 } from "./GroupList7";
+import { {modelName}GroupList8 } from "./GroupList8";
+import { {modelName}GroupList9 } from "./GroupList9";
+import { {modelName}GroupList10 } from "./GroupList10";
+import { {modelName}GroupList11 } from "./GroupList11";
+import { {modelName}TableView1 } from "./TableView1";
+import { {modelName}TableView2 } from "./TableView2";
+import { {modelName}TableView3 } from "./TableView3";
+import { {modelName}TableView4 } from "./TableView4";
+import { {modelName}TableView6 } from "./TableView6";
+import { {modelName}TableView7 } from "./TableView7";
+import { {modelName}TableView8 } from "./TableView8";
+import { {modelName}TableView9 } from "./TableView9";
+import { {modelName}TableView10 } from "./TableView10";
+import { {modelName}TableView11 } from "./TableView11";
+import Kanban from "./kanban/indexKanban";
+import Calendar from "./Calendar";
+
+
+export const {modelName} = (props) => {
+  const config = props.config;
+ //console.log(config.selectedView);
+  switch (config.selectedView) {
+    case "defaultView":
+      return <{modelName}DefaultView {...props} />;
+      break;
+    case "gridView1":
+      return <{modelName}GridView1 {...props} />;
+      break;
+    case "gridView2":
+      return <{modelName}GridView2 {...props} />;
+      break;
+    case "gridView3":
+      return <{modelName}GridView3 {...props} />;
+      break;
+    case "gridView4":
+      return <{modelName}GridView4 {...props} />;
+      break;
+    case "gridView5":
+      return <{modelName}GridView5 {...props} />;
+      break;
+    case "gridView6":
+      return <{modelName}GridView6 {...props} />;
+      break;
+    case "detailList1":
+      return <{modelName}DetailList1 {...props} />;
+      break;
+    case "detailList2":
+      return <{modelName}DetailList2 {...props} />;
+      break;
+    case "detailList3":
+      return <{modelName}DetailList3 {...props} />;
+      break;
+    case "detailList6":
+      return <{modelName}DetailList6 {...props} />;
+      break;
+    case "detailList7":
+      return <{modelName}DetailList7 {...props} />;
+      break;
+    case "groupedList1":
+      return <{modelName}GroupList1 {...props} />;
+      break;
+    case "groupedList2":
+      return <{modelName}GroupList2 {...props} />;
+      break;
+    case "groupedList3":
+      return <{modelName}GroupList3 {...props} />;
+      break;
+    case "groupedList4":
+      return <{modelName}GroupList4 {...props} />;
+      break;
+    case "groupedList5":
+      return <{modelName}GroupList5 {...props} />;
+      break;
+    case "groupedList6":
+      return <{modelName}GroupList6 {...props} />;
+      break;
+    case "groupedList7":
+      return <{modelName}GroupList7 {...props} />;
+      break;
+    case "groupedList8":
+      return <{modelName}GroupList8 {...props} />;
+      break;
+    case "groupedList9":
+      return <{modelName}GroupList9 {...props} />;
+      break;
+    case "groupedList10":
+      return <{modelName}GroupList10 {...props} />;
+      break;
+    case "groupedList11":
+      return <{modelName}GroupList11 {...props} />;
+      break;
+    case "tableView1":
+      return <{modelName}TableView1 {...props} />;
+      break;
+    case "tableView2":
+      return <{modelName}TableView2 {...props} />;
+      break;
+    case "tableView3":
+      return <{modelName}TableView3 {...props} />;
+      break;
+    case "tableView4":
+      return <{modelName}TableView4 {...props} />;
+      break;
+    case "tableView6":
+      return <{modelName}TableView6 {...props} />;
+      break;
+    case "tableView7":
+      return <{modelName}TableView7 {...props} />;
+      break;
+    case "tableView8":
+      return <{modelName}TableView8 {...props} />;
+      break;
+    case "tableView9":
+      return <{modelName}TableView9 {...props} />;
+      break;
+    case "tableView10":
+      return <{modelName}TableView10 {...props} />;
+      break;
+    case "tableView11":
+      return <{modelName}TableView11 {...props} />;
+      break;
+    case "Kanban":
+      return <Kanban {...props} />;
+      break;
+    case "Calendar":
+      return <Calendar {...props} />;
+      break;
+    default:
+      return <{modelName}DefaultView {...props} />;
+      break;
+  }
+};

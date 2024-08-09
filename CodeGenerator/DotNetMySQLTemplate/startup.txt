@@ -1,0 +1,160 @@
+﻿using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using {projectName}.Manager.RabitMQAPI.API;
+using {projectName}.DataAccess.Impl;
+using {projectName}.DataAccess.Interface;
+using {projectName}.Manager.Impl;
+using {projectName}.Manager.Interface;
+using {projectName}.Utility;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Hosting;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ApiExplorer;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.OpenApi.Models;
+using Swashbuckle.AspNetCore.SwaggerGen;
+using RabbitMQ.Client;
+using System.Collections.Generic;
+using System;
+using {projectName}.API.Attributes;
+using StackExchange.Redis;
+
+namespace {projectName}.API
+{
+    public class Startup
+    {
+        public Startup(IConfiguration configuration)
+        {
+            Configuration = configuration;
+        }
+
+        public IConfiguration Configuration { get; }
+
+        // This method gets called by the runtime. Use this method to add services to the container.
+        public void ConfigureServices(IServiceCollection services)
+        {
+            services.AddSwaggerGen(c =>
+                {
+                    c.SwaggerDoc("v1", new OpenApiInfo { Title = "{projectName}", Version = "v1" });
+                    c.AddSecurityDefinition(name: "Bearer", securityScheme: new OpenApiSecurityScheme
+                    {
+                        Name = "Authorization",
+                        Description = "Enter the Bearer Authorization string as following: `Bearer Generated-JWT-Token`",
+                        In = ParameterLocation.Header,
+                        Type = SecuritySchemeType.ApiKey,
+                        Scheme = "Bearer"
+                    });
+                    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+                    {
+                        {
+                            new OpenApiSecurityScheme
+                            {
+                                Name = "Bearer",
+                                In = ParameterLocation.Header,
+                                Reference = new OpenApiReference
+                                {
+                                    Id = "Bearer",
+                                    Type = ReferenceType.SecurityScheme
+                                }
+                            },
+                            new List<string>()
+                        }
+                    });
+                });
+			 services.AddCors(options =>
+            {
+                options.AddPolicy("AllowAllHeaders",
+                   builder =>
+                   {
+                       builder.AllowAnyOrigin()
+                  .AllowAnyHeader()
+                  .AllowAnyMethod();
+                   });
+            });
+            services.AddScoped<CheckPermissionAttribute>();
+            services.AddSingleton<IConnectionMultiplexer>(x =>
+            ConnectionMultiplexer.Connect(Configuration.GetConnectionString("Redis")));
+	    services.AddScoped<IRabitMQProducer, RabitMQProducer>();
+            services.AddScoped<IRabitMQAsyncProducer, RabitMQAsyncProducer>();
+            services.AddControllers();
+
+            var appSettingsSection = Configuration.GetSection("AppSettings");
+            services.Configure<AppSettings>(appSettingsSection);
+
+            // configure jwt authentication
+            var appSettings = appSettingsSection.Get<AppSettings>();
+            var key = Encoding.ASCII.GetBytes(appSettings.Secret);
+            services.AddAuthentication(x =>
+            {
+                x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                x.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
+            .AddJwtBearer(x =>
+            {
+                x.RequireHttpsMetadata = false;
+                x.SaveToken = true;
+                x.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(key),
+                    ValidateIssuer = false,
+                    ValidateAudience = false
+                };
+            });
+
+            services.AddSingleton<IConfiguration>(Configuration);
+            string connectionString = Configuration.GetConnectionString("MySQLDatabase");
+	    string rabbitMqConnection = Configuration.GetConnectionString("RabitMQ");
+			ConnectionFactory factory = new ConnectionFactory();
+            factory.Uri = new Uri(rabbitMqConnection);
+            IConnection connection = factory.CreateConnection();
+            services.AddSingleton<IConnection>(connection);
+             services.AddMvc(option => option.EnableEndpointRouting = false).SetCompatibilityVersion(CompatibilityVersion.Version_3_0);
+            //services.AddTransient(_ => new MySqlDatabase(connectionString));
+            services.AddTransient(_ => new MySqlDatabaseConnector(connectionString));
+	    services.AddTransient(_ => new RabbitMqConnection(rabbitMqConnection));
+			//services.AddSwaggerDocument(c=>c.Title="{projectName}");
+			
+            services.AddTransient<ICurrentUserService, CurrentUserService>();
+            services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+            services.AddSingleton<IChannelManager, ChannelManager>();
+			#region Dependency
+            {serviceDependency}
+			#endregion
+            
+        }
+
+        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        {	app.UseCors("AllowAllHeaders");
+            if (env.IsDevelopment())
+            {
+                app.UseDeveloperExceptionPage();
+            }
+            else
+            {
+                app.UseHsts();
+            }
+			//app.UsePathBase("{arg}");
+            app.UseSwagger();
+            app.UseSwaggerUI(c =>
+            {
+                c.SwaggerEndpoint("/swagger/v1/swagger.json", "{projectName}");
+            });
+			
+
+            app.UseAuthentication();
+			
+            //app.UseOpenApi();
+            //app.UseSwaggerUi3(c => c.DocumentTitle = "{projectName}");
+            app.UseHttpsRedirection();
+            app.UseMvc();
+        }
+    }
+}

@@ -1,0 +1,75 @@
+/* @import "/node_modules/@syncfusion/ej2-base/styles/material.css";
+@import "/node_modules/@syncfusion/ej2-react-navigations/styles/material.css"; */
+
+/* p {
+    background-color: lightslategray;
+    color: white;
+    padding: 10px;
+    border-radius: 10px;
+    border: 2px solid red;
+} */
+
+/* h3 {
+    color: black;
+} */
+
+#sidebar {
+    background-color: #f1f1f1;
+    padding: 20px;
+    width: auto;
+    border-radius: 10px;
+}
+
+#sidebar h2 {
+    color: black;
+    font-size: 24px;
+    margin-bottom: 20px;
+}
+
+#sidebar form {
+    margin-bottom: 20px;
+}
+
+#sidebar label {
+    display: block;
+    font-size: 14px;
+    margin-bottom: 10px;
+}
+
+#sidebar input[type="text"] {
+    font-size: 14px;
+    padding: 5px;
+    width: 100%;
+    margin-bottom: 10px;
+}
+
+#sidebar button#addPage {
+    background-color: #4CAF50;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+    cursor: pointer;
+    margin-bottom: 20px;
+}
+
+#sidebar button#addPage:hover {
+    background-color: #45a049;
+}
+
+#sidebar button {
+    display: block;
+    width: 100%;
+    background-color: #ddd;
+    color: #333;
+    padding: 10px;
+    border: none;
+    text-align: left;
+    cursor: pointer;
+    margin-bottom: 10px;
+}
+
+#sidebar button:hover {
+    background-color: #ccc;
+}

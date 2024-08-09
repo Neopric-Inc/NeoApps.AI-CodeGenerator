@@ -1,0 +1,77 @@
+
+    {
+        "id": "{{UNIQUE_ID_FOR_SIMPLE_PIE_CHART2_FLOW}}",
+        "type": "tab",
+        "label": "Simple_PieChart2_1",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "{{UNIQUE_ID_FOR_SIMPLE_PIE_CHART2_HTTP_IN}}",
+        "type": "http in",
+        "z": "{{UNIQUE_ID_FOR_SIMPLE_PIE_CHART2_FLOW}}",
+        "name": "TriggerPie2Chart2",
+        "url": "/flows/Simple_PieChart2/pie1",
+        "method": "post",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 150,
+        "y": 80,
+        "wires": [
+            [
+                "{{UNIQUE_ID_FOR_SIMPLE_PIE_CHART2_TOKEN_FUNCTION}}"
+            ]
+        ]
+    },
+    {
+        "id": "{{UNIQUE_ID_FOR_SIMPLE_PIE_CHART2_FUNCTION}}",
+        "type": "function",
+        "z": "{{UNIQUE_ID_FOR_SIMPLE_PIE_CHART2_FLOW}}",
+        "name": "",
+        "func": "\n\n\n\nconst chartSeries = [\n  {\n    color: '#FFB547',\n    data: 14859,\n    label: 'Strategy'\n  },\n  {\n    color: '#7BC67E',\n    data: 35690,\n    label: 'Outsourcing'\n  },\n  {\n    color: '#7783DB',\n    data: 45120,\n    label: 'Marketing'\n  }\n];\n  \n const response = {\n   chartCategories: null,\n  chartSeries: chartSeries,\n};\n\n// Set the response object as the payload of the outgoing message\nmsg.payload = response;\n  \nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 280,
+        "y": 240,
+        "wires": [
+            [
+                "{{UNIQUE_ID_FOR_SIMPLE_PIE_CHART2_HTTP_RESPONSE}}"
+            ]
+        ]
+    },
+    {
+        "id": "{{UNIQUE_ID_FOR_SIMPLE_PIE_CHART2_HTTP_RESPONSE}}",
+        "type": "http response",
+        "z": "{{UNIQUE_ID_FOR_SIMPLE_PIE_CHART2_FLOW}}",
+        "name": "",
+        "statusCode": "",
+        "headers": {},
+        "x": 750,
+        "y": 440,
+        "wires": []
+    },
+    {
+        "id": "{{UNIQUE_ID_FOR_SIMPLE_PIE_CHART2_TOKEN_FUNCTION}}",
+        "type": "function",
+        "z": "{{UNIQUE_ID_FOR_SIMPLE_PIE_CHART2_FLOW}}",
+        "name": "Set Token as Global Variable",
+        "func": "global.set(\"token\",msg.req.headers.authorization);\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 220,
+        "y": 160,
+        "wires": [
+            [
+                "{{UNIQUE_ID_FOR_SIMPLE_PIE_CHART2_FUNCTION}}"
+            ]
+        ]
+    }

@@ -1,0 +1,234 @@
+/* body,
+input,
+button {
+    font: 14px/1.3em 'Open Sans', Arial, Verdana, Serif;
+}
+
+
+.required:after {
+    content: " *";
+    color: red;
+}
+
+html,
+body {
+    width: 100vw;
+    height: 100vh;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+}
+
+#designer {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 80vw;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.sqd-global-editor,
+.sqd-step-editor {
+    padding: 10px;
+    height: 100%;
+    overflow: auto;
+}
+
+.sqd-smart-editor p {
+    margin: 0;
+    padding: 0 0 10px;
+}
+
+.sqd-smart-editor label {
+    display: block;
+    padding: 0 0 10px;
+
+}
+
+.sqd-smart-editor input[type=text] {
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid silver;
+    padding: 6px;
+    border-radius: 5px;
+}
+
+#result {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    width: 20vw;
+    height: 100vh;
+    padding: 10px;
+    box-sizing: border-box;
+    color: #FFF;
+    background: #2C18DF;
+}
+
+#result button {
+    width: 120px;
+    padding: 10px;
+    color: #000;
+    background: #FFF;
+    border: 0;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+#result button:hover {
+    opacity: 0.8;
+} */
+
+
+body,
+input,
+button {
+    font: 14px/1.3em 'Open Sans', Arial, Verdana, Serif;
+}
+
+
+.required:after {
+    content: " *";
+    color: red;
+}
+
+html,
+body {
+    width: 100vw;
+    height: 100vh;
+    margin: 0;
+    padding: 0;
+    /* overflow: hidden; */
+}
+
+#designer {
+    color: black;
+    position: absolute;
+    left: 0;
+    top: 7vh;
+    width: 100vw;
+    height: 93vh;
+    overflow: hidden;
+}
+
+
+/* 
+.sqd-toolbox-group-title{
+    padding: 0px 0px;
+    margin: 0px 0px;
+} */
+
+.sqd-global-editor,
+.sqd-step-editor {
+    padding: 10px;
+    height: 100%;
+    overflow: auto;
+    background-color: #cdd8e6;
+    border-radius: 10px;
+}
+
+.sqd-smart-editor p {
+    margin: 0;
+    padding: 0 0 10px;
+}
+
+.sqd-smart-editor label {
+    display: block;
+    padding: 0 0 10px;
+
+}
+
+.sqd-smart-editor input[type=text] {
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid silver;
+    padding: 6px;
+    border-radius: 5px;
+}
+
+#navbar {
+    position: absolute;
+    /* right: 0;
+    bottom: 0; */
+    width: 100vw;
+    height: 7vh;
+    padding: 3px;
+    box-sizing: border-box;
+    color: #FFF;
+    background: #2C18DF;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-radius: 10px;
+    top: 0px;
+    left: 0px;
+}
+
+#navbar button {
+    width: 120px;
+    margin: 0px 3px;
+    padding: 10px;
+    color: #000;
+    background: #FFF;
+    border: 0;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+button {
+    width: 120px;
+    margin: 0px 3px;
+    padding: 10px;
+    color: #000;
+    background: #FFF;
+    border: 0;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+
+#idDropDown {
+    width: 120px;
+    margin: 0px 3px;
+    padding: 10px;
+    background: #FFF;
+    border: no;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+#left-buttons {
+    display: flex;
+}
+
+#right-buttons {
+    display: flex;
+}
+
+#navbar button:hover {
+    opacity: 0.8;
+}
+
+
+.table-responsive {
+    color: red;
+    table-layout: fixed;
+    width: 100%;
+}
+
+select {
+    min-width: 120px;
+    margin: 0px 3px;
+    padding: 10px;
+    color: #000;
+    background: #FFF;
+    border: 0;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+#methodTitle {
+    color: #420177;
+    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+}

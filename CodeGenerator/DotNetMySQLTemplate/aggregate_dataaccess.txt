@@ -1,0 +1,21 @@
+using MySql.Data.MySqlClient;
+using {projectName}.DataAccess.Interface;
+using {projectName}.Model;
+using {projectName}.Utility;
+using System.Collections.Generic;
+using System;
+
+namespace {projectName}.DataAccess.Impl
+{
+    public class AggregateDataAccess : IAggregateDataAccess
+    {
+        private MySqlDatabaseConnector  mySqlDatabaseConnector { get; set; }
+        public AggregateDataAccess(MySqlDatabaseConnector _mySqlDatabaseConnector)
+        {
+            mySqlDatabaseConnector = _mySqlDatabaseConnector;
+        }
+		
+       {allaggregatefunction}
+
+    }
+}

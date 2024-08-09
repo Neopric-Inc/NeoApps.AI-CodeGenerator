@@ -1,0 +1,76 @@
+{
+    "id": "{{UNIQUE_ID_FOR_TAB_DELETED}}",
+    "type": "tab",
+    "label": "When {{SWAGGER_SCHEMA_NAME}} Deleted",
+    "disabled": false,
+    "info": ""
+  },
+  {
+    "id": "{{UNIQUE_ID_FOR_SUBFLOW_DELETED_TRIGGER}}",
+    "type": "subflow",
+    "name": "DELETE {{SWAGGER_SCHEMA_NAME}} OPERATION TRIGGER",
+    "info": "## ### **MUST USE AS FIRST NODE**\n**Triggerd** When any **DELETE** operation is performed on **database**.\n\nWhen call from **console** Application is made to **trigger** the **workflow**\nit is being made using the **URL** that is provided in **HTTP IN**\n**node** and **API** is set to **POST**.\n\nFunction node sets **TOKEN** which is for **Authorization** of **API**\nas **Global** varibale named **\"token\"** and also sets Object of the \nPayload to Message object Like.....\nIf the object came has name **{{SWAGGER_SCHEMA_NAME}}**\nthen it will be stored as **msg._{{SWAGGER_SCHEMA_OBJECT}}**\nin **Message** object...",
+    "category": "{{SWAGGER_SCHEMA_NAME}}",
+    "in": [],
+    "out": [
+      {
+        "x": 720,
+        "y": 80,
+        "wires": [
+          {
+            "id": "{{UNIQUE_ID_FOR_FUNCTION_DELETED}}",
+            "port": 0
+          }
+        ]
+      }
+    ],
+    "env": []
+  },
+  {
+    "id": "{{UNIQUE_ID_FOR_HTTPIN_DELETED}}",
+    "type": "http in",
+    "z": "{{UNIQUE_ID_FOR_SUBFLOW_DELETED_TRIGGER}}",
+    "name": "Delete Operation Triggered",
+    "url": "/flow/{{SWAGGER_SCHEMA_NAME}}/deleted",
+    "method": "post",
+    "upload": false,
+    "swaggerDoc": "",
+    "x": 190,
+    "y": 80,
+    "wires": [["{{UNIQUE_ID_FOR_FUNCTION_DELETED}}"]]
+  },
+  {
+    "id": "{{UNIQUE_ID_FOR_FUNCTION_DELETED}}",
+    "type": "function",
+    "z": "{{UNIQUE_ID_FOR_SUBFLOW_DELETED_TRIGGER}}",
+    "name": "SET TOKEN TO GLOBAL VARIABLE",
+    "func": "msg._{{SWAGGER_SCHEMA_OBJECT}} = msg.payload;\nglobal.set(\"token\",msg.req.headers.authorization);\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 470,
+    "y": 80,
+    "wires": [[]]
+  },
+  {
+    "id": "{{UNIQUE_ID_FOR_SUBFLOW_INSTANCE_DELETED}}",
+    "type": "subflow:{{UNIQUE_ID_FOR_SUBFLOW_DELETED_TRIGGER}}",
+    "z": "{{UNIQUE_ID_FOR_TAB_DELETED}}",
+    "name": "",
+    "x": 140,
+    "y": 240,
+    "wires": [["{{UNIQUE_ID_FOR_DEBUG_DELETED}}"]]
+  },
+  {
+    "id": "{{UNIQUE_ID_FOR_DEBUG_DELETED}}",
+    "type": "debug",
+    "z": "{{UNIQUE_ID_FOR_TAB_DELETED}}",
+    "name": "",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "false",
+    "x": 500,
+    "y": 240,
+    "wires": []
+  }

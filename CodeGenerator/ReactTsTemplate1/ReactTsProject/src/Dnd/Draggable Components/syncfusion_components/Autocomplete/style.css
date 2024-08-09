@@ -1,0 +1,39 @@
+@import '/node_modules/@syncfusion/ej2-base/styles/material.css';
+@import '/node_modules/@syncfusion/ej2-buttons/styles/material.css';
+@import '/node_modules/@syncfusion/ej2-calendars/styles/material.css';
+@import '/node_modules/@syncfusion/ej2-dropdowns/styles/material.css';
+@import '/node_modules/@syncfusion/ej2-inputs/styles/material.css';
+@import '/node_modules/@syncfusion/ej2-navigations/styles/material.css';
+@import '/node_modules/@syncfusion/ej2-popups/styles/material.css';
+@import '/node_modules/@syncfusion/ej2-splitbuttons/styles/material.css';
+@import '/node_modules/@syncfusion/ej2-notifications/styles/material.css';
+@import "/node_modules/@syncfusion/ej2-react-grids/styles/material.css";
+@import "/node_modules/@syncfusion/ej2-react-layouts/styles/material.css";
+@import "/node_modules/@syncfusion/ej2-react-dropdowns/styles/material.css";
+.city {
+    right: 15px;
+    position: absolute;
+}
+
+.head,
+.item {
+    display: table;
+    width: 100%;
+    margin: auto;
+}
+
+.head {
+    height: 20px;
+    font-size: 15px;
+    font-weight: 600;
+    color: black;
+    padding: 10px;
+}
+
+.head .name {
+    text-indent: 16px;
+}
+
+.head .city {
+    text-indent: 10px;
+}

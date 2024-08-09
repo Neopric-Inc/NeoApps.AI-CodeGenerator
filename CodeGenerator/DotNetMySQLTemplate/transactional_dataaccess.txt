@@ -1,0 +1,81 @@
+public int Add{tableName}Transactional({tableName}TransactionalModel model)
+{
+   
+        mySqlDatabaseConnector.OpenConnection(); 
+        var connection = mySqlDatabaseConnector.GetConnection();
+
+        using (var cmd = connection.CreateCommand())
+        {
+            MySqlTransaction transaction = connection.BeginTransaction();
+            cmd.Transaction = transaction;
+            bool isroll = false;
+            try
+            {
+                cmd.CommandText = @"{insertQuery}";
+                {insertQueryParameter}
+                var recs = cmd.ExecuteNonQuery();
+                int insertedId = (int)cmd.LastInsertedId;
+
+                {addrelatedfunctioncall}
+
+                transaction.Commit(); // If everything succeeds, commit the transaction.
+                if (recs == 1)
+                {
+                    return insertedId;
+                }
+            }
+            catch (Exception ex)
+            {
+                if (!isroll)
+                {
+                    transaction.Rollback();
+                    isroll= true;
+                }
+                throw (ex);
+            }
+            finally { mySqlDatabaseConnector.CloseConnection(); }
+            return -1;
+        }
+}
+
+public bool Update{tableName}Transactional({tableName}TransactionalModel model)
+{
+   
+        mySqlDatabaseConnector.OpenConnection(); 
+        var connection = mySqlDatabaseConnector.GetConnection();
+
+        using (var cmd = connection.CreateCommand())
+        {
+            MySqlTransaction transaction = connection.BeginTransaction();
+            cmd.Transaction = transaction;
+            bool isroll = false;
+            try
+            {
+                cmd.CommandText = @"{updateQuery}";
+                {updateQueryParameters}
+                var recs = cmd.ExecuteNonQuery();
+                {deleterelatedfunctioncall}
+                {updaterelatedfunctioncall}
+
+                transaction.Commit(); // If everything succeeds, commit the transaction.
+                if (recs > 0)
+                {
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                if (!isroll)
+                {
+                    transaction.Rollback();
+                    isroll= true;
+                }
+                throw (ex);
+            }
+            finally { mySqlDatabaseConnector.CloseConnection(); }
+            return false;
+        }
+}
+
+
+{AddOperationForRelatedEntity}

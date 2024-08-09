@@ -1,0 +1,77 @@
+
+    {
+        "id": "{{UNIQUE_ID_FOR_MULTI_BAR_CHART_FLOW}}",
+        "type": "tab",
+        "label": "Multi_BarChart1",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "{{UNIQUE_ID_FOR_MULTI_BAR_CHART_HTTP_IN}}",
+        "type": "http in",
+        "z": "{{UNIQUE_ID_FOR_MULTI_BAR_CHART_FLOW}}",
+        "name": "TriggerMultilBarChart",
+        "url": "/flows/Multi_BarChart/data1",
+        "method": "post",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 124,
+        "y": 79,
+        "wires": [
+            [
+                "{{UNIQUE_ID_FOR_MULTI_BAR_CHART_TOKEN_FUNCTION}}"
+            ]
+        ]
+    },
+    {
+        "id": "{{UNIQUE_ID_FOR_MULTI_BAR_CHART_FUNCTION}}",
+        "type": "function",
+        "z": "{{UNIQUE_ID_FOR_MULTI_BAR_CHART_FLOW}}",
+        "name": "",
+        "func": "\nconst categories = [\n  \"Capital One\",\n  \"Ally Bank\",\n  \"ING\",\n  \"Ridgewood\",\n  \"BT Transilvania\",\n  \"CEC\",\n  \"CBC\",\n];\n\n\nconst chartSeries =  [\n  {\n    data: [12, 24, 36, 48, 60, 72, 84],\n  color: \"#3C4693\",\n    },\n{\n  data: [12, 24, 36, 48, 60, 72, 84],\n    color: \"#5664D2\",\n    },\n{\n  data: [12, 24, 36, 48, 60, 72, 84],\n    color: \"#7783DB\",\n    },\n  ];\n  \n const response = {\n   chartCategories: categories,\n  chartSeries: chartSeries,\n};\n\n// Set the response object as the payload of the outgoing message\nmsg.payload = response;\n  \nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 154,
+        "y": 239,
+        "wires": [
+            [
+                "{{UNIQUE_ID_FOR_MULTI_BAR_CHART_HTTP_RESPONSE}}"
+            ]
+        ]
+    },
+    {
+        "id": "{{UNIQUE_ID_FOR_MULTI_BAR_CHART_HTTP_RESPONSE}}",
+        "type": "http response",
+        "z": "{{UNIQUE_ID_FOR_MULTI_BAR_CHART_FLOW}}",
+        "name": "",
+        "statusCode": "",
+        "headers": {},
+        "x": 604,
+        "y": 439,
+        "wires": []
+    },
+    {
+        "id": "{{UNIQUE_ID_FOR_MULTI_BAR_CHART_TOKEN_FUNCTION}}",
+        "type": "function",
+        "z": "{{UNIQUE_ID_FOR_MULTI_BAR_CHART_FLOW}}",
+        "name": "Set Token as Global Variable",
+        "func": "global.set(\"token\",msg.req.headers.authorization);\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 214,
+        "y": 159,
+        "wires": [
+            [
+                "{{UNIQUE_ID_FOR_MULTI_BAR_CHART_FUNCTION}}"
+            ]
+        ]
+    }

@@ -1,0 +1,130 @@
+import * as React from 'react';
+import { ColumnDirective, Edit, ColumnsDirective, GridComponent, Inject, Page, Toolbar,Filter,Group,Sort } from '@syncfusion/ej2-react-grids';
+import { set{modelName}Message } from 'redux/actions';
+import { useState, useEffect } from 'react';
+import { useAppDispatch } from 'redux/store';
+import { add{modelName}, delete{modelName}, getAll{modelName}, update{modelName} } from 'services/{tableName}Service';
+import { AxiosResponse } from 'axios';
+import { registerLicense } from '@syncfusion/ej2-base';
+import { Table, TableContainer, TableHead, TableRow, TableCell, TableBody } from '@mui/material';
+registerLicense('Mgo+DSMBaFt/QHRqVVhlXFpHaV5LQmFJfFBmRGlcfFRzcEU3HVdTRHRcQl9iQX5Sc0VhWHdWeXA=;Mgo+DSMBPh8sVXJ0S0J+XE9BdlRBQmJAYVF2R2BJflR1d19FZEwgOX1dQl9gSXxSfkViXH9ccX1VRGQ=;ORg4AjUWIQA/Gnt2VVhkQlFac19JXnxId0x0RWFab196cVZMY1hBNQtUQF1hSn5Rd01jWHpecnVcR2ZV;MTE1MzkzNkAzMjMwMmUzNDJlMzBGTWdkM2pidVlJUk5mdTM3TDcyd3JObitGMEdObjNqT3hVTTN2aUxMWVg0PQ==;MTE1MzkzN0AzMjMwMmUzNDJlMzBtY2FVUzZnbEJSdFpzOHVHWG1ocjlsY1BkZkhINkIvL2VOd1M3dEdHbmdRPQ==;NRAiBiAaIQQuGjN/V0Z+WE9EaFpCVmBWf1ppR2NbfE5xflBFal9VVAciSV9jS31TdERrWX5bcHZUT2ddUg==;MTE1MzkzOUAzMjMwMmUzNDJlMzBneTgxVUV3ZG1MSitWaDJocjQ3am41RVBFWU81ZXJoTmVHOUw0U1dreVBnPQ==;MTE1Mzk0MEAzMjMwMmUzNDJlMzBXa3M3Vm9YZ2wwaXM4L2pnbjlrakVXNFptbi8zQkxhN3JxZHhHWlhFWWFnPQ==;Mgo+DSMBMAY9C3t2VVhkQlFac19JXnxId0x0RWFab196cVZMY1hBNQtUQF1hSn5Rd01jWHpecnZVRGRf;MTE1Mzk0MkAzMjMwMmUzNDJlMzBmNGtXcEN1YnQ1ODFNQjZpZFArV3NCd05HNm5uQXVGa3NhdmphQThITUhRPQ==;MTE1Mzk0M0AzMjMwMmUzNDJlMzBmVTF5Y0VCV2ZheHdlQzN6dVN3K3lUWDF0VURUZzVaUUdubWhYMmJCN3VJPQ==;MTE1Mzk0NEAzMjMwMmUzNDJlMzBneTgxVUV3ZG1MSitWaDJocjQ3am41RVBFWU81ZXJoTmVHOUw0U1dreVBnPQ==');
+
+
+export const {componentName}: React.FC = () => {
+    const dispatch = useAppDispatch();
+    const [data, setData] = useState([]);
+    const pageSettings = { pageSize: 6 };
+    const editOptions = { allowEditing: true, allowAdding: true, allowDeleting: true };
+    const toolbarOptions = ['Add', 'Edit', 'Delete', 'Update', 'Cancel'];
+
+    useEffect(() => {
+        getAll{modelName}(1, 100).then(
+            data => {
+                setData(data.data.document.records);
+            }
+        )
+    }, [data.length])
+
+    const actionComplete = async (args) => {
+        if (args.requestType === 'save') {
+            // console.log(args.requestType, ": ARGS : ", args);
+            if (args.action === 'add') {
+                const response = await add{modelName}(args.data);
+                if (response) {
+                    dispatch(set{modelName}Message("Added Successfully"));
+                } else {
+                    dispatch(set{modelName}Message("Some error occured While Adding!"));
+                }
+            }
+            else if (args.action === 'edit') {
+                {primaryKeyList}
+                const new_data = args.data;
+				Object.keys(new_data).forEach(key => {
+                    const column = columns.find(c => c.field === key);
+                    const isDateType = column && column.type === 'date';
+                    const isNumberType = column && column.type === 'number';
+
+                    if (isDateType) {
+                        // const dateStr = new_data[key];
+                        const inputDateString = new_data[key];
+                        const inputDate = new Date(inputDateString.replace(/(\d{2})\/(\d{2})\/(\d{4})/, "$2/$1/$3"));
+                        const isoDateString = inputDate.toISOString();
+                        const formattedDateString = isoDateString.slice(0, -5) + ".00";
+                        console.log(formattedDateString);
+                        new_data[key] = formattedDateString;
+                    }
+                    if (isNumberType) {
+                        new_data[key] = parseInt(new_data[key]);
+                    }
+                });
+                const response = await update{modelName}({primaryKeyListArgs}, new_data);
+                if (response) {
+                    dispatch(set{modelName}Message("Updated Successfully"));
+                } else {
+                    dispatch(set{modelName}Message("Some error occured while Editing!"));
+                }
+            }
+            setData(args.data);
+        }
+        else if (args.requestType === 'delete') {
+            console.log(args.requestType, ": ARGS : ", args);
+            if (args.data) {
+                const response = await delete{modelName}({primaryKeyListArgs1});
+                if (response) {
+                    dispatch(set{modelName}Message("Deleted Successfully"));
+                } else {
+                    dispatch(set{modelName}Message("Some error occured while Deleting!"));
+                }
+            }
+            setData(args.data);
+        }
+    };
+
+    const columns = {fetchColumns}
+
+    return (
+        /*<>
+            <h1>{modelName}</h1>
+            <GridComponent dataSource={data}
+                allowPaging={true}
+                pageSettings={pageSettings}
+                editSettings={editOptions}
+                toolbar={toolbarOptions}
+                actionComplete={actionComplete}
+				allowSorting={true}
+				allowGrouping={true}
+				allowFiltering={true}
+            >
+                <ColumnsDirective>
+                    {columns.map((column, index) => (
+                        <ColumnDirective key={index} field={column.field} headerText={column.headerText} isPrimaryKey={column.isPrimaryKey} width='150' textAlign='Left' />
+                    ))}
+                </ColumnsDirective>
+                <Inject services={[Page, Edit, Toolbar,Sort,Group,Filter]} />
+            </GridComponent>
+        </>*/
+        <>
+      <h1>{modelName}</h1>
+      <TableContainer>
+        <Table>
+          <TableHead>
+            <TableRow>
+              {columns.map((column, index) => (
+                <TableCell key={index}>{column.headerText}</TableCell>
+              ))}
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {data.map((item, index) => (
+              <TableRow key={index}>
+                {columns.map((column, columnIndex) => (
+                  <TableCell key={columnIndex}>{item[column.field]}</TableCell>
+                ))}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+    </>
+    )
+}

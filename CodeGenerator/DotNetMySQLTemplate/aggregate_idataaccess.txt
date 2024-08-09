@@ -1,0 +1,11 @@
+using {projectName}.Model;
+using {projectName}.Utility;
+using System.Collections.Generic;
+
+namespace {projectName}.DataAccess.Interface
+{
+    public interface IAggregateDataAccess
+    {
+        {allaggregatefunctionidataaccess}
+    }
+}

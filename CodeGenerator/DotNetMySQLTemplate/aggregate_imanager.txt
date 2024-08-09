@@ -1,0 +1,13 @@
+using {projectName}.Model;
+using {projectName}.Utility;
+using System;
+using System.Collections.Generic;
+using System.Text;
+
+namespace {projectName}.Manager.Interface
+{
+    public interface IAggregateManager
+    {
+        {allaggregatefunctionimanager}
+    }
+}

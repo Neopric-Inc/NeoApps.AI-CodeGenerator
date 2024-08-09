@@ -1,0 +1,52 @@
+{
+        "id": "{{UNIQUE_ID_FOR_SUBFLOW_HTTP_IN_POST}}",
+        "type": "subflow",
+        "name": "HTTP IN POST",
+        "info": "Use to **utilize** any object **sent** from **Console**.\nThat object is saved to **message object** with the name of\ntable like if sent object is from {{SWAGGER_SCHEMA_NAME}} table then ==>** msg._{{SWAGGER_SCHEMA_OBJECT}};**",
+        "category": "{{SWAGGER_SCHEMA_NAME}}",
+        "in": [],
+        "out": [
+            {
+                "x": 660,
+                "y": 140,
+                "wires": [
+                {
+                    "id": "{{UNIQUE_ID_FOR_FUNCTION_HTTP_IN_POST}}",
+                    "port": 0
+                }
+                ]
+            }
+        ],
+        "env": []
+    },
+    {
+        "id": "{{UNIQUE_ID_FOR_HTTP_NODE_HTTP_IN_POST}}",
+        "type": "http in",
+        "z": "{{UNIQUE_ID_FOR_SUBFLOW_HTTP_IN_POST}}",
+        "name": "POST {{SWAGGER_SCHEMA_NAME}}",
+        "url": "/flows/{{SWAGGER_SCHEMA_NAME}}",
+        "method": "post",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 300,
+        "y": 140,
+        "wires": [
+            [
+                "{{UNIQUE_ID_FOR_FUNCTION_HTTP_IN_POST}}"
+            ]
+        ]
+    },
+    {
+        "id": "{{UNIQUE_ID_FOR_FUNCTION_HTTP_IN_POST}}",
+        "type": "function",
+        "z": "{{UNIQUE_ID_FOR_SUBFLOW_HTTP_IN_POST}}",
+        "name": "SET OBJECT TO MESSAGE",
+        "func": "msg._{{SWAGGER_SCHEMA_OBJECT}} = msg.payload;\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 620,
+        "y": 140,
+        "wires": [
+            []
+        ]
+    }

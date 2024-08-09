@@ -1,0 +1,28 @@
+.drawerOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: flex-end;
+  align-items: stretch;
+  z-index: 1000;
+}
+
+.drawerContent {
+  background-color: white;
+  padding: 1rem;
+  width: 90%; /* Updated to 100% for full-width */
+  height: 100%;
+  transition: transform 0.3s ease-in-out;
+}
+
+.drawerContent.closed {
+  transform: translateX(100%);
+}
+
+.drawerContent.open {
+  transform: translateX(0);
+}

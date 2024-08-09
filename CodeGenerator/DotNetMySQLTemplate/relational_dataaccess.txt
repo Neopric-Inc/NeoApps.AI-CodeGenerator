@@ -1,0 +1,88 @@
+public {tableName}RelationalModel Get{tableName}Relational(string ownername,{primaryKeyListParam})
+{
+    try
+    {
+        mySqlDatabaseConnector.OpenConnection();
+        var connection = mySqlDatabaseConnector.GetConnection();
+        using (var cmd = connection.CreateCommand())
+        {
+            cmd.CommandText = @"{selectOneQueryByCreatedBy}";
+            cmd.Parameters.AddWithValue("@ownername", ownername);
+            {getByIDQueryParameter}
+            {tableName}RelationalModel {tableNameSmall} = null;
+            using (var reader = cmd.ExecuteReader())
+            {
+                while (reader.Read())
+                {
+                    {tableNameSmall} = new {tableName}RelationalModel()
+                    {
+                        {selectAllModelInit}
+                        {pos1fulfilledintiallize}
+                    };
+                }
+            }
+
+            {pos1fulfilled}
+
+            {pos2fulfilled}
+
+            return {tableNameSmall};
+        }
+    }
+    catch (Exception ex)
+    {
+        throw ex;
+    }
+    finally
+    {
+        mySqlDatabaseConnector.CloseConnection();
+    }
+    return null;
+}
+
+public List<{tableName}RelationalModel> GetAll{tableName}Relational(string ownername,int page=1,int itemsPerPage=100,List<OrderByModel> orderBy = null)
+{
+    int offset = (page - 1) * itemsPerPage;
+    try
+    {
+        mySqlDatabaseConnector.OpenConnection();
+        var connection = mySqlDatabaseConnector.GetConnection();
+        using (var cmd = connection.CreateCommand())
+        {
+            cmd.CommandText = @"{selectAllQueryByCreatedBy}";
+            cmd.Parameters.AddWithValue("@ownername", ownername);
+            {convertSQL}
+            cmd.Parameters.AddWithValue("@Offset", offset);
+            cmd.Parameters.AddWithValue("@ItemsPerPage", itemsPerPage);
+            List<{tableName}RelationalModel> {tableNameSmall} = new List<{tableName}RelationalModel>();
+            using (var reader = cmd.ExecuteReader())
+            {
+                while (reader.Read())
+                {
+                    {tableName}RelationalModel res = new {tableName}RelationalModel()
+                    {
+                        {selectAllModelInit}
+                        {pos1fulfilledintiallize}
+                    };
+
+                    {tableNameSmall}.Add(res);
+                }
+            }
+
+            {getallpos1fulfilled}
+
+            {getallpos2fulfilled}
+
+            return {tableNameSmall};
+        }
+    }
+    catch (Exception ex)
+    {
+        throw ex;
+    }
+    finally
+    {
+        mySqlDatabaseConnector.CloseConnection();
+    }
+    return null;
+}

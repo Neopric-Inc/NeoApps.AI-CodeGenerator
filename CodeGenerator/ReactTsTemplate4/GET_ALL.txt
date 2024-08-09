@@ -1,0 +1,72 @@
+
+  {
+    "id": "{{UNIQUE_ID_FOR_SUBFLOW_GETALL}}",
+    "type": "subflow",
+    "name": "GET ALL RECORDS",
+    "info": "Used to fetch **all the records** from a specified table using **GET** API call.\nThe Records will be stored in msg object as **msg._Records**.",
+    "category": "{{SWAGGER_SCHEMA_NAME}}",
+    "in": [
+      {
+        "x": 120,
+        "y": 80,
+        "wires": [
+          {
+            "id": "{{UNIQUE_ID_FOR_FUNCTION_GETALL_1}}"
+          }
+        ]
+      }
+    ],
+    "out": [
+      {
+        "x": 660,
+        "y": 160,
+        "wires": [
+          {
+            "id": "{{UNIQUE_ID_FOR_FUNCTION_GETALL_2}}",
+            "port": 0
+          }
+        ]
+      }
+    ],
+    "env": []
+  },
+  {
+    "id": "{{UNIQUE_ID_FOR_FUNCTION_GETALL_1}}",
+    "type": "function",
+    "z": "{{UNIQUE_ID_FOR_SUBFLOW_GETALL}}",
+    "name": "GET ALL",
+    "func": "msg.headers = {\n    Authorization: global.get(\"token\"),\n};\nmsg.url = `{{SWAGGER_URL}}/{{SWAGGER_SCHEMA_NAME}}?page=1&itemsPerPage=100&orderBy=\"\"`;\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 260,
+    "y": 80,
+    "wires": [["{{UINQUE_ID_FOR_HTTP_GETALL}}"]]
+  },
+  {
+    "id": "{{UINQUE_ID_FOR_HTTP_GETALL}}",
+    "type": "http request",
+    "z": "{{UNIQUE_ID_FOR_SUBFLOW_GETALL}}",
+    "name": "Get All Records",
+    "method": "GET",
+    "ret": "obj",
+    "paytoqs": false,
+    "url": "",
+    "tls": "",
+    "proxy": "",
+    "authType": "",
+    "x": 200,
+    "y": 160,
+    "wires": [["{{UNIQUE_ID_FOR_FUNCTION_GETALL_2}}"]]
+  },
+  {
+    "id": "{{UNIQUE_ID_FOR_FUNCTION_GETALL_2}}",
+    "type": "function",
+    "z": "{{UNIQUE_ID_FOR_SUBFLOW_GETALL}}",
+    "name": "SET MESSAGE VARIABLE",
+    "func": "msg._{{SWAGGER_SCHEMA_NAME}}= msg.payload.document.records;\nreturn msg;\n",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 440,
+    "y": 160,
+    "wires": [[]]
+  }

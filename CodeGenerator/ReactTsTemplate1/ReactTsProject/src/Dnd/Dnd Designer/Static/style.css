@@ -1,0 +1,487 @@
+.dnd,
+html,
+body {
+    margin: 0;
+    padding: 0;
+    top: 0px;
+    left: 0px;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+}
+
+.dnd.body {
+    display: flex;
+    flex-direction: row;
+    height: 100vh;
+}
+
+.dnd.sideBar {
+    /* flex: 0 0 1; */
+    /* min-width: 200px; */
+    /* top: 0; */
+    /* height: 100%; */
+    padding: 10px;
+    border-right: 1px solid #111;
+    /* height: 100vh; */
+    color: #D5D7DB;
+    background: #2C3549;
+    /*Dev1
+    /* border-radius: 10px; */
+    box-shadow: rgba(0, 0, 0, 0.15) 3.95px 3.95px 2.6px;
+    overflow-y: scroll;
+
+    /* =========== Modified ============ */
+    /* display: flex;
+    flex-direction: column; */
+    /* display: flex;
+    flex-direction: column; */
+    justify-content: center;
+    align-items: center;
+    flex-wrap: nowrap;
+    overflow-y: auto;
+    scrollbar-width: 2px;
+    /* Add this to allow the container to scroll if needed */
+    height: 100%;
+
+    /* Add this to set the container height to 100% */
+}
+
+.dnd.sideBar::-webkit-scrollbar {
+    width: 0px;
+    /* Adjust this value to your desired width */
+}
+
+.dnd.sideBar input[type="text"] {
+    font-size: 14px;
+    padding: 5px;
+    width: 200px;
+}
+
+.dnd.sideBar hr:first-of-type {
+    border: none;
+    border-top: 2px dashed #93FAEB;
+    margin: 10px 0;
+}
+
+.dnd.sideBarItem {
+    border: 1px solid #93FAEB;
+    border-radius: 7px;
+    min-height: 50px;
+    width: 200px;
+    padding-top: 10px;
+    padding-bottom: 30px;
+    margin-top: 10px;
+    margin-bottom: 20px;
+    padding-left: 10px;
+    padding: auto;
+    text-align: left;
+    /* background: #ccc; */
+    background: transparent;
+    transition: all 0.2s ease-in-out;
+
+    /* =========== Modified ============ */
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    text-align: center;
+    /* Add this to vertically center the content */
+    padding: 10px;
+    word-break: break-word;
+    /* Add a bottom border to separate the items */
+}
+
+
+.dnd.sideBarItem:hover {
+    transform: scale(1.07);
+    color: black;
+    /* border: 2px solid #11a790; */
+    background-color: #93FAEB;
+}
+
+.dnd.sidebarIcon {
+    /* position: relative; */
+    /* Adjust these values accordingly */
+    top: 5px;
+    left: 5px;
+    font-size: 30px;
+    padding-right: 10px;
+    padding-bottom: 5px;
+}
+
+/* =========== Modified ============ */
+.dnd.sideBarItem:last-child {
+    border-bottom: none;
+    /* Remove the bottom border on the last item */
+}
+
+.dnd.sideBarItem span {
+    flex: 1;
+    /* Add this to make the text take up remaining space */
+}
+
+
+.dnd.page {
+    /* flex: 1; */
+    /* overflow-y: scroll; */
+    /* height: 100vh; */
+    flex: 1 1 auto;
+    padding: 0 20px;
+    margin: 20px;
+    border: 1px dashed green;
+    border-radius: 5px;
+
+    /* width: 100%;
+    height: 100%;
+    display: flex;
+    flex-wrap: wrap; */
+}
+
+.dnd.page::-webkit-scrollbar {
+    width: 0px;
+    /* Adjust this value to your desired width */
+}
+
+.dnd.dropZone {
+    flex: 0 0 auto;
+    height: 20px;
+    transition: 200ms all;
+    background-color: lightgray;
+    border-radius: 5px;
+}
+
+.dnd.dropZone:nth-of-type(2n) {
+    display: none;
+}
+
+.dnd.dropZone.horizontalDrag {
+    width: 20px;
+    height: auto;
+}
+
+.dnd.dropZone:not(.horizontalDrag).isLast {
+    flex: 1 1 auto;
+}
+
+.dnd.dropZone.active,
+.trashDropZone.active {
+    /* background: #93FAEB; */
+    background-color: #2C3549;
+    transition: 200ms all;
+}
+
+
+.dnd.component {
+    min-height: 50px;
+    /* height: 100%; */
+    padding: 10px;
+    margin: auto;
+    text-align: center;
+    background: #aaa;
+    border: 2px dashed black;
+    border-radius: 7px;
+    padding: 0.5rem 1rem;
+    background-color: white;
+    cursor: move;
+    transition: all 0.2s ease-in-out;
+}
+
+
+.dnd.component:hover {
+    transition: all 0.2s ease-in-out;
+    /* border: 2px solid #00D7C7; */
+    border-radius: 20px;
+}
+
+.dnd.component.selected {
+    transition: all 0.2s ease-in-out;
+    border: 2px solid coral;
+    border-radius: 20px;
+}
+
+.dnd.column {
+    border: 1px dashed blue;
+    flex: 1 1 auto;
+    padding: 5px;
+    border-radius: 5px;
+}
+
+.dnd.columns {
+    display: flex;
+    flex: 1 1 100%;
+    padding: 20px 0;
+}
+
+.dnd.columnContainer {
+    display: flex;
+}
+
+.dnd.base {
+    padding: 0.5rem 1rem;
+    background-color: white;
+    cursor: move;
+}
+
+.dnd.row {
+    border: 1px dashed red;
+    padding: 0;
+    border-radius: 5px;
+}
+
+.dnd.trashDropZone {
+    position: relative;
+    text-align: center;
+    /* padding: 20px 0; */
+    margin: 0 auto;
+    /* border: 1px solid purple; */
+    border: 1px solid white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 20px;
+    background-color: #0E7555;
+    color: white;
+    margin-top: 50px;
+    transition: all 0.2s ease-in-out;
+    width: 100px;
+    height: 100px;
+    /* padding: 50px; */
+}
+
+.dnd.trashDropZone:hover {
+    background-color: coral;
+    color: #111;
+    transform: scale(1.07);
+}
+
+.dnd.trashDropZone.active {
+    background-color: coral;
+    color: #111;
+    transform: scale(1.07);
+}
+
+.dnd.pageContainer {
+    /* overflow-y: scroll; */
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    margin-bottom: 100px;
+
+    height: 100%;
+    padding: 10px;
+    overflow-y: auto;
+}
+
+.dnd.pageContainer::-webkit-scrollbar {
+    width: 0px;
+    /* Adjust this value to your desired width */
+}
+
+/* Popup style */
+.config-popup-box {
+    position: fixed;
+    background: #00000050;
+    width: 100%;
+    height: 110vh;
+    top: 0;
+    left: 0;
+    z-index: 1;
+}
+
+.config-box {
+    position: relative;
+    z-index: 1;
+    max-width: 70vw;
+    margin: 0 auto;
+    height: auto;
+    max-height: 70vh;
+    margin-top: calc(100vh - 85vh - 20px);
+    background: #fff;
+    border-radius: 4px;
+    padding: 20px;
+    border: 1px solid #999;
+    overflow: auto;
+    border-radius: 15px;
+    box-shadow: 0px 5px 10px 0px rgba(0, 0, 0, 0.5);
+}
+
+.config-close-icon {
+    content: '&#x2718;';
+    cursor: pointer;
+    position: fixed;
+    right: calc(16vw);
+    top: calc(100vh - 85vh - 33px);
+    background: black;
+    color: white;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    padding-top: 4px;
+    line-height: 20px;
+    text-align: center;
+    border: 1px solid #999;
+    z-index: 1;
+    font-size: 15px;
+}
+
+.form-container {
+    max-width: 90vw;
+    margin: 0 auto;
+    padding: 20px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    background-color: #f7f7f7;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.form-control {
+    width: 100%;
+    padding: 10px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.select-control {
+    width: 100%;
+    padding: 10px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background-color: #fff;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23878f9d' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 12px 12px;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+}
+
+.form-btn {
+    display: block;
+    margin: 20px auto 0;
+    padding: 10px 20px;
+    font-size: 16px;
+    font-weight: bold;
+    color: #fff;
+    background-color: #007bff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.form-btn:hover {
+    background-color: #0062cc;
+}
+
+
+.tooltipContent {
+    background-color: #0062cc;
+    font-size: 16px;
+    max-width: 11vw;
+    display: block;
+    height: auto;
+    padding: 10px 10px;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    position: absolute;
+}
+
+.tooltipContent1 {
+    background-color: #0062cc;
+    font-size: 16px;
+    max-width: 11vw;
+    display: block;
+    height: auto;
+    padding: 10px 10px;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    position: fixed;
+}
+
+
+/* ==============Modified Code============== */
+
+/* .dnd-sidebar {
+    flex: 0 0 200px;
+    height: 100%;
+    color: #d5d7db;
+    background: #2c3549;
+    border-radius: 15px;
+    box-shadow: rgba(0, 0, 0, 0.15) 3.95px 3.95px 2.6px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: stretch;
+}
+
+.dnd-sidebar-item {
+    border: 1px solid #93faeb;
+    border-radius: 7px;
+    height: 50px;
+    margin-top: 10px;
+    margin-bottom: 20px;
+    text-align: left;
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    align-items: center;
+    cursor: move;
+    transition: all 0.2s ease-in-out;
+}
+
+.dnd-sidebar-item:hover {
+    transform: scale(1.07);
+    color: black;
+    background-color: #93faeb;
+}
+
+.dnd-sidebar-item-icon {
+    margin-right: 10px;
+    width: 30px;
+    height: 30px;
+}
+
+.dnd-sidebar-item-label {
+    flex-grow: 1;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+@media (max-width: 768px) {
+    .dnd-sidebar {
+        flex: 1 1 auto;
+        height: auto;
+    }
+
+    .dnd-sidebar-item {
+        height: 40px;
+        margin-top: 5px;
+        margin-bottom: 10px;
+    }
+
+    .dnd-sidebar-item-icon {
+        width: 20px;
+        height: 20px;
+    }
+
+    .dnd-sidebar-item-label {
+        font-size: 0.8rem;
+    }
+} */
+/* 
+============== Modified Code ============== */

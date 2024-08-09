@@ -1,0 +1,26 @@
+﻿using {projectName}.Model;
+using {projectName}.Utility;
+using System;
+using System.Collections.Generic;
+using System.Text;
+
+namespace {projectName}.Manager.Interface
+{
+    public interface I{tableName}Manager
+    {
+        APIResponse Get{tableName}(int page, int itemsPerPage,List<OrderByModel> orderBy);
+        APIResponse Get{tableName}ByCreatedBy(string ownername,int page, int itemsPerPage,List<OrderByModel> orderBy);
+        APIResponse Search{tableName}(string searchKey, int page, int itemsPerPage,List<OrderByModel> orderBy);
+        APIResponse Search{tableName}ByCreatedBy(string ownername,string searchKey, int page, int itemsPerPage,List<OrderByModel> orderBy);
+		APIResponse Filter{tableName}(string ownername,List<FilterModel> filterModels, string andOr, int page, int itemsPerPage, List<OrderByModel> orderBy);
+        APIResponse Get{tableName}ByID({primaryKeyListParam});
+        APIResponse Get{tableName}ByIDByCreatedBy(string ownername,{primaryKeyListParam});
+        {RelationalApiInegrationIManager}
+        {ReportingApiInegrationIManager}
+        {TransactionalApiInegrationIManager}
+        APIResponse Update{tableName}WithToken({primaryKeyListParam},{tableName}Model model,string token);
+        APIResponse Add{tableName}WithToken({tableName}Model model,string token);
+		APIResponse Delete{tableName}WithToken({primaryKeyListParam},string token);
+		APIResponse DeleteMultiple{tableName}WithToken(List<DeleteMultipleModel> deleteParam, string andOr,string token);
+    }
+}

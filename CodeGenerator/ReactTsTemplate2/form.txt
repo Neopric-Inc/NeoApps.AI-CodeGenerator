@@ -1,0 +1,149 @@
+﻿import { useFormik, Formik } from "formik";
+import React, { useEffect, useState } from "react";
+import {  Form } from "react-bootstrap";
+import { useSelector } from "react-redux";
+import { format } from "date-fns";
+import { RootState } from "redux/reducers";
+import { set{modelName}Message } from "redux/actions";
+{importFKRedux}
+{importFKService}
+import { useAppDispatch } from "redux/store";
+import { add{modelName}, update{modelName} } from "services/{tableName}Service";
+import { Constant } from "template/Constant";
+import { ValidationControl } from "Dnd/Dnd Designer/Utility/constants";
+
+import { Card, CardHeader, CardContent, Button, Typography, Box } from "@mui/material";
+import CloseIcon from "@mui/icons-material/Close";
+import IconButton from "@mui/material/IconButton";
+import { makeStyles } from "@mui/styles";
+import { styled } from '@mui/material/styles';
+import * as yup from 'yup';
+type Props = {
+    row?: any,
+    hideShowForm: (actionName) => void;
+    getData: (page, pageSize, searchKey) => void;
+    action?: string;
+  config;
+};
+export const {modelName}Form: React.FC<Props> = ({ row, hideShowForm, getData, action,  config,}) => {
+    const dispatch = useAppDispatch();
+    const iValue={{ColumnListWithValue}};
+    const initialValue = action === 'edit' ? row : iValue;
+    {fkReduxInit}
+    {useEffectForFK}
+    return (
+        /*<Card className="shadow mb-4">
+            <Card.Header className="py-3">
+                <h6 className="m-0 font-weight-bold text-primary text-capitalize">{action} {modelName}
+                    <Button className="btn-icon-split float-right" onClick={() => hideShowForm(false)}>
+                        <span className="icon text-white-50">
+                            <i className="fas fa-list"></i>
+                        </span>
+                        <span className="text">View {modelName}</span>
+                    </Button>
+                </h6>
+
+            </Card.Header>
+            <Card.Body>
+            <Formik
+            initialValues= {initialValue}
+        onSubmit= {async (values) => {
+	    {PrimaryKeyConversion}
+            if (action === 'edit') {
+                const response = await update{modelName}({PrimaryKeyInitialization},values);
+                if (response) {
+                    dispatch(set{modelName}Message("Updated Successfully"));
+                    getData(Constant.defaultPageNumber, Constant.defaultPageSize, '');
+                    hideShowForm('');
+                } else {
+                    dispatch(set{modelName}Message("Some error occured!"));
+                }
+            } else if (action === 'add') {
+                const response = await add{modelName}(values);
+                if (response) {
+                    dispatch(set{modelName}Message("Added Successfully"));
+                    getData(Constant.defaultPageNumber, Constant.defaultPageSize, '');
+                    hideShowForm('');
+                } else {
+                    dispatch(set{modelName}Message("Some error occured!"));
+                }
+            }
+        }}
+        validationSchema= {yup.object({
+           {yupValidationList}
+        })}>
+        {({
+            errors,
+            handleBlur,
+            handleChange,
+            handleSubmit,
+            isSubmitting,
+            touched,
+            values,
+          }) => (
+                <Form onSubmit={handleSubmit}>
+                  {formGroupWithValidation}
+                    <Form.Group>
+                        <Button type="submit" className="float-right" variant="primary">Save</Button>
+                    </Form.Group>
+                </Form>
+                         )}
+        </Formik>
+            </Card.Body>
+        </Card>*/
+         <Card className="shadow mb-4">
+        <CardHeader 
+          title={`${action} ${modelName}`} 
+          action={
+            <IconButton onClick={() => hideShowForm(false)}>
+              <CloseIcon />
+            </IconButton>
+          }
+        />
+        <CardContent>
+          <Formik
+          initialValues= {initialValue}
+      onSubmit= {async (values) => {
+      {PrimaryKeyConversion}
+          if (action === 'edit') {
+              const response = await update{modelName}({PrimaryKeyInitialization},values);
+              if (response) {
+                  dispatch(set{modelName}Message("Updated Successfully"));
+                  getData(Constant.defaultPageNumber, Constant.defaultPageSize, '');
+                  hideShowForm('');
+              } else {
+                  dispatch(set{modelName}Message("Some error occured!"));
+              }
+          } else if (action === 'add') {
+              const response = await add{modelName}(values);
+              if (response) {
+                  dispatch(set{modelName}Message("Added Successfully"));
+                  getData(Constant.defaultPageNumber, Constant.defaultPageSize, '');
+                  hideShowForm('');
+              } else {
+                  dispatch(set{modelName}Message("Some error occured!"));
+              }
+          }
+      }}
+      validationSchema= {yup.object({
+         {yupValidationList}
+      })}>
+      {({
+          errors,
+          handleBlur,
+          handleChange,
+          handleSubmit,
+          isSubmitting,
+          touched,
+          values,
+        }) => (
+              <Form  onSubmit={handleSubmit}>
+                {formGroupWithValidation}
+                  <Button type="submit" className="float-right" variant="contained">Save</Button>
+              </Form>
+                       )}
+      </Formik>
+        </CardContent>
+      </Card>
+    );
+}

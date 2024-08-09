@@ -1,0 +1,65 @@
+
+  {
+    "id": "{{UNIQUE_ID_FOR_SIMPLE_BAR_CHART_FLOW}}",
+    "type": "tab",
+    "label": "Simple_BarChart",
+    "disabled": false,
+    "info": ""
+  },
+  {
+    "id": "{{UNIQUE_ID_FOR_SIMPLE_BAR_CHART_HTTP_IN}}",
+    "type": "http in",
+    "z": "{{UNIQUE_ID_FOR_SIMPLE_BAR_CHART_FLOW}}",
+    "name": "TriggerBarChart1",
+    "url": "/flows/Simple_BarChart/data1",
+    "method": "post",
+    "upload": false,
+    "swaggerDoc": "",
+    "x": 80,
+    "y": 40,
+    "wires": [["{{UNIQUE_ID_FOR_SIMPLE_BAR_CHART_TOKEN_FUNCTION}}"]]
+  },
+  {
+    "id": "{{UNIQUE_ID_FOR_SIMPLE_BAR_CHART_FUNCTION}}",
+    "type": "function",
+    "z": "{{UNIQUE_ID_FOR_SIMPLE_BAR_CHART_FLOW}}",
+    "name": "",
+    "func": "\nconst categories = [\"Sun\", \"Mon\", \"Tue\", \"Wed\", \"Thu\", \"Fri\", \"Sat\", \"Sun\"];\n\n\n  const chartSeries = [\n    {\n      data: [30, 40, 25, 50, 49, 21, 70, 51],\n      name: \"This week\",\n      color: \"#13affe\",\n    },\n    {\n      data: [23, 12, 54, 61, 32, 56, 81, 19],\n      name: \"Last week\",\n      color: \"#fbab49\",\n    },\n  ];\n  \n const response = {\n   chartCategories: categories,\n  chartSeries: chartSeries,\n};\n\n// Set the response object as the payload of the outgoing message\nmsg.payload = response;\n  \nreturn msg;",
+    "outputs": 1,
+    "timeout": "",
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 320,
+    "y": 200,
+    "wires": [["{{UNIQUE_ID_FOR_SIMPLE_BAR_CHART_HTTP_RESPONSE}}"]]
+  },
+  {
+    "id": "{{UNIQUE_ID_FOR_SIMPLE_BAR_CHART_HTTP_RESPONSE}}",
+    "type": "http response",
+    "z": "{{UNIQUE_ID_FOR_SIMPLE_BAR_CHART_FLOW}}",
+    "name": "",
+    "statusCode": "",
+    "headers": {},
+    "x": 790,
+    "y": 460,
+    "wires": []
+  },
+  {
+    "id": "{{UNIQUE_ID_FOR_SIMPLE_BAR_CHART_TOKEN_FUNCTION}}",
+    "type": "function",
+    "z": "{{UNIQUE_ID_FOR_SIMPLE_BAR_CHART_FLOW}}",
+    "name": "Set Token as Global Variable",
+    "func": "global.set(\"token\",msg.req.headers.authorization);\nreturn msg;",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 180,
+    "y": 120,
+    "wires": [["{{UNIQUE_ID_FOR_SIMPLE_BAR_CHART_FUNCTION}}"]]
+  }
+

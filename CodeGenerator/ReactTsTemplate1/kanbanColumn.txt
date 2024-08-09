@@ -1,0 +1,347 @@
+import type { ChangeEvent, FC } from "react";
+import { useEffect, useRef, useState } from "react";
+import PropTypes from "prop-types";
+import toast from "react-hot-toast";
+import { Draggable, Droppable } from "react-beautiful-dnd";
+import {
+  Box,
+  Chip,
+  ClickAwayListener,
+  Divider,
+  IconButton,
+  Input,
+  Menu,
+  MenuItem,
+  OutlinedInput,
+} from "@mui/material";
+import { DotsHorizontal as DotsHorizontalIcon } from "components/icons/dots-horizontal";
+import type { Column } from "./kanban-types";
+import { KanbanCard } from "./kanban-card";
+import { KanbanCardAdd } from "./kanban-card-add";
+import { RootState } from "redux/reducers";
+import { useDispatch, useSelector } from "react-redux";
+import { Constant } from "template/Constant";
+
+interface KanbanColumnProps {
+  columnId: any;
+  contentStatus: any;
+  contents: any;
+  allContents: any;
+  allStatusData: any;
+  config: any;
+  getData: any;
+}
+
+// const columnSelector = (state: RootState, columnId: string): Column => {
+//   const { columns } = state.kanban;
+
+//   return columns.byId[columnId];
+// };
+
+export const KanbanColumn: FC<KanbanColumnProps> = (props) => {
+  const {
+    columnId,
+    contents,
+    contentStatus,
+    allContents,
+    allStatusData,
+    config,
+    getData,
+    ...other
+  } = props;
+  const dispatch = useDispatch();
+  const moreRef = useRef<HTMLButtonElement | null>(null);
+  const [openMenu, setOpenMenu] = useState<boolean>(false);
+  const [name, setName] = useState<string>(
+    contentStatus[config["Status_kan_ref"]]
+  );
+  const [isRenaming, setIsRenaming] = useState<boolean>(false);
+  //const ContentData = useSelector((state: RootState) => state.content);
+
+ //console.log(contents);
+
+  // useEffect(() => {
+  //   if (ContentData && ContentData.list && ContentData.list.length === 0) {
+  //     dispatch(resetContentToInit());
+  //     getContent(
+  //       Constant.defaultPageNumber,
+  //       Constant.defaultDropdownPageSize,
+  //       ""
+  //     ).then((response) => {
+  //      //console.log(response);
+
+  //         let desiredRecords = response.records.filter((record : IContent) => record.content_status_id === contentStatus.content_status_id);
+  //        //console.log(contentStatus.content_status_id);
+  //        //console.log(desiredRecords);
+  //         if (response && response.records) {
+  //           dispatch(
+  //             setContentList({
+  //               pageNo: Constant.defaultPageNumber,
+  //               pageSize: Constant.defaultDropdownPageSize,
+  //               list: desiredRecords,
+  //               totalCount: desiredRecords.length,
+  //               searchKey: "",
+  //             })
+  //           );
+  //         } else {
+  //           dispatch(setContentMessage(`No Record Found For Content`));
+  //         }
+
+  //     });
+  //   }
+  // }, [ContentData.list.length]);
+  const handleMenuOpen = (): void => {
+    setOpenMenu(true);
+  };
+
+  const handleMenuClose = (): void => {
+    setOpenMenu(false);
+  };
+
+  const handleChange = (event: ChangeEvent<HTMLInputElement>): void => {
+    setName(event.target.value);
+  };
+
+  const handleRenameInit = (): void => {
+    setIsRenaming(true);
+  };
+
+  // const handleRename = async (): Promise<void> => {
+  //   try {
+  //     // If name is empty use the initial column name
+  //     if (!name) {
+  //       setName(column.name);
+  //       setIsRenaming(false);
+  //       return;
+  //     }
+
+  //     // If name is equal to column name, it means there are no changes
+  //     if (name === column.name) {
+  //       setIsRenaming(false);
+  //       return;
+  //     }
+
+  //     const update = { name };
+
+  //   //   await dispatch(
+  //   //     updateColumn({
+  //   //       columnId: column.id,
+  //   //       update,
+  //   //     })
+  //   //   );
+  //     setIsRenaming(false);
+  //     toast.success("Column updated!");
+  //   } catch (err) {
+  //     console.error(err);
+  //     toast.error("Something went wrong!");
+  //   }
+  // };
+
+  const handleDelete = async (): Promise<void> => {
+    try {
+      setOpenMenu(false);
+      //   await dispatch(
+      //     deleteColumn({
+      //       columnId: column.id,
+      //     })
+      //   );
+      toast.success("Column deleted!");
+    } catch (err) {
+      console.error(err);
+      toast.error("Something went wrong!");
+    }
+  };
+
+  const handleClear = async (): Promise<void> => {
+    try {
+      setOpenMenu(false);
+      //   await dispatch(
+      //     clearColumn({
+      //       columnId: column.id,
+      //     })
+      //   );
+      toast.success("Column cleared!");
+    } catch (err) {
+      console.error(err);
+      toast.error("Something went wrong!");
+    }
+  };
+
+  return (
+    <div {...other}>
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          maxHeight: "100%",
+          mx: 2,
+          overflowX: "hidden",
+          overflowY: "hidden",
+          width: {
+            xs: 300,
+            sm: 380,
+          },
+        }}
+      >
+        <Box
+          sx={{
+            alignItems: "center",
+            display: "flex",
+            justifyContent: "space-between",
+            pr: 2,
+            py: 1,
+          }}
+        >
+          {/* {isRenaming ? (
+            <ClickAwayListener onClickAway={handleRename}>
+              <OutlinedInput
+                autoFocus
+                fullWidth
+                onBlur={handleRename}
+                onChange={handleChange}
+                value={name}
+                sx={{
+                  backgroundColor: "background.paper",
+                  "& .MuiInputBase-input": {
+                    px: 2,
+                    py: 1,
+                  },
+                }}
+              />
+            </ClickAwayListener>
+          ) : ( */}
+          <Input
+            disableUnderline
+            fullWidth
+            //onClick={handleRenameInit}
+            value={contentStatus[config["Status_kan_ref"]]}
+            sx={{
+              borderColor: "transparent",
+              borderRadius: 1,
+              borderStyle: "solid",
+              borderWidth: 1,
+              cursor: "text",
+              m: "-1px",
+              "&:hover": {
+                backgroundColor: "action.selected",
+              },
+              "& .MuiInputBase-input": {
+                fontWeight: 500,
+                px: 2,
+                py: 1,
+              },
+            }}
+          />
+          {/* )} */}
+          <Box
+            sx={{
+              alignItems: "center",
+              display: "flex",
+            }}
+          >
+            <Chip sx={{ ml: 2 }} label={contents.length} />
+            <IconButton
+              sx={{ ml: 2 }}
+              edge="end"
+              onClick={handleMenuOpen}
+              ref={moreRef}
+            >
+              <DotsHorizontalIcon fontSize="small" />
+            </IconButton>
+          </Box>
+        </Box>
+        <Box
+          sx={{
+            backgroundColor: (theme) =>
+              theme.palette.mode === "dark" ? "neutral.800" : "neutral.200",
+            borderRadius: 1,
+          }}
+        >
+          <Droppable
+            droppableId={contentStatus[config["Status_ref_gv1_column"]]}
+            type="card"
+          >
+            {(provided): JSX.Element => (
+              <Box
+                ref={provided.innerRef}
+                sx={{
+                  flexGrow: 1,
+                  minHeight: 80,
+                  overflowY: "auto",
+                  px: 2,
+                  py: 1,
+                }}
+              >
+                {contents
+                  .slice()
+                  .sort(
+                    (a, b) =>
+                      Number(a[config["temp_id_ref_gv1_column"]]) -
+                      Number(b[config["temp_id_ref_gv1_column"]])
+                  )
+                  .map((content, index) => (
+                    <Draggable
+                      draggableId={content[config["temp_id_ref_gv1_column"]]}
+                      index={content[config["temp_id_ref_gv1_column"]]}
+                      key={Number(content[config["temp_id_ref_gv1_column"]])}
+                      content={content}
+                    >
+                      {(_provided, snapshot): JSX.Element => (
+                        <KanbanCard
+                          cardId={"5e849c8708bd72683b454747"}
+                          content={content}
+                          dragging={snapshot.isDragging}
+                          index={index}
+                          key={content.{pkKeyReplacement}}
+                          contentStatus={contentStatus}
+                          ref={_provided.innerRef}
+                          config={config}
+                          getData={getData}
+                          allStatusData={allStatusData}
+                          style={{ ..._provided.draggableProps.style }}
+                          {..._provided.draggableProps}
+                          {..._provided.dragHandleProps}
+                        />
+                      )}
+                    </Draggable>
+                  ))}
+                {provided.placeholder}
+              </Box>
+            )}
+          </Droppable>
+          <Divider
+            sx={{
+              borderColor: (theme) =>
+                theme.palette.mode === "dark" ? "neutral.700" : "neutral.300",
+            }}
+          />
+          <Box sx={{ p: 2 }}>
+            <KanbanCardAdd
+              contentStatus={contentStatus}
+              allContents={allContents}
+              config={config}
+              getData={getData}
+            />
+          </Box>
+        </Box>
+        <Menu
+          anchorEl={moreRef.current}
+          anchorOrigin={{
+            horizontal: "center",
+            vertical: "bottom",
+          }}
+          keepMounted
+          onClose={handleMenuClose}
+          open={openMenu}
+        >
+          <MenuItem>Clear</MenuItem>
+          <MenuItem>Delete</MenuItem>
+        </Menu>
+      </Box>
+    </div>
+  );
+};
+
+KanbanColumn.propTypes = {
+  columnId: PropTypes.string.isRequired,
+};

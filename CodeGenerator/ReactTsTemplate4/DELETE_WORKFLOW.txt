@@ -1,0 +1,50 @@
+
+  {
+    "id": "{{UNIQUE_ID_FOR_TAB_DELETED}}",
+    "type": "tab",
+    "label": "When {{SWAGGER_SCHEMA_NAME}} Deleted",
+    "disabled": false,
+    "info": ""
+  },
+  
+  
+  {
+    "id": "{{UNIQUE_ID_FOR_HTTP_IN_POST_DELETED}}",
+    "type": "http in",
+    "z": "{{UNIQUE_ID_FOR_TAB_DELETED}}",
+    "name": "Delete Operation Triggered",
+    "url": "/flows/{{SWAGGER_SCHEMA_NAME}}/deleted",
+    "method": "post",
+    "upload": false,
+    "swaggerDoc": "",
+    "x": 140,
+    "y": 80,
+    "wires": [["{{UNIQUE_ID_FOR_FUNCTION_DELETED}}"]]
+  },
+  {
+    "id": "{{UNIQUE_ID_FOR_FUNCTION_DELETED}}",
+    "type": "function",
+    "z": "{{UNIQUE_ID_FOR_TAB_DELETED}}",
+    "name": "",
+    "func": "global.set(\"token\",\"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1bmlxdWVfbmFtZSI6WyJhZG1pbiIsIkN1c3RvbU9iamVjdENhbkJlQWRkZWRIZXJlIl0sIm5iZiI6MTY4ODY2ODgyNywiZXhwIjoxNjg5MjczNjI3LCJpYXQiOjE2ODg2Njg4Mjd9.JR2jV8HRHORajUlsZupjyfqNXSrFaqBEQqc87kcrQag\");\nreturn msg;\n",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 380,
+    "y": 80,
+    "wires": [["{{UNIQUE_ID_FOR_DEBUG_DELETED}}"]]
+  },
+  {
+    "id": "{{UNIQUE_ID_FOR_DEBUG_DELETED}}",
+    "type": "debug",
+    "z": "{{UNIQUE_ID_FOR_TAB_DELETED}}",
+    "name": "debug 3",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "true",
+    "targetType": "full",
+    "x": 600,
+    "y": 80,
+    "wires": []
+  }

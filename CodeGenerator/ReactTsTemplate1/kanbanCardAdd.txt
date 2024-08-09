@@ -1,0 +1,129 @@
+import type { ChangeEvent, FC } from "react";
+import { useState } from "react";
+import PropTypes from "prop-types";
+//import toast from "react-hot-toast";
+import {
+  Box,
+  Button,
+  CircularProgress,
+  Link,
+  OutlinedInput,
+  TextField,
+  Typography,
+} from "@mui/material";
+import { {modelName}Form } from "./form";
+import { Plus as PlusIcon } from "components/icons/plus";
+import { useDispatch } from "react-redux";
+import { ChartsItemContentProps } from "@mui/x-charts/ChartsTooltip/ChartsItemTooltipContent";
+import { Constant } from "template/Constant";
+import toast from "react-hot-toast";
+import moment from "moment";
+
+interface KanbanCardAddProps {
+  contentStatus: any;
+  allContents: any;
+  config: any;
+  getData: any;
+}
+
+export const KanbanCardAdd: FC<KanbanCardAddProps> = (props) => {
+  const { contentStatus, allContents, getData, config, ...other } = props;
+  const dispatch = useDispatch();
+  const [isExpanded, setIsExpanded] = useState<boolean>(false);
+  const [name, setName] = useState<string>("");
+  const [description, setDescription] = useState<string>("");
+  const [submit, setSubmit] = useState<boolean>(false);
+  const handleChange = (event: ChangeEvent<HTMLInputElement>): void => {
+    setName(event.target.value);
+  };
+
+  const handleAddInit = (): void => {
+    setIsExpanded(true);
+  };
+
+  const handleAddCancel = (): void => {
+    setIsExpanded(false);
+    setName("");
+  };
+
+  // const handleAddConfirm = async (): Promise<void> => {
+  //   try {
+  //     setSubmit(true);
+  //     const content: any = {
+  //       user_id: 3,
+  //       [config["description_ref_gv1_column"]]: description,
+  //       [config["TaskName_ref_gv1_column"]]: name,
+  //       schedule_date_time: moment().add(4, "day").format("YYYY-MM-DD"),
+  //       engagement_type_id: 1,
+  //       social_media_user_id: 1,
+  //       socialmediaaccount_id: 1,
+  //       isActive: 1,
+  //       createdBy: "3",
+  //       modifiedBy: "3",
+  //       createdAt: moment(new Date(Date.now()), "DD/MM/YYYY HH:mm:ss").format(
+  //         "YYYY-MM-DD HH:mm:ss"
+  //       ),
+  //       modifiedAt: moment(new Date(Date.now()), "DD/MM/YYYY HH:mm:ss").format(
+  //         "YYYY-MM-DD HH:mm:ss"
+  //       ),
+  //       [config["Status_ref_gv1_column"]]:
+  //         contentStatus[config["Status_ref_gv1_column"]],
+  //       temp_id: (allContents.length + 1).toString(),
+  //     };
+  //     const response = await addContent(content);
+  //     if (response) {
+  //       dispatch(setContentMessage("Added Successfully"));
+  //       getData(Constant.defaultPageNumber, Constant.defaultPageSize, "");
+  //       setSubmit(false);
+  //       toast.success("Card updated!");
+  //       setIsExpanded(false);
+  //     }
+  //     setName("");
+  //     setDescription("");
+  //   } catch (err) {
+  //     console.error(err);
+  //   }
+  //   setIsExpanded(false);
+  //   setSubmit(false);
+  //   setName("");
+  //   setDescription("");
+  // };
+
+  return (
+    <div {...other}>
+      {isExpanded ? (
+        <>
+          <{modelName}Form
+            row=""
+            hideShowForm={setIsExpanded}
+            getData={getData}
+            action="Add"
+            config={config}
+          />
+        </>
+      ) : (
+        <>
+          {/* {!submit ?  */}
+          <Link
+            onClick={handleAddInit}
+            sx={{
+              alignItems: "center",
+              cursor: "pointer",
+              display: "flex",
+              justifyContent: "flex-start",
+            }}
+            underline="none"
+          >
+            <PlusIcon sx={{ color: "action.active" }} />
+            <Typography color="textSecondary" variant="subtitle1">
+              Add Card
+            </Typography>
+          </Link>
+          {/* :
+            <CircularProgress size={18}/>
+          } */}
+        </>
+      )}
+    </div>
+  );
+};

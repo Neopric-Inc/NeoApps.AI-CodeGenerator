@@ -1,0 +1,76 @@
+
+    {
+        "id": "{{UNIQUE_ID_FOR_All_CHART_DATA_FLOW}}",
+        "type": "tab",
+        "label": "All Chart Data Trigger",
+        "disabled": false,
+        "info": ""
+    },
+    {
+        "id": "{{UNIQUE_ID_FOR_All_CHART_HTTP_IN}}",
+        "type": "http in",
+        "z": "{{UNIQUE_ID_FOR_All_CHART_DATA_FLOW}}",
+        "name": "Trigger",
+        "url": "/flows/getDataset",
+        "method": "post",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 90,
+        "y": 40,
+        "wires": [
+            [
+                "{{UNIQUE_ID_FOR_All_CHART_TOKEN_FUNCTION}}"
+            ]
+        ]
+    },
+    {
+        "id": "{{UNIQUE_ID_FOR_All_CHART_FUNCTION}}",
+        "type": "function",
+        "z": "{{UNIQUE_ID_FOR_All_CHART_DATA_FLOW}}",
+        "name": "All Chart Data",
+        "func": "const dataset = {\n  \"Simple_PieChart\": [\"/flows/Simple_PieChart/hello1\", \"/flows/Simple_PieChart/hello2\", \"/flows/Simple_PieChart/hello3\"],\n  \"Simple_BarChart\": [\"/flows/Simple_BarChart/data1\", \"/flows/Simple_BarChart/data2\"],\n  \"Simple_LineChart\": [\"/flows/Simple_LineChart/line1\", \"/flows/Simple_LineChart/line2\", \"/flows/Simple_LineChart/line3\"],\n  \"Shadow_LineChart\": [\"/flows/Shadow_LineChart/line1\", \"/flows/Shadow_LineChart/line2\", \"/flows/Shadow_LineChart/line3\"],\n  \"Simple_BarChart2\": [\"/flows/Simple_BarChart2/data1\", \"/flows/Simple_BarChart2/data2\", \"/flows/Simple_BarChart2/data3\"],\n  \"Complex_LineChart\": [\"/flows/Complex_LineChart/line1\", \"/flows/Complex_LineChart/line2\", \"/flows/Complex_LineChart/line3\"],\n  \"Complex_PieChart\": [\"/flows/Complex_PieChart/hello1\", \"/flows/Complex_PieChart/hello2\", \"/flows/Complex_PieChart/hello3\"],\n  \"Straight_LineChart\": [\"/flows/Straight_LineChart/line1\", \"/flows/Straight_LineChart/line2\", \"/flows/Straight_LineChart/line3\"],\n  \"Simple_PieChart2\": [\"/flows/Simple_PieChart2/hello1\", \"/flows/Simple_PieChart2/hello2\", \"/flows/Simple_PieChart2/hello3\"],\n  //\"Horizontal_BarChart\": [\"/flows/Horizontal_BarChart/data1\", \"/flows/Horizontal_BarChart/data2\"],\n  \"Multi_BarChart\": [\"/flows/Multi_BarChart/data1\", \"/flows/Multi_BarChart/data2\"],\n  // Add more flows for other charts as needed\n};\n\n// Set the payload property of the existing msg object\nmsg.payload = dataset;\n\n// Return the modified msg object\nreturn msg;\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 200,
+        "y": 160,
+        "wires": [
+            [
+                "{{UNIQUE_ID_FOR_All_CHART_HTTP_RESPONSE}}"
+            ]
+        ]
+    },
+    {
+        "id": "{{UNIQUE_ID_FOR_All_CHART_HTTP_RESPONSE}}",
+        "type": "http response",
+        "z": "{{UNIQUE_ID_FOR_All_CHART_DATA_FLOW}}",
+        "name": "",
+        "statusCode": "",
+        "headers": {},
+        "x": 770,
+        "y": 440,
+        "wires": []
+    },
+    {
+        "id": "{{UNIQUE_ID_FOR_All_CHART_TOKEN_FUNCTION}}",
+        "type": "function",
+        "z": "{{UNIQUE_ID_FOR_All_CHART_DATA_FLOW}}",
+        "name": "Set Token as Global Variable",
+        "func": "global.set(\"token\",msg.req.headers.authorization);\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 160,
+        "y": 100,
+        "wires": [
+            [
+                "{{UNIQUE_ID_FOR_All_CHART_FUNCTION}}"
+            ]
+        ]
+    }

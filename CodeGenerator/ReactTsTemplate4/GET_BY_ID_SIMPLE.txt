@@ -1,0 +1,82 @@
+
+    {
+        "id": "{{UNIQUE_ID_FOR_SUBFLOW_GET_BY_ID_REFER}}",
+        "type": "subflow",
+        "name": "[Reference]GET BY ID {{SWAGGER_SCHEMA_REFERENCE}} SIMPLE",
+        "info": "Used to fetch **Any record** from the reference of\r\n**{{SWAGGER_SCHEMA_NAME}}** Table using **Primary Key ID**.Here reference is {{SWAGGER_SCHEMA_REFERENCE}} table.\r\nThe **Response Record** Will Be Stored in msg Object like **msg._{{SWAGGER_SCHEMA_REFERENCE_OBJECT}}**.\r\n\r\nLIKE If {{SWAGGER_SCHEMA_NAME}} Table has Reference to {{SWAGGER_SCHEMA_REFERENCE}} table then \r\nfetch {{SWAGGER_SCHEMA_REFERENCE}} table record according to ID in {{SWAGGER_SCHEMA_NAME}}\r\nTable.\r\n\r\nFirst function in internal implementation is used to provide reference key value to \r\nAPI to fetch one record from refenrece table like here it is and that value will be stored in\r\nmesage object like this msg._{{SWAGGER_SCHEMA_REFERENCE}}",
+        "category": "{{SWAGGER_SCHEMA_NAME}}",
+        "in": [
+            {
+                "x": 20,
+                "y": 80,
+                "wires": [
+                    {
+                        "id": "{{UNIQUE_ID_FOR_FUNCTION_GET_BY_ID_REFER_1}}"
+                    }
+                ]
+            }
+        ],
+        "out": [
+            {
+                "x": 840,
+                "y": 120,
+                "wires": [
+                    {
+                        "id": "{{UNIQUE_ID_FOR_FUNCTION_GET_BY_ID_REFER_2}}",
+                        "port": 0
+                    }
+                ]
+            }
+        ],
+        "env": []
+    },
+    {
+        "id": "{{UNIQUE_ID_FOR_FUNCTION_GET_BY_ID_REFER_1}}",
+        "type": "function",
+        "z": "{{UNIQUE_ID_FOR_SUBFLOW_GET_BY_ID_REFER}}",
+        "name": "Configure GET BY ID",
+        "func": "\nmsg.headers = {\n    Authorization: global.get(\"token\"),\n};\nmsg.url = '{{SWAGGER_URL}}/{{SWAGGER_SCHEMA_REFERENCE}}/'+msg._{{SWAGGER_SCHEMA_OBJECT}}.{{SWAGGER_SCHEMA_REFERENCE_KEY}};\n\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 180,
+        "y": 80,
+        "wires": [
+            [
+                "{{UNIQUE_ID_FOR_HTTP_GET_BY_ID_REFER}}"
+            ]
+        ]
+    },
+    {
+        "id": "{{UNIQUE_ID_FOR_HTTP_GET_BY_ID_REFER}}",
+        "type": "http request",
+        "z": "{{UNIQUE_ID_FOR_SUBFLOW_GET_BY_ID_REFER}}",
+        "name": "Get {{SWAGGER_SCHEMA_REFERENCE_OBJECT}} By Id",
+        "method": "GET",
+        "ret": "obj",
+        "paytoqs": false,
+        "url": "",
+        "tls": "",
+        "proxy": "",
+        "authType": "",
+        "x": 430,
+        "y": 80,
+        "wires": [
+            [
+                "{{UNIQUE_ID_FOR_FUNCTION_GET_BY_ID_REFER_2}}"
+            ]
+        ]
+    },
+    {
+        "id": "{{UNIQUE_ID_FOR_FUNCTION_GET_BY_ID_REFER_2}}",
+        "type": "function",
+        "z": "{{UNIQUE_ID_FOR_SUBFLOW_GET_BY_ID_REFER}}",
+        "name": "Save the Object to message node",
+        "func": "msg._{{SWAGGER_SCHEMA_REFERENCE_OBJECT}} = msg.payload.document;\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 660,
+        "y": 140,
+        "wires": [
+            []
+        ]
+    }

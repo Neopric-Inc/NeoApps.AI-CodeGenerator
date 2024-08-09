@@ -1,0 +1,16 @@
+import React, { useState, useEffect } from "react";
+import { {modelName}DefaultView } from "./DefaultView";
+
+
+export const {modelName} = (props) => {
+  const config = props.config;
+ //console.log(config.selectedView);
+  switch (config.selectedView) {
+    case "defaultView":
+      return <{modelName}DefaultView {...props} />;
+      break;
+    default:
+      return <{modelName}DefaultView {...props} />;
+      break;
+  }
+};

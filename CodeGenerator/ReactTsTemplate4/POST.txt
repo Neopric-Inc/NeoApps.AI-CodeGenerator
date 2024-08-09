@@ -1,0 +1,71 @@
+
+
+
+    {
+        "id": "{{UNIQUE_ID_FOR_SUBFLOW_POST}}",
+        "type": "subflow",
+        "name": "POST {{SWAGGER_SCHEMA_NAME}}",
+        "info": "Used to Add New Record in **{{SWAGGER_SCHEMA_NAME}}** table.",
+        "category": "{{SWAGGER_SCHEMA_NAME}}",
+        "in": [
+            {
+                "x": 160,
+                "y": 160,
+                "wires": [
+                    {
+                        "id": "{{UNIQUE_ID_FOR_FUNCTION_POST}}"
+                    }
+                ]
+            }
+        ],
+        "out": [
+            {
+                "x": 780,
+                "y": 160,
+                "wires": [
+                    {
+                        "id": "{{UNIQUE_ID_FOR_HTTP_POST}}",
+                        "port": 0
+                    }
+                ]
+            }
+        ],
+        "env": []
+    },
+    {
+        "id": "{{UNIQUE_ID_FOR_FUNCTION_POST}}",
+        "type": "function",
+        "z": "{{UNIQUE_ID_FOR_SUBFLOW_POST}}",
+        "name": "SET VARIABLES",
+        "func": "msg.headers = {\n    Authorization: global.get(\"token\"),\n};\nmsg.url = '{{SWAGGER_URL}}/{{SWAGGER_SCHEMA_NAME}}?page=1&itemsPerPage=100&orderBy=\"\"';\nmsg.payload = msg._{{SWAGGER_SCHEMA_OBJECT}};\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 340,
+        "y": 160,
+        "wires": [
+            [
+                "{{UNIQUE_ID_FOR_HTTP_POST}}"
+            ]
+        ]
+    },
+    {
+        "id": "{{UNIQUE_ID_FOR_HTTP_POST}}",
+        "type": "http request",
+        "z": "{{UNIQUE_ID_FOR_SUBFLOW_POST}}",
+        "name": "POST {{SWAGGER_SCHEMA_NAME}}",
+        "method": "POST",
+        "ret": "obj",
+        "paytoqs": false,
+        "url": "",
+        "tls": "",
+        "proxy": "",
+        "authType": "",
+        "x": 600,
+        "y": 160,
+        "wires": [
+            []
+        ]
+    }
+
+  
+    

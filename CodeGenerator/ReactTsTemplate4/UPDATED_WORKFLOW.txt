@@ -1,0 +1,76 @@
+{
+    "id": "{{UNIQUE_ID_FOR_TAB_UPDATED}}",
+    "type": "tab",
+    "label": "When {{SWAGGER_SCHEMA_NAME}} Updated",
+    "disabled": false,
+    "info": ""
+  },
+  {
+    "id": "{{UNIQUE_ID_FOR_SUBFLOW_UPDATED_TRIGGER}}",
+    "type": "subflow",
+    "name": "UPDATE {{SWAGGER_SCHEMA_NAME}} OPERATION TRIGGER",
+    "info": "## ### **MUST USE AS FIRST NODE**\n**Triggerd** When any **UPDATE** operation is performed on **database**.\n\nWhen call from **console** Application is made to **trigger** the **workflow**\nit is being made using the **URL** that is provided in **HTTP IN**\n**node** and **API** is set to **POST**.\n\nFunction node sets **TOKEN** which is for **Authorization** of **API**\nas **Global** varibale named **\"token\"** and also sets Object of the \nPayload to Message object Like.....\nIf the object came has name **{{SWAGGER_SCHEMA_NAME}}**\nthen it will be stored as **msg._{{SWAGGER_SCHEMA_OBJECT}}**\nin **Message** object...",
+    "category": "{{SWAGGER_SCHEMA_NAME}}",
+    "in": [],
+    "out": [
+      {
+        "x": 720,
+        "y": 140,
+        "wires": [
+          {
+            "id": "{{UNIQUE_ID_FOR_FUNCTION_UPDATED}}",
+            "port": 0
+          }
+        ]
+      }
+    ],
+    "env": []
+  },
+  {
+    "id": "{{UNIQUE_ID_FOR_HTTPIN_UPDATED}}",
+    "type": "http in",
+    "z": "{{UNIQUE_ID_FOR_SUBFLOW_UPDATED_TRIGGER}}",
+    "name": "Update Operation Triggered",
+    "url": "/flow/{{SWAGGER_SCHEMA_NAME}}/updated",
+    "method": "post",
+    "upload": false,
+    "swaggerDoc": "",
+    "x": 210,
+    "y": 140,
+    "wires": [["{{UNIQUE_ID_FOR_FUNCTION_UPDATED}}"]]
+  },
+  {
+    "id": "{{UNIQUE_ID_FOR_FUNCTION_UPDATED}}",
+    "type": "function",
+    "z": "{{UNIQUE_ID_FOR_SUBFLOW_UPDATED_TRIGGER}}",
+    "name": "SET TOKEN TO GLOBAL VARIABLE",
+    "func": "msg._{{SWAGGER_SCHEMA_OBJECT}} = msg.payload;\nglobal.set(\"token\",msg.req.headers.authorization);\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 490,
+    "y": 140,
+    "wires": [[]]
+  },
+  {
+    "id": "{{UNIQUE_ID_FOR_SUBFLOW_INSTANCE_UPDATED}}",
+    "type": "subflow:{{UNIQUE_ID_FOR_SUBFLOW_UPDATED_TRIGGER}}",
+    "z": "{{UNIQUE_ID_FOR_TAB_UPDATED}}",
+    "name": "",
+    "x": 140,
+    "y": 240,
+    "wires": [["{{UNIQUE_ID_FOR_DEBUG_UPDATED}}"]]
+  },
+  {
+    "id": "{{UNIQUE_ID_FOR_DEBUG_UPDATED}}",
+    "type": "debug",
+    "z": "{{UNIQUE_ID_FOR_TAB_UPDATED}}",
+    "name": "",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "false",
+    "x": 520,
+    "y": 240,
+    "wires": []
+  }

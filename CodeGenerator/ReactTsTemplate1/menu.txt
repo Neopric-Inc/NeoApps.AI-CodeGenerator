@@ -1,0 +1,8 @@
+﻿export const MenuItems = [
+    { title: 'Dashboard', path: '/dashboard', icon: 'fas fa-fw fa-tachometer-alt', subMenu: [] },
+    { title: 'File Upload', path: '/upload', icon: 'fas fa-fw fa-upload', subMenu: [] },
+    {menuItems}
+    { title: 'Workflows', path: '/workflows', icon: 'fas fa-fw fa-table', subMenu: [] },
+    { title: 'DND UI versions', path: '/dndUI', icon: 'fas fa-fw fa-table', subMenu: [] },
+    { title: 'DND Builder', path: '/dndBuilder/1', icon: 'fas fa-fw fa-tachometer-alt', subMenu: [] },
+]

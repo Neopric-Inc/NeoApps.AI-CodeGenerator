@@ -1,0 +1,504 @@
+import React, { useEffect, useState, useRef } from "react";
+import DataTable from "react-data-table-component";
+import { useSelector } from "react-redux";
+import { RootState } from "redux/reducers";
+import { useAppDispatch } from "redux/store";
+import { reset{modelName}ToInit, set{modelName}Message } from "redux/actions";
+import { blueGrey } from "@mui/material/colors";
+import { Archive as ArchiveIcon } from "components/icons/archive";
+import { DocumentText as DocumentTextIcon } from "components/icons/document-text";
+import { DotsHorizontal as DotsHorizontalIcon } from "components/icons/dots-horizontal";
+import { Download as DownloadIcon } from "components/icons/download";
+import { PencilAlt as PencilAltIcon } from "components/icons/pencil-alt";
+import { Trash as TrashIcon } from "components/icons/trash";
+import {
+  Box,
+  Button,
+  CardMedia,
+  Card,
+  CardHeader,
+  CardContent,
+  Menu,
+  MenuItem,
+  ListItemIcon,
+  CardActions,
+  ListItemText,
+  Tooltip,
+  TextField,
+  InputAdornment,
+  IconButton,
+  Link,
+  Chip,
+  Rating,
+  Grid,
+  Avatar,
+  Divider,
+  Typography,
+} from "@mui/material";
+import { Constant } from "template/Constant";
+import ConfirmationModal from "template/ConfirmationModal";
+import { delete{modelName} } from "services/{tableName}Service";
+import { set{modelName}List } from "redux/actions";
+import { get{modelName} } from "services/{tableName}Service";
+import AddIcon from "@mui/icons-material/Add";
+import RefreshIcon from "@mui/icons-material/Refresh";
+import { DataGrid, GridToolbar } from "@mui/x-data-grid";
+import numeral from "numeral";
+import { makeStyles } from "@mui/styles";
+import FavoriteIcon from "@mui/icons-material/Favorite";
+import AccountCircleIcon from "@mui/icons-material/AccountCircle";
+import { WidgetPreviewer } from "components/MUI_Theme/WidgetPreviewer";
+import type { FC } from "react";
+import {
+  formatDistanceToNowStrict,
+  parse,
+  subHours,
+  subMinutes,
+} from "date-fns";
+import { styled } from "@mui/material/styles";
+import { useRowSelector } from "Dnd/Dnd Designer/Utility/constants";
+import { format, subSeconds } from "date-fns";
+const now = new Date();
+type Props = {
+  hideShowForm: (action: string) => void;
+  handleRowEdit: (row: any) => void;
+  getData: (page: number, pageSize: number, searchKey: string) => void;
+  config: any;
+  openLink: any;
+  columnDefinitions: any[];
+};
+const BlogPostCardMediaWrapper = styled("div")({
+  paddingTop: "calc(100% * 4 / 4)",
+  position: "relative",
+});
+
+export const {modelName}Table: React.FC<Props> = ({
+  hideShowForm,
+  handleRowEdit,
+  getData,
+  columnDefinitions,
+  config,
+  openLink,
+}) => {
+  const dispatch = useAppDispatch();
+  const [search, setSearch] = useState("");
+  const [showDelete, setShowDelete] = useState(false);
+  const [rowData, setRowData] = useState<any>(undefined);
+  const rData = useSelector((state: RootState) => state.{tableName});
+  const {modelName}Data = useSelector((state: RootState) => state.{tableName});
+  const moreRef = useRef<HTMLButtonElement | null>(null);
+  const [openMenu, setOpenMenu] = useState<boolean>(false);
+
+  const handleMenuOpen = (): void => {
+    setOpenMenu(true);
+  };
+
+  const handleMenuClose = (): void => {
+    setOpenMenu(false);
+  };
+
+  useEffect(() => {
+    if ({modelName}Data && {modelName}Data.list && {modelName}Data.list.length === 0) {
+      dispatch(reset{modelName}ToInit());
+      get{modelName}(
+        Constant.defaultPageNumber,
+        Constant.defaultDropdownPageSize,
+        ""
+      ).then((response) => {
+        if (response && response.records) {
+          dispatch(
+            set{modelName}List({
+              pageNo: Constant.defaultPageNumber,
+              pageSize: Constant.defaultDropdownPageSize,
+              list: response.records,
+              totalCount: response.total_count,
+              searchKey: "",
+            })
+          );
+        } else {
+          dispatch(set{modelName}Message(`No Record Found For {modelName}`));
+        }
+      });
+    }
+  }, [{modelName}Data.list.length]);
+
+  const handleSearch = () => {
+    if (search.length > 0) {
+      getData(Constant.defaultPageNumber, Constant.defaultPageSize, search);
+    }
+  };
+
+  const handlePerRowsChange = async (newPerPage: number, page: number) => {
+    await getData(page, newPerPage, "");
+  };
+
+  const handlePageChange = (page: number) => {
+    getData(page, rData.pageSize, "");
+  };
+
+  const handleRowDeleteClick = (row: any) => {
+    setRowData(row);
+    setShowDelete(true);
+  };
+
+  useEffect(() => {
+    if (rData && rData.list && rData.list.length === 0) {
+      dispatch(reset{modelName}ToInit());
+      getData(Constant.defaultPageNumber, Constant.defaultPageSize, "");
+    }
+  }, [rData.list.length]);
+
+  const handleReset = () => {
+    setSearch("");
+    dispatch(reset{modelName}ToInit());
+    getData(Constant.defaultPageNumber, rData.pageSize, "");
+  };
+
+  const handleServerDelete = async () => {
+    if (rowData) {
+      const response = await delete{modelName}(rowData.user_id);
+      if (response) {
+        dispatch(reset{modelName}ToInit());
+        dispatch(set{modelName}Message("Deleted Successfully"));
+        getData(Constant.defaultPageNumber, Constant.defaultPageSize, "");
+        setShowDelete(false);
+      } else {
+        dispatch(set{modelName}Message("Some error occurred!"));
+      }
+    }
+  };
+
+  const handleRowSelection = (row: any) => {
+   //console.log(row); // Row Selection Functionality can be written here
+  };
+
+  const handleAddButtonClick = () => {
+    dispatch(set{modelName}Message(""));
+    hideShowForm("add");
+  };
+
+  const columns = [
+    ...columnDefinitions,
+    {
+      field: "edit",
+      headerName: "",
+      sortable: false,
+      width: 100,
+      renderCell: (params) => (
+        <Button
+          variant="contained"
+          size="small"
+          onClick={() => handleRowEdit(params.row)}
+        >
+          Edit
+        </Button>
+      ),
+      hide:
+        config["edit_button_visible1"] !== undefined
+          ? !config["edit_button_visible1"]
+          : false,
+    },
+    {
+      field: "delete",
+      headerName: "",
+      sortable: false,
+      width: 100,
+      renderCell: (params) => (
+        <Button
+          variant="contained"
+          color="secondary"
+          size="small"
+          onClick={() => handleRowDeleteClick(params.row)}
+        >
+          Delete
+        </Button>
+      ),
+      hide:
+        config["delete_button_visible1"] !== undefined
+          ? !config["delete_button_visible1"]
+          : false,
+    },
+  ];
+  const handleButtonClick = (params, passValue, type) => {};
+  if (config["nav_count"] !== undefined) {
+    for (let i = 0; i < config.nav_count; i++) {
+      if (config[`nav_${i}_button_name`] === undefined) continue;
+      const buttonName = config[`nav_${i}_button_name`];
+      const passValue = config[`nav_${i}_pass_value`];
+      const column = config[`nav_${i}_column`];
+      const type = config[`nav_${i}_type`];
+      const newButtonColumn = {
+        field: buttonName,
+        headerName: "",
+        sortable: false,
+        width: 100,
+        renderCell: (params) => (
+          <Button
+            style={{
+              whiteSpace: "normal", // Allows the text to wrap
+              wordWrap: "break-word", // Ensures long words are broken and wrapped
+            }}
+            variant="contained"
+            color="primary"
+            size="small"
+            onClick={() => {
+              // handleButtonClick(
+              //   params.row,
+              //   passValue ? params.row[column] : null,
+              //   type
+              // )
+              if (passValue) {
+                const condition = {
+                  columnName: column,
+                  columnCondition: 1,
+                  columnValue: params.row[column].toString(),
+                };
+                openLink(config[`nav_${i}_page`], condition);
+              } else {
+                openLink(config[`nav_${i}_page`]);
+              }
+            }}
+          >
+            {buttonName}
+          </Button>
+        ),
+      };
+
+      columns.push(newButtonColumn);
+    }
+  }
+  const GetSrcData = (a, b, c, d) => {
+    return useRowSelector(a, b, c, d);
+  };
+  const filteredColumns = columns; //.filter((column) => column.visible);
+
+  return (
+    <>
+      <Card className="shadow mb-4">
+        <CardHeader
+          style={{
+            backgroundColor:
+              config["tableHeadBackgroundColor"] !== undefined
+                ? config["tableHeadBackgroundColor"]
+                : "white",
+            color:
+              config["HeadColor"] !== undefined ? config["HeadColor"] : "black",
+          }}
+          title={
+            <div>
+              <span>
+                {config["tableHeading"] !== undefined
+                  ? config["tableHeading"]
+                  : "{modelName} List"}{" "}
+                ({rData.list.length})
+              </span>
+              <IconButton onClick={handleReset}>
+                <RefreshIcon
+                  style={{
+                    color:
+                      config["HeadColor"] !== undefined
+                        ? config["HeadColor"]
+                        : "black",
+                  }}
+                />
+              </IconButton>
+            </div>
+          }
+          action={
+            <>
+              {(config[`add_new_button_visible1`] ||
+                config[`add_new_button_visible1`] === undefined) && (
+                <Button
+                  className="btn-icon-split float-right"
+                  onClick={handleAddButtonClick}
+                  variant="contained"
+                  endIcon={<AddIcon />}
+                >
+                  {config[`add_new_button_new_name1`] !== undefined
+                    ? config[`add_new_button_new_name1`]
+                    : "Add New"}
+                </Button>
+              )}
+            </>
+          }
+        />
+        <CardContent>
+          <Grid container spacing={2} justifyContent="flex-end">
+            <Grid item xs={12} md={3}>
+              {(config[`search_button_visible1`] ||
+                config[`search_button_visible1`] === undefined) && (
+                <TextField
+                  placeholder="Search"
+                  variant="outlined"
+                  fullWidth
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <Button
+                          disabled={search.length <= 2}
+                          variant="contained"
+                          onClick={handleSearch}
+                        >
+                          Search
+                        </Button>
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+              )}
+            </Grid>
+          </Grid>
+          <Box mt={2}>
+            <div style={{ height: 400, width: "100%" }}>
+              <Box
+                sx={{
+                  backgroundColor: "background.default",
+                  minHeight: "100%",
+                  p: 3,
+                }}
+              >
+                <Grid container spacing={3}>
+                  {rData.list.map((file, index) => (
+                    <Grid item key={file[0] + index} md={4} xs={12}>
+                      <Card>
+                        <Box sx={{ p: 2 }}>
+                          <CardMedia
+                            image={GetSrcData(
+                              "file",
+                              file[config["cover_ref_gv1_column"]],
+                              "image",
+                              config[
+                                config["cover_ref_gv1_column"] + "_bucket_name"
+                              ]
+                            )}
+                            sx={{
+                              backgroundColor: "background.default",
+                              height: 200,
+                            }}
+                          />
+                          <Box
+                            sx={{
+                              alignItems: "center",
+                              display: "flex",
+                              mt: 2,
+                            }}
+                          >
+                            <Avatar
+                              src={GetSrcData(
+                                "file",
+                                file[config["avatar_ref_gv1_column"]],
+                                "image",
+                                config[
+                                  config["avatar_ref_gv1_column"] +
+                                    "_bucket_name"
+                                ]
+                              )}
+                            />
+                            <Box sx={{ ml: 2 }}>
+                              <Link color="textPrimary" variant="h6">
+                                {file[config["username_ref_gv1_column"]]}
+                              </Link>
+                              <Typography color="textSecondary" variant="body2">
+                                by{" "}
+                                <Link color="textPrimary" variant="subtitle2">
+                                  {file[config["username_ref_gv1_column"]]}
+                                </Link>{" "}
+                                | Updated{" "}
+                                {formatDistanceToNowStrict(
+                                  new Date(file[config["updatedAt_ref_gv1_column"]])
+                                )}{" "}
+                                ago
+                              </Typography>
+                            </Box>
+                          </Box>
+                        </Box>
+                        <Box
+                          sx={{
+                            pb: 2,
+                            px: 3,
+                          }}
+                        >
+                          <Typography color="textSecondary" variant="body2">
+                            {file[config["profile_url_ref_gv1_column"]]}
+                          </Typography>
+                        </Box>
+                        <Box
+                          sx={{
+                            px: 3,
+                            py: 2,
+                          }}
+                        >
+                          <Grid
+                            alignItems="center"
+                            container
+                            justifyContent="space-between"
+                            spacing={3}
+                          >
+                            <Grid item>
+                              <Typography color="textSecondary" variant="body2">
+                                Budget
+                              </Typography>
+                            </Grid>
+                            <Grid item></Grid>
+                            <Grid item>
+                              <Typography variant="subtitle2">
+                                {file[config["username_ref_gv1_column"]]}
+                              </Typography>
+                              <Typography color="textSecondary" variant="body2">
+                                Type
+                              </Typography>
+                            </Grid>
+                          </Grid>
+                        </Box>
+                        <Divider />
+                        <Box
+                          sx={{
+                            alignItems: "center",
+                            display: "flex",
+                            pl: 2,
+                            pr: 3,
+                            py: 2,
+                          }}
+                        >
+                          <Box
+                            sx={{
+                              alignItems: "center",
+                              display: "flex",
+                              ml: 2,
+                            }}
+                          >
+                            <AccountCircleIcon fontSize="small" />
+                            <Typography
+                              color="textSecondary"
+                              sx={{ ml: 1 }}
+                              variant="subtitle2"
+                            >
+                              {file[config["follower_count_ref_gv1_column"]]}
+                            </Typography>
+                          </Box>
+                          <Box sx={{ flexGrow: 1 }} />
+                          <Rating readOnly size="small" value={5} />
+                        </Box>
+                      </Card>
+                    </Grid>
+                  ))}
+                </Grid>
+              </Box>
+            </div>
+          </Box>
+        </CardContent>
+        <ConfirmationModal
+          buttonNegative="Cancel"
+          buttonPositive="Delete"
+          title="Delete Confirmation"
+          show={showDelete}
+          body="Are you sure?"
+          onNegative={() => setShowDelete(false)}
+          onPositive={handleServerDelete}
+        />
+      </Card>
+    </>
+  );
+};

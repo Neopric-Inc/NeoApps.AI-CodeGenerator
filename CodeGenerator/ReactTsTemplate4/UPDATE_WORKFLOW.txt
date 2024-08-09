@@ -1,0 +1,47 @@
+{
+    "id": "{{UNIQUE_ID_FOR_TAB_UPDATED}}",
+    "type": "tab",
+    "label": "When {{SWAGGER_SCHEMA_NAME}} Updated",
+    "disabled": false,
+    "info": ""
+  },
+{
+    "id": "{{UNIQUE_ID_FOR_HTTP_IN_POST_UPDATED}}",
+    "type": "http in",
+    "z": "{{UNIQUE_ID_FOR_TAB_UPDATED}}",
+    "name": "Update Operation Triggered",
+    "url": "/flows/{{SWAGGER_SCHEMA_NAME}}/updated",
+    "method": "post",
+    "upload": false,
+    "swaggerDoc": "",
+    "x": 140,
+    "y": 100,
+    "wires": [["{{UNIQUE_ID_FOR_FUNCTION_UPDATED}}"]]
+  },
+  {
+    "id": "{{UNIQUE_ID_FOR_FUNCTION_UPDATED}}",
+    "type": "function",
+    "z": "{{UNIQUE_ID_FOR_TAB_UPDATED}}",
+    "name": "",
+    "func": "global.set(\"token\",\"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1bmlxdWVfbmFtZSI6WyJhZG1pbiIsIkN1c3RvbU9iamVjdENhbkJlQWRkZWRIZXJlIl0sIm5iZiI6MTY4ODY2ODgyNywiZXhwIjoxNjg5MjczNjI3LCJpYXQiOjE2ODg2Njg4Mjd9.JR2jV8HRHORajUlsZupjyfqNXSrFaqBEQqc87kcrQag\");\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 360,
+    "y": 100,
+    "wires": [["{{UNIQUE_ID_FOR_DEBUG_UPDATED}}"]]
+  },
+  {
+    "id": "{{UNIQUE_ID_FOR_DEBUG_UPDATED}}",
+    "type": "debug",
+    "z": "{{UNIQUE_ID_FOR_TAB_UPDATED}}",
+    "name": "debug 2",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "true",
+    "targetType": "full",
+    "x": 540,
+    "y": 100,
+    "wires": []
+  }

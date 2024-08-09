@@ -1,0 +1,1393 @@
+import React, { useEffect, useState } from "react";
+import shortid from "shortid";
+import GridViewIcon from '@mui/icons-material/GridView';
+import ApiIcon from '@mui/icons-material/Api';
+import GridOnIcon from '@mui/icons-material/GridOn';
+import ListIcon from '@mui/icons-material/List';
+import CropSquareIcon from '@mui/icons-material/CropSquare';
+import FormatColorTextIcon from '@mui/icons-material/FormatColorText';
+import BadgeIcon from '@mui/icons-material/Badge';
+import EmailIcon from '@mui/icons-material/Email';
+import PhoneIcon from '@mui/icons-material/Phone';
+import ImageIcon from '@mui/icons-material/Image';
+import TitleIcon from '@mui/icons-material/Title';
+import AddCardIcon from '@mui/icons-material/AddCard';
+import {Card} from 'Dnd/Draggable Components/Previous_Components/CustomComponents/Card/card'
+import Heading from 'Dnd/Draggable Components/Previous_Components/CustomComponents/Heading/heading';
+import { GetDataUrl } from "services/fileUploadService";
+import DataGridlist from "Dnd/Draggable Components/Previous_Components/CustomComponents/GridList/DataGrid"
+import NestedList from 'Dnd/Draggable Components/Previous_Components/CustomComponents/List/List';
+import CustomButton from "Dnd/Draggable Components/Previous_Components/CustomComponents/Button";
+import TabsView from "Dnd/Draggable Components/Previous_Components/CustomComponents/Tabs";
+import CustomTextField from 'Dnd/Draggable Components/Previous_Components/CustomComponents/TextField/TextField';
+import Grid from 'Dnd/Draggable Components/Previous_Components/SyncFusionComponents/Grid'
+import { DropDownList } from "Dnd/Draggable Components/Previous_Components/CustomComponents/DropDownList";
+import MenuBar from 'Dnd/Draggable Components/Previous_Components/CustomComponents/MenuBar';
+{importComponents}
+// import NavBar from '../../Draggable Components/Previous_Components/CustomComponents/Canvas/Navbar';
+// import SideBar from '../../Draggable Components/Previous_Components/CustomComponents/Canvas/Sidebar';
+import { ChartIndex } from "Dnd/Draggable Components/Previous_Components/CustomComponents/charts/chartIndex";
+import QRCode from "react-qr-code";
+import Barcode from "react-barcode";
+
+
+export const SIDEBAR_ITEM = "sidebarItem";
+export const ROW = "row";
+export const COLUMN = "column";
+export const COMPONENT = "component";
+export const SIDEBAR_ITEM_CRUD = "sidebarItemCRUD";
+
+export const getColumnNameList = (slices) => {
+  return Configurations[slices[0].toUpperCase() + slices.slice(1)]["row"][
+    "columns-list"
+  ];
+};
+export const getRefSlice = (slices, columnName) => {
+ //console.log(columnName);
+  if (slices !== undefined) {
+    const temp = Configurations[slices[0].toUpperCase() + slices.slice(1)][
+      "columns"
+    ]["columns-list"].find((column) => column.name === columnName);
+    return temp?.slice;
+  }
+  return false;
+};
+export const getGridListData = [
+  "1",
+  "2",
+  "3",
+  "4",
+  "5",
+  "6",
+  "7",
+  "8",
+  "9",
+  "10",
+  "11",
+  "12",
+];
+
+export const getNavNameList = () => {
+  return ["page redirect", "popup", "slide in drawer", "components Pages"];
+};
+
+export const displayControlList = {
+  file: ["image", "audio", "video", "pdf"],
+  url: [
+    "image",
+    "audio",
+    "video",
+    "Object(ex.pdf)",
+    "webpages",
+    "Embed audio",
+    "Embed video",
+    "QR code",
+    "Barcode",
+  ],
+  signature: ["image"],
+  code: ["QR code", "Barcode"],
+};
+
+export const getGridList = (name) => {
+  switch (name) {
+    case "tableView1":
+      return [
+        "ID Sortable",
+        "ID",
+        "Name",
+        "Email",
+        "SimpleView",
+        "SimpleText",
+        "Status",
+        "Currency",
+        "Date Time",
+        "Date",
+      ];
+      break;
+    case "tableView2":
+      return [
+        "Avatar",
+        "ID",
+        "ID Sortable",
+        "Name",
+        "Email",
+        "SimpleView",
+        "SimpleText",
+        "Currency",
+        "Date Time",
+        "Date",
+      ];
+      break;
+    case "tableView3":
+      return [
+        "ID",
+        "Name",
+        "Email",
+        "SimpleView",
+        "SimpleText",
+        "Currency",
+        "Status",
+        "Date Time",
+        "Date",
+        "Location",
+      ];
+      break;
+    case "tableView4":
+      return [
+        "ID",
+        "Date Time",
+        "Name",
+        "Email",
+        "SimpleView",
+        "SimpleText",
+        "Date",
+        "Status",
+        "Currency",
+        "",
+      ];
+      break;
+    case "tableView5":
+      return [
+        "Image",
+        "ID",
+        "SimpleView",
+        "SimpleText",
+        "Currency",
+        "Status",
+        "Date Time",
+        "Date",
+      ];
+      break;
+    case "tableView6":
+      return [
+        "Name",
+        "Email",
+        "SimpleView",
+        "SimpleText",
+        "Currency",
+        "Status",
+        "Date Time",
+        "Date",
+      ];
+      break;
+    case "tableView7":
+      return [
+        "SimpleView",
+        "SimpleText",
+        "Number-formatted",
+        "Date Time",
+        "Date",
+      ];
+      break;
+    case "tableView8":
+      return [
+        "Name",
+        "SimpleView",
+        "SimpleText",
+        "Number-formatted",
+        "Date Time",
+        "Date",
+      ];
+      break;
+    case "tableView9":
+      return [
+        "Name",
+        "Status",
+        "SimpleView",
+        "SimpleText",
+        "Number-formatted",
+        "Date Time",
+        "Date",
+      ];
+      break;
+    case "tableView10":
+      return [
+        "Name",
+        "Status",
+        "SimpleView",
+        "SimpleText",
+        "Number-formatted",
+        "Date Time",
+        "Date",
+      ];
+      break;
+    case "tableView11":
+      return [
+        "ID",
+        "Name",
+        "Status",
+        "SimpleView",
+        "SimpleText",
+        "Number-formatted",
+        "Date Time",
+        "Date",
+      ];
+      break;
+    case "gridView1":
+      return [
+        "avtar",
+        "name",
+        "category",
+        "cover",
+        "publishedAt",
+        "readTime",
+        "shortDescription",
+        "title",
+      ];
+      break;
+    case "gridView2":
+      return [
+        "avatar",
+        "username",
+        "cover",
+        "profile_url",
+        "follower_count",
+        "updatedAt",
+      ];
+      break;
+    case "gridView3":
+      return ["mimeType", "name", "size", "url"];
+      break;
+    case "gridView4":
+      return ["avatar", "username", "cover", "profile_url", "platform"];
+      break;
+    case "gridView5":
+      return ["avatar", "name", "createdAt", "likes", "media", "message"];
+      break;
+    case "gridView6":
+      return ["avatar", "username", "follower_count", "email"];
+      break;
+
+    case "groupList1":
+      return ["customerAvatar", "customerName", "description", "createdAt"];
+      break;
+
+    case "groupList2":
+      return ["username", "email", "profile_url"];
+      break;
+    case "groupList3":
+      return ["title"];
+      break;
+
+    case "groupList4":
+      return ["value", "type", "message"];
+      break;
+    case "groupList5":
+      return ["image", "name", "sales", "profit", "currency", "conversionRate"];
+
+      break;
+
+    case "groupList6":
+      return ["date", "sender", "type", "amount", "currency"];
+      break;
+
+    case "groupList7":
+      return ["username", "email", "avatar", "date"];
+      break;
+    case "groupList8":
+      return ["avatar", "name", "job"];
+      break;
+    case "groupList9":
+      return ["avatar", "rating", "media_url", "text", "date"];
+      break;
+    case "groupList10":
+      return ["avatar", "subject", "description", "createdAt"];
+      break;
+    case "groupList11":
+      return [
+        "campaign_name",
+        "campaign_description",
+        "start_date",
+        "campaign_status",
+        "influencer_name",
+        "end_date",
+      ];
+      break;
+    case "detailList1":
+      return ["impressions", "likes", "comments", "shares"];
+      break;
+    case "detailList2":
+      return [
+        "email",
+        "username",
+        "password",
+        "city",
+        "address",
+        "address1",
+        "address2",
+      ];
+      break;
+    case "detailList3":
+      return ["profile_url", "username", "platform", "created_by"];
+      break;
+    case "detailList6":
+      return ["media_url", "schedule_date_time", "text"];
+      break;
+    case "detailList7":
+      return [
+        "username",
+        "campaign_name",
+        "campaign_description",
+        "start_date",
+        "end_date",
+      ];
+      break;
+    case "Calendar":
+      return [
+        "eventid",
+        "title",
+        "description",
+        "recurrenceFrequency",
+        "allDay",
+        "start_date",
+        "end_date",
+        "location",
+      ];
+      break;
+          case "Kanban":
+      return [
+        "temp_id",
+        "TaskName",
+        "description",
+        "Status",
+      ];
+      break;
+    default:
+      return ["null"];
+      break;
+  }
+};
+
+export const getView = [
+  "defaultView",
+  "Calendar",
+  "Kanban",
+  "gridView1",
+  "gridView2",
+  "gridView3",
+  "gridView4",
+  "gridView5",
+  "gridView6",
+  "groupList1",
+  "groupList2",
+  "groupList3",
+  "groupList4",
+  "groupList5",
+  "groupList6",
+  "groupList7",
+  "groupList8",
+  "groupList9",
+  "groupList10",
+  "groupList11",
+  "detailList1",
+  "detailList2",
+  "detailList3",
+  "detailList4",
+  "detailList5",
+  "detailList6",
+  "detailList7",
+    "tableView1",
+  "tableView2",
+  "tableView3",
+  "tableView4",
+  "tableView6",
+  "tableView7",
+  "tableView8",
+  "tableView9",
+  "tableView10",
+  "tableView11",
+];
+
+
+{viewList}
+
+
+
+
+export const getRowElement = (
+  inputType: string,
+  field: any,
+  display_control?: string,
+  srcData?: string
+) => {
+  if (inputType === "file" || inputType === "signature") {
+    switch (display_control) {
+      case "image":
+        return (
+          <>
+            {srcData ? (
+              <img
+                src={srcData}
+                alt="row content"
+                style={{ width: "100%", height: "100%" }}
+              />
+            ) : (
+              <>
+                <ImageIcon fontSize="small" />
+              </>
+            )}
+          </>
+        );
+
+        break;
+      case "audio":
+        return (
+          <audio controls>
+            <source
+              src={srcData}
+              type="audio/mpeg"
+              style={{ width: "100%", height: "100%" }}
+            />
+            Your browser does not support the audio element.
+          </audio>
+        );
+        break;
+      case "video":
+        return (
+          <video controls>
+            <source
+              src={srcData}
+              type="video/mp4"
+              style={{ width: "100%", height: "100%" }}
+            />
+            Your browser does not support the video tag.
+          </video>
+        );
+        break;
+      case "pdf":
+        return (
+          <iframe src={srcData} style={{ width: "100%", height: "100%" }}>
+            Your browser does not support the iframe tag.
+          </iframe>
+        );
+        break;
+      default:
+        break;
+    }
+  } else if (inputType === "url") {
+    switch (display_control) {
+      case "image":
+        return (
+          <>
+            {field ? (
+              <img
+                src={field}
+                alt="row content"
+                style={{ width: "100%", height: "100%" }}
+              />
+            ) : (
+              <>
+                <ImageIcon fontSize="small" />
+              </>
+            )}
+          </>
+        );
+        break;
+      case "audio":
+        return (
+          <audio controls>
+            <source src={field} type="audio/mpeg" />
+            Your browser does not support the audio element.
+          </audio>
+        );
+        break;
+      case "video":
+        return (
+          <video controls>
+            <source
+              src={field}
+              type="video/mp4"
+              style={{ width: "100%", height: "100%" }}
+            />
+            Your browser does not support the video tag.
+          </video>
+        );
+        break;
+      case "Object(ex.pdf)":
+        return (
+          <object
+            data={field}
+            style={{ width: "100%", height: "100%" }}
+          ></object>
+        );
+        break;
+      case "webpages":
+        return (
+          <iframe
+            src={field}
+            style={{ width: "100%", height: "100%" }}
+          ></iframe>
+        );
+        break;
+      case "Embed audio":
+        return (
+          <embed
+            src={field}
+            type="audio/mpeg"
+            style={{ width: "100%", height: "100%" }}
+          />
+        );
+        break;
+      case "Embed video":
+        return (
+          <embed
+            src={field}
+            type="video/mp4"
+            style={{ width: "100%", height: "100%" }}
+          />
+        );
+        break;
+      case "QR code":
+        return (
+          <QRCode
+            size={256}
+            style={{ height: "100%", maxWidth: "100%", width: "100%" }}
+            value={field}
+            viewBox={`0 0 256 256`}
+          />
+        );
+        break;
+      case "Barcode":
+        return (
+          <div style={{ height: "100%", maxWidth: "100%", width: "100%" }}>
+            <Barcode value={field} />
+          </div>
+        );
+        break;
+      default:
+        break;
+    }
+  } else if (inputType === "rich text editor") {
+    return <div dangerouslySetInnerHTML={{ __html: field }} />;
+  } else if (inputType === "url") {
+    return (
+      <iframe
+        src={field}
+        title="URL Display"
+        width="100%"
+        height="600px"
+        style={{ border: 0 }}
+      >
+        Your browser does not support iframes.
+      </iframe>
+    );
+  } else {
+    if (display_control === "QR code") {
+      return (
+        <QRCode
+          size={256}
+          style={{ height: "100%", maxWidth: "100%", width: "100%" }}
+          value={field}
+          viewBox={`0 0 256 256`}
+        />
+      );
+    } else if (display_control === "Barcode") {
+      return (
+        <div style={{ height: "100%", maxWidth: "100%", width: "100%" }}>
+          <Barcode value={field} />
+        </div>
+      );
+    } else {
+      return field;
+    }
+  }
+};
+
+const dataCache = {};
+
+export function useRowSelector(inputType, field, display_control, bucket_id,bucket_folder) {
+  const [srcData, setSrcData] = useState(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      if (dataCache[field]) {
+        // If the data for this field exists in the cache, use it directly
+        setSrcData(dataCache[field]);
+      } else if (inputType === "file" || inputType === "signature") {
+        try {
+          const formData = new FormData();
+          formData.append("Key", field);
+          formData.append("BucketId", bucket_id);
+          formData.append("folderselected", bucket_folder);
+          const response = await GetDataUrl(formData);
+          const newData = response.data.document;
+          // Cache the fetched data for future use
+          dataCache[field] = newData;
+          setSrcData(newData);
+        } catch {
+         //console.log("Bucket Id or bucket Name may not selected");
+        }
+      }
+    };
+
+    fetchData();
+  }, [inputType, field, bucket_id]);
+
+  return srcData;
+}
+
+
+export const ErrorControlList = {
+  email: "email",
+  text: "text",
+  url: "url",
+  number: { min: "minimum 8 digit is required", max: "maximum limit 20 digit" },
+  password: {
+    min: "minimum length 8 is required",
+    max: "maximum limit 20 character",
+    upperCase: "Must contain 1 uppercase letter",
+    lowerCase: "Must contain 1 lowercase letter",
+  },
+  code: "Only QR code, barcode, or URL",
+};
+
+export const ValidationControl = (value, m1, m2) => {
+  switch (m1) {
+    case "password":
+      switch (m2) {
+        case "max":
+          var regexp = /^.{,20}$/i;
+          let maxvalid = regexp.test(value);
+          return maxvalid
+            ? {
+                isValid: true,
+              }
+            : {
+                isValid: false,
+                errorMessage: ErrorControlList["password"]["max"],
+              };
+          break;
+        case "min":
+          var regexp = /^.{8,}$/i;
+          let minvalid = regexp.test(value);
+          return minvalid
+            ? {
+                isValid: true,
+              }
+            : {
+                isValid: false,
+                errorMessage: ErrorControlList["password"]["min"],
+              };
+          break;
+        case "upperCase":
+          var regexp = /^(?=.*[A-Z])/;
+          let upvalid = regexp.test(value);
+          return upvalid
+            ? {
+                isValid: true,
+              }
+            : {
+                isValid: false,
+                errorMessage: ErrorControlList["password"]["upperCase"],
+              };
+
+          break;
+        case "lowerCase":
+          var regexp = /^(?=.*[a-z])/;
+          let lowvalid = regexp.test(value);
+          return lowvalid
+            ? {
+                isValid: true,
+              }
+            : {
+                isValid: false,
+                errorMessage: ErrorControlList["password"]["min"],
+              };
+          break;
+        default:
+          return {
+            isValid: true,
+          };
+          break;
+      }
+      break;
+    case "number":
+      switch (m2) {
+        case "max":
+          var regexp = /^.{,20}$/i;
+          let maxvalid = regexp.test(value);
+          return maxvalid
+            ? {
+                isValid: true,
+              }
+            : {
+                isValid: false,
+                errorMessage: ErrorControlList["number"]["max"],
+              };
+          break;
+        case "min":
+          var regexp = /^.{8,}$/i;
+          let minvalid = regexp.test(value);
+          return minvalid
+            ? {
+                isValid: true,
+              }
+            : {
+                isValid: false,
+                errorMessage: ErrorControlList["number"]["min"],
+              };
+          break;
+        default:
+          return {
+            isValid: true,
+          };
+          break;
+      }
+      break;
+    case "email":
+      var regexp = /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/g;
+      let emvalid = regexp.test(value);
+      return emvalid
+        ? {
+            isValid: true,
+          }
+        : {
+            isValid: false,
+            errorMessage: m2,
+          };
+      break;
+    case "text":
+      var regexp = /^[^\s]+$/;
+      let maxvalid = regexp.test(value);
+      return maxvalid
+        ? {
+            isValid: true,
+          }
+        : {
+            isValid: false,
+            errorMessage: m2,
+          };
+      break;
+    case "url":
+      var urlRegexp = new RegExp(
+        "^" +
+          // protocol identifier (optional)
+          "(?:(?:https?|ftp)://)" +
+          // user:pass authentication (optional)
+          "(?:\\S+(?::\\S*)?@)?" +
+          "(?:" +
+          // IP address (simple regex, not exact)
+          "\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}|" +
+          // host & domain names, may end with dot
+          // can contain dashes, dots, percent, and unicode characters
+          "(?:[\\p{L}\\p{N}][-\\p{L}\\p{N}\\.]*(?:[\\p{L}\\p{N}]|\\p{L})\\.?|" +
+          // or localhost without domain
+          "localhost" +
+          ")" +
+          // port number (optional)
+          "(?::\\d{2,5})?" +
+          // resource path (optional)
+          "(?:[/?#]\\S*)?" +
+          "$",
+        "iu"
+      );
+      let urlvalid = urlRegexp.test(value);
+      return urlvalid
+        ? {
+            isValid: true,
+          }
+        : {
+            isValid: false,
+            errorMessage: m2,
+          };
+      break;
+    case "code" :
+      let regexpcode = /^[a-zA-Z0-9:/._-]+$/;
+      let codeValid = regexpcode.test(value);
+          return codeValid ?
+          {
+            isValid : true,
+          } :
+          {
+            isValid : false,
+            errorMessage : ErrorControlList["code"],
+          }
+    default:
+      return {
+        isValid: true,
+      };
+      break;
+  }
+};
+
+export interface ISidebar_Items {
+    id: string;
+    type: string;
+    component: {
+        type: string;
+        content: JSX.Element | string | React.FC | any;
+        icon: JSX.Element;
+        component_name?: string;
+        icon_name?: string;
+    },
+}
+
+export const getList = (params: string, fkey?: Boolean) => {
+  if (fkey) {
+    return ["radio", "dropdown"];
+  }
+  if (
+    params === "int" ||
+    params === "decimal" ||
+    params === "bigint" ||
+    params === "double" ||
+    params === "smallint" ||
+    params === "tinyint" ||
+    params === "enum" ||
+    params === "mediumint" ||
+    params === "float" ||
+    params === "binary" ||
+    params === "varbinary" ||
+    params === "boolean"
+  )
+    return ["text"];
+  if (
+    params === "date" ||
+    params === "timestamp" ||
+    params === "datetime" ||
+    params === "time" ||
+    params === "year"
+  )
+    return ["date", "datetime"];
+  if (
+    params === "varchar" ||
+    params === "text" ||
+    params === "char" ||
+    params === "blob" ||
+    params === "tinyblob" ||
+    params === "mediumblob" ||
+    params === "longblob" ||
+    params === "set"
+  )
+    return ["text", "file", "rich text editor", "url","signature","code"];
+};
+export const getType = (params: string, fkey?: boolean): string => {
+  if (fkey) {
+    //return "dropdown";
+    return "text";
+  }
+  if (
+    params === "int" ||
+    params === "decimal" ||
+    params === "bigint" ||
+    params === "double" ||
+    params === "smallint" ||
+    params === "tinyint" ||
+    params === "enum" ||
+    params === "mediumint" ||
+    params === "float" ||
+    params === "binary" ||
+    params === "varbinary" ||
+    params === "boolean" ||
+    params === "varchar" ||
+    params === "text" ||
+    params === "char" ||
+    params === "blob" ||
+    params === "tinyblob" ||
+    params === "mediumblob" ||
+    params === "longblob" ||
+    params === "set"
+  )
+    return "text";
+  if (
+    params === "date" 
+    
+  )
+    return "date";
+  if (
+    params === "timestamp" ||
+    params === "datetime" ||
+    params === "time" ||
+    params === "year"
+  )
+    return "datetime";
+
+  // If none of the conditions match, you may want to handle this case accordingly.
+  return ""; // or throw an error, depending on your use case
+};
+
+export const SIDEBAR_ITEMS: ISidebar_Items[] = [
+	{
+        id: shortid.generate(),
+        type: SIDEBAR_ITEM,
+        component: {
+            type: "Heading",
+            content: <Heading />,
+            icon: < TitleIcon className='dnd sidebarIcon' />,
+            component_name: "Heading",
+            icon_name: "TitleIcon",
+        },
+    },
+       {InterfaceReplacement}
+    /*{
+        id: shortid.generate(),
+        type: SIDEBAR_ITEM,
+        component: {
+            type: "Card",
+            content: <Card />,
+            icon: < AddCardIcon className='dnd sidebarIcon' />,
+            component_name: "Card",
+            icon_name: "AddCardIcon",
+        },
+    },
+    {
+        id: shortid.generate(),
+        type: SIDEBAR_ITEM,
+        component: {
+            type: "SyncFusion GRID",
+            content: Grid,
+            icon: < GridViewIcon className='dnd sidebarIcon' />,
+            component_name: "Grid",
+            icon_name: "GridViewIcon",
+        },
+    },
+    {
+        id: shortid.generate(),
+        type: SIDEBAR_ITEM,
+        component: {
+            type: "GridList",
+            content: < DataGridlist />,
+            icon: < GridOnIcon className='dnd sidebarIcon' />,
+            component_name: "DataGridlist",
+            icon_name: "GridOnIcon",
+        },
+    },
+    {
+        id: shortid.generate(),
+        type: SIDEBAR_ITEM,
+        component: {
+            type: "List",
+            content: <DropDownList />,
+            icon: < ListIcon className='dnd sidebarIcon' />,
+            component_name: "NestedList",
+            icon_name: "ListIcon",
+        },
+    },*/
+    {
+    id: shortid.generate(),
+    type: SIDEBAR_ITEM,
+    component: {
+      type: "BarChart",
+      content: ChartIndex,
+      icon: <CropSquareIcon className="dnd sidebarIcon" />,
+      component_name: "barchart",
+      icon_name: "CropSquareIcon",
+    },
+  },
+    {
+        id: shortid.generate(),
+        type: SIDEBAR_ITEM,
+        component: {
+            type: "Button",
+            content: < CustomButton />,
+            icon: < CropSquareIcon className='dnd sidebarIcon' />,
+            component_name: "CustomButton",
+            icon_name: "CropSquareIcon",
+        },
+    },
+  {
+    id: shortid.generate(),
+    type: SIDEBAR_ITEM,
+    component: {
+      type: "Tabs",
+      content: <TabsView />,
+      icon: <CropSquareIcon className="dnd sidebarIcon" />,
+      component_name: "Tabs",
+      icon_name: "CropSquareIcon",
+    },
+  },
+   /* {
+        id: shortid.generate(),
+        type: SIDEBAR_ITEM,
+        component: {
+            type: "input",
+            content: <CustomTextField />,
+            icon: < FormatColorTextIcon className='dnd sidebarIcon' />,
+            component_name: "CustomTextField",
+            icon_name: "FormatColorTextIcon",
+        },
+    },
+    {
+        id: shortid.generate(),
+        type: SIDEBAR_ITEM,
+        component: {
+            type: "MenuBar",
+            content: <MenuBar />,
+            icon: < FormatColorTextIcon className='dnd sidebarIcon' />,
+            component_name: "MenuBar",
+            icon_name: "FormatColorTextIcon",
+        },
+    },
+    {
+        id: shortid.generate(),
+        type: SIDEBAR_ITEM,
+        component: {
+            type: "name",
+            content: "Some name",
+            icon: < BadgeIcon className='dnd sidebarIcon' />,
+            icon_name: "BadgeIcon",
+        }
+    },
+    {
+        id: shortid.generate(),
+        type: SIDEBAR_ITEM,
+        component: {
+            type: "email",
+            content: "Some email",
+            icon: < EmailIcon className='dnd sidebarIcon' />,
+            icon_name: "EmailIcon",
+        }
+    },
+    {
+        id: shortid.generate(),
+        type: SIDEBAR_ITEM,
+        component: {
+            type: "phone",
+            content: "Some phone",
+            icon: < PhoneIcon className='dnd sidebarIcon' />,
+            icon_name: "PhoneIcon",
+        }
+    },
+    {
+        id: shortid.generate(),
+        type: SIDEBAR_ITEM,
+        component: {
+            type: "image",
+            content: "Some image",
+            icon: < ImageIcon className='dnd sidebarIcon' />,
+            icon_name: "ImageIcon",
+        }
+    }*/
+];
+
+export const functionTOmap = (
+   component,
+  config,
+  openLink?,
+  id?,
+  handleConfigurationChange?,
+  openTabLink?
+) => {
+    ////console.log("component from functionToMap :", component)
+    switch (component) {
+		case "Heading":
+            return <Heading config={config} />;
+            break;
+        case "Card":
+            return <Card config={config} />
+            break;
+        case "SyncFusion GRID":
+            return <Grid />
+            break;
+        {functionTOmap}
+     case "BarChart":
+        return (
+            <ChartIndex
+                config={config}
+                openLink={openLink}
+                id={id}
+                handleConfigurationChange={handleConfigurationChange}
+            />
+        );
+      break;
+    case "Button":
+      return (
+        <CustomButton
+          config={config}
+          openLink={openLink}
+          id={id}
+          handleConfigurationChange={handleConfigurationChange}
+        />
+      );
+      break;
+    case "Tabs":
+      return (
+        <TabsView
+          config={config}
+          openLink={openLink}
+          id={id}
+          handleConfigurationChange={handleConfigurationChange}
+          openTabLink={openTabLink}
+        />
+      );
+      break;
+        case "input":
+            return <CustomTextField config={config} />
+            break;
+        case "MenuBar":
+            return <MenuBar />
+            break;
+        case "GridList":
+            return <DataGridlist />
+            break;
+        case "List":
+            return <DropDownList />
+            // return <NestedList config={config} />
+            break;
+        case "name":
+            return <h3>Some Name</h3>
+            break;
+        case "email":
+            return "Some email"
+            break;
+        case "phone":
+            return "Some phone"
+            break;
+        case "image":
+            return "Some image"
+            break;
+        default:
+            return <p>Cant't find any Component</p>
+    }
+}
+export const mapNametoComponent = {
+    "Grid": Grid,
+    {mapNametoComponent}
+    "DataGridlist": <DataGridlist />,
+    "NestedList": <NestedList />,
+    "CustomButton": <CustomButton />,
+    "TabsView": <TabsView />,
+    "CustomTextFields": <CustomTextField />,
+    "Some name": "Some name",
+    "Some email": "Some email",
+    "Some phone": "Some phone",
+    "Some image": "Some image"
+}
+
+export const SyncFusion_Component_List = ["SyncFusion GRID"];
+export const MUI_Component_List = ["DataGridlist", "NestedList", "CustomButton", "CustomTextFields"];
+
+export const Configurations = {
+BarChart : {
+    Heading : {
+      "input-type" : "text",
+    },
+    content:{
+      "input-type" : "chart",
+    }
+  },
+    Tabs: {
+    Heading: {
+      "input-type": "text",
+    },
+    navConfig: {
+      "input-type": "tab-nav",
+      "nav-list": getNavNameList(),
+    },
+  },
+  Button: {
+    navConfig: {
+      "input-type": "button-nav",
+      "nav-list": getNavNameList(),
+    },
+  },
+    "input": {
+        "innerContent": {
+            "input-type": "text"
+        },
+    },
+    Heading: {
+    innerContent: {
+      "input-type": "text",
+    },
+    headerSize: {
+      "input-type": "list",
+      options: ["h1", "h2", "h3", "h4", "h5", "h6"],
+    },
+    backgroundColor: {
+      "input-type": "heading-color",
+      options: [
+        "black",
+        "gray",
+        "white",
+        "Tomato",
+        "DodgerBlue",
+        "MediumSeaGreen",
+        "LightGray",
+      ],
+    },
+    color: {
+      "input-type": "heading-color",
+      options: ["black", "white", "gray"],
+    },
+    fontFamily: {
+      "input-type": "list",
+      options: [
+        "Arial",
+        "Helvetica",
+        "Verdana",
+        "Georgia",
+        "Courier New",
+        "cursive",
+      ],
+    },
+  },
+     GlobalConfig: {
+innerContent: {
+      "input-type": "text",
+    },
+    backgroundColor: {
+      "input-type": "global-configuration",
+      options: [
+        "black",
+        "gray",
+        "white",
+        "Tomato",
+        "DodgerBlue",
+        "MediumSeaGreen",
+        "LightGray",
+      ],
+    },
+    SidebarBackgroundColor: {
+      "input-type": "global-configuration",
+      options: [
+        "black",
+        "gray",
+        "white",
+        "Tomato",
+        "DodgerBlue",
+        "MediumSeaGreen",
+        "LightGray",
+      ],
+    },
+    SidebarMenuTextColor: {
+      "input-type": "global-configuration",
+      options: [
+        "black",
+        "gray",
+        "white",
+        "Tomato",
+        "DodgerBlue",
+        "MediumSeaGreen",
+        "LightGray",
+      ],
+    },
+    SidebarMenuTextBackgroundColor: {
+      "input-type": "global-configuration",
+      options: [
+        "black",
+        "gray",
+        "white",
+        "Tomato",
+        "DodgerBlue",
+        "MediumSeaGreen",
+        "LightGray",
+      ],
+    },
+    SidebarSubMenuTextColor: {
+      "input-type": "global-configuration",
+      options: [
+        "black",
+        "gray",
+        "white",
+        "Tomato",
+        "DodgerBlue",
+        "MediumSeaGreen",
+        "LightGray",
+      ],
+    },
+    SidebarSubMenuTextBackgroundColor: {
+      "input-type": "global-configuration",
+      options: [
+        "black",
+        "gray",
+        "white",
+        "Tomato",
+        "DodgerBlue",
+        "MediumSeaGreen",
+        "LightGray",
+      ],
+    },
+  },
+
+    "List": {
+        "primaryKeyList": {
+            "input-type": "list",
+            "options": ["backend_stack_id", "backend_stack_name", "createdBy", "modifiedBy", "createdAt", "modifiedAt", "isActive"]
+        },
+        "secondaryKeyList": {
+            "input-type": "list",
+            "options": ["backend_stack_id", "backend_stack_name", "createdBy", "modifiedBy", "createdAt", "modifiedAt", "isActive"]
+        },
+        "functionName": {
+            "input-type": "list",
+            "options": ["getAllBackend_Stacks", "getOneBackend_Stacks", "searchBackend_Stacks", "addBackend_Stacks", "updateBackend_Stacks", "deleteBackend_Stacks"]
+        },
+    },
+    "SyncFusion GRID": {
+        "primaryKeyList": {
+            "input-type": "list",
+            "options": ["backend_stack_id", "backend_stack_name", "createdBy", "modifiedBy", "createdAt", "modifiedAt", "isActive"]
+        },
+        "modelName": {
+            "input-type": "list",
+            "options": ["", "Backend_Stacks"]
+        },
+        "tableName": {
+            "input-type": "list",
+            "options": ["", "backend_stacks"]
+        },
+        "functionName": {
+            "input-type": "list",
+            "options": ["getAllBackend_Stacks", "getOneBackend_Stacks", "searchBackend_Stacks", "addBackend_Stacks", "updateBackend_Stacks", "deleteBackend_Stacks"]
+        },
+    },
+    "Card": {
+        "header": {
+            "input-type": "text"
+        },
+        "content": {
+            "input-type": "text"
+        }
+    },
+    {columnConfig}
+
+}
+
+
+// "SyncFusion GRID": {
+//     "heading": {
+//         "input-type": "text"
+//     },
+//     "primaryKeyList": {
+//         "input-type": "list",
+//         "options": ["backend_stack_id", "backend_stack_name", "createdBy", "modifiedBy", "isActive"]
+//     },
+//     "modelName": {
+//         "input-type": "list",
+//         "options": ["Backend_Stacks", "Branches", "Project", "User"]
+//     },
+//     "componentName": {
+//         "input-type": "text"
+//     }
+// }
+
+// {
+//     id: shortid.generate(),
+//     type: SIDEBAR_ITEM,
+//     component: {
+//         type: "NavBar",
+//         content: NavBar,
+//         icon: < ApiIcon className='dnd sidebarIcon' />,
+//         component_name: "NavBar",
+//         icon_name: "ApiIcon",
+//     },
+// },
+// {
+//     id: shortid.generate(),
+//     type: SIDEBAR_ITEM,
+//     component: {
+//         type: "SideBar",
+//         content: SideBar,
+//         icon: < ApiIcon className='dnd sidebarIcon' />,
+//         component_name: "SideBar",
+//         icon_name: "ApiIcon",
+//     },
+// },
+
+// case "NavBar":
+//     return <NavBar />
+//     break;
+// case "SideBar":
+//     return <SideBar />
+//     break;

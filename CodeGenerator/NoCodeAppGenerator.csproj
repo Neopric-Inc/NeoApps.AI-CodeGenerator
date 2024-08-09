@@ -1,0 +1,40 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp6.0</TargetFramework>
+	<GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="DotNetMySQLTemplate\**" />
+    <Compile Remove="ReactTsTemplate\**" />
+    <EmbeddedResource Remove="DotNetMySQLTemplate\**" />
+    <EmbeddedResource Remove="ReactTsTemplate\**" />
+    <None Remove="DotNetMySQLTemplate\**" />
+    <None Remove="ReactTsTemplate\**" />
+  </ItemGroup>
+
+
+  <ItemGroup>
+    <PackageReference Include="AWSSDK.S3" Version="3.7.103.8" />
+    <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
+    <PackageReference Include="Docker.DotNet" Version="3.125.10" />
+    <PackageReference Include="envdte" Version="17.4.33103.184" />
+    <PackageReference Include="MySql.Data" Version="8.0.31" />
+    <PackageReference Include="MySqlConnector" Version="2.2.2" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="RabbitMQ.Client" Version="6.5.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>

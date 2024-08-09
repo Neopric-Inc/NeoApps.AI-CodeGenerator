@@ -1,0 +1,277 @@
+import { useFormik, Formik, Field, FieldArray } from "formik";
+import React, { useEffect, useState } from "react";
+import { Form } from "react-bootstrap";
+import { useSelector } from "react-redux";
+import { format } from "date-fns";
+import { RootState } from "redux/reducers";
+import { uploadFileService } from "services/fileUploadService";
+import { AddCircle, RemoveCircle } from "@mui/icons-material";
+import moment from 'moment';
+import {
+  reset{modelName}ToInit,
+  set{modelName}List,
+  set{modelName}Message,
+} from "redux/actions";
+{importFKRedux}
+{importFKService}
+import SignatureDialog from "components/icons/signatureDialog";
+import { useAppDispatch } from "redux/store";
+import ReactQuill from "react-quill";
+import "react-quill/dist/quill.snow.css";
+import {
+  addTransactional{modelName},
+  update{modelName},
+  get{modelName},
+} from "services/{tableName}Service";
+import { Constant } from "template/Constant";
+import { ValidationControl } from "Dnd/Dnd Designer/Utility/constants";
+import {   
+  Card,
+  CardHeader,
+  CardContent,
+  Button,
+  Typography,
+  Box,
+  ListItem,
+  ListItemText,
+  InputLabel,
+  Grid,Tooltip,
+  TextField,
+  TextareaAutosize,Radio,FormControl,FormControlLabel, } from "@mui/material";
+import CircularProgress from "@mui/material/CircularProgress";
+import CloudUploadIcon from "@mui/icons-material/CloudUpload";
+import CloseIcon from "@mui/icons-material/Close";
+import IconButton from "@mui/material/IconButton";
+import { makeStyles } from "@mui/styles";
+import { styled } from "@mui/material/styles";
+import * as yup from "yup";
+type Props = {
+  row?: any;
+  hideShowForm: (actionName) => void;
+  getData: (page, pageSize, searchKey) => void;
+  action?: string;
+  config;
+};
+export const {modelName}Form: React.FC<Props> = ({
+  row,
+  hideShowForm,
+  getData,
+  action,
+  config,
+}) => {
+  const dispatch = useAppDispatch();
+  const iValue={{ColumnListWithValue}};
+
+  const initialValue = action === "edit" ? row : iValue;
+  const {tableName}Data = useSelector(
+    (state: RootState) => state.{tableName}
+  );
+  const [isLoading, setIsLoading] = useState("");
+  const [isSaving, setisSaving] = useState(false);
+  const [uniquekey, setuniquekey] = useState(Date.now());
+  const [openSignatureDialog, setOpenSignatureDialog] = useState(false);
+
+ 
+
+  const handleOpenSignatureDialog = () => {
+
+    setOpenSignatureDialog(true);
+
+  };
+
+ 
+
+  const handleCloseSignatureDialog = () => {
+
+    setOpenSignatureDialog(false);};
+    {fkReduxInit}
+  {useEffectForFK}
+
+  useEffect(() => {
+    if (
+      {tableName}Data &&
+      {tableName}Data.list &&
+      {tableName}Data.list.length === 0
+    ) {
+      dispatch(reset{modelName}ToInit());
+      get{modelName}(
+        Constant.defaultPageNumber,
+        Constant.defaultDropdownPageSize,
+        ""
+      ).then((response) => {
+        if (response && response.records) {
+          dispatch(
+            set{modelName}List({
+              pageNo: Constant.defaultPageNumber,
+              pageSize: Constant.defaultDropdownPageSize,
+              list: response.records,
+              totalCount: response.total_count,
+              searchKey: "",
+            })
+          );
+        } else {
+          dispatch(
+            set{modelName}Message(
+              `No Record Found For {modelName}`
+            )
+          );
+        }
+      });
+    }
+  }, [{tableName}Data.list.length]);
+  const closeButtonClick = (
+    setFieldValue: (
+      field: string,
+      value: any,
+      shouldValidate?: boolean
+    ) => void,
+    field: string
+  ) => {
+    setFieldValue(field, "");
+  };
+  const handleFileupload = async (
+    event: any,
+    setFieldValue: (
+      field: string,
+      value: any,
+      shouldValidate?: boolean
+    ) => void,
+    field: string
+  ) => {
+    setIsLoading(field);
+    try {
+      // Perform your file upload logic here
+      // For example, make an API call to upload the file
+      if (event && event.files && event.files.length > 0) {
+        const formData = new FormData();
+        formData.append("File", event.files[0]);
+        formData.append("BucketId", config[field + "_bucket_name"]);
+        const response = await uploadFileService(formData);
+        if (response) {
+          setIsLoading("");
+         //console.log("File uploaded successfully");
+         //console.log(response);
+
+          // Instead of directly setting the 'value' on the input element, update the state using setFieldValue
+          setFieldValue(field, response.data.document);
+          setuniquekey(Date.now()); // <-- Update the key here to force a re-render of the input
+
+          return response.data.document;
+        } else {
+          setIsLoading("");
+         //console.log("File upload failed");
+          return "File upload failed";
+        }
+      } else {
+        setIsLoading("");
+       //console.log(event);
+        return false;
+      }
+    } catch (error) {
+      setIsLoading("");
+      console.error("File upload error:", error);
+      return error;
+    }
+  };
+
+  return (
+    <Card className="shadow mb-4">
+      <CardHeader
+        title={`${
+          action === "add"
+            ? config["addFormHeading"] !== undefined
+              ? config["addFormHeading"]
+              : `Add {modelName}`
+            : config["editFormHeading"] !== undefined
+            ? config["editFormHeading"]
+            : `Edit {modelName}`
+        }`}
+        action={
+          <IconButton onClick={() => hideShowForm(false)}>
+            <CloseIcon />
+          </IconButton>
+        }
+      />
+      <CardContent>
+        <Formik
+          initialValues={initialValue}
+          onSubmit={async (values) => {
+          {PrimaryKeyConversion}
+            setisSaving(true);
+            if (action === "edit") {
+              const response = await update{modelName}(
+                {PrimaryKeyInitialization},
+                values
+              );
+              if (response) {
+                setisSaving(false);
+
+                dispatch(set{modelName}Message("Updated Successfully"));
+                getData(
+                  Constant.defaultPageNumber,
+                  Constant.defaultPageSize,
+                  ""
+                );
+                hideShowForm("");
+              } else {
+                setisSaving(false);
+                dispatch(set{modelName}Message("Some error occured!"));
+              }
+            } else if (action === "add") {
+              const response = await addTransactional{modelName}(values);
+              if (response) {
+                setisSaving(false);
+                dispatch(set{modelName}Message("Added Successfully"));
+                getData(
+                  Constant.defaultPageNumber,
+                  Constant.defaultPageSize,
+                  ""
+                );
+                hideShowForm("");
+              } else {
+                setisSaving(false);
+                dispatch(set{modelName}Message("Some error occured!"));
+              }
+            }
+          }}
+       validationSchema= {yup.object({
+         {yupValidationList}
+      })}>
+        
+          {({
+            errors,
+            handleBlur,
+            handleChange,
+            handleSubmit,
+            isSubmitting,
+            touched,
+            values,
+            setFieldValue,
+          }) => (
+            <Form onSubmit={handleSubmit}>
+              <Grid container spacing={2}>
+                {formGroupWithValidation}
+                {subFormGroupWithValidation}
+              </Grid>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "flex-end",
+                }}
+              >
+                {isSaving ? (
+                  <CircularProgress color="inherit" />
+                ) : (
+                  <Button type="submit" variant="contained">
+                    Save
+                  </Button>
+                )}
+              </div>
+            </Form>
+          )}
+        </Formik>
+      </CardContent>
+    </Card>
+  );
+};

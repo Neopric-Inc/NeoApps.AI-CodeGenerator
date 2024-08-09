@@ -1,0 +1,50 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {arg}-nodeport
+  labels:
+    app: {arg}
+spec:
+  ports:
+    - name: management
+      protocol: TCP
+      port: 15672
+      targetPort: 15672
+      nodePort: {managementNodePort}
+    - name: amqp
+      protocol: TCP
+      port: 5672
+      targetPort: 5672
+      nodePort: {amqpNodePort}
+  selector:
+    app: {arg}
+  type: NodePort
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {arg}
+spec:
+  serviceName: {arg}-nodeport
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {arg}
+  template:
+    metadata:
+      labels:
+        app: {arg}
+    spec:
+      containers:
+        - name: {arg}
+          image: rabbitmq:3.8.2-management-alpine
+          ports:
+            - containerPort: 5672
+            - containerPort: 15672
+          env:
+            - name: RABBITMQ_ERLANG_COOKIE
+              value: "b0bc2103cae5e8eaff8c8c15e968db19e59b86809aabffbba9639fe0143c2084"
+            - name: RABBITMQ_DEFAULT_USER
+              value: "{rabbitMqUserName}"
+            - name: RABBITMQ_DEFAULT_PASS
+              value: "{rabbitMqPassword}"

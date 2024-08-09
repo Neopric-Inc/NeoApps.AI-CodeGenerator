@@ -1,0 +1,39 @@
+private void Add{referencingTableTmp}({referencingTableTmp}Model model, MySqlCommand cmd,ref bool isroll)
+{
+    try
+    {    
+        cmd.CommandText = "{InsertQuery}";
+        cmd.Parameters.Clear();
+        {parameterAdd}
+        cmd.ExecuteNonQuery();
+    }
+    catch(Exception ex)
+    {
+        if (!isroll)
+        {
+            cmd.Transaction.Rollback();
+            isroll= true;
+        }
+        throw (ex);
+    }
+}
+
+private void Delete{referencingTableTmp}ById(int {refcolumn}, MySqlCommand cmd,ref bool isroll)
+{
+    try
+    {    
+        cmd.CommandText = "UPDATE {referencingTableTmp} SET isActive=0 Where {refcolumn}=@{refcolumn}";
+        cmd.Parameters.Clear();
+        cmd.Parameters.AddWithValue("@{refcolumn}", {refcolumn});
+        cmd.ExecuteNonQuery();
+    }
+    catch(Exception ex)
+    {
+        if (!isroll)
+        {
+            cmd.Transaction.Rollback();
+            isroll= true;
+        }
+        throw (ex);
+    }
+}

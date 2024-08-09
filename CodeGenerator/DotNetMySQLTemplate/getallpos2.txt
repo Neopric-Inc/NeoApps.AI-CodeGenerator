@@ -1,0 +1,20 @@
+for (int i = 0; i < {tableNameSmall}.Count; i++)
+{
+    cmd.Parameters.Clear();
+    cmd.CommandText = @"{selectOneQuery}";
+    cmd.Parameters.AddWithValue("@ownername", ownername);
+    {getByIDQueryParameter}
+
+    using (var reader = cmd.ExecuteReader())
+    {
+        while (reader.Read())
+        {
+            var {rftablenameSmall} = new {rftableNameMain}RelationalModel()
+            {
+                {selectAllRfModelInit}
+            };
+
+            {tableNameSmall}[i].{rftableName} = {rftablenameSmall};
+        }
+    }
+}

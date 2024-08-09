@@ -1,0 +1,66 @@
+
+  {
+    "id": "{{UNIQUE_ID_FOR_SIMPLE_LINE_CHART_FLOW}}",
+    "type": "tab",
+    "label": "Simple_LineChart1",
+    "disabled": false,
+    "info": "",
+    "env": []
+  },
+  {
+    "id": "{{UNIQUE_ID_FOR_SIMPLE_LINE_CHART_HTTP_IN}}",
+    "type": "http in",
+    "z": "{{UNIQUE_ID_FOR_SIMPLE_LINE_CHART_FLOW}}",
+    "name": "TriggerLineChart1",
+    "url": "/flows/Simple_LineChart/line1",
+    "method": "post",
+    "upload": false,
+    "swaggerDoc": "",
+    "x": 110,
+    "y": 60,
+    "wires": [["{{{{UNIQUE_ID_FOR_SIMPLE_LINE_CHART_TOKEN_FUNCTION}}}}"]]
+  },
+  {
+    "id": "{{UNIQUE_ID_FOR_SIMPLE_LINE_CHART_FUNCTION}}",
+    "type": "function",
+    "z": "{{UNIQUE_ID_FOR_SIMPLE_LINE_CHART_FLOW}}",
+    "name": "",
+    "func": "\nconst categories = [\n  \"01 Jan\",\n  \"02 Jan\",\n  \"03 Jan\",\n  \"04 Jan\",\n  \"05 Jan\",\n  \"06 Jan\",\n  \"07 Jan\",\n  \"08 Jan\",\n  \"09 Jan\",\n  \"10 Jan\",\n  \"11 Jan\",\n  \"12 Jan\",\n];\n\n\nconst chartSeries = [\n  {\n    data: [\n      3350, 1840, 2254, 5780, 9349, 5241, 2770, 2051, 3764, 2385, 5912, 8323,\n    ],\n    name: \"Page Views\",\n    color: \"#1f87e6\",\n  },\n  {\n    data: [35, 41, 62, 42, 13, 18, 29, 37, 36, 51, 32, 35],\n    name: \"Session Duration\",\n    color: \"#ff5c7c\",\n  },\n];\n  \n const response = {\n   chartCategories: categories,\n  chartSeries: chartSeries,\n};\n\n// Set the response object as the payload of the outgoing message\nmsg.payload = response;\n  \nreturn msg;",
+    "outputs": 1,
+    "timeout": "",
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 300,
+    "y": 220,
+    "wires": [["{{UNIQUE_ID_FOR_SIMPLE_LINE_CHART_HTTP_RESPONSE}}"]]
+  },
+  {
+    "id": "{{UNIQUE_ID_FOR_SIMPLE_LINE_CHART_HTTP_RESPONSE}}",
+    "type": "http response",
+    "z": "{{UNIQUE_ID_FOR_SIMPLE_LINE_CHART_FLOW}}",
+    "name": "",
+    "statusCode": "",
+    "headers": {},
+    "x": 710,
+    "y": 400,
+    "wires": []
+  },
+  {
+    "id": "{{{{UNIQUE_ID_FOR_SIMPLE_LINE_CHART_TOKEN_FUNCTION}}}}",
+    "type": "function",
+    "z": "{{UNIQUE_ID_FOR_SIMPLE_LINE_CHART_FLOW}}",
+    "name": "Set Token as Global Variable",
+    "func": "global.set(\"token\",msg.req.headers.authorization);\nreturn msg;",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 180,
+    "y": 140,
+    "wires": [["{{UNIQUE_ID_FOR_SIMPLE_LINE_CHART_FUNCTION}}"]]
+  }
+

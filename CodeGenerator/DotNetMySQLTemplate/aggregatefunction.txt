@@ -1,0 +1,28 @@
+public {DTOclass}Model Get{DTOclass}({primaryKeyListParam})
+{
+    try
+    {
+        mySqlDatabaseConnector.OpenConnection();
+        var connection = mySqlDatabaseConnector.GetConnection();
+        using (var cmd = connection.CreateCommand())
+        {
+            cmd.CommandText = @"{aggregateQuery}";
+            {aggregateQueryParameter}
+
+            using (var reader = cmd.ExecuteReader())
+                while (reader.Read())
+                {
+                    return new {DTOclass}Model()
+                    {
+                        {DTOPropertiesModelInit}
+                    };
+                }
+        }
+    }
+    catch (Exception ex)
+    {
+        throw (ex);
+    }
+    finally { mySqlDatabaseConnector.CloseConnection(); }
+    return null;
+}

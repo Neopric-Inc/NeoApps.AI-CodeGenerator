@@ -1,0 +1,45 @@
+export const modules = {
+  toolbar: [
+    [{ header: "1" }, { header: "2" }, { font: [] }],
+    ["bold", "italic", "underline", "strike"],
+    [{ color: [] }, { background: [] }],
+    ["link", "blockquote", "code-block", "image"],
+    [{ list: "ordered" }, { list: "bullet" }],
+    ["align", "indent"],
+    ["clean"], // Removes formatting
+    ["formula"], // Math formulas
+    [{ size: ["small", false, "large", "huge"] }],
+    [{ font: [] }],
+    [{ script: "sub" }, { script: "super" }], // Subscript and Superscript
+    ["bookmark"], // Custom bookmarking
+    ["red", "green", "blue", "yellow"], // Custom color options
+  ],
+};
+
+export const formats = [
+  "header",
+  "font",
+  "bold",
+  "italic",
+  "underline",
+  "strike",
+  "color",
+  "background",
+  "link",
+  "blockquote",
+  "code-block",
+  "image",
+  "list",
+  "align",
+  "indent",
+  "clean",
+  "formula",
+  "size",
+  "font",
+  "script",
+  "bookmark",
+  "red",
+  "green",
+  "blue",
+  "yellow",
+];

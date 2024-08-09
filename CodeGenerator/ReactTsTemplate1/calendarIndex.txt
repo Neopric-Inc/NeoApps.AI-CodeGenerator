@@ -1,0 +1,437 @@
+import "@fullcalendar/common/main.css";
+import "@fullcalendar/daygrid/main.css";
+import "@fullcalendar/timegrid/main.css";
+import "@fullcalendar/list/main.css";
+import "@fullcalendar/timeline/main.css";
+import { useCallback, useEffect, useRef, useState } from "react";
+import moment from "moment";
+import type {
+  DateSelectArg,
+  EventClickArg,
+  EventDropArg,
+  EventInput,
+} from "@fullcalendar/react";
+import FullCalendar from "@fullcalendar/react";
+import dayGridPlugin from "@fullcalendar/daygrid";
+import type { EventResizeDoneArg } from "@fullcalendar/interaction";
+import interactionPlugin from "@fullcalendar/interaction";
+import listPlugin from "@fullcalendar/list";
+import timeGridPlugin from "@fullcalendar/timegrid";
+import timelinePlugin from "@fullcalendar/timeline";
+import type { Theme } from "@mui/material";
+import { Box, useMediaQuery } from "@mui/material";
+import { alpha, styled } from "@mui/material/styles";
+import { useDispatch, useSelector } from "react-redux";
+import { CalendarToolbar, CalendarView } from "./calendar-toolbar";
+import { CalendarEventDialog } from "./calendar-event-dialog";
+import { RootState } from "redux/reducers";
+import { get{modelName},filter{modelName}WithColumns } from "services/{tableName}Service";
+import { set{modelName}List, set{modelName}Message,reset{modelName}ToInit } from "redux/actions";
+//import { RootState } from "redux/reducers/calendar-event-dialog";
+import { Constant } from "template/Constant";
+import { I{modelName} } from "redux/slices/{tableName}";
+{importFKRedux}
+{importFKService}
+
+const FullCalendarWrapper = styled("div")(({ theme }) => ({
+  marginTop: theme.spacing(3),
+  "& .fc-license-message": {
+    display: "none",
+  },
+  "& .fc": {
+    "--fc-bg-event-opacity": 1,
+    "--fc-border-color": theme.palette.divider,
+    "--fc-daygrid-event-dot-width": "10px",
+    "--fc-event-text-color": theme.palette.primary.contrastText,
+    "--fc-list-event-hover-bg-color": theme.palette.background.default,
+    "--fc-neutral-bg-color": theme.palette.background.default,
+    "--fc-page-bg-color": theme.palette.background.default,
+    "--fc-today-bg-color": alpha(theme.palette.primary.main, 0.25),
+    color: theme.palette.text.primary,
+    fontFamily: theme.typography.fontFamily,
+  },
+  "& .fc .fc-col-header-cell-cushion": {
+    paddingBottom: "10px",
+    paddingTop: "10px",
+    fontSize: theme.typography.overline.fontSize,
+    fontWeight: theme.typography.overline.fontWeight,
+    letterSpacing: theme.typography.overline.letterSpacing,
+    lineHeight: theme.typography.overline.lineHeight,
+    textTransform: theme.typography.overline.textTransform,
+  },
+  "& .fc .fc-day-other .fc-daygrid-day-top": {
+    color: theme.palette.text.secondary,
+  },
+  "& .fc-daygrid-event": {
+    borderRadius: theme.shape.borderRadius,
+    padding: "0px 4px",
+    fontSize: theme.typography.subtitle2.fontSize,
+    fontWeight: theme.typography.subtitle2.fontWeight,
+    lineHeight: theme.typography.subtitle2.lineHeight,
+  },
+  "& .fc-daygrid-block-event .fc-event-time": {
+    fontSize: theme.typography.body2.fontSize,
+    fontWeight: theme.typography.body2.fontWeight,
+    lineHeight: theme.typography.body2.lineHeight,
+  },
+  "& .fc-daygrid-day-frame": {
+    padding: "12px",
+  },
+}));
+
+const Calendar: React.FC = (props) => {
+ //console.log(props);
+  const config = props["config"];
+  const dispatch = useDispatch();
+  const calendarRef = useRef<FullCalendar | null>(null);
+  const smDown = useMediaQuery((theme: Theme) => theme.breakpoints.down("sm"));
+  //const { events } = useSelector((state) => state.calendar);
+  const {tableName}Data = useSelector((state: RootState) => state.{tableName});
+  const [date, setDate] = useState<Date>(new Date());
+  const [view, setView] = useState<CalendarView>(
+    smDown ? "timeGridDay" : "dayGridMonth"
+  );
+  const [dialog, setDialog] = useState<any>({
+    isOpen: false,
+    eventId: undefined,
+    range: undefined,
+  });
+  const getData = (page, pageSize, searchKey) => {
+    if (config.filtercondition ? true : false) {
+      const temp = eval(config.filtercondition);
+      if (config.condition) {
+        temp.push(config.condition);
+      }
+      const tp1 = temp.map((tp) => {
+        return {
+          ...tp,
+          columnCondition: parseInt(tp.columnCondition),
+          columnValue: tp.columnValue.toString(),
+        };
+      });
+      filter{modelName}WithColumns(eval(config.filtercondition)).then(
+        (response: any) => {
+         //console.log(response);
+          if (response && response.records) {
+            dispatch(
+              set{modelName}List({
+                pageNo: page,
+                pageSize: pageSize,
+                list: response.records,
+                totalCount: response.total_count,
+                searchKey: searchKey,
+              })
+            );
+          } else {
+            dispatch(set{modelName}Message("No Record Found"));
+          }
+        }
+      );
+    } else {
+      get{modelName}(page, pageSize, searchKey).then((response) => {
+        if (response && response.records) {
+          dispatch(
+            set{modelName}List({
+              pageNo: page,
+              pageSize: pageSize,
+              list: response.records,
+              totalCount: response.total_count,
+              searchKey: searchKey,
+            })
+          );
+        } else {
+          dispatch(set{modelName}Message("No Record Found"));
+        }
+      });
+    }
+  };
+    useEffect(() => {
+    if ({tableName}Data && {tableName}Data.list && {tableName}Data.list.length === 0) {
+      dispatch(reset{modelName}ToInit());
+      get{modelName}(Constant.defaultPageNumber, Constant.defaultDropdownPageSize, "").then((response) => {
+        if (response && response.records) {
+          dispatch(
+            set{modelName}List({
+              pageNo: Constant.defaultPageNumber,
+              pageSize: Constant.defaultDropdownPageSize,
+              list: response.records,
+              totalCount: response.total_count,
+              searchKey: "",
+            })
+          );
+        } else {
+          dispatch(set{modelName}Message(`No Record Found For {modelName}`));
+        }
+      });
+    }
+  }, [{tableName}Data.list.length]);
+  {fkReduxInit}
+  {useEffectForFK}
+
+    useEffect(() => {
+    dispatch(reset{modelName}ToInit());
+    getData(Constant.defaultPageNumber, Constant.defaultPageSize, "");
+  }, [config.filtercondition]);
+  const handleResize = useCallback(() => {
+    const calendarEl = calendarRef.current;
+
+    if (calendarEl) {
+      const calendarApi = calendarEl.getApi();
+      const newView = smDown ? "timeGridDay" : "dayGridMonth";
+
+      calendarApi.changeView(newView);
+      setView(newView);
+    }
+  }, [calendarRef, smDown]);
+
+  useEffect(
+    () => {
+      handleResize();
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [smDown]
+  );
+
+  const handleDateToday = (): void => {
+    const calendarEl = calendarRef.current;
+
+    if (calendarEl) {
+      const calendarApi = calendarEl.getApi();
+
+      calendarApi.today();
+      setDate(calendarApi.getDate());
+    }
+  };
+
+  const handleViewChange = (newView: CalendarView): void => {
+    const calendarEl = calendarRef.current;
+
+    if (calendarEl) {
+      const calendarApi = calendarEl.getApi();
+
+      calendarApi.changeView(newView);
+      setView(newView);
+    }
+  };
+
+  const handleDatePrev = (): void => {
+    const calendarEl = calendarRef.current;
+
+    if (calendarEl) {
+      const calendarApi = calendarEl.getApi();
+
+      calendarApi.prev();
+      setDate(calendarApi.getDate());
+    }
+  };
+
+  const handleDateNext = (): void => {
+    const calendarEl = calendarRef.current;
+
+    if (calendarEl) {
+      const calendarApi = calendarEl.getApi();
+
+      calendarApi.next();
+      setDate(calendarApi.getDate());
+    }
+  };
+
+  const handleAddClick = (): void => {
+    setDialog({
+      isOpen: true,
+    });
+  };
+
+  const handleRangeSelect = (arg: DateSelectArg): void => {
+    const calendarEl = calendarRef.current;
+   //console.log("range-select");
+    if (calendarEl) {
+      const calendarApi = calendarEl.getApi();
+
+      calendarApi.unselect();
+    }
+    setDialog({
+      isOpen: true,
+      range: {
+        start: arg.start.getTime(),
+        end: arg.end.getTime(),
+      },
+    });
+   //console.log(dialog);
+  };
+
+  const handleEventSelect = (arg: EventClickArg): void => {
+   //console.log(arg);
+   //console.log(arg.event.id);
+    setDialog({
+      isOpen: true,
+      eventId: arg.event.id,
+    });
+   //console.log(dialog);
+  };
+
+  const handleEventResize = async (arg: EventResizeDoneArg): Promise<void> => {
+    const { event } = arg;
+
+    try {
+      //   await dispatch(
+      //     updateEvent({
+      //       eventId: event.id,
+      //       update: {
+      //         allDay: event.allDay,
+      //         start: event.start?.getTime(),
+      //         end: event.end?.getTime(),
+      //       },
+      //     })
+      //   );
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleEventDrop = async (arg: EventDropArg): Promise<void> => {
+    const { event } = arg;
+
+    try {
+      //   await dispatch(
+      //     updateEvent({
+      //       eventId: event.id,
+      //       update: {
+      //         allDay: event.allDay,
+      //         start: event.start?.getTime(),
+      //         end: event.end?.getTime(),
+      //       },
+      //     })
+      //   );
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleCloseDialog = (): void => {
+    setDialog({
+      isOpen: false,
+    });
+  };
+
+  const findAndTransformCalendarEvent = (dialogEventId, {tableName}Data) => {
+   //console.log({tableName}Data);
+   //console.log(dialogEventId);
+    const matchingRecord: I{modelName} = {tableName}Data.list.find(
+      (record: I{modelName}) =>
+        record[config["eventid_ref_gv1_column"]] == dialogEventId
+    );
+   //console.log(matchingRecord);
+    if (!matchingRecord) {
+      return null;
+    }
+
+    const calendarEvent = {
+        eventid:matchingRecord[config["eventid_ref_gv1_column"]],
+      title: matchingRecord[config["title_ref_gv1_column"]],
+      id: matchingRecord[config["eventid_ref_gv1_column"]],
+      start: moment(matchingRecord[config["start_date_ref_gv1_column"]]).format(
+        "YYYY-MM-DD hh:mm:ss"
+      ),
+      end: moment(matchingRecord[config["end_date_ref_gv1_column"]]).format(
+        "YYYY-MM-DD hh:mm:ss"
+      ),
+      description: matchingRecord[config["description_ref_gv1_column"]],
+      ...matchingRecord,
+    };
+   //console.log(calendarEvent);
+    return calendarEvent;
+  };
+  const selectedEvent = dialog.eventId
+    ? findAndTransformCalendarEvent(dialog.eventId, {tableName}Data)
+    : undefined;
+
+ //console.log(selectedEvent);
+  return (
+    <>
+      {/* <Head>
+        <title>Dashboard: Calendar | Material Kit Pro</title>
+      </Head> */}
+      <Box
+        component="main"
+        sx={{
+          backgroundColor: "background.paper",
+          flexGrow: 1,
+          py: 8,
+        }}
+      >
+        <CalendarToolbar
+          date={date}
+          onAddClick={handleAddClick}
+          onDateNext={handleDateNext}
+          onDatePrev={handleDatePrev}
+          onDateToday={handleDateToday}
+          onViewChange={handleViewChange}
+          view={view}
+          mobile={smDown}
+        />
+        <FullCalendarWrapper>
+          <FullCalendar
+            allDayMaintainDuration
+            dayMaxEventRows={3}
+            droppable
+            editable
+            eventClick={handleEventSelect}
+            eventDisplay="block"
+            eventDrop={handleEventDrop}
+            eventResizableFromStart
+            eventResize={handleEventResize}
+            events={
+              {tableName}Data?.list.map((matchingRecord) => ({
+                title: matchingRecord[config["title_ref_gv1_column"]],
+                id: matchingRecord[config["eventid_ref_gv1_column"]],
+                start: moment(
+                  matchingRecord[config["start_date_ref_gv1_column"]]
+                ).format("YYYY-MM-DD hh:mm:ss"),
+
+                end: moment(
+                  matchingRecord[config["end_date_ref_gv1_column"]]
+                ).format("YYYY-MM-DD hh:mm:ss"),
+                location: matchingRecord[config["location_ref_gv1_column"]],
+                recurrenceFrequency:
+                  matchingRecord[config["recurrenceFrequency_ref_gv1_column"]],
+                allDay: matchingRecord[config["allDay_ref_gv1_column"]],
+                description:
+                  matchingRecord[config["description_ref_gv1_column"]],
+              })) as unknown as EventInput[]
+            }
+            headerToolbar={false}
+            height={800}
+            initialDate={date}
+            initialView={view}
+            plugins={[
+              dayGridPlugin,
+              interactionPlugin,
+              listPlugin,
+              timeGridPlugin,
+              timelinePlugin,
+            ]}
+            ref={calendarRef}
+            rerenderDelay={10}
+            select={handleRangeSelect}
+            selectable
+            weekends
+          />
+        </FullCalendarWrapper>
+      </Box>
+      <CalendarEventDialog
+        event={selectedEvent}
+        onAddComplete={handleCloseDialog}
+        onClose={handleCloseDialog}
+        config={config}
+        onDeleteComplete={handleCloseDialog}
+        onEditComplete={handleCloseDialog}
+        open={dialog.isOpen}
+        range={dialog.range}
+        getData={getData}
+      />
+    </>
+  );
+};
+
+export default Calendar;

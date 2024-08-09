@@ -1,0 +1,66 @@
+    {
+        "id": "{{UNIQUE_ID_FOR_SUBFLOW_LOOP_PUT}}",
+        "type": "subflow",
+        "name": "[LOOP]PUT {{SWAGGER_SCHEMA_NAME}}",
+        "info": "### _**ONLY USE WITH LOOP**_\n\n**Updates** The **{{SWAGGER_SCHEMA_NAME}}** Record in table using **PUT** request.\nHere The Object being passed to **msg.payload** will be **msg._{{SWAGGER_SCHEMA_NAME}}[index]**;\n\n## INDEX\nIt is the **index of the array** on which we are looping.These Array will be \nmostly obtained from **GET ALL**.",
+        "category": "{{SWAGGER_SCHEMA_NAME}}",
+        "in": [
+            {
+                "x": 20,
+                "y": 80,
+                "wires": [
+                    {
+                        "id": "{{UNIQUE_ID_FOR_FUNCTION_LOOP_PUT}}"
+                    }
+                ]
+            }
+        ],
+        "out": [
+            {
+                "x": 580,
+                "y": 80,
+                "wires": [
+                    {
+                        "id": "{{UNIQUE_ID_FOR_HTTP_LOOP_PUT}}",
+                        "port": 0
+                    }
+                ]
+            }
+        ],
+        "env": []
+    },
+    {
+        "id": "{{UNIQUE_ID_FOR_FUNCTION_LOOP_PUT}}",
+        "type": "function",
+        "z": "{{UNIQUE_ID_FOR_SUBFLOW_LOOP_PUT}}",
+        "name": "PUT CONFIGURE",
+        "func": "const currentDate = new Date();\nvar date = currentDate.getFullYear()+\"-\"+(currentDate.getMonth() + 1)+\"-\"\n        +currentDate.getDate()+\" \"\n        +currentDate.getHours()+\":\"\n        +currentDate.getMinutes()+\":\"\n        +currentDate.getSeconds();\nmsg._{{SWAGGER_SCHEMA_NAME}}[msg.loop.index].created_at = date;\nmsg.headers = {\n    Authorization: global.get(\"token\"),\n};\nmsg.url = '{{SWAGGER_URL}}/{{SWAGGER_SCHEMA_NAME}}/'+msg._{{SWAGGER_SCHEMA_NAME}}[msg.loop.index].{{SWAGGER_SCHEMA_PRIMARY_KEY}};\nmsg.payload = msg._{{SWAGGER_SCHEMA_NAME}}[msg.loop.index];\n//node.send(msg);\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 190,
+        "y": 80,
+        "wires": [
+            [
+                "{{UNIQUE_ID_FOR_HTTP_LOOP_PUT}}"
+            ]
+        ]
+    },
+    {
+        "id": "{{UNIQUE_ID_FOR_HTTP_LOOP_PUT}}",
+        "type": "http request",
+        "z": "{{UNIQUE_ID_FOR_SUBFLOW_LOOP_PUT}}",
+        "name": "Update {{SWAGGER_SCHEMA_NAME}}",
+        "method": "PUT",
+        "ret": "obj",
+        "paytoqs": false,
+        "url": "",
+        "tls": "",
+        "proxy": "",
+        "authType": "",
+        "x": 420,
+        "y": 80,
+        "wires": [
+            []
+        ]
+    }
+

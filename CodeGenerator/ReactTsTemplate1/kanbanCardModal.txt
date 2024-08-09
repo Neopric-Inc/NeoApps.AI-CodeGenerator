@@ -1,0 +1,440 @@
+import type { ChangeEvent, FC } from "react";
+import { Fragment, useEffect, useState } from "react";
+import PropTypes from "prop-types";
+//import toast from "react-hot-toast";
+// @ts-ignore
+import debounce from "lodash.debounce";
+import {
+  Box,
+  Button,
+  Checkbox,
+  Dialog,
+  Divider,
+  FormControlLabel,
+  FormGroup,
+  Grid,
+  TextField,
+  Typography,
+} from "@mui/material";
+import { Archive as ArchiveIcon } from "components/icons/archive";
+import { Check as CheckIcon } from "components/icons/check";
+import { DocumentText as DocumentTextIcon } from "components/icons/document-text";
+import { Eye as EyeIcon } from "components/icons/eye";
+import { EyeOff as EyeOffIcon } from "components/icons/eye-off";
+import { Users as UsersIcon } from "components/icons/users";
+//import { useDispatch, useSelector } from "../../../store";
+import moment from "moment";
+// import { KanbanCardAction } from "./kanban-card-action";
+// import { KanbanChecklist } from "./kanban-checklist";
+import { useDispatch, useSelector } from "react-redux";
+import { Card, Column } from "./kanban-types";
+import {
+  I{modelName},
+  set{modelName}List,
+  set{modelName}Message,
+} from "redux/slices/{tableName}";
+import { get{modelName}, update{modelName} } from "services/{tableName}Service";
+import { Constant } from "template/Constant";
+import toast from "react-hot-toast";
+import { deepCopy } from "context/deep-copy";
+
+interface KanbanCardModalProps {
+  content: any;
+  contentStatus: any;
+  allStatusData: any;
+  onClose?: () => void;
+  open: boolean;
+  config: any;
+  getData: any;
+}
+
+const labels = ["Business", "Planning", "Frontend", "Design"];
+
+export const KanbanCardModal: FC<KanbanCardModalProps> = (props) => {
+  let {
+    onClose,
+    content,
+    contentStatus,
+    allStatusData,
+    config,
+    open,
+    getData,
+    ...other
+  } = props;
+  const dispatch = useDispatch();
+  const [title, setTitle] = useState<string>(
+    content[config["TaskName_ref_gv1_column"]]
+  );
+  const [description, setDescription] = useState<string>(
+    content[config["description_ref_gv1_column"]]
+  );
+  const [submit, setSubmit] = useState<boolean>(false);
+  const [statusId, setStatusId] = useState<number>(
+    content[config["Status_ref_gv1_column"]]
+  );
+
+  useEffect(() => {
+    if (open) {
+      setStatusId(content[config["Status_ref_gv1_column"]]);
+      setTitle(content[config["description_ref_gv1_column"]]);
+      setDescription(content[config["TaskName_ref_gv1_column"]]);
+    }
+  }, [open]);
+  const handleDetailsUpdate = async () => {
+    try {
+      setSubmit(true);
+      const modifiedContent = Object.assign({}, content, {
+        createdAt: moment(new Date(Date.now()), "DD/MM/YYYY HH:mm:ss").format(
+          "YYYY-MM-DD HH:mm:ss"
+        ),
+        modifiedAt: moment(new Date(Date.now()), "DD/MM/YYYY HH:mm:ss").format(
+          "YYYY-MM-DD HH:mm:ss"
+        ),
+        [config["TaskName_ref_gv1_column"]]: title,
+        [config["description_ref_gv1_column"]]: description,
+        [config["Status_ref_gv1_column"]]: statusId,
+      });
+      //Great company, providing an awesome & easy to use product.
+      const response = await update{modelName}(content.{pkKeyReplacement}, modifiedContent);
+      if (response) {
+        dispatch(setContentMessage("Updated Successfully"));
+        getData(Constant.defaultPageNumber, Constant.defaultPageSize, "");
+        setSubmit(false);
+        onClose();
+        toast.success("Card updated!");
+      }
+      // await dispatch(
+      //   updateCard({
+      //     cardId: card.id,
+      //     update,
+      //   })
+      // );
+    } catch (err) {
+      console.error(err);
+      toast.error("Something went wrong!");
+    }
+    setSubmit(false);
+  };
+
+  const handleColumnChange = async (
+    event: ChangeEvent<HTMLInputElement>
+  ): Promise<void> => {
+    try {
+      //   await dispatch(
+      //     moveCard({
+      //       cardId: card.id,
+      //       position: 0,
+      //       columnId: event.target.value,
+      //     })
+      //   );
+      //toast.success("Card moved!");
+    } catch (err) {
+      console.error(err);
+      //toast.error("Something went wrong!");
+    }
+  };
+
+  const handleSubscribe = async (): Promise<void> => {
+    try {
+      //   await dispatch(
+      //     updateCard({
+      //       cardId: card.id,
+      //       update: { isSubscribed: true },
+      //     })
+      //   );
+      //toast.success("Unsubscribed!");
+    } catch (err) {
+      console.error(err);
+      //toast.error("Something went wrong!");
+    }
+  };
+
+  const handleUnsubscribe = async (): Promise<void> => {
+    try {
+      //   await dispatch(
+      //     updateCard({
+      //       cardId: card.id,
+      //       update: { isSubscribed: false },
+      //     })
+      //   );
+      //toast.success("Subscribed!");
+    } catch (err) {
+      console.error(err);
+      //toast.error("Something went wrong!");
+    }
+  };
+
+  const handleDelete = async (): Promise<void> => {
+    try {
+      //   await dispatch(
+      //     deleteCard({
+      //       cardId: card.id,
+      //     })
+      //   );
+      //toast.success("Card archived!");
+    } catch (err) {
+      console.error(err);
+      //toast.error("Something went wrong!");
+    }
+  };
+
+  const handleAddChecklist = async (): Promise<void> => {
+    try {
+      //   await dispatch(
+      //     addChecklist({
+      //       cardId: card.id,
+      //       name: "Untitled Checklist",
+      //     })
+      //   );
+      //toast.success("Checklist added!");
+    } catch (err) {
+      console.error(err);
+      //toast.error("Something went wrong!");
+    }
+  };
+
+  // const handleLabelsChange = async (
+  //   event: ChangeEvent<HTMLInputElement>
+  // ): Promise<void> => {
+  //   try {
+  //     let newValue = [...card.labels];
+
+  //     if (event.target.checked) {
+  //       newValue.push(event.target.value);
+  //     } else {
+  //       newValue = newValue.filter((item) => item !== event.target.value);
+  //     }
+
+  //   //   await dispatch(
+  //   //     updateCard({
+  //   //       cardId: card.id,
+  //   //       update: { labels: newValue },
+  //   //     })
+  //   //   );
+  //     //toast.success("Card updated!");
+  //   } catch (err) {
+  //     console.error(err);
+  //     //toast.error("Something went wrong!");
+  //   }
+  // };
+
+  return (
+    <Dialog fullWidth maxWidth="md" onClose={onClose} open={open} {...other}>
+      <Grid container>
+        <Grid item sm={8} xs={12}>
+          <Box
+            sx={{
+              py: 4,
+              px: 3,
+            }}
+          >
+            <TextField
+              defaultValue={content[config["TaskName_ref_gv1_column"]]}
+              fullWidth
+              label="Task name"
+              onChange={(event) => setTitle(event.target.value)}
+            />
+            <TextField
+              defaultValue={content[config["description_ref_gv1_column"]]}
+              fullWidth
+              label="Description"
+              multiline
+              onChange={(event) => setDescription(event.target.value)}
+              placeholder="Leave a message"
+              rows={6}
+              sx={{ mt: 3 }}
+            />
+            {/* {card.checklists.length > 0 && (
+              <>
+                <Typography sx={{ my: 3 }} variant="h6">
+                  Checklist
+                </Typography>
+                <div>
+                  {card.checklists.map((checklist) => (
+                    <KanbanChecklist
+                      card={card}
+                      checklist={checklist}
+                      key={checklist.id}
+                      sx={{ mb: 3 }}
+                    />
+                  ))}
+                </div>
+              </>
+            )} */}
+          </Box>
+        </Grid>
+        <Grid item xs={12} sm={4}>
+          <Box
+            sx={{
+              backgroundColor: "background.default",
+              px: 3,
+              py: 4,
+              height: "100%",
+            }}
+          >
+            <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
+              <Button
+                disabled={submit}
+                onClick={handleDetailsUpdate}
+                type="submit"
+                size="small"
+                variant="contained"
+              >
+                Save
+              </Button>
+            </Box>
+            <Typography color="textSecondary" variant="overline">
+              Status
+            </Typography>
+            <TextField
+              fullWidth
+              placeholder="Status"
+              onChange={(event) => setStatusId(Number(event.target.value))}
+              select
+              SelectProps={{
+                native: true,
+              }}
+              sx={{ mt: 2 }}
+              value={statusId}
+            >
+              {allStatusData.map((status) => {
+                return (
+                  <option
+                    key={status[config["Status_ref_gv1_column"]]}
+                    value={status[config["Status_ref_gv1_column"]]}
+                  >
+                    {status[config["Status_kan_ref"]]}
+                  </option>
+                );
+              })}
+              {/* <option key={1} value={1}>
+                {"Created"}
+              </option>
+              <option key={2} value={2}>
+                {"Scheduled"}
+              </option>
+              <option key={3} value={3}>
+                {"Published"}
+              </option> */}
+              {/* {Object.values(columns.byId).map((_column) => (
+                <option key={_column.id} value={_column.id}>
+                  {_column.name}
+                </option>
+              ))} */}
+            </TextField>
+            {/* <Box sx={{ mt: 2 }}>
+              <Typography color="textSecondary" variant="overline">
+                Add
+              </Typography>
+              <Box sx={{ mt: 2 }}>
+                <KanbanCardAction
+                  icon={<CheckIcon fontSize="small" />}
+                  onClick={handleAddChecklist}
+                >
+                  Checklist
+                </KanbanCardAction>
+                <KanbanCardAction
+                  disabled
+                  icon={<UsersIcon fontSize="small" />}
+                >
+                  Members
+                </KanbanCardAction>
+                <KanbanCardAction
+                  disabled
+                  icon={<DocumentTextIcon fontSize="small" />}
+                >
+                  Attachments
+                </KanbanCardAction>
+              </Box>
+            </Box>
+            <Box sx={{ mt: 3 }}>
+              <Typography
+                color="textSecondary"
+                component="h4"
+                sx={{
+                  fontWeight: 600,
+                  mb: 2,
+                }}
+                variant="overline"
+              >
+                Actions
+              </Typography>
+              {content.isActive ? (
+                <KanbanCardAction
+                  icon={<EyeOffIcon fontSize="small" />}
+                  onClick={handleUnsubscribe}
+                >
+                  Unwatch
+                </KanbanCardAction>
+              ) : (
+                <KanbanCardAction
+                  icon={<EyeIcon fontSize="small" />}
+                  onClick={handleSubscribe}
+                >
+                  Watch
+                </KanbanCardAction>
+              )}
+              <KanbanCardAction
+                icon={<ArchiveIcon fontSize="small" />}
+                onClick={handleDelete}
+              >
+                Archive
+              </KanbanCardAction>
+            </Box> */}
+            {/* <Box sx={{ mt: 2 }}>
+              <Typography
+                color="textSecondary"
+                component="h4"
+                sx={{ mb: 2 }}
+                variant="overline"
+              >
+                Labels
+              </Typography>
+              <Box
+                sx={{
+                  backgroundColor: "background.paper",
+                  borderRadius: 1,
+                }}
+              >
+                <FormGroup>
+                  {labels.map((label, index) => (
+                    <Fragment key={label}>
+                      <FormControlLabel
+                        control={
+                          <Checkbox
+                            checked={card.labels.includes(label)}
+                            onChange={handleLabelsChange}
+                          />
+                        }
+                        label={<Typography variant="body2">{label}</Typography>}
+                        sx={{
+                          pl: 2,
+                          pr: 1,
+                          py: 0.5,
+                        }}
+                        value={label}
+                      />
+                      {index !== labels.length - 1 && <Divider />}
+                    </Fragment>
+                  ))}
+                </FormGroup>
+              </Box>
+            </Box> */}
+          </Box>
+        </Grid>
+      </Grid>
+    </Dialog>
+  );
+};
+
+KanbanCardModal.propTypes = {
+  // @ts-ignore
+  // @ts-ignore
+  column: PropTypes.object.isRequired,
+  onClose: PropTypes.func,
+  open: PropTypes.bool.isRequired,
+};
+
+KanbanCardModal.defaultProps = {
+  open: false,
+};

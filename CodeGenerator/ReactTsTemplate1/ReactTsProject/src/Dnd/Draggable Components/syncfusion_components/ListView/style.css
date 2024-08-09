@@ -1,0 +1,82 @@
+@import '/node_modules/@syncfusion/ej2-base/styles/material.css';
+@import '/node_modules/@syncfusion/ej2-buttons/styles/material.css';
+@import '/node_modules/@syncfusion/ej2-calendars/styles/material.css';
+@import '/node_modules/@syncfusion/ej2-dropdowns/styles/material.css';
+@import '/node_modules/@syncfusion/ej2-inputs/styles/material.css';
+@import '/node_modules/@syncfusion/ej2-navigations/styles/material.css';
+@import '/node_modules/@syncfusion/ej2-popups/styles/material.css';
+@import '/node_modules/@syncfusion/ej2-splitbuttons/styles/material.css';
+@import '/node_modules/@syncfusion/ej2-notifications/styles/material.css';
+@import "/node_modules/@syncfusion/ej2-react-grids/styles/material.css";
+@import "/node_modules/@syncfusion/ej2-react-layouts/styles/material.css";
+@import "/node_modules/@syncfusion/ej2-react-dropdowns/styles/material.css";
+.city {
+    right: 15px;
+    position: absolute;
+}
+
+.head,
+.item {
+    display: table;
+    width: 100%;
+    margin: auto;
+}
+
+.head {
+    height: 20px;
+    font-size: 15px;
+    font-weight: 600;
+    color: black;
+    padding: 10px;
+}
+
+.head .name {
+    text-indent: 16px;
+}
+
+.head .city {
+    text-indent: 10px;
+}
+.e-listview .e-list-header {
+    color: #000;
+    justify-content: center;
+}
+
+#list {
+    display: block;
+    margin: auto;
+    font-size: 15px;
+    border: 1px solid #ccc;
+    width: 350px;
+    border-radius: 3px;
+}
+
+#list .e-list-group-item {
+    height: 40px;
+    line-height: 40px;
+}
+
+#list .count {
+    float: right;
+}
+
+#list .category {
+    float: left;
+}
+
+/* #container {
+    visibility: hidden;
+} */
+
+#loader {
+    color: #008cff;
+    /* height: 40px; */
+    left: 45%;
+    position: absolute;
+    top: 45%;
+    width: 30%;
+}
+
+.e-list-wrapper .e-avatar-circle {
+    background: #BCBCBC;
+}

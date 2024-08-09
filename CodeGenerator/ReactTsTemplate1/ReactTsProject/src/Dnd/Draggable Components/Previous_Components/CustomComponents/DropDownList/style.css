@@ -1,0 +1,35 @@
+.city {
+    right: 15px;
+    position: absolute;
+}
+
+.head,
+.item {
+    display: table;
+    width: 100%;
+    margin: auto;
+}
+
+.head {
+    height: 20px;
+    font-size: 15px;
+    font-weight: 600;
+    color: black;
+    padding: 10px;
+}
+
+/* .name,
+.city {
+    display: table-cell;
+    vertical-align: middle;
+    width: 50%;
+    height: 20px;
+} */
+
+.head .name {
+    text-indent: 16px;
+}
+
+.head .city {
+    text-indent: 10px;
+}

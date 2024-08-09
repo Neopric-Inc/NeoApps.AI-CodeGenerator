@@ -1,0 +1,7 @@
+FROM nodered/node-red:3.0
+
+COPY flows.json /data/flows.json
+
+COPY settings.js /data/settings.js
+
+RUN npm install node-red-contrib-loop

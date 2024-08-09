@@ -1,0 +1,567 @@
+import type { FC } from "react";
+import { useMemo, useEffect,useState } from "react";
+import PropTypes from "prop-types";
+import dayjs from "dayjs";
+//import toast from "react-hot-toast";
+import { addMinutes } from "date-fns";
+import { useSelector } from "react-redux";
+import { format } from "date-fns";
+import { RootState } from "redux/reducers";
+import * as yup from "yup";
+import { useFormik, Formik, Field } from "formik";
+import { uploadFileService } from "services/fileUploadService";
+import { Form } from "react-bootstrap";
+import CircularProgress from "@mui/material/CircularProgress";
+import CloseIcon from "@mui/icons-material/Close";
+import { Constant } from "template/Constant";
+import { ValidationControl } from "Dnd/Dnd Designer/Utility/constants";
+import moment from 'moment';
+import { useAppDispatch } from "redux/store";
+import { reset{modelName}ToInit, set{modelName}List, set{modelName}Message } from "redux/actions";
+{importFKRedux}
+{importFKService}
+import { add{modelName}, update{modelName}, get{modelName} } from "services/{tableName}Service";
+import {
+  Card,
+  CardHeader,
+  CardContent,
+  Box,
+  Button,
+  Dialog,
+  Divider,
+  FormControlLabel,
+  FormHelperText,
+  Grid,
+  IconButton,
+  MenuItem,
+  Select,
+  Switch,
+  ListItem,
+  ListItemText,
+  TextField,
+  Typography,
+  InputLabel,
+  FormControl,
+  TextareaAutosize,
+  Radio,
+} from "@mui/material";
+import CloudUploadIcon from "@mui/icons-material/CloudUpload";
+// import DateTimePicker from "@mui/lab/DateTimePicker";
+import { Trash as TrashIcon } from "components/icons/trash";
+import SignatureDialog from "components/icons/signatureDialog";
+import { useDispatch } from "react-redux";
+// import LocalizationProvider from "@mui/lab/LocalizationProvider";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import AdapterDateFns from "@mui/lab/AdapterDateFns";
+import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { formats, modules } from "./quill-editor";
+import ReactQuill from "react-quill";
+import { DatePicker } from "@mui/x-date-pickers";
+import {
+  getColumnNameList,
+  getGridList,
+} from "Dnd/Dnd Designer/Utility/constants";
+import { I{modelName} } from "redux/slices/{tableName}";
+
+export interface CalendarEvent {
+  id?: string;
+  allDay: boolean;
+  color?: string;
+  description: string;
+  end: number;
+  start: number;
+  title: string;
+}
+interface CalendarEventFormProps {
+  event?: any;
+  onAddComplete?: () => void;
+  onClose?: () => void;
+  onDeleteComplete?: () => void;
+  onEditComplete?: () => void;
+  open?: boolean;
+  range?: { start: number; end: number };
+  config: any;
+  getData: any;
+}
+
+interface FormValues extends I{modelName} {
+  allDay: boolean;
+  color: string;
+  description: string;
+  recurrenceFrequency: string;
+  location: string;
+  end: Date;
+  start: Date;
+  title: string;
+  submit: string | null;
+}
+
+export const CalendarEventDialog: FC<CalendarEventFormProps> = (props) => {
+  const {
+    event,
+    onAddComplete,
+    onClose,
+    onDeleteComplete,
+    onEditComplete,
+    open,
+    range,
+    config,
+    getData,
+  } = props;
+  const dispatch = useDispatch();
+  let columnName = getColumnNameList("{modelName}");
+  const GridName = getGridList("Calendar");
+  GridName.map(
+    (gp) =>
+      (columnName = columnName.filter(
+        (cp) => cp !== config[gp + "_ref_gv1_column"]
+      ))
+  );
+  const [isLoading, setIsLoading] = useState("");
+  const [uniquekey, setuniquekey] = useState(Date.now());
+  const [openSignatureDialog, setOpenSignatureDialog] = useState(false);
+  const {tableName}Data = useSelector((state: RootState) => state.{tableName});
+
+  const handleOpenSignatureDialog = () => {
+
+    setOpenSignatureDialog(true);
+
+  };
+
+{fkReduxInit}
+  {useEffectForFK}
+
+  useEffect(() => {
+    if ({tableName}Data && {tableName}Data.list && {tableName}Data.list.length === 0) {
+      dispatch(reset{modelName}ToInit());
+      get{modelName}(Constant.defaultPageNumber, Constant.defaultDropdownPageSize, "").then((response) => {
+        if (response && response.records) {
+          dispatch(
+            set{modelName}List({
+              pageNo: Constant.defaultPageNumber,
+              pageSize: Constant.defaultDropdownPageSize,
+              list: response.records,
+              totalCount: response.total_count,
+              searchKey: "",
+            })
+          );
+        } else {
+          dispatch(set{modelName}Message(`No Record Found For {modelName}`));
+        }
+      });
+    }
+  }, [{tableName}Data.list.length]);
+
+
+ 
+
+  const handleCloseSignatureDialog = () => {
+
+    setOpenSignatureDialog(false);};
+  const closeButtonClick = (
+    setFieldValue: (
+      field: string,
+      value: any,
+      shouldValidate?: boolean
+    ) => void,
+    field: string
+  ) => {
+    setFieldValue(field, "");
+  };
+  const handleFileupload = async (
+    event: any,
+    setFieldValue: (
+      field: string,
+      value: any,
+      shouldValidate?: boolean
+    ) => void,
+    field: string
+  ) => {
+    setIsLoading(field);
+    try {
+      // Perform your file upload logic here
+      // For example, make an API call to upload the file
+      if (event && event.files && event.files.length > 0) {
+        const formData = new FormData();
+        formData.append("File", event.files[0]);
+        formData.append("BucketId", config[field + "_bucket_name"]);
+        const response = await uploadFileService(formData);
+        if (response) {
+          setIsLoading("");
+         //console.log("File uploaded successfully");
+         //console.log(response);
+
+          // Instead of directly setting the 'value' on the input element, update the state using setFieldValue
+          setFieldValue(field, response.data.document);
+          setuniquekey(Date.now()); // <-- Update the key here to force a re-render of the input
+
+          return response.data.document;
+        } else {
+          setIsLoading("");
+         //console.log("File upload failed");
+          return "File upload failed";
+        }
+      } else {
+        setIsLoading("");
+       //console.log(event);
+        return false;
+      }
+    } catch (error) {
+      setIsLoading("");
+      console.error("File upload error:", error);
+      return error;
+    }
+  };
+ //console.log(columnName);
+ //console.log(event);
+  const initialValues = useMemo(() => {
+    if (event) {
+      return {
+        {ColumnListWithValue},
+        allDay: event.allDay || false,
+        color: event.color || "",
+        recurrenceFrequency: event.recurrenceFrequency || "",
+        location: event.location || "",
+        description: event.description || "",
+        end: event.end ? new Date(event.end) : addMinutes(new Date(), 30),
+        start: event.start ? new Date(event.start) : new Date(),
+        title: event.title || "",
+        submit: null,
+      };
+    }
+
+    if (range) {
+      return {
+        {ColumnListWithValue},
+        allDay: false,
+        color: "",
+        description: "",
+        location: "",
+        recurrenceFrequency: "",
+        end: new Date(range.end),
+        start: new Date(range.start),
+        title: "",
+        submit: null,
+      };
+    }
+
+    return {
+        {ColumnListWithValue},
+      allDay: false,
+      color: "",
+      description: "",
+      location: "",
+      recurrenceFrequency: "",
+      end: addMinutes(new Date(), 30),
+      start: new Date(),
+      title: "",
+      submit: null,
+    };
+  }, [event, range]);
+  const formik = useFormik({
+    enableReinitialize: true,
+    initialValues,
+    validationSchema: yup.object({
+      allDay: yup.bool(),
+      description: yup.string().max(5000),
+      end: yup.date(),
+      start: yup.date(),
+      title: yup.string().max(255).required("Title is required"),
+         {yupValidationList}
+    }),
+    onSubmit: async (values, helpers): Promise<void> => {
+     //console.log("hello");
+
+      try {
+       //console.log("event");
+        if (event) {
+          const data1 = {};
+          {PrimaryKeyConversion}
+          GridName.forEach((gp) => {
+            data1[config[gp + "_ref_gv1_column"]] = values[gp];
+          });
+          columnName.forEach((gp) => {
+            data1[gp] = values[gp];
+          });
+          if (event === "edit") {
+            const response = await update{modelName}(data1["{PrimaryKeyInitialization}"], data1);
+            if (response) {
+              dispatch(set{modelName}Message("Updated Successfully"));
+              getData(Constant.defaultPageNumber, Constant.defaultPageSize, "");
+            } else {
+              dispatch(set{modelName}Message("Some error occured!"));
+            }
+          } else if (event === "add") {
+            const response = await add{modelName}(data1);
+            if (response) {
+              dispatch(set{modelName}Message("Added Successfully"));
+              getData(Constant.defaultPageNumber, Constant.defaultPageSize, "");
+            } else {
+              dispatch(set{modelName}Message("Some error occured!"));
+            }
+          }
+         //console.log(data1);
+        } else {
+          //   await dispatch(createEvent(data));
+          //toast.success("Event added!");
+        }
+
+        if (!event && onAddComplete) {
+          onAddComplete();
+        }
+
+        if (event && onEditComplete) {
+          onEditComplete();
+        }
+      } catch (err) {
+        console.error(err);
+        //toast.error("Something went wrong!");
+        helpers.setStatus({ success: false });
+        helpers.setErrors({ submit: err.message });
+        helpers.setSubmitting(false);
+      }
+    },
+  });
+
+  const handleStartDateChange = (date): void => {
+    formik.setFieldValue("start", date);
+
+    // Prevent end date to be before start date
+    // if (formik.values.end && date && date > formik.values.end) {
+    //   formik.setFieldValue("end", date);
+    // }
+  };
+
+  const handleEndDateChange = (date: Date | null): void => {
+    formik.setFieldValue("end", date);
+
+    // Prevent start date to be after end date
+    if (formik.values.start && date && date < formik.values.start) {
+      formik.setFieldValue("start", date);
+    }
+  };
+
+  const handleDelete = async (): Promise<void> => {
+    try {
+      if (!event) {
+        return;
+      }
+      onDeleteComplete?.();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  return (
+    <Dialog fullWidth maxWidth="xl" onClose={onClose} open={!!open}>
+      <form onSubmit={formik.handleSubmit}>
+        <Box sx={{ p: 1 }}>
+          <Typography align="center" gutterBottom variant="h5">
+            {event ? "Edit Event" : "Add Event"}
+          </Typography>
+        </Box>
+        <Box sx={{ p: 1 }}>
+          <TextField
+            error={Boolean(formik.touched.title && formik.errors.title)}
+            fullWidth
+            helperText={formik.touched.title && formik.errors.title}
+            label="Title"
+            name="title"
+            onBlur={formik.handleBlur}
+            onChange={formik.handleChange}
+            value={formik.values.title}
+          />
+          <Box sx={{ mt: 2, mb: 3, pb: 3 }}>
+            <Typography variant="subtitle1" sx={{ mb: 1 }}>
+              Description :
+            </Typography>
+            <ReactQuill
+              value={formik.values.description}
+              onChange={(value) => formik.setFieldValue("description", value)}
+              modules={modules}
+              formats={formats}
+              placeholder="Write something..."
+              style={{ height: "150px" }}
+            />
+          </Box>
+          <Grid container spacing={2} sx={{ mt: 3 }}>
+            {!formik.values.allDay ? (
+              <>
+                <Grid item xs={12} md={4}>
+                  <Box sx={{ mt: 2 }}>
+                    <LocalizationProvider dateAdapter={AdapterDayjs}>
+                      <DateTimePicker
+                        label="Start date"
+                        onChange={(newValue) => {
+                          // Use Dayjs to create a valid date object
+                          const newStartDate = dayjs(newValue);
+                          // Update formik.values.start with the new date
+                          formik.setFieldValue("start", newStartDate);
+                        }}
+                        value={dayjs(formik.values.start)}
+                      />
+                    </LocalizationProvider>
+                  </Box>
+                </Grid>
+                <Grid item xs={12} md={4}>
+                  <Box sx={{ mt: 2 }}>
+                    <LocalizationProvider dateAdapter={AdapterDayjs}>
+                      <DateTimePicker
+                        label="End date"
+                        onChange={(newValue) => {
+                          // Use Dayjs to create a valid date object
+                          const newStartDate = dayjs(newValue);
+                          // Update formik.values.start with the new date
+                          formik.setFieldValue("end", newStartDate);
+                        }}
+                        value={dayjs(formik.values.end)}
+                      />
+                    </LocalizationProvider>
+                  </Box>
+                </Grid>
+              </>
+            ) : (
+              <>
+                <Grid item xs={12} md={4}>
+                  <Box sx={{ mt: 2 }}>
+                    <LocalizationProvider dateAdapter={AdapterDayjs}>
+                      <DatePicker
+                        label="Start date"
+                        onChange={(newValue) => {
+                          // Use Dayjs to create a valid date object
+                          const newStartDate = dayjs(newValue);
+                          // Update formik.values.start with the new date
+                          formik.setFieldValue("start", newStartDate);
+                        }}
+                        value={dayjs(formik.values.start)}
+                      />
+                    </LocalizationProvider>
+                  </Box>
+                </Grid>
+                <Grid item xs={12} md={4}>
+                  <Box sx={{ mt: 2 }}>
+                    <LocalizationProvider dateAdapter={AdapterDayjs}>
+                      <DatePicker
+                        label="End date"
+                        onChange={(newValue) => {
+                          // Use Dayjs to create a valid date object
+                          const newStartDate = dayjs(newValue);
+                          // Update formik.values.start with the new date
+                          formik.setFieldValue("end", newStartDate);
+                        }}
+                        value={dayjs(formik.values.end)}
+                      />
+                    </LocalizationProvider>
+                  </Box>
+                </Grid>
+              </>
+            )}
+            <Grid xs={12} md={4}>
+              <Box sx={{ mt: 4 }}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={formik.values.allDay}
+                      name="allDay"
+                      onChange={formik.handleChange}
+                    />
+                  }
+                  label="All day"
+                />
+              </Box>
+            </Grid>
+          </Grid>
+          <Grid container spacing={2}>
+            <Grid item xs={12} md={4}>
+              <Box sx={{ mt: 2 }}>
+                <Typography variant="subtitle1" sx={{ mb: 1 }}>
+                  Recurrence Frequency:
+                </Typography>
+                <Select
+                  fullWidth
+                  label="Recurrence Frequency"
+                  name="recurrenceFrequency"
+                  onBlur={formik.handleBlur}
+                  onChange={formik.handleChange}
+                  value={formik.values.recurrenceFrequency}
+                >
+                  <MenuItem value="doesNotRepeat">Does Not Repeat</MenuItem>
+                  <MenuItem value="everyWeekday">Every weekday</MenuItem>
+                  <MenuItem value="daily">Daily</MenuItem>
+                  <MenuItem value="weekly">Weekly</MenuItem>
+                  <MenuItem value="monthly">Monthly</MenuItem>
+                  <MenuItem value="yearly">Yearly</MenuItem>
+                  {/* <MenuItem value="custom">Custom</MenuItem> */}
+                </Select>
+              </Box>
+            </Grid>
+          </Grid>
+
+          <Grid container spacing={2}>
+            <Grid item xs={12} md={4}>
+              <Box sx={{ mt: 2 }}>
+                <Typography variant="subtitle1" sx={{ mb: 1 }}>
+                  Location:
+                </Typography>
+                <TextField
+                  error={Boolean(
+                    formik.touched.location && formik.errors.location
+                  )}
+                  fullWidth
+                  helperText={formik.touched.location && formik.errors.location}
+                  label="Location"
+                  name="location"
+                  onBlur={formik.handleBlur}
+                  onChange={formik.handleChange}
+                  value={formik.values.location}
+                />
+              </Box>
+            </Grid>
+          </Grid>
+                {formGroupWithValidation}
+        </Box>
+        <Divider />
+        <Box
+          sx={{
+            alignItems: "center",
+            display: "flex",
+            p: 1,
+          }}
+        >
+          {event && (
+            <IconButton onClick={(): Promise<void> => handleDelete()}>
+              <TrashIcon fontSize="small" />
+            </IconButton>
+          )}
+          <Box sx={{ flexGrow: 1 }} />
+          <Button onClick={onClose} size="small">
+            Cancel
+          </Button>
+          <Button
+            disabled={formik.isSubmitting}
+            sx={{ ml: 1 }}
+            type="submit"
+            variant="contained"
+            size="small"
+          >
+            Confirm
+          </Button>
+        </Box>
+      </form>
+    </Dialog>
+  );
+};
+
+CalendarEventDialog.propTypes = {
+  // @ts-ignore
+  event: PropTypes.object,
+  onAddComplete: PropTypes.func,
+  onClose: PropTypes.func,
+  onDeleteComplete: PropTypes.func,
+  onEditComplete: PropTypes.func,
+  getData: PropTypes.func,
+  open: PropTypes.bool,
+  // @ts-ignore
+  range: PropTypes.object,
+};

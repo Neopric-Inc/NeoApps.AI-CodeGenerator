@@ -1,0 +1,13 @@
+﻿import { combineReducers } from "redux";
+
+import template from "redux/slices/template";
+import authToken from "redux/slices/auth";
+import dnd_ui_versions from 'redux/slices/dnd_ui_versions';
+import workflows from 'redux/slices/workflows';
+{reducerImport}
+
+const rootReducer = combineReducers({ template,authToken,{reducerList},dnd_ui_versions,workflows });
+
+export type RootState = ReturnType<typeof rootReducer>;
+
+export default rootReducer;

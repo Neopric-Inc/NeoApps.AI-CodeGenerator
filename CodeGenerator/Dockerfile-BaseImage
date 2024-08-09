@@ -1,0 +1,32 @@
+﻿# Base image
+FROM ubuntu:22.04
+
+# Set noninteractive installation
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install necessary tools and tzdata
+RUN apt-get update && \
+    apt-get install -y tzdata apt-transport-https ca-certificates curl gnupg-agent software-properties-common wget git
+
+# Add Docker repository and install Docker
+RUN curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add - && \
+    add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" && \
+    curl -fsSL https://get.docker.com | sh
+
+# Add Helm repository and install Helm
+RUN curl https://baltocdn.com/helm/signing.asc | apt-key add - && \
+    echo "deb https://baltocdn.com/helm/stable/debian/ all main" | tee /etc/apt/sources.list.d/helm-stable-debian.list
+
+# Add Kubernetes repository and install Kubernetes
+RUN curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add - && \
+    echo "deb https://packages.cloud.google.com/apt/ kubernetes-xenial main" | tee /etc/apt/sources.list.d/kubernetes.list
+
+# Add Microsoft repository and install .NET SDK and runtime
+RUN wget https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb && \
+    dpkg -i packages-microsoft-prod.deb && \
+    apt-get update && \
+    apt-get install -y docker-ce docker-ce-cli containerd.io helm kubectl dotnet-sdk-6.0 dotnet-runtime-6.0 && \
+    dotnet tool install --global Swashbuckle.AspNetCore.Cli --version 6.5.0
+
+# Set the working directory
+WORKDIR /app

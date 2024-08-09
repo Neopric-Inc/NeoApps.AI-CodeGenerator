@@ -1,0 +1,12 @@
+@import '/node_modules/@syncfusion/ej2-layouts/styles/material.css';
+
+/* .card {
+    margin: 5px;
+} */
+
+.e-card-title {
+    justify-content: center;
+    text-align: center;
+    font-size: large;
+    font-weight: bold;
+}

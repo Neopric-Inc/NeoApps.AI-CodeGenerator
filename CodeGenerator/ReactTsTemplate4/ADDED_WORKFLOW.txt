@@ -1,0 +1,76 @@
+{
+    "id": "{{UNIQUE_ID_FOR_TAB_ADDED}}",
+    "type": "tab",
+    "label": "When {{SWAGGER_SCHEMA_NAME}} Added",
+    "disabled": false,
+    "info": ""
+  },
+  {
+    "id": "{{UNIQUE_ID_FOR_SUBFLOW_ADDED_TRIGGER}}",
+    "type": "subflow",
+    "name": "ADD {{SWAGGER_SCHEMA_NAME}} OPERATION TRIGGER",
+    "info": "## ### **MUST USE AS FIRST NODE**\n**Triggerd** When any **ADD** operation is performed on **database**.\n\nWhen call from **console** Application is made to **trigger** the **workflow**\nit is being made using the **URL** that is provided in **HTTP IN**\n**node** and **API** is set to **POST**.\n\nFunction node sets **TOKEN** which is for **Authorization** of **API**\nas **Global** varibale named **\"token\"** and also sets Object of the \nPayload to Message object Like.....\nIf the object came has name **{{SWAGGER_SCHEMA_NAME}}**\nthen it will be stored as **msg._{{SWAGGER_SCHEMA_OBJECT}}**\nin **Message** object...",
+    "category": "{{SWAGGER_SCHEMA_NAME}}",
+    "in": [],
+    "out": [
+      {
+        "x": 700,
+        "y": 120,
+        "wires": [
+          {
+            "id": "{{UNIQUE_ID_FOR_FUNCTION_ADDED}}",
+            "port": 0
+          }
+        ]
+      }
+    ],
+    "env": []
+  },
+  {
+    "id": "{{UNIQUE_ID_FOR_HTTPIN_ADDED}}",
+    "type": "http in",
+    "z": "{{UNIQUE_ID_FOR_SUBFLOW_ADDED_TRIGGER}}",
+    "name": "Add Operation Triggered",
+    "url": "/flow/{{SWAGGER_SCHEMA_NAME}}/added",
+    "method": "post",
+    "upload": false,
+    "swaggerDoc": "",
+    "x": 180,
+    "y": 120,
+    "wires": [["{{UNIQUE_ID_FOR_FUNCTION_ADDED}}"]]
+  },
+  {
+    "id": "{{UNIQUE_ID_FOR_FUNCTION_ADDED}}",
+    "type": "function",
+    "z": "{{UNIQUE_ID_FOR_SUBFLOW_ADDED_TRIGGER}}",
+    "name": "SET TOKEN TO GLOBAL VARIABLE",
+    "func": "msg._{{SWAGGER_SCHEMA_OBJECT}} = msg.payload;\nglobal.set(\"token\",msg.req.headers.authorization);\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 470,
+    "y": 120,
+    "wires": [[]]
+  },
+  {
+    "id": "{{UNIQUE_ID_FOR_SUBFLOW_INSTANCE_ADDED}}",
+    "type": "subflow:{{UNIQUE_ID_FOR_SUBFLOW_ADDED_TRIGGER}}",
+    "z": "{{UNIQUE_ID_FOR_TAB_ADDED}}",
+    "name": "",
+    "x": 140,
+    "y": 200,
+    "wires": [["{{UNIQUE_ID_FOR_DEBUG_ADDED}}"]]
+  },
+  {
+    "id": "{{UNIQUE_ID_FOR_DEBUG_ADDED}}",
+    "type": "debug",
+    "z": "{{UNIQUE_ID_FOR_TAB_ADDED}}",
+    "name": "",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "false",
+    "x": 500,
+    "y": 200,
+    "wires": []
+  }

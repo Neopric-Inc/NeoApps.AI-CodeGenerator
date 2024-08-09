@@ -1,0 +1,59 @@
+  {
+    "id": "{{UNIQUE_ID_FOR_SUBFLOW_DELETE_SIMPLE}}",
+    "type": "subflow",
+    "name": "DELETE {{SWAGGER_SCHEMA_OBJECT}} SIMPLE",
+    "info": "Used to DELETE **{{SWAGGER_SCHEMA_OBJECT}}** record provided by ID using **DELETE API** call\n### NOTE\nHere {{SWAGGER_SCHEMA_OBJECT}} id in **api url** is provided or **concateneted** like\n**url = \"\"+msg._{{SWAGGER_SCHEMA_OBJECT}}.{{SWAGGER_SCHEMA_PRIMARY_KEY}};**\n\n**IT Also presumes that in your message there is one object\ncalled {_{{SWAGGER_SCHEMA_OBJECT}}} that you want to delete;**",
+    "category": "{{SWAGGER_SCHEMA_NAME}}",
+    "in": [
+      {
+        "x": 80,
+        "y": 160,
+        "wires": [
+          {
+            "id": "{{UNIQUE_ID_FOR_FUNCTION_DELETE_SIMPLE}}"
+          }
+        ]
+      }
+    ],
+    "out": [
+      {
+        "x": 680,
+        "y": 160,
+        "wires": [
+          {
+            "id": "{{UNIQUE_ID_FOR_HTTP_DELETE_SIMPLE}}",
+            "port": 0
+          }
+        ]
+      }
+    ],
+    "env": []
+  },
+  {
+    "id": "{{UNIQUE_ID_FOR_FUNCTION_DELETE_SIMPLE}}",
+    "type": "function",
+    "z": "{{UNIQUE_ID_FOR_SUBFLOW_DELETE_SIMPLE}}",
+    "name": "SET VARIABLE MESSAGE",
+    "func": "msg.headers ={\n    Authorization : global.get(\"token\"),\n}\nmsg.url =\"{{SWAGGER_URL}}/{{SWAGGER_SCHEMA_NAME}}/\"+msg._{{SWAGGER_SCHEMA_OBJECT}}.{{SWAGGER_SCHEMA_PRIMARY_KEY}};\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 260,
+    "y": 160,
+    "wires": [["{{UNIQUE_ID_FOR_HTTP_DELETE_SIMPLE}}"]]
+  },
+  {
+    "id": "{{UNIQUE_ID_FOR_HTTP_DELETE_SIMPLE}}",
+    "type": "http request",
+    "z": "{{UNIQUE_ID_FOR_SUBFLOW_DELETE_SIMPLE}}",
+    "name": "DELETE API",
+    "method": "DELETE",
+    "ret": "obj",
+    "paytoqs": false,
+    "url": "",
+    "tls": "",
+    "proxy": "",
+    "authType": "",
+    "x": 490,
+    "y": 160,
+    "wires": [[]]
+  }

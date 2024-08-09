@@ -1,0 +1,19 @@
+import React, { useState, useEffect } from "react";
+import { {modelName}{viewName} } from "./{viewName}";
+import { {modelName}DefaultView } from "./DefaultView";
+//import Kanban from "./kanban/indexKanban";
+//import Calendar from "./Calendar";
+
+
+export const {modelName} = (props) => {
+  const config = props.config;
+ //console.log(config.selectedView);
+  switch (config.selectedView) {
+    case "{viewNameSmall}":
+      return <{modelName}{viewName} {...props} />;
+      break;
+    default:
+      return <{modelName}DefaultView {...props} />;
+      break;
+  }
+};

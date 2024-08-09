@@ -1,0 +1,5 @@
+﻿export const MenuItems = [
+    { title: 'Dashboard', path: '/dashboard', icon: 'fas fa-fw fa-tachometer-alt', subMenu: [] },
+    { title: 'File Upload', path: '/upload', icon: 'fas fa-fw fa-upload', subMenu: [] },
+    {menuItems}
+]

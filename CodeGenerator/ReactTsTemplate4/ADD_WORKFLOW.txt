@@ -1,0 +1,48 @@
+{
+    "id": "{{UNIQUE_ID_FOR_TAB_ADDED}}",
+    "type": "tab",
+    "label": "When {{SWAGGER_SCHEMA_NAME}} Added",
+    "disabled": false,
+    "info": ""
+  },
+
+{
+    "id": "{{UNIQUE_ID_FOR_HTTP_IN_POST_ADDED}}",
+    "type": "http in",
+    "z": "{{UNIQUE_ID_FOR_TAB_ADDED}}",
+    "name": "Add Operation Triggered",
+    "url": "/flows/{{SWAGGER_SCHEMA_NAME}}/added",
+    "method": "post",
+    "upload": false,
+    "swaggerDoc": "",
+    "x":110 ,
+    "y":100 ,
+    "wires": [["{{UNIQUE_ID_FOR_FUNCTION_ADDED}}"]]
+  },
+  {
+    "id": "{{UNIQUE_ID_FOR_FUNCTION_ADDED}}",
+    "type": "function",
+    "z": "{{UNIQUE_ID_FOR_TAB_ADDED}}",
+    "name": "",
+    "func": "global.set(\"token\",\"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1bmlxdWVfbmFtZSI6WyJhZG1pbiIsIkN1c3RvbU9iamVjdENhbkJlQWRkZWRIZXJlIl0sIm5iZiI6MTY4ODY2ODgyNywiZXhwIjoxNjg5MjczNjI3LCJpYXQiOjE2ODg2Njg4Mjd9.JR2jV8HRHORajUlsZupjyfqNXSrFaqBEQqc87kcrQag\");\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 320,
+    "y": 100,
+    "wires": [["{{UNIQUE_ID_FOR_DEBUG_ADDED}}"]]
+  },
+  {
+    "id": "{{UNIQUE_ID_FOR_DEBUG_ADDED}}",
+    "type": "debug",
+    "z": "{{UNIQUE_ID_FOR_TAB_ADDED}}",
+    "name": "debug 1",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "true",
+    "targetType": "full",
+    "x": 540,
+    "y": 100,
+    "wires": []
+  }

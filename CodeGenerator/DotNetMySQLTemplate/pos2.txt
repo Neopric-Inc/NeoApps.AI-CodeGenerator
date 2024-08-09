@@ -1,0 +1,20 @@
+if ({tableNameSmall} != null)
+{
+    cmd.Parameters.Clear();
+    cmd.CommandText = @"{selectOneQuery}";
+    cmd.Parameters.AddWithValue("@ownername", ownername);
+    {getByIDQueryParameter}
+
+    using (var reader = cmd.ExecuteReader())
+    {
+        while (reader.Read())
+        {
+            var {rftablenameSmall} = new {rftableNameMain}RelationalModel()
+            {
+                {selectAllRfModelInit}
+            };
+
+            {tableNameSmall}.{rftableName} = {rftablenameSmall};
+        }
+    }
+}

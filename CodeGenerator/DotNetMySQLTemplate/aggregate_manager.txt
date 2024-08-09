@@ -1,0 +1,22 @@
+using {projectName}.Manager.RabitMQAPI.API;
+using {projectName}.DataAccess.Interface;
+using {projectName}.Manager.Interface;
+using {projectName}.Model;
+using {projectName}.Utility;
+using System;
+using System.Collections.Generic;
+using System.Text;
+
+namespace {projectName}.Manager.Impl
+{
+    public class AggregateManager : IAggregateManager
+    {
+        private readonly IAggregateDataAccess DataAccess = null;
+        public AggregateManager(IAggregateDataAccess dataAccess)
+        {
+            DataAccess = dataAccess;
+        }
+
+        {allaggregatefunctionmanager}
+    }
+}

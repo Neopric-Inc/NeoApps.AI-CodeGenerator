@@ -1,0 +1,168 @@
+import { forwardRef, useState } from "react";
+import PropTypes from "prop-types";
+import {
+  Avatar,
+  AvatarGroup,
+  Box,
+  Card,
+  CardMedia,
+  Chip,
+  Typography,
+} from "@mui/material";
+import { Check as CheckIcon } from "components/icons/check";
+import { ChatAlt as ChatAltIcon } from "components/icons/chat-alt";
+import { DocumentText as DocumentTextIcon } from "components/icons/document-text";
+import { Eye as EyeIcon } from "components/icons/eye";
+import type { Card as CardType, Column, Member } from "./kanban-types";
+import { KanbanCardModal } from "./kanban-card-modal";
+import { useSelector } from "react-redux";
+import { RootState } from "redux/reducers";
+
+interface KanbanCardProps {
+  cardId: string;
+  content: any;
+  dragging?: boolean;
+  index?: number;
+  config: any;
+  getData: any;
+  allStatusData: any;
+  contentStatus: any;
+  style?: Record<any, any>;
+}
+
+interface PopulatedCard extends CardType {
+  members: Member[];
+}
+
+// const cardSelector = (state: RootState, cardId: string): PopulatedCard => {
+//   const { cards, members } = state.kanban;
+//   const card = cards.byId[cardId];
+
+//   return {
+//     ...card,
+//     members: card.memberIds.map((memberId: string) => members.byId[memberId]),
+//   };
+// };
+
+export const KanbanCard = forwardRef<HTMLDivElement, KanbanCardProps>(
+  (props, ref) => {
+    const {
+      cardId,
+      dragging,
+      content,
+      config,
+      allStatusData,
+      contentStatus,
+      getData,
+      ...other
+    } = props;
+
+    const [open, setOpen] = useState<boolean>(false);
+
+    const handleOpen = (): void => {
+      setOpen(true);
+    };
+
+    const handleClose = (): void => {
+      setOpen(false);
+    };
+
+    return (
+      <Box
+        ref={ref}
+        sx={{
+          outline: "none",
+          py: 1,
+        }}
+        {...other}
+      >
+        <Card
+          onClick={handleOpen}
+          raised={dragging}
+          sx={{
+            ...(dragging && {
+              backgroundColor: "background.paper",
+            }),
+            "&:hover": {
+              backgroundColor: "background.default",
+            },
+          }}
+          variant="elevation"
+        >
+          <Box sx={{ p: 3 }}>
+            {"/static/mock-images/kanban/media_1.jpg" && (
+              <CardMedia
+                image={"/static/mock-images/kanban/media_1.jpg"}
+                sx={{ height: 120 }}
+              />
+            )}
+            <Typography sx={{ mt: 1 }} variant="subtitle1">
+              {content[config["TaskName_ref_gv1_column"]]}
+            </Typography>
+            {/* {card.labels.length > 0 && (
+              <Box
+                sx={{
+                  alignItems: "center",
+                  display: "flex",
+                  flexWrap: "wrap",
+                  m: -1,
+                  mt: 1,
+                }}
+              >
+                {card.labels.map((label) => (
+                  <Chip key={label} label={label} size="small" sx={{ m: 1 }} />
+                ))}
+              </Box>
+            )} */}
+            <Box
+              sx={{
+                alignItems: "center",
+                display: "flex",
+                mt: 2,
+                color: "action.active",
+                "& svg:not(:first-of-type)": {
+                  ml: 2,
+                },
+              }}
+            >
+              {content.isActive && <EyeIcon fontSize="small" />}
+              {content.isActive > 0 && <DocumentTextIcon fontSize="small" />}
+              {content.isActive > 0 && <CheckIcon fontSize="small" />}
+              {content.isActive > 0 && <ChatAltIcon fontSize="small" />}
+              <Box sx={{ flexGrow: 1 }} />
+              {/* {card.members.length > 0 && (
+                <AvatarGroup max={5}>
+                  {card.members.map((member) => (
+                    <Avatar key={member.id} src={member.avatar || undefined} />
+                  ))}
+                </AvatarGroup>
+              )} */}
+            </Box>
+          </Box>
+        </Card>
+        <KanbanCardModal
+          content={content}
+          config={config}
+          allStatusData={allStatusData}
+          contentStatus={contentStatus}
+          onClose={handleClose}
+          open={open}
+          getData={getData}
+        />
+      </Box>
+    );
+  }
+);
+
+KanbanCard.propTypes = {
+  cardId: PropTypes.string.isRequired,
+  dragging: PropTypes.bool,
+  index: PropTypes.number,
+  // @ts-ignore
+  column: PropTypes.object.isRequired,
+  style: PropTypes.object,
+};
+
+KanbanCard.defaultProps = {
+  dragging: false,
+};

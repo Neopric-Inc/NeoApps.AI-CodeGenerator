@@ -1,0 +1,80 @@
+public {tableName}ReportingModel Get{tableName}Reporting(string ownername,{primaryKeyListParam})
+{
+    try
+    {
+        mySqlDatabaseConnector.OpenConnection();
+        var connection = mySqlDatabaseConnector.GetConnection();
+        using (var cmd = connection.CreateCommand())
+        {
+            cmd.CommandText = @"{selectOneQueryByCreatedBy}";
+            cmd.Parameters.AddWithValue("@ownername", ownername);
+            {getByIDQueryParameter}
+            {tableName}ReportingModel {tableNameSmall} = null;
+            using (var reader = cmd.ExecuteReader())
+            {
+                while (reader.Read())
+                {
+                    {tableNameSmall} = new {tableName}ReportingModel()
+                    {
+                        {selectAllModelInit}
+                    };
+                }
+            }
+
+            {posreportingfulfilled}
+
+            return {tableNameSmall};
+        }
+    }
+    catch (Exception ex)
+    {
+        throw ex;
+    }
+    finally
+    {
+        mySqlDatabaseConnector.CloseConnection();
+    }
+    return null;
+}
+
+public List<{tableName}ReportingModel> GetAll{tableName}Reporting(string ownername,int page=1,int itemsPerPage=100,List<OrderByModel> orderBy = null){
+    int offset = (page - 1) * itemsPerPage;
+    try
+    {
+        mySqlDatabaseConnector.OpenConnection();
+        var connection = mySqlDatabaseConnector.GetConnection();
+        using (var cmd = connection.CreateCommand())
+        {
+            cmd.CommandText = @"{selectAllQueryByCreatedBy}";
+            {convertSQL}
+            cmd.Parameters.AddWithValue("@Offset", offset);
+            cmd.Parameters.AddWithValue("@ownername", ownername);
+            cmd.Parameters.AddWithValue("@ItemsPerPage", itemsPerPage);
+            List<{tableName}ReportingModel> {tableNameSmall} = new List<{tableName}ReportingModel>();
+            using (var reader = cmd.ExecuteReader())
+            {
+                while (reader.Read())
+                {
+                    {tableName}ReportingModel res = new {tableName}ReportingModel()
+                    {
+                        {selectAllModelInit}
+                    };
+                    {tableNameSmall}.Add(res);
+                }
+            }
+
+            {getallposreportingfulfilled}
+
+            return {tableNameSmall};
+        }
+    }
+    catch (Exception ex)
+    {
+        throw ex;
+    }
+    finally
+    {
+        mySqlDatabaseConnector.CloseConnection();
+    }
+    return null;
+}

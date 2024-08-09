@@ -1,0 +1,672 @@
+﻿import React, { useEffect, useState } from "react";
+import DataTable from "react-data-table-component";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { IconName } from "@fortawesome/fontawesome-svg-core";
+
+import {
+  Box,
+  Button,
+  Card,
+  CardHeader,
+  CardContent,
+  TextField,
+  InputAdornment,
+  IconButton,
+  Grid,
+  Typography,
+  Pagination,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+} from "@mui/material";
+import {
+  CustomGridLayout,
+  CustomGridLayoutDynamic,
+  CustomGridLayoutDynamicV2,
+  DefaultGridTest,
+} from "Dnd/Dnd Designer/Components/DefaultGridTest";
+import { useSelector } from "react-redux";
+import { RootState } from "redux/reducers";
+import { useAppDispatch } from "redux/store";
+import { reset{modelName}ToInit, set{modelName}Message } from "redux/actions";
+//import { Box, Button, Card, CardHeader, CardContent, TextField, InputAdornment, IconButton, Grid, Typography } from "@mui/material";
+import { Constant } from "template/Constant";
+import ConfirmationModal from "template/ConfirmationModal";
+import { delete{modelName} } from "services/{tableName}Service";
+import { set{modelName}List } from "redux/actions";
+import { get{modelName} } from "services/{tableName}Service";
+import AddIcon from '@mui/icons-material/Add';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import { DataGrid, GridToolbar } from "@mui/x-data-grid";
+import { makeStyles } from "@mui/styles";
+{importFKRedux}
+{importFKService}
+const useStyles = makeStyles({
+  root: {
+    "& .MuiDataGrid-cell": {
+      display: "flex",
+      alignItems: "center",
+    },
+    "& .MuiDataGrid-root": {
+      color: (props) =>
+        props["RowColor"] !== undefined ? props["RowColor"] : "#223336",
+      backgroundColor: (props) =>
+        props["RowBackgroundColor"] !== undefined
+          ? props["RowBackgroundColor"]
+          : "#e7eef0",
+    },
+    "& .MuiDataGrid-columnsContainer": {
+      color: (props) =>
+        props["HeadRowColor"] !== undefined ? props["HeadRowColor"] : "#223336",
+      backgroundColor: (props) =>
+        props["HeadRowBackgroundColor"] !== undefined
+          ? props["HeadRowBackgroundColor"]
+          : "#e7eef0",
+    },
+  },
+});
+type Props = {
+  hideShowForm: (action: string) => void;
+  handleRowEdit: (row: any) => void;
+  getData: (page: number, pageSize: number, searchKey: string) => void;
+  config: any;
+  openLink: any;
+  columnDefinitions: any[];
+};
+
+export const {modelName}Table: React.FC<Props> = ({
+  hideShowForm,
+  handleRowEdit,
+  getData,
+  columnDefinitions,
+  config,
+  openLink,
+}) => {
+    const classes = useStyles(config);
+  const dispatch = useAppDispatch();
+  const [search, setSearch] = useState("");
+  const [showDelete, setShowDelete] = useState(false);
+  const [rowData, setRowData] = useState<any>(undefined);
+  const [page, setPage] = useState(Constant.defaultPageNumber); // Page index for DataGrid starts at 0
+  const [pageSize, setPageSize] = useState(Constant.defaultPageSize);
+  const [totalRecords, setTotalCount] = useState(0); // To store total number of items
+  const rData = useSelector((state: RootState) => state.{tableName});
+  const {modelName}Data = useSelector((state: RootState) => state.{tableName});
+  {fkReduxInit}
+  {useEffectForFK}
+
+  useEffect(() => {
+    if ({modelName}Data && {modelName}Data.list && {modelName}Data.list.length === 0 && ({modelName}Data.message !== "No Record Found After Filter")) {
+      dispatch(reset{modelName}ToInit());
+      get{modelName}(Constant.defaultPageNumber, Constant.defaultDropdownPageSize, "").then((response) => {
+        if (response && response.records) {
+           // Assuming the response structure includes pageNumber, pageSize, totalCount, and records
+          setPage(response.pageNumber - 1); // Adjust if your component/page state is 0-based and API is 1-based
+          setPageSize(response.pageSize);
+          setTotalCount(response.totalRecords);
+          dispatch(
+            set{modelName}List({
+              pageNo: Constant.defaultPageNumber,
+              pageSize: Constant.defaultDropdownPageSize,
+              list: response.records,
+              totalCount: response.totalRecords,
+              searchKey: "",
+            })
+          );
+        } else {
+          dispatch(set{modelName}Message(`No Record Found For {modelName}`));
+        }
+      });
+    }
+  }, [{modelName}Data.list.length]);
+
+ const handleSearch = () => {
+    if (search.length > 0) {
+      // Reset to the first page and fetch data with the search term
+      setPage(Constant.defaultPageNumber); // Reset page number to the first page
+      getData(Constant.defaultPageNumber, pageSize, search); // Fetch data starting from the first page
+    }
+  };
+
+  //const handlePerRowsChange = async (newPerPage: number, page: number) => {
+  // await getData(page, newPerPage, "");
+  //};
+
+  // Handle page change (note the +1 since DataGrid page is 0-based and API might be 1-based)
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage); // Optionally reset to the first page on page size change
+   //console.log("page changed", newPage);
+    getData(newPage + 1, pageSize, search); // Fetch new data for the page
+  };
+
+  // Handle page size change
+  const handlePageSizeChange = (newPageSize: number) => {
+    setPageSize(newPageSize);
+    setPage(Constant.defaultPageNumber); // Optionally reset to the first page on page size change
+    getData(Constant.defaultPageNumber, newPageSize, search); // Reset to first page with new page size
+  };
+
+  const handleRowDeleteClick = (row: any) => {
+    setRowData(row);
+    setShowDelete(true);
+  };
+
+  useEffect(() => {
+    if (rData && rData.list && rData.list.length === 0) {
+      dispatch(reset{modelName}ToInit());
+      getData(page, pageSize, "");
+    }
+  }, [rData.list.length]);
+
+  const handleReset = () => {
+    setSearch("");
+    dispatch(reset{modelName}ToInit());
+    getData(page, pageSize, "");
+  };
+
+  const handleServerDelete = async () => {
+    if (rowData) {
+      const response = await delete{modelName}({primaryKeyList});
+      if (response) {
+        dispatch(reset{modelName}ToInit());
+        dispatch(set{modelName}Message("Deleted Successfully"));
+        getData(page, pageSize, "");
+        setShowDelete(false);
+      } else {
+        dispatch(set{modelName}Message("Some error occurred!"));
+      }
+    }
+  };
+
+  const handleRowSelection = (row: any) => {
+   //console.log(row); // Row Selection Functionality can be written here
+  };
+
+  const handleAddButtonClick = () => {
+    dispatch(set{modelName}Message(''));
+    hideShowForm('add');
+  };
+
+const columns = [
+    ...columnDefinitions,
+    {
+      field: "edit",
+      headerName: "",
+      sortable: false,
+      width: 100,
+      renderCell: (params) => (
+        <Button
+          variant="contained"
+          size="small"
+          onClick={() => handleRowEdit(params.row)}
+        >
+          Edit
+        </Button>
+      ),
+            hide:         config["edit_button_visible1"] !== undefined
+        ? !config["edit_button_visible1"]
+        : false,
+    },
+    {
+      field: "delete",
+      headerName: "",
+      sortable: false,
+      width: 100,
+      renderCell: (params) => (
+        <Button
+          variant="contained"
+          color="secondary"
+          size="small"
+          onClick={() => handleRowDeleteClick(params.row)}
+        >
+          Delete
+        </Button>
+      ),
+            hide:         config["delete_button_visible1"] !== undefined
+        ? !config["delete_button_visible1"]
+        : false,
+    },
+  ];
+   let forwardButton;
+  const handleButtonClick = (params, passValue, type) => {};
+  if (config["nav_count"] !== undefined) {
+    for (let i = 0; i < config.nav_count; i++) {
+      if (config[`nav_${i}_button_name`] === undefined) continue;
+      const buttonName = config[`nav_${i}_button_name`];
+      const passValue = config[`nav_${i}_pass_value`];
+      const column = config[`nav_${i}_column`];
+      const type = config[`nav_${i}_type`];
+      const buttonColor = config[`nav_${i}_button_color`];
+      const textColor = config[`nav_${i}_text_color`];
+      const icon = config[`nav_${i}_icon`];
+
+      forwardButton = ({
+        buttonName,
+        passValue,
+        column,
+        rowData,
+        config,
+        openLink,
+        i,
+      }) => {
+        return (
+          <Button
+            style={{
+              whiteSpace: "normal",
+              wordWrap: "break-word",
+            }}
+            sx={{
+              backgroundColor: buttonColor ? buttonColor : "primary",
+              color: textColor ? textColor : "primary",
+            }}
+            variant="contained"
+            color="primary"
+            size="small"
+            endIcon={
+              icon ? (
+                <FontAwesomeIcon
+                  icon={["fas", icon as IconName]}
+                  color={textColor}
+                />
+              ) : null
+            }
+            onClick={() => {
+              if (passValue) {
+                const condition = {
+                  columnName: column,
+                  columnCondition: 1,
+                  columnValue: rowData[column].toString(),
+                };
+                openLink(config[`nav_${i}_page`], condition);
+              } else {
+                openLink(config[`nav_${i}_page`]);
+              }
+            }}
+          >
+            {buttonName}
+          </Button>
+        );
+      };
+      const newButtonColumn = {
+        field: buttonName,
+        headerName: "",
+        sortable: false,
+        width: 100,
+        renderCell: (params) => (
+          <Button
+	    style={{
+              whiteSpace: "normal", // Allows the text to wrap
+              wordWrap: "break-word", // Ensures long words are broken and wrapped
+            }}
+            sx={{
+              backgroundColor: buttonColor ? buttonColor : "primary",
+              color: textColor ? textColor : "primary",
+            }}
+            endIcon={
+              icon ? (
+                <FontAwesomeIcon
+                  icon={["fas", icon as IconName]}
+                  color={textColor}
+                />
+              ) : null
+            }
+            variant="contained"
+            color="primary"
+            size="small"
+            onClick={() => {
+              // handleButtonClick(
+              //   params.row,
+              //   passValue ? params.row[column] : null,
+              //   type
+              // )
+              if (passValue) {
+                const condition = {
+                  columnName: column,
+                  columnCondition: 1,
+                  columnValue: params.row[column].toString(),
+                };
+                openLink(config[`nav_${i}_page`], condition);
+              } else {
+                openLink(config[`nav_${i}_page`]);
+              }
+            }}
+          >
+            {buttonName}
+          </Button>
+        ),
+      };
+
+      columns.push(newButtonColumn);
+    }
+  }
+  const filteredColumns = columns; //.filter((column) => column.visible);
+  //Experimental Code -----------------------------------------------------
+  interface LayoutItem {
+    i: string;
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+    minW: number;
+    maxW: number;
+    minH: number;
+    maxH: number;
+  }
+
+  const generateLayout = () => {
+    const layout = [];
+
+    for (let i = 0; i < columnDefinitions.length; i++) {
+      // Adjust the number for more items
+      layout.push({
+        i: i.toString(),
+        x: (i * 2) % 12,
+        y: Math.floor(i / 6), // Adjust if necessary for your layout
+        w: 1,
+        h: 1,
+        minW: 1,
+        maxW: 12,
+        minH: 1,
+        maxH: 1000,
+      });
+    }
+    return layout;
+  };
+
+  const layoutItems = generateLayout();
+
+  // Generate a standard layout for a row
+  const generateStandardLayout = () => {
+    return filteredColumns.map((col, index) => ({
+      i: col.field,
+      x: index * 2, // Example positioning, adjust as needed
+      y: 0,
+      w: 2, // Standard width for all cells
+      h: 1, // Standard height for all cells
+    }));
+  };
+
+  const standardLayout = generateStandardLayout();
+  const generateInitialLayout = () => {
+    return filteredColumns.map((col, index) => ({
+      i: col.field,
+      x: index * 2, // Initial positioning
+      y: 0,
+      w: 2, // Initial width
+      h: 1, // Initial height
+    }));
+  };
+
+  const [layout, setLayout] = useState(generateInitialLayout());
+
+  // Callback function to update layout
+  const onLayoutChange = (newLayout) => {
+    setLayout(newLayout);
+  };
+  const pageCount = Math.ceil(totalRecords / pageSize);
+  const gridSize = config[`BYOView_Number_of_DbTable_Rows`]
+    ? 12 / config[`BYOView_Number_of_DbTable_Rows`]
+    : 12;
+  /////////////End of Experimental code /////////////////////////////
+  return (
+    /*<Card className="shadow mb-4">
+      <Card.Header className="py-3">
+        <h6 className="m-0 font-weight-bold text-primary">
+          {modelName} List ({rData.list.length})
+          <Button variant="outlined" className="btn-circle btn-sm ml-2" onClick={handleReset}>
+            <i className="fa fa-refresh"></i>
+          </Button>
+          <Button className="btn-icon-split float-right" onClick={handleAddButtonClick}>
+            <span className="icon text-white-50">
+              <i className="fas fa-add"></i>
+            </span>
+            <span className="text">Add New</span>
+          </Button>
+        </h6>
+      </Card.Header>
+      <Card.Body>
+        <Col className="ml-auto" style={{ padding: "4px" }} md={3} xs={12} xl={3}>
+          {config[`search_button_visible1`] && (
+              <TextField
+                placeholder="Search"
+                variant="outlined"
+                fullWidth
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <Button
+                        disabled={search.length <= 2}
+                        variant="contained"
+                        onClick={handleSearch}
+                      >
+                        Search
+                      </Button>
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            )}
+        </Col>
+        <div className="table-responsive">
+          <DataTable
+            selectableRows
+            onSelectedRowsChange={handleRowSelection}
+            paginationPerPage={Constant.defaultPageNumber}
+            paginationRowsPerPageOptions={Constant.paginationRowsPerPageOptions}
+            columns={filteredColumns}
+            data={rData.list}
+            onChangeRowsPerPage={handlePerRowsChange}
+            paginationTotalRows={rData.totalCount}
+            className="custom-datatable table table-bordered"
+            pagination
+            paginationServer
+            onChangePage={handlePageChange}
+            customStyles={{
+              headRow: {
+                style: {
+                  color: config["HeadRowColor"] !== undefined ? config["HeadRowColor"] : "#223336",
+                  backgroundColor: config["HeadRowBackgroundColor"] !== undefined ? config["HeadRowBackgroundColor"] : "#e7eef0",
+                  wordWrap: "break-word",
+                },
+              },
+              rows: {
+                style: {
+                  color: config["RowColor"] !== undefined ? config["RowColor"] : "#223336",
+                  backgroundColor: config["RowBackgroundColor"] !== undefined ? config["RowBackgroundColor"] : "#e7eef0",
+                },
+              },
+            }}
+          />
+        </div>
+      </Card.Body>
+      <ConfirmationModal
+        buttonNegative="Cancel"
+        buttonPositive="Delete"
+        title="Delete Confirmation"
+        show={showDelete}
+        body="Are you sure?"
+        onNegative={() => setShowDelete(false)}
+        onPositive={handleServerDelete}
+      />
+    </Card>*/
+     <Card className="shadow mb-4">
+    <CardHeader
+style={{
+          backgroundColor:
+            config["tableHeadBackgroundColor"] !== undefined
+              ? config["tableHeadBackgroundColor"]
+              : "white",
+          color:
+            config["HeadColor"] !== undefined ? config["HeadColor"] : "black",
+        }}
+         title={
+            <>
+              {config["heading2_visible1"] && (
+                <div>
+                  <span>
+                    {config["tableHeading"] !== undefined
+                      ? config["tableHeading"]
+                      : "Users List"}{" "}
+                    ({rData.list.length})
+                  </span>
+                  <IconButton onClick={handleReset}>
+                    <RefreshIcon
+                      style={{
+                        color:
+                          config["HeadColor"] !== undefined
+                            ? config["HeadColor"]
+                            : "black",
+                      }}
+                    />
+                  </IconButton>
+                </div>
+              )}
+            </>
+          }
+      action={
+          <>
+            {(config[`add_new_button_visible1`] || config[`add_new_button_visible1`] === undefined) && (
+              <Button
+                className="btn-icon-split float-right"
+                onClick={handleAddButtonClick}
+                variant="contained"
+                endIcon={<AddIcon />}
+              >
+                {config[`add_new_button_new_name1`] !== undefined
+                  ? config[`add_new_button_new_name1`]
+                  : "Add New"}
+              </Button>
+            )}
+          </>
+        }
+    />
+    <CardContent>
+      <Grid container spacing={2} justifyContent="flex-end">
+        <Grid item xs={12} md={3}>
+          {(config[`search_button_visible1`] || config[`search_button_visible1`]===undefined) && (
+              <TextField
+                placeholder="Search"
+                variant="outlined"
+                fullWidth
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <Button
+                        disabled={search.length <= 2}
+                        variant="contained"
+                        onClick={handleSearch}
+                      >
+                        Search
+                      </Button>
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            )}
+        </Grid>
+      </Grid>
+      <Box mt={2}></Box>
+      <Box mt={2}>
+          {/* <div style={{ height: 800, width: "100%" }} className={classes.root}>
+            <CustomGridLayout layoutItems={layoutItems} />
+          </div> */}
+
+          {/* <div style={{ height: 800, width: "100%" }} className={classes.root}>
+            <CustomGridLayoutDynamic
+              layoutItems={layoutItems}
+              filteredColumns={filteredColumns}
+            />
+          </div> */}
+          {config["BYOViewConfig"] !== undefined ? (
+            <>
+              <Grid container spacing={2}>
+                {rData.list.map((row, rowIndex) => (
+                  <Grid item xs={12} sm={gridSize} key={rowIndex}>
+                    <CustomGridLayoutDynamicV2
+                      rowData={row}
+                      layoutItems={config["BYOViewConfig"]} // Assuming this is your layout configuration
+                      filteredColumns={filteredColumns}
+                      onLayoutChange={onLayoutChange} // Handle layout changes
+                      config={config}
+                    />
+                  </Grid>
+                ))}
+              </Grid>
+              <Box
+                display="flex"
+                justifyContent="space-between"
+                alignItems="center"
+                padding="20px"
+                pt={10}
+              >
+                <FormControl variant="outlined" size="small">
+                  <InputLabel>Rows per page</InputLabel>
+                  <Select
+                    label="Rows per page"
+                    value={pageSize}
+                    onChange={(e) =>
+                      handlePageSizeChange(Number(e.target.value))
+                    }
+                  >
+                    {Constant.paginationRowsPerPageOptions.map((option) => (
+                      <MenuItem key={option} value={option}>
+                        {option}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                {/* Pagination Component */}
+                <Pagination
+                  count={pageCount}
+                  page={page + 1} // MUI Pagination is 1-based
+                  onChange={(event, value) => handlePageChange(value - 1)} // Convert back to 0-based page index
+                  color="primary"
+                />
+              </Box>
+            </>
+          ) : (
+            // Fallback content or component if config["BYOViewConfig"] is undefined
+            <div
+              style={{ height: 800, width: "100%" }}
+              className={classes.root}
+            >
+              <DataGrid
+                rows={rData.list}
+                columns={filteredColumns}
+                getRowId={(row) => row.{primaryKeyData}}
+                pagination
+                paginationMode="server" // Enable server-side pagination
+                pageSize={pageSize}
+                onPageSizeChange={(newPageSize) =>
+                  handlePageSizeChange(newPageSize)
+                }
+                rowCount={totalRecords} // Total row count from server
+                page={page}
+                rowsPerPageOptions={Constant.paginationRowsPerPageOptions}
+                onPageChange={(newPage) => handlePageChange(newPage)}
+                components={{
+                  Toolbar: GridToolbar,
+                }}
+                className={classes.root}
+              />
+            </div>
+          )}
+        </Box>
+    </CardContent>
+    <ConfirmationModal
+      buttonNegative="Cancel"
+      buttonPositive="Delete"
+      title="Delete Confirmation"
+      show={showDelete}
+      body="Are you sure?"
+      onNegative={() => setShowDelete(false)}
+      onPositive={handleServerDelete}
+    />
+  </Card>
+  );
+};

@@ -1,0 +1,35 @@
+using System;
+using Microsoft.AspNetCore.Mvc;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
+using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.AspNetCore.Authorization;
+using {projectName}.Manager.Interface;
+using {projectName}.Model;
+using {projectName}.Utility;
+using log4net;
+using System.Collections.Generic;
+using {projectName}.API.Attributes;
+
+namespace {projectName}.API.Controllers
+{
+	[Authorize]
+    [ApiController]
+    public class AggregateController : ControllerBase
+    {   ILog log4Net;
+        IAggregateManager Manager;
+        ValidationResult ValidationResult;
+        public AggregateController(IAggregateManager manager)
+        {  
+			log4Net = this.Log<AggregateController>();
+            Manager = manager;
+            ValidationResult = new ValidationResult();
+        }
+
+        {allaggregatefunctioncontroller}
+
+        
+    }
+}

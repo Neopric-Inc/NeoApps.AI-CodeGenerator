@@ -1,0 +1,77 @@
+
+    {
+        "id": "{{UNIQUE_ID_FOR_SIMPLE_PIE_CHART_FLOW}}",
+        "type": "tab",
+        "label": "Simple_PieChart1",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "{{UNIQUE_ID_FOR_SIMPLE_PIE_CHART_HTTP_IN}}",
+        "type": "http in",
+        "z": "{{UNIQUE_ID_FOR_SIMPLE_PIE_CHART_FLOW}}",
+        "name": "TriggerPieChart1",
+        "url": "/flows/Simple_PieChart/hello1",
+        "method": "post",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 100,
+        "y": 80,
+        "wires": [
+            [
+                "{{UNIQUE_ID_FOR_SIMPLE_PIE_CHART_TOKEN_FUNCTION}}"
+            ]
+        ]
+    },
+    {
+        "id": "{{UNIQUE_ID_FOR_SIMPLE_PIE_CHART_FUNCTION}}",
+        "type": "function",
+        "z": "{{UNIQUE_ID_FOR_SIMPLE_PIE_CHART_FLOW}}",
+        "name": "",
+        "func": "//this is piechart so we don't nedd categories to display onto front side\nconst chartData = [\n  {\n    series: [83],\n    color: [\"#27c6db\"],\n    size: [\"60%\"],\n    labels: [\"System Health\"],\n  },\n];\n  \n const response = {\n   chartCategories: null,\n   chartSeries: chartData,\n};\n\n// Set the response object as the payload of the outgoing message\nmsg.payload = response;\n  \nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 300,
+        "y": 240,
+        "wires": [
+            [
+                "{{UNIQUE_ID_FOR_SIMPLE_PIE_CHART_HTTP_RESPONSE}}"
+            ]
+        ]
+    },
+    {
+        "id": "{{UNIQUE_ID_FOR_SIMPLE_PIE_CHART_HTTP_RESPONSE}}",
+        "type": "http response",
+        "z": "{{UNIQUE_ID_FOR_SIMPLE_PIE_CHART_FLOW}}",
+        "name": "",
+        "statusCode": "",
+        "headers": {},
+        "x": 710,
+        "y": 420,
+        "wires": []
+    },
+    {
+        "id": "{{UNIQUE_ID_FOR_SIMPLE_PIE_CHART_TOKEN_FUNCTION}}",
+        "type": "function",
+        "z": "{{UNIQUE_ID_FOR_SIMPLE_PIE_CHART_FLOW}}",
+        "name": "Set Token as Global Variable",
+        "func": "global.set(\"token\",msg.req.headers.authorization);\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 180,
+        "y": 160,
+        "wires": [
+            [
+                "{{UNIQUE_ID_FOR_SIMPLE_PIE_CHART_FUNCTION}}"
+            ]
+        ]
+    }

@@ -1,0 +1,30 @@
+﻿using {projectName}.Model;
+using {projectName}.Utility;
+using System.Collections.Generic;
+
+namespace {projectName}.DataAccess.Interface
+{
+    public interface I{tableName}DataAccess
+    {
+        List<{tableName}Model> GetAll{tableName}(int page, int itemsPerPage,List<OrderByModel> orderBy);
+        List<{tableName}Model> GetAll{tableName}ByCreatedBy(string ownername,int page, int itemsPerPage,List<OrderByModel> orderBy);
+        List<{tableName}Model> Search{tableName}(string searchKey,int page = 1, int itemsPerPage = 100,List<OrderByModel> orderBy = null);
+        List<{tableName}Model> Search{tableName}ByCreatedBy(string ownername,string searchKey,int page = 1, int itemsPerPage = 100,List<OrderByModel> orderBy = null);
+		List<{tableName}Model> Filter{tableName}(string ownername,List<FilterModel> filterModels, string andOr, int page, int itemsPerPage, List<OrderByModel> orderBy);
+        {tableName}Model Get{tableName}ByID({primaryKeyListParam});
+        {tableName}Model Get{tableName}ByIDByCreatedBy(string ownername,{primaryKeyListParam});
+        {RelationalApiInegrationIDataaccess}
+        {ReportingApiInegrationIDataaccess}
+        {TransactionalApiInegrationIDataaccess}
+		int GetAllTotalRecord{tableName}();
+        int GetAllTotalRecord{tableName}ByCreatedBy(string ownername);
+        int GetSearchTotalRecord{tableName}(string searchKey);
+        int GetSearchTotalRecord{tableName}ByCreatedBy(string ownername,string searchKey);
+        bool Update{tableName}({tableName}Model model);
+		int GetFilterTotalRecord{tableName}(string ownername,List<FilterModel> filterBy, string andOr);
+        long Add{tableName}({tableName}Model model);
+        bool Delete{tableName}({primaryKeyListParam});
+		bool DeleteMultiple{tableName}(List<DeleteMultipleModel> deleteParam, string andOr);
+		
+    }
+}

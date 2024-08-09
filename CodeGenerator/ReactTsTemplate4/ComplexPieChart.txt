@@ -1,0 +1,66 @@
+
+  {
+    "id": "{{UNIQUE_ID_FOR_COMPLEX_PIE_CHART_FLOW}}",
+    "type": "tab",
+    "label": "Complex_PieChart1",
+    "disabled": false,
+    "info": "",
+    "env": []
+  },
+  {
+    "id": "{{UNIQUE_ID_FOR_COMPLEX_PIE_CHART_HTTP_IN}}",
+    "type": "http in",
+    "z": "{{UNIQUE_ID_FOR_COMPLEX_PIE_CHART_FLOW}}",
+    "name": "TriggerComplexPieChart1",
+    "url": "/flows/Complex_PieChart/pie1",
+    "method": "post",
+    "upload": false,
+    "swaggerDoc": "",
+    "x": 150,
+    "y": 120,
+    "wires": [["{{UNIQUE_ID_FOR_COMPLEX_PIE_CHART_TOKEN_FUNCTION}}"]]
+  },
+  {
+    "id": "{{UNIQUE_ID_FOR_COMPLEX_PIE_CHART_FUNCTION}}",
+    "type": "function",
+    "z": "{{UNIQUE_ID_FOR_COMPLEX_PIE_CHART_FLOW}}",
+    "name": "",
+    "func": "\nconst chartData = [\n  {\n    series: [10],\n    //color: theme.palette.primary.light,\n    color: \"#455a64\",\n    size: \"60%\",\n    labels: \"Linkedin\",\n  },\n  {\n    series: [10],\n    //color: theme.palette.warning.light,\n    color: \"#455a64\",\n    size: \"60%\",\n    labels: \"Facebook\",\n  },\n  {\n    series: [20],\n    //color: theme.palette.success.light,\n    color: \"#455a64\",\n    size: \"60%\",\n    labels: \"Instagram\",\n  },\n  {\n    series: [10],\n    //color: theme.palette.info.light,\n    color: \"#455a64\",\n    size: \"60%\",\n    labels: \"Twitter\",\n  },\n  {\n    series: [70],\n    color: \"#455a64\",\n    size: \"60%\",\n    labels: \"Other\",\n  },\n];\n\n  \n const response = {\n   chartCategories: null,\n   chartSeries: chartData,\n};\n\n// Set the response object as the payload of the outgoing message\nmsg.payload = response;\n  \nreturn msg;",
+    "outputs": 1,
+    "timeout": "",
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 320,
+    "y": 280,
+    "wires": [["{{UNIQUE_ID_FOR_COMPLEX_PIE_CHART_HTTP_RESPONSE}}"]]
+  },
+  {
+    "id": "{{UNIQUE_ID_FOR_COMPLEX_PIE_CHART_HTTP_RESPONSE}}",
+    "type": "http response",
+    "z": "{{UNIQUE_ID_FOR_COMPLEX_PIE_CHART_FLOW}}",
+    "name": "",
+    "statusCode": "",
+    "headers": {},
+    "x": 730,
+    "y": 460,
+    "wires": []
+  },
+  {
+    "id": "{{UNIQUE_ID_FOR_COMPLEX_PIE_CHART_TOKEN_FUNCTION}}",
+    "type": "function",
+    "z": "{{UNIQUE_ID_FOR_COMPLEX_PIE_CHART_FLOW}}",
+    "name": "Set Token as Global Variable",
+    "func": "global.set(\"token\",msg.req.headers.authorization);\nreturn msg;",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 200,
+    "y": 200,
+    "wires": [["{{UNIQUE_ID_FOR_COMPLEX_PIE_CHART_FUNCTION}}"]]
+  }
+

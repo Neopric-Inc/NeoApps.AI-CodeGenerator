@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {arg}-consumer-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {arg}-consumer
+  template:
+    metadata:
+      labels:
+        app: {arg}-consumer
+    spec:
+      imagePullSecrets:
+        - name: {arg3}
+      containers:
+        - name: {arg}-consumer
+          image: {arg1}:{arg2}
+          imagePullPolicy: Always
+          command: ["dotnet", "{projectName}.Consumer.dll"]
+          ports:
+            - containerPort: 80
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {arg}-consumer-service
+  labels:
+    app: {arg}-consumer
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: 80
+      name: https
+  selector:
+    app: {arg}-consumer

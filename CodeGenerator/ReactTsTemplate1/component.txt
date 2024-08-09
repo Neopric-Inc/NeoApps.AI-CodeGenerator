@@ -1,0 +1,350 @@
+﻿import React, { useState,useEffect } from "react";
+//import { Alert, Button } from "react-bootstrap";
+import { useSelector } from "react-redux";
+import { set{modelName}List, set{modelName}Message,reset{modelName}ToInit } from "redux/actions";
+import { RootState } from "redux/reducers";
+import { useAppDispatch } from "redux/store";
+import { get{modelName},filter{modelName}WithColumns } from "services/{tableName}Service";
+{importFKRedux}
+{importFKService}
+import Layout from "template";
+import { Constant } from "template/Constant";
+import { {modelName}Form } from "./form";
+import { {modelName}Table } from "./table";
+import { Container, Box, Alert, Button } from '@mui/material';
+import {
+  useRowSelector,
+  getRowElement,
+} from "Dnd/Dnd Designer/Utility/constants";
+//import TableSkeleton from "./../skeletone";
+
+export const {modelName}{viewName} = (props) => {
+  let config = props.config;
+    const [loading,setLoading] = useState(false);
+  const dispatch = useAppDispatch();
+    if (config === undefined) config = {};
+  const {tableName}Data = useSelector((state: RootState) => state.{tableName});
+  useEffect(() => {
+    if ({tableName}Data && {tableName}Data.list && {tableName}Data.list.length === 0 && ({tableName}Data.message !== "No Record Found After Filter")) {
+      dispatch(reset{modelName}ToInit());
+      get{modelName}(Constant.defaultPageNumber, Constant.defaultDropdownPageSize, "").then((response) => {
+        if (response && response.records) {
+          dispatch(
+            set{modelName}List({
+              pageNo: Constant.defaultPageNumber,
+              pageSize: Constant.defaultDropdownPageSize,
+              list: response.records,
+              totalCount: response.totalRecords,
+              searchKey: "",
+            })
+          );
+        } else {
+          dispatch(set{modelName}Message(`No Record Found For {modelName}`));
+        }
+      });
+    }
+  }, [{tableName}Data.list.length]);
+  {fkReduxInit}
+  {useEffectForFK}
+
+    useEffect(() => {
+    dispatch(reset{modelName}ToInit());
+    getData(Constant.defaultPageNumber, Constant.defaultPageSize, "");
+  }, [config.filtercondition]);
+
+
+
+ //console.log("props from Header:- ", props);
+  let innerContent, backgroundColor, color, fontFamily;
+  config.innerContent
+    ? (innerContent = config.innerContent)
+    : (innerContent = "Heading");
+  config.backgroundColor
+    ? (backgroundColor = config.backgroundColor)
+    : (backgroundColor = "white");
+  config.color ? (color = config.color) : (color = "black");
+  config.fontFamily ? (fontFamily = config.fontFamily) : (fontFamily = "Arial");
+  const renderHeader = (header, content) => {
+    switch (header) {
+      case "h1":
+        return <h1>{content}</h1>;
+      case "h2":
+        return <h2>{content}</h2>;
+      case "h3":
+        return <h3>{content}</h3>;
+      case "h4":
+        return <h4>{content}</h4>;
+      case "h5":
+        return <h5>{content}</h5>;
+      case "h6":
+        return <h6>{content}</h6>;
+      default:
+        return <h2>{content}</h2>;
+    }
+  };
+
+  const rData = useSelector((state: RootState) => state.{tableName});
+  const [row, setRow] = useState(undefined);
+    const [action, setAction] = useState(
+    config["ui_mode"] !== "Edit mode" ? "" : "add"
+  );
+
+   useEffect(() => {
+    if (rData.message) {
+      const timeoutId = setTimeout(() => {
+        dispatch(set{modelName}Message(""));
+      }, 5000);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [rData.message, dispatch]);
+
+    useEffect(() => {
+      if (config["ui_mode"] !== "Edit mode") setAction("");
+      else setAction("add");
+    }, [config["ui_mode"]]);
+    let payload = [];
+  let filterApplied = false;
+  const getData = (page, pageSize, searchKey) => {
+    if (config.filtercondition ? true : false) {
+       const temp = eval(config.filtercondition);
+      if (config.condition) {
+        temp.push(config.condition);
+      }
+      const tp1 = temp.map((tp) => {
+        return {
+          ...tp,
+          columnCondition: parseInt(tp.columnCondition),
+          columnValue: tp.columnValue.toString(),
+        };
+      });
+      if(config.filtercondition && config.filtercondition.length !== 0){
+      filter{modelName}WithColumns(eval(config.filtercondition)).then(
+        (response: any) => {
+          console.log("Filter condition returns ------------------->");
+          console.log(response);
+          if(response && response.totalCount === 0){
+            dispatch(set{modelName}Message("No Record Found After Filter"));
+          }
+          if (response && response.records) {
+            dispatch(
+              set{modelName}List({
+                pageNo: page,
+                pageSize: pageSize,
+                list: response.records,
+                totalCount: response.total_count,
+                searchKey: searchKey,
+              })
+            );
+          } else {
+            dispatch(set{modelName}Message("No Record Found"));
+          }
+        }
+      );
+      } else{
+        console.log("No filter condition ----------------->");
+      get{modelName}(page, pageSize, searchKey).then((response) => {
+        if (response && response.records) {
+          dispatch(
+            set{modelName}List({
+              pageNo: page,
+              pageSize: pageSize,
+              list: response.records,
+              totalCount: response.total_count,
+              searchKey: searchKey,
+            })
+          );
+        } else {
+          dispatch(set{modelName}Message("No Record Found"));
+        }
+      });
+      }
+    } else {
+      get{modelName}(page, pageSize, searchKey).then((response) => {
+        if (response && response.records) {
+          dispatch(
+            set{modelName}List({
+              pageNo: page,
+              pageSize: pageSize,
+              list: response.records,
+              totalCount: response.totalRecords,
+              searchKey: searchKey,
+            })
+          );
+        } else {
+          dispatch(set{modelName}Message("No Record Found"));
+        }
+      });
+    }
+  }
+  interface Condition {
+    columnName: string;
+    columnCondition: string;
+    columnValue: string;
+  }
+  const handleSubmit = (output: Condition[]) => {
+    let result: any[] = [];
+
+    output.forEach((condition) => {
+      // Assign values to the new object and push it to the result array
+      result.push({
+        columnName: condition.columnName,
+        columnCondition: Number(condition.columnCondition),
+        columnValue: eval(condition.columnValue).toString(),
+      });
+    });
+
+    // Log the result array
+   //console.log("Result:", result);
+
+    // Stringify the result array
+    payload = result;
+   //console.log("Result String:", JSON.stringify(payload));
+    filterApplied = true;
+  };
+  const columnCondition = ["1", "2", "3"];
+  const handleRowEdit = (rowData) => {
+    setRow(rowData);
+    dispatch(set{modelName}Message(''));
+    setAction('edit');
+  }
+  function RowSelectorComponent({
+    inputType,
+    field,
+    display_control,
+    bucket_id,
+    bucket_folder
+  }) {
+    const srcData = useRowSelector(
+      inputType,
+      field,
+      display_control,
+      bucket_id,
+      bucket_folder
+    );
+
+    return getRowElement(inputType, field, display_control, srcData);
+  }
+const columnDefinitions=[{tableColumn}];
+
+return (
+  /*  <div>
+      <div className="container-fluid">
+        <div className="d-sm-flex align-items-center justify-content-between mb-4">
+          <div
+            style={{
+              backgroundColor: backgroundColor,
+              color: color,
+              fontFamily: fontFamily,
+              padding: "6px",
+              borderRadius: "6px",
+              textAlign: "center",
+            }}
+          >
+            {renderHeader(config.headerSize, innerContent)}
+          
+          </div>
+        </div>
+        <div className="d-flex flex-column min-vh-100">
+          {rData.message && (
+            <Alert
+              variant={Constant.defaultAlertVarient}
+              className="alert-dismissible fade"
+              onClose={() => dispatch(set{modelName}Message(""))}
+              sx={{ mt: 2 }}
+            >
+              {rData.message}
+            </Alert>
+          )}
+          {action ? (
+            <{modelName}Form
+              hideShowForm={setAction}
+              action={action}
+              row={row}
+              config={config}
+              getData={getData}
+            />
+          ) : (
+            <{modelName}Table
+              columnDefinitions={columnDefinitions}
+              handleRowEdit={handleRowEdit}
+              hideShowForm={setAction}
+              getData={getData}
+              config={config}
+            />
+          )}
+        </div>
+      </div>
+    </div>*/
+
+
+    <div>
+      <Container maxWidth={false}>
+        {config["heading1_visible1"] && (
+          <Box
+            display="flex"
+            alignItems="center"
+            justifyContent="space-between"
+            mb={4}
+          >
+            <div
+              style={{
+                backgroundColor,
+                color,
+                fontFamily,
+                padding: "6px",
+                borderRadius: "6px",
+                textAlign: "center",
+              }}
+            >
+              {renderHeader(config.headerSize, innerContent)}
+            </div>
+          </Box>
+        )}
+        <Box display="flex" flexDirection="column" minHeight="100vh">
+          {rData.message ? (
+            <Alert
+              variant={Constant.defaultAlertVarient}
+              className="alert-dismissible fade"
+              onClose={() => dispatch(set{modelName}Message(''))}
+              sx={{ mb: 2 }}
+            >
+              {rData.message}
+              <Button
+                color="inherit"
+                size="small"
+                onClick={() => dispatch(set{modelName}Message(''))}
+              >
+                &times;
+              </Button>
+            </Alert>
+          ) : null}
+          {action ? (
+            <{modelName}Form
+              hideShowForm={setAction}
+              action={action}
+              row={row}
+              config={config}
+              getData={getData}
+            />
+          ) : (
+            <>
+              {!loading ? (
+                <{modelName}Table
+                  columnDefinitions={columnDefinitions}
+                  handleRowEdit={handleRowEdit}
+                  hideShowForm={setAction}
+                  getData={getData}
+                  openLink={props.openLink}
+                  config={config}
+                />
+              ) : (
+                   <></>
+                // <TableSkeleton />
+              )}
+            </>
+          )}
+        </Box>
+      </Container>
+    </div>
+  );
+};

@@ -1,0 +1,60 @@
+
+  {
+    "id": "{{UNIQUE_ID_FOR_SUBFLOW_PUT_SIMPLE}}",
+    "type": "subflow",
+    "name": "PUT {{SWAGGER_SCHEMA_NAME}} SIMPLE",
+    "info": "Used to **update** the {{SWAGGER_SCHEMA_OBJECT}} records provided by id in **api url** \nusing **PUT API** call;\n### NOTE\nHere {{SWAGGER_SCHEMA_PRIMARY_KEY}} in **api url** is provided or **concateneted** like\n**url = \"\"+msg._{{SWAGGER_SCHEMA_OBJECT}}.{{SWAGGER_SCHEMA_PRIMARY_KEY}};**\nand in **payload** the **updated {{SWAGGER_SCHEMA_OBJECT}}** object is provided;\n\n**IT Also presumes that in your message there is one object\ncalled {_{{SWAGGER_SCHEMA_OBJECT}}} that you want to Update;**",
+    "category": "{{SWAGGER_SCHEMA_NAME}}",
+    "in": [
+      {
+        "x": 120,
+        "y": 140,
+        "wires": [
+          {
+            "id": "{{UNIQUE_ID_FOR_FUNCTION_PUT_SIMPLE}}"
+          }
+        ]
+      }
+    ],
+    "out": [
+      {
+        "x": 780,
+        "y": 140,
+        "wires": [
+          {
+            "id": "{{UNIQUE_ID_FOR_HTTP_PUT_SIMPLE}}",
+            "port": 0
+          }
+        ]
+      }
+    ],
+    "env": []
+  },
+  {
+    "id": "{{UNIQUE_ID_FOR_FUNCTION_PUT_SIMPLE}}",
+    "type": "function",
+    "z": "{{UNIQUE_ID_FOR_SUBFLOW_PUT_SIMPLE}}",
+    "name": "SET MESSAGE VARIABLE",
+    "func": "const currentDate = new Date();\nvar date = currentDate.getFullYear()+\"-\"+(currentDate.getMonth() + 1)+\"-\"\n        +currentDate.getDate()+\" \"\n        +currentDate.getHours()+\":\"\n        +currentDate.getMinutes()+\":\"\n        +currentDate.getSeconds();\nmsg._{{SWAGGER_SCHEMA_OBJECT}}.created_at = date;\nmsg.headers ={\n    Authorization : global.get(\"token\"),\n}\nmsg.url =\"{{SWAGGER_URL}}/{{SWAGGER_SCHEMA_NAME}}/\"+msg._{{SWAGGER_SCHEMA_OBJECT}}.{{SWAGGER_SCHEMA_PRIMARY_KEY}};\nmsg.payload = msg._{{SWAGGER_SCHEMA_OBJECT}};\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 320,
+    "y": 140,
+    "wires": [["{{UNIQUE_ID_FOR_HTTP_PUT_SIMPLE}}"]]
+  },
+  {
+    "id": "{{UNIQUE_ID_FOR_HTTP_PUT_SIMPLE}}",
+    "type": "http request",
+    "z": "{{UNIQUE_ID_FOR_SUBFLOW_PUT_SIMPLE}}",
+    "name": "PUT {{SWAGGER_SCHEMA_OBJECT}} SIMPLE",
+    "method": "PUT",
+    "ret": "obj",
+    "paytoqs": false,
+    "url": "",
+    "tls": "",
+    "proxy": "",
+    "authType": "",
+    "x": 570,
+    "y": 140,
+    "wires": [[]]
+  }

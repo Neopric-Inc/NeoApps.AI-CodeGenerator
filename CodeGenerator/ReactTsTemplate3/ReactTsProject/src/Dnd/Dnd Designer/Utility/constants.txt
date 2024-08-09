@@ -1,0 +1,299 @@
+import React from 'react';
+import shortid from "shortid";
+import GridViewIcon from '@mui/icons-material/GridView';
+import ApiIcon from '@mui/icons-material/Api';
+import GridOnIcon from '@mui/icons-material/GridOn';
+import ListIcon from '@mui/icons-material/List';
+import CropSquareIcon from '@mui/icons-material/CropSquare';
+import FormatColorTextIcon from '@mui/icons-material/FormatColorText';
+import BadgeIcon from '@mui/icons-material/Badge';
+import EmailIcon from '@mui/icons-material/Email';
+import PhoneIcon from '@mui/icons-material/Phone';
+import ImageIcon from '@mui/icons-material/Image';
+
+import DataGridlist from "Dnd/Draggable Components/Previous_Components/CustomComponents/GridList/DataGrid"
+import NestedList from 'Dnd/Draggable Components/Previous_Components/CustomComponents/List/List';
+import CustomButton from 'Dnd/Draggable Components/Previous_Components/CustomComponents/Button/Button';
+import CustomTextField from 'Dnd/Draggable Components/Previous_Components/CustomComponents/TextField/TextField';
+import Grid from 'Dnd/Draggable Components/Previous_Components/SyncFusionComponents/Grid'
+import { DropDownList } from "Dnd/Draggable Components/Previous_Components/CustomComponents/DropDownList";
+import MenuBar from 'Dnd/Draggable Components/Previous_Components/CustomComponents/MenuBar';
+{importComponents}
+// import NavBar from '../../Draggable Components/Previous_Components/CustomComponents/Canvas/Navbar';
+// import SideBar from '../../Draggable Components/Previous_Components/CustomComponents/Canvas/Sidebar';
+
+export const SIDEBAR_ITEM = "sidebarItem";
+export const ROW = "row";
+export const COLUMN = "column";
+export const COMPONENT = "component";
+export const SIDEBAR_ITEM_CRUD = "sidebarItemCRUD";
+
+export interface ISidebar_Items {
+    id: string;
+    type: string;
+    component: {
+        type: string;
+        content: JSX.Element | string | React.FC | any;
+        icon: JSX.Element;
+        component_name?: string;
+        icon_name?: string;
+    },
+}
+export const SIDEBAR_ITEMS: ISidebar_Items[] = [
+    {
+        id: shortid.generate(),
+        type: SIDEBAR_ITEM,
+        component: {
+            type: "SyncFusion GRID",
+            content: Grid,
+            icon: < GridViewIcon className='dnd sidebarIcon' />,
+            component_name: "Grid",
+            icon_name: "GridViewIcon",
+        },
+    },
+    {
+        id: shortid.generate(),
+        type: SIDEBAR_ITEM,
+        component: {
+            type: "Backend_Stacks",
+            content: Backend_Stacks,
+            icon: < ApiIcon className='dnd sidebarIcon' />,
+            component_name: "Backend_Stacks",
+            icon_name: "ApiIcon",
+        },
+    },
+    {
+        id: shortid.generate(),
+        type: SIDEBAR_ITEM,
+        component: {
+            type: "Branches",
+            content: Branches,
+            icon: < ApiIcon className='dnd sidebarIcon' />,
+            component_name: "Branches",
+            icon_name: "ApiIcon",
+        },
+    }, {
+        id: shortid.generate(),
+        type: SIDEBAR_ITEM,
+        component: {
+            type: "GridList",
+            content: < DataGridlist />,
+            icon: < GridOnIcon className='dnd sidebarIcon' />,
+            component_name: "DataGridlist",
+            icon_name: "GridOnIcon",
+        },
+    },
+    {
+        id: shortid.generate(),
+        type: SIDEBAR_ITEM,
+        component: {
+            type: "List",
+            content: <DropDownList />,
+            icon: < ListIcon className='dnd sidebarIcon' />,
+            component_name: "NestedList",
+            icon_name: "ListIcon",
+        },
+    },
+    {
+        id: shortid.generate(),
+        type: SIDEBAR_ITEM,
+        component: {
+            type: "Button",
+            content: < CustomButton />,
+            icon: < CropSquareIcon className='dnd sidebarIcon' />,
+            component_name: "CustomButton",
+            icon_name: "CropSquareIcon",
+        },
+    },
+    {
+        id: shortid.generate(),
+        type: SIDEBAR_ITEM,
+        component: {
+            type: "input",
+            content: <CustomTextField />,
+            icon: < FormatColorTextIcon className='dnd sidebarIcon' />,
+            component_name: "CustomTextField",
+            icon_name: "FormatColorTextIcon",
+        },
+    },
+    {
+        id: shortid.generate(),
+        type: SIDEBAR_ITEM,
+        component: {
+            type: "MenuBar",
+            content: <MenuBar />,
+            icon: < FormatColorTextIcon className='dnd sidebarIcon' />,
+            component_name: "MenuBar",
+            icon_name: "FormatColorTextIcon",
+        },
+    },
+    {
+        id: shortid.generate(),
+        type: SIDEBAR_ITEM,
+        component: {
+            type: "name",
+            content: "Some name",
+            icon: < BadgeIcon className='dnd sidebarIcon' />,
+            icon_name: "BadgeIcon",
+        }
+    },
+    {
+        id: shortid.generate(),
+        type: SIDEBAR_ITEM,
+        component: {
+            type: "email",
+            content: "Some email",
+            icon: < EmailIcon className='dnd sidebarIcon' />,
+            icon_name: "EmailIcon",
+        }
+    },
+    {
+        id: shortid.generate(),
+        type: SIDEBAR_ITEM,
+        component: {
+            type: "phone",
+            content: "Some phone",
+            icon: < PhoneIcon className='dnd sidebarIcon' />,
+            icon_name: "PhoneIcon",
+        }
+    },
+    {
+        id: shortid.generate(),
+        type: SIDEBAR_ITEM,
+        component: {
+            type: "image",
+            content: "Some image",
+            icon: < ImageIcon className='dnd sidebarIcon' />,
+            icon_name: "ImageIcon",
+        }
+    }
+];
+
+export const functionTOmap = (component, config) => {
+    // console.log("component from functionToMap :", component)
+    switch (component) {
+        case "SyncFusion GRID":
+            return <Grid />
+            break;
+        {functionTOmap}
+        case "Button":
+            return <CustomButton config={config} />
+            break;
+        case "input":
+            return <CustomTextField config={config} />
+            break;
+        case "MenuBar":
+            return <MenuBar />
+            break;
+        case "GridList":
+            return <DataGridlist />
+            break;
+        case "List":
+            return <DropDownList />
+            // return <NestedList config={config} />
+            break;
+        case "name":
+            return <h3>Some Name</h3>
+            break;
+        case "email":
+            return "Some email"
+            break;
+        case "phone":
+            return "Some phone"
+            break;
+        case "image":
+            return "Some image"
+            break;
+        default:
+            return <p>Cant't find any Component</p>
+    }
+}
+export const mapNametoComponent = {
+    "Grid": Grid,
+    {mapNametoComponent}
+    "DataGridlist": <DataGridlist />,
+    "NestedList": <NestedList />,
+    "CustomButton": <CustomButton />,
+    "CustomTextFields": <CustomTextField />,
+    "Some name": "Some name",
+    "Some email": "Some email",
+    "Some phone": "Some phone",
+    "Some image": "Some image"
+}
+
+export const CRUD_Component_List = ["Backend_Stacks", "Branches"];
+export const SyncFusion_Component_List = ["SyncFusion GRID"];
+export const MUI_Component_List = ["DataGridlist", "NestedList", "CustomButton", "CustomTextFields"];
+
+export const Configurations = {
+    "Button": {
+        "innerContent": {
+            "input-type": "text"
+        },
+        "type": {
+            "input-type": "list",
+            "options": ["Button", "Submit", "Reset"]
+        },
+        "cssClass": {
+            "input-type": "list",
+            "options": ["e-primary", "e-success", "e-info", "e-warning", "e-danger"]
+        },
+        "onClick": {
+            "input-type": "text"
+        }
+    },
+    "input": {
+        "innerContent": {
+            "input-type": "text"
+        },
+    },
+    "List": {}
+}
+
+
+// "SyncFusion GRID": {
+//     "heading": {
+//         "input-type": "text"
+//     },
+//     "primaryKeyList": {
+//         "input-type": "list",
+//         "options": ["backend_stack_id", "backend_stack_name", "createdBy", "modifiedBy", "isActive"]
+//     },
+//     "modelName": {
+//         "input-type": "list",
+//         "options": ["Backend_Stacks", "Branches", "Project", "User"]
+//     },
+//     "componentName": {
+//         "input-type": "text"
+//     }
+// }
+
+// {
+//     id: shortid.generate(),
+//     type: SIDEBAR_ITEM,
+//     component: {
+//         type: "NavBar",
+//         content: NavBar,
+//         icon: < ApiIcon className='dnd sidebarIcon' />,
+//         component_name: "NavBar",
+//         icon_name: "ApiIcon",
+//     },
+// },
+// {
+//     id: shortid.generate(),
+//     type: SIDEBAR_ITEM,
+//     component: {
+//         type: "SideBar",
+//         content: SideBar,
+//         icon: < ApiIcon className='dnd sidebarIcon' />,
+//         component_name: "SideBar",
+//         icon_name: "ApiIcon",
+//     },
+// },
+
+// case "NavBar":
+//     return <NavBar />
+//     break;
+// case "SideBar":
+//     return <SideBar />
+//     break;

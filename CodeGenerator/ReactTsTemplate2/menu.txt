@@ -1,0 +1,3 @@
+﻿export const MenuItems = [
+    { title: 'Workflows', path: '/workflows', icon: 'fas fa-fw fa-table', subMenu: [] },,
+]

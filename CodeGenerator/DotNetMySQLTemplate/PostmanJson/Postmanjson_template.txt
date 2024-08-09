@@ -1,0 +1,60 @@
+﻿{
+	"info": {
+		"_postman_id": "{newGuid}",
+		"name": "{projectName}",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+  "item": [
+    {
+			"name": "TokenGenerator",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "73739e23-fb26-474e-b202-7ea845e06c55",
+						"exec": [
+							"var jsonData = JSON.parse(responseBody);\r",
+							"var token = jsonData.document.accessToken;\r",
+							"postman.setEnvironmentVariable(\"token\", token);"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\"username\":\"admin\",\n\"password\":\"admin123\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{DEVServerURL}}/{{APIBaseString}}/token/",
+					"host": [
+						"{{DEVServerURL}}"
+					],
+					"path": [
+						"{{APIBaseString}}",
+						"token"
+						
+					]
+				}
+			},
+			"response": []
+		},
+    {itemListString}
+  ],
+	"protocolProfileBehavior": {}
+}

@@ -1,0 +1,48 @@
+﻿import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+
+{tableInterface}
+
+interface I{modelName}Data {
+    list?: Array<I{modelName}>;
+    pageNo: number;
+    pageSize: number;
+    searchKey?: string;
+    totalCount?: number;
+    message?: string;
+}
+
+const I{modelName}iData : I{modelName} = {
+    {tableInterfaceData}
+}
+
+const initialState: I{modelName}Data = {
+    pageNo: 1,
+    pageSize: 20,
+    searchKey: '',
+    list: [],
+    totalCount: 0,
+    message: '',
+};
+
+const {tableName}Slice = createSlice({
+    name: "{tableName}",
+    initialState,
+    reducers: {
+        set{modelName}List: (state, _action: PayloadAction<I{modelName}Data>) => {
+            state.list = _action.payload.list;
+            state.pageNo = _action.payload.pageNo;
+            state.pageSize = _action.payload.pageSize;
+            state.totalCount = _action.payload.totalCount;
+        },
+        reset{modelName}ToInit: (state) => {
+            state = initialState;
+        },
+        set{modelName}Message: (state, _action: PayloadAction<string>) => {
+            state.message = _action.payload;
+        },
+    },
+});
+
+export const { set{modelName}List, reset{modelName}ToInit, set{modelName}Message } = {tableName}Slice.actions;
+
+export default {tableName}Slice.reducer;

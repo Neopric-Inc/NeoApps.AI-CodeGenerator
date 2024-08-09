@@ -1,0 +1,412 @@
+import { useEffect, useState } from "react";
+import type { DropResult } from "react-beautiful-dnd";
+import { DragDropContext } from "react-beautiful-dnd";
+import toast from "react-hot-toast";
+import {
+  Box,
+  Card,
+  CircularProgress,
+  Grid,
+  Paper,
+  Skeleton,
+  Theme,
+  Typography,
+} from "@mui/material";
+import { KanbanColumn } from "./kanban-column";
+// import { KanbanColumnAdd } from "./kanban-column-add";
+import { useDispatch, useSelector } from "react-redux";
+import { RootState } from "redux/reducers";
+import {
+  reset{modelName}ToInit,
+  set{modelName}List,
+  set{modelName}Message,
+} from "redux/actions";
+{importFKService}
+{importFKRedux}
+import { Constant } from "template/Constant";
+import { add{modelName}, get{modelName}, update{modelName} } from "services/{tableName}Service";
+import moment from "moment";
+import { makeStyles } from "@mui/styles";
+import { getRefSlice } from "Dnd/Dnd Designer/Utility/constants";
+
+const useStyles = makeStyles((theme: Theme) => ({
+  root: {
+    flexGrow: 1,
+  },
+  column: {
+    padding: theme.spacing(2), // Use theme.spacing to access spacing values
+    textAlign: "center",
+    color: theme.palette.text.secondary,
+  },
+})) as () => Record<string, string>;
+
+const Kanban: React.FC = (props) => {
+ //console.log(props);
+  const config = props["config"];
+ //console.log(config);
+  const classes = useStyles();
+  const dispatch = useDispatch();
+  const [submit, setSubmit] = useState(false);
+  {fkReduxInit}
+    {useEffectForFK}
+  const {modelName}Data = useSelector((state: RootState) => state.{tableName});
+  function getSliceData(slice: string) {
+    {FKCondition}
+    return {modelName}Data;
+  }
+
+  useEffect(() => {
+    if ({modelName}Data && {modelName}Data.list && {modelName}Data.list.length === 0) {
+      dispatch(reset{modelName}ToInit());
+      get{modelName}(
+        Constant.defaultPageNumber,
+        Constant.defaultDropdownPageSize,
+        ""
+      ).then((response) => {
+       //console.log(response);
+
+        if (response && response.records) {
+          dispatch(
+            set{modelName}List({
+              pageNo: Constant.defaultPageNumber,
+              pageSize: Constant.defaultDropdownPageSize,
+              list: response.records,
+              totalCount: response.total_count,
+              searchKey: "",
+            })
+          );
+        } else {
+          dispatch(set{modelName}Message(`No Record Found For {modelName}`));
+        }
+      });
+    }
+  }, [{modelName}Data.list.length]);
+ //console.log({modelName}Data);
+  const groupedContent = {modelName}Data?.list?.reduce((result, content) => {
+    // const { config["Status_ref_gv1_column"] } = content;
+    if (!result[content[config["Status_ref_gv1_column"]]]) {
+      result[content[config["Status_ref_gv1_column"]]] = [];
+    }
+    result[content[config["Status_ref_gv1_column"]]].push(content);
+    return result;
+  }, {});
+  const getData = async (page, pageSize, searchKey) => {
+    await get{modelName}(page, pageSize, searchKey).then(async (response) => {
+      if (response && response.records) {
+        dispatch(
+          set{modelName}List({
+            pageNo: page,
+            pageSize: pageSize,
+            list: response.records,
+            totalCount: response.total_count,
+            searchKey: searchKey,
+          })
+        );
+      } else {
+        dispatch(set{modelName}Message("No Record Found"));
+      }
+    });
+  };
+  const moveRecord = async (
+    sourceGroupId: string,
+    targetGroupId: string,
+    recordId: number
+  ) => {
+    // Find the record in the source group
+    const recordToMove = groupedContent[sourceGroupId].find(
+      (record) => record.{pkKeyReplacement} === recordId
+    );
+
+    if (!recordToMove) {
+     //console.log(
+        `Record with ID ${recordId} not found in group ${sourceGroupId}`
+      );
+      return;
+    }
+
+    // Remove the record from the source group
+    groupedContent[sourceGroupId] = groupedContent[sourceGroupId].filter(
+      (record) => record.{pkKeyReplacement} !== recordId
+    );
+
+    // Add the record to the target group
+    await groupedContent[targetGroupId].push(recordToMove);
+  };
+  const handleDragEnd = async ({
+    source,
+    destination,
+    draggableId,
+  }: DropResult): Promise<void> => {
+    setSubmit(true);
+    try {
+      // Dropped outside the column
+      if (!destination) {
+        setSubmit(false);
+        return;
+      }
+
+      // Card has not been moved
+      if (
+        source.droppableId === destination.droppableId &&
+        source.index === destination.index
+      ) {
+        setSubmit(false);
+        return;
+      }
+
+      if (source.droppableId === destination.droppableId) {
+       //console.log(source.droppableId);
+       //console.log(destination.droppableId);
+        const content1 = {modelName}Data.list.find(
+          (_content) =>
+            _content[config["temp_id_ref_gv1_column"]] == source.index
+        );
+        const content2 = {modelName}Data.list.find(
+          (_content) =>
+            _content[config["temp_id_ref_gv1_column"]] == destination.index
+        );
+        const modifiedContent1 = Object.assign({}, content1, {
+          createdAt: moment(content1.createdAt, "DD/MM/YYYY HH:mm:ss").format(
+            "YYYY-MM-DD HH:mm:ss"
+          ),
+          modifiedAt: moment(
+            new Date(Date.now()),
+            "DD/MM/YYYY HH:mm:ss"
+          ).format("YYYY-MM-DD HH:mm:ss"),
+          [config["temp_id_ref_gv1_column"]]:
+            content2[config["temp_id_ref_gv1_column"]],
+        });
+        const modifiedContent2 = Object.assign({}, content2, {
+          createdAt: moment(content2.createdAt, "DD/MM/YYYY HH:mm:ss").format(
+            "YYYY-MM-DD HH:mm:ss"
+          ),
+          modifiedAt: moment(
+            new Date(Date.now()),
+            "DD/MM/YYYY HH:mm:ss"
+          ).format("YYYY-MM-DD HH:mm:ss"),
+          [config["temp_id_ref_gv1_column"]]:
+            content1[config["temp_id_ref_gv1_column"]],
+        });
+        const tempContent2 = Object.assign({}, content2, {
+          createdAt: moment(content2.createdAt, "DD/MM/YYYY HH:mm:ss").format(
+            "YYYY-MM-DD HH:mm:ss"
+          ),
+          modifiedAt: moment(
+            new Date(Date.now()),
+            "DD/MM/YYYY HH:mm:ss"
+          ).format("YYYY-MM-DD HH:mm:ss"),
+          [config["temp_id_ref_gv1_column"]]: config["temp_id_ref_gv1_column"],
+        });
+        const temp = await update{modelName}(tempContent2.{pkKeyReplacement}, tempContent2);
+        if (temp) {
+          const response = await update{modelName}(
+            modifiedContent1.{pkKeyReplacement},
+            modifiedContent1
+          );
+          if (response) {
+            const response2 = await update{modelName}(
+              modifiedContent2.{pkKeyReplacement},
+              modifiedContent2
+            );
+            if (response2) {
+              dispatch(set{modelName}Message("Added Successfully"));
+              await getData(
+                Constant.defaultPageNumber,
+                Constant.defaultPageSize,
+                ""
+              );
+              toast.success("Card updated!");
+              setSubmit(false);
+            }
+          }
+        }
+      } else {
+        source.droppableId = destination.droppableId;
+        await moveRecord(
+          source.droppableId,
+          destination.droppableId,
+          draggableId
+        );
+        const content = {modelName}Data.list.find(
+          (_content) => _content.{pkKeyReplacement} == draggableId
+        );
+       //console.log(content);
+        const modifiedContent = Object.assign({}, content, {
+          createdAt: moment(content.createdAt, "DD/MM/YYYY HH:mm:ss").format(
+            "YYYY-MM-DD HH:mm:ss"
+          ),
+          modified_at: moment(
+            new Date(Date.now()),
+            "DD/MM/YYYY HH:mm:ss"
+          ).format("YYYY-MM-DD HH:mm:ss"),
+          [config["schedule_date_time_ref_gv1_column"]]: moment(
+            content[config["schedule_date_time_ref_gv1_column"]],
+            "MM/DD/YYYY HH:mm:ss"
+          ).format("YYYY-MM-DD HH:mm:ss"),
+
+          [config["Status_ref_gv1_column"]]: destination.droppableId,
+        });
+
+        const response = await updateContent(
+          content.{pkKeyReplacement},
+          modifiedContent
+        );
+        if (response) {
+          dispatch(set{modelName}Message("Updated Successfully"));
+          await getData(
+            Constant.defaultPageNumber,
+            Constant.defaultPageSize,
+            ""
+          );
+          toast.success("Card updated!");
+          setSubmit(false);
+        }
+      }
+
+      toast.success("Card moved!");
+    } catch (err) {
+      console.error(err);
+      toast.error("Something went wrong!");
+    }
+    setSubmit(false);
+  };
+ //console.log(groupedContent);
+  return (
+    <>
+      {!submit ? (
+        <Box
+          component="main"
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            flexGrow: 1,
+            overflow: "hidden",
+          }}
+        >
+          <Box
+            sx={{
+              pl: 3,
+              pt: 8,
+            }}
+          >
+            <Typography variant="h4">Kanban</Typography>
+          </Box>
+          <DragDropContext onDragEnd={handleDragEnd}>
+            <Box
+              sx={{
+                display: "flex",
+                flexGrow: 1,
+                flexShrink: 1,
+                overflowX: "auto",
+                overflowY: "hidden",
+              }}
+            >
+              {Object.keys(groupedContent).length !== 0 && (
+                <Box
+                  sx={{
+                    display: "flex",
+                    px: 1,
+                    py: 3,
+                  }}
+                >
+                  <>
+                    {getSliceData(
+                      getRefSlice("{modelName}", config["Status_ref_gv1_column"])
+                    ).list.map((contentStatus) => (
+                      <KanbanColumn
+                        columnId={
+                          contentStatus[config["Status_ref_gv1_column"]]
+                        }
+                        contentStatus={contentStatus}
+                        key={contentStatus[config["Status_ref_gv1_column"]]}
+                        contents={
+                          groupedContent[
+                            contentStatus[config["Status_ref_gv1_column"]]
+                          ] || []
+                        }
+                        allStatusData={
+                          getSliceData(
+                            getRefSlice(
+                              "{modelName}",
+                              config["Status_ref_gv1_column"]
+                            )
+                          ).list
+                        }
+                        allContents={{modelName}Data.list}
+                        config={config}
+                        getData={getData}
+                      />
+                    ))}
+                  </>
+
+                  {/* <KanbanColumnAdd /> */}
+                </Box>
+              )}
+            </Box>
+          </DragDropContext>
+        </Box>
+      ) : (
+        <div className={classes.root}>
+          <Grid container spacing={2}>
+            {Array.from({ length: 3 }).map((_, columnIndex) => (
+              <Grid item xs={4} key={columnIndex}>
+                <Paper
+                  className={classes.column}
+                  style={{
+                    width: "100%",
+                    display: "flex",
+                    flexDirection: "column",
+                    padding: "16px",
+                  }}
+                >
+                  <Skeleton variant="text" width={200} height={60} />
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "right",
+                    }}
+                  >
+                    {/* Round Chip Skeleton */}
+                    <Skeleton
+                      variant="circular"
+                      width={25}
+                      height={25}
+                      sx={{ margin: "16px 0" }}
+                    />
+                  </div>
+                  {Array.from({ length: 3 }).map((_, cardIndex) => (
+                    <div key={cardIndex} style={{ flex: 1 }}>
+                      <Skeleton
+                        animation="wave"
+                        variant="rectangular"
+                        width={300}
+                        height={170}
+                        sx={{ margin: "16px 0" }}
+                      />
+                    </div>
+                  ))}
+                </Paper>
+              </Grid>
+            ))}
+          </Grid>
+        </div>
+        // <Card>
+        //   <div
+        //     style={{
+        //       display: "flex",
+        //       justifyContent: "center",
+        //       alignItems: "center",
+        //       height: "100vh",
+        //       width: "200vh",
+        //     }}
+        //   >
+        //     <CircularProgress />
+        //   </div>
+        // </Card>
+      )}
+    </>
+  );
+};
+
+export default Kanban;

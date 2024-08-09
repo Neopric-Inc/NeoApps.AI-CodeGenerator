@@ -1,0 +1,60 @@
+import { DropDownListComponent } from '@syncfusion/ej2-react-dropdowns';
+import { AxiosResponse } from 'axios';
+import { useEffect, useState } from 'react';
+import { getAll{modelName} } from 'services/{tableName}Service';
+import './style.css'
+
+export const DropDownList: React.FC = () => {
+    const [data, setData] = useState([]);
+    const [content, setContent] = useState([]);
+    const fields: object = { text: '{secondaryKeyList}', value: '{primaryKeyList}' };
+
+    useEffect(() => {
+        getAllBackend_Stacks(1, 100).then(
+            data => {
+                setData(data.data.document.records);
+                setContent((data.data.document.records).map(obj => obj.{secondaryKeyList}));
+               //console.log(data.data.document.records);
+            }
+        )
+    }, [])
+
+    let headerTemplate = (data: any): JSX.Element => {
+        return (
+            <span className='head'><span className='name'>{primaryKeyList}</span><span className='city'>backend_stack_name</span></span>
+        );
+    }
+    let itemTemplate = (data: any): JSX.Element => {
+        return (
+            <span><span className='name'>{data.{primaryKeyList}}</span><span className='city'>{data.{secondaryKeyList}}</span></span>
+        );
+    }
+    let failureTemplate = (data: any): JSX.Element => {
+        return (
+            <span className='action-failure'> Data fetch get fails</span>
+        );
+    }
+    const onChange = (args) => {
+       //console.log("Selected Data Item :- ", args.itemData);
+    }
+    return (
+        <DropDownListComponent id='ddlelement'
+            dataSource={data}
+            fields={fields}
+            placeholder="Select a Field"
+            popupHeight="250px"
+            popupWidth="350px"
+            width="350px"
+            headerTemplate={headerTemplate = headerTemplate.bind(this)}
+            itemTemplate={itemTemplate = itemTemplate.bind(this)}
+            actionFailureTemplate={failureTemplate = failureTemplate.bind(this)}
+            change={onChange}
+        />
+    )
+}
+
+// {primaryKeyList} = "backend_stack_id"
+// {secondaryKeyList} = "backend_stack_name"
+// {modelName} = "Backend_Stacks"
+// {tableName} = "backend_stacks"
+// {componentName} = 'Practice'

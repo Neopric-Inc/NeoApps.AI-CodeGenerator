@@ -1,0 +1,77 @@
+
+    {
+        "id": "{{UNIQUE_ID_FOR_HORIZONTAL_BAR_CHART_FLOW}}",
+        "type": "tab",
+        "label": "Horizontal_BarChart1",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "{{UNIQUE_ID_FOR_HORIZONTAL_BAR_CHART_HTTP_IN}}",
+        "type": "http in",
+        "z": "{{UNIQUE_ID_FOR_HORIZONTAL_BAR_CHART_FLOW}}",
+        "name": "TriggerHorizontalBarChart1",
+        "url": "/flows/Horizontal_BarChart/data1",
+        "method": "post",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 142,
+        "y": 68,
+        "wires": [
+            [
+                "{{UNIQUE_ID_FOR_HORIZONTAL_BAR_CHART_TOKEN_FUNCTION}}"
+            ]
+        ]
+    },
+    {
+        "id": "{{UNIQUE_ID_FOR_HORIZONTAL_BAR_CHART_FUNCTION}}",
+        "type": "function",
+        "z": "{{UNIQUE_ID_FOR_HORIZONTAL_BAR_CHART_FLOW}}",
+        "name": "",
+        "func": "\nconst categories = [\"Email\", \"GDN\", \"Instagram\", \"Facebook\", \"Google Ads Search\"];\n\n\nconst chartSeries = [\n  {\n\n    color: ['#7783DB', '#7BC67E', '#FFB547', '#64B6F7', '#F06191'],\n    data: [37530, 52717, 62935, 90590, 13219],\n    name: \"Sales\",\n  },\n];\n  \n const response = {\n   chartCategories: categories,\n  chartSeries: chartSeries,\n};\n\n// Set the response object as the payload of the outgoing message\nmsg.payload = response;\n  \nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 212,
+        "y": 228,
+        "wires": [
+            [
+                "{{UNIQUE_ID_FOR_HORIZONTAL_BAR_CHART_HTTP_RESPONSE}}"
+            ]
+        ]
+    },
+    {
+        "id": "{{UNIQUE_ID_FOR_HORIZONTAL_BAR_CHART_HTTP_RESPONSE}}",
+        "type": "http response",
+        "z": "{{UNIQUE_ID_FOR_HORIZONTAL_BAR_CHART_FLOW}}",
+        "name": "",
+        "statusCode": "",
+        "headers": {},
+        "x": 672,
+        "y": 428,
+        "wires": []
+    },
+    {
+        "id": "{{UNIQUE_ID_FOR_HORIZONTAL_BAR_CHART_TOKEN_FUNCTION}}",
+        "type": "function",
+        "z": "{{UNIQUE_ID_FOR_HORIZONTAL_BAR_CHART_FLOW}}",
+        "name": "Set Token as Global Variable",
+        "func": "global.set(\"token\",msg.req.headers.authorization);\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 212,
+        "y": 148,
+        "wires": [
+            [
+                "{{UNIQUE_ID_FOR_HORIZONTAL_BAR_CHART_FUNCTION}}"
+            ]
+        ]
+    }

@@ -1,0 +1,42 @@
+﻿import { APIService } from "services";
+
+export const get{modelName} = async (pageNo,pageSize,search) => {
+    let res;
+    if(search.length===0) {
+        res = await getAll{modelName}(pageNo,pageSize);
+    }
+    else{
+        try {
+            res = await search{modelName}(search,pageNo,pageSize);
+        } catch(err) {
+             return { records:[], totalCount:0 }
+        }
+    }
+    if(res && res.data && res.data.document){
+    return res.data.document;
+    }else{
+    return { records:[], totalCount:0 }
+    }
+    
+}
+
+export const filter{modelName}WithColumns = async (filtercondition) => {
+  let res;
+
+  try {
+    res = await filter{modelName}(filtercondition);
+   //console.log(res);
+  } catch (err) {
+    return { records: [], totalCount: 0 };
+  }
+
+  if (res && res.data && res.data.document) {
+   //console.log("inside if");
+    return res.data.document;
+  } else {
+    return { records: [], totalCount: 0 };
+  }
+};
+
+
+{serviceFunction}

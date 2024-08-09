@@ -1,0 +1,66 @@
+
+  {
+    "id": "{{UNIQUE_ID_FOR_COMPLEX_LINE_CHART_FLOW}}",
+    "type": "tab",
+    "label": "Complex_LineChart",
+    "disabled": false,
+    "info": "",
+    "env": []
+  },
+  {
+    "id": "{{UNIQUE_ID_FOR_COMPLEX_LINE_CHART_HTTP_IN}}",
+    "type": "http in",
+    "z": "{{UNIQUE_ID_FOR_COMPLEX_LINE_CHART_FLOW}}",
+    "name": "TriggerComplexLineChart1",
+    "url": "/flows/Complex_LineChart/line1",
+    "method": "post",
+    "upload": false,
+    "swaggerDoc": "",
+    "x": 170,
+    "y": 100,
+    "wires": [["{{UNIQUE_ID_FOR_COMPLEX_LINE_CHART_TOKEN_FUNCTION}}"]]
+  },
+  {
+    "id": "{{UNIQUE_ID_FOR_COMPLEX_LINE_CHART_FUNCTION}}",
+    "type": "function",
+    "z": "{{UNIQUE_ID_FOR_COMPLEX_LINE_CHART_FLOW}}",
+    "name": "",
+    "func": "\nconst categories = [\n  \"01 Jan\",\n  \"02 Jan\",\n  \"03 Jan\",\n  \"04 Jan\",\n  \"05 Jan\",\n  \"06 Jan\",\n  \"07 Jan\",\n  \"08 Jan\",\n  \"09 Jan\",\n  \"10 Jan\",\n  \"11 Jan\",\n  \"12 Jan\",\n];\n\n\n  const data = {\n  series: [\n    {\n      color: \"#4CAF50\",\n      data: [\n        3350, 1840, 2254, 5780, 9349, 5241, 2770, 2051, 3764, 2385, 5912, 8323,\n      ],\n      name: \"Organic\",\n    },\n    {\n      color: \"#FF9800\",\n      data: [35, 41, 62, 42, 13, 18, 29, 37, 36, 51, 32, 35],\n      name: \"Referral\",\n    },\n    {\n      color: \"#F44336\",\n      data: [100, 122, 50, 300, 250, 400, 312, 200, 10, 60, 90, 400],\n      name: \"Social Media\",\n    },\n  ]\n};\n  \n const response = {\n   chartCategories: categories,\n  chartSeries: data.series,\n};\n\n// Set the response object as the payload of the outgoing message\nmsg.payload = response;\n  \nreturn msg;",
+    "outputs": 1,
+    "timeout": "",
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 340,
+    "y": 260,
+    "wires": [["{{UNIQUE_ID_FOR_COMPLEX_LINE_CHART_HTTP_RESPONSE}}"]]
+  },
+  {
+    "id": "{{UNIQUE_ID_FOR_COMPLEX_LINE_CHART_HTTP_RESPONSE}}",
+    "type": "http response",
+    "z": "{{UNIQUE_ID_FOR_COMPLEX_LINE_CHART_FLOW}}",
+    "name": "",
+    "statusCode": "",
+    "headers": {},
+    "x": 750,
+    "y": 440,
+    "wires": []
+  },
+  {
+    "id": "{{UNIQUE_ID_FOR_COMPLEX_LINE_CHART_TOKEN_FUNCTION}}",
+    "type": "function",
+    "z": "{{UNIQUE_ID_FOR_COMPLEX_LINE_CHART_FLOW}}",
+    "name": "Set Token as Global Variable",
+    "func": "global.set(\"token\",msg.req.headers.authorization);\nreturn msg;",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 220,
+    "y": 180,
+    "wires": [["{{UNIQUE_ID_FOR_COMPLEX_LINE_CHART_FUNCTION}}"]]
+  }
+

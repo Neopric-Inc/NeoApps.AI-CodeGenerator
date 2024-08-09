@@ -1,0 +1,124 @@
+import * as React from 'react';
+import { ColumnDirective, Edit, ColumnsDirective, GridComponent, Inject, Page, Toolbar } from '@syncfusion/ej2-react-grids';
+import { set{modelName}Message } from 'redux/actions';
+import { useState, useEffect } from 'react';
+import { useAppDispatch } from 'redux/store';
+import { add{modelName}, delete{modelName}, getAll{modelName}, update{modelName} } from 'services/{tableName}Service';
+import { AxiosResponse } from 'axios';
+import { registerLicense } from '@syncfusion/ej2-base';
+registerLicense('Mgo+DSMBaFt/QHRqVVhlXFpHaV5LQmFJfFBmRGlcfFRzcEU3HVdTRHRcQl9iQX5Sc0VhWHdWeXA=;Mgo+DSMBPh8sVXJ0S0J+XE9BdlRBQmJAYVF2R2BJflR1d19FZEwgOX1dQl9gSXxSfkViXH9ccX1VRGQ=;ORg4AjUWIQA/Gnt2VVhkQlFac19JXnxId0x0RWFab196cVZMY1hBNQtUQF1hSn5Rd01jWHpecnVcR2ZV;MTE1MzkzNkAzMjMwMmUzNDJlMzBGTWdkM2pidVlJUk5mdTM3TDcyd3JObitGMEdObjNqT3hVTTN2aUxMWVg0PQ==;MTE1MzkzN0AzMjMwMmUzNDJlMzBtY2FVUzZnbEJSdFpzOHVHWG1ocjlsY1BkZkhINkIvL2VOd1M3dEdHbmdRPQ==;NRAiBiAaIQQuGjN/V0Z+WE9EaFpCVmBWf1ppR2NbfE5xflBFal9VVAciSV9jS31TdERrWX5bcHZUT2ddUg==;MTE1MzkzOUAzMjMwMmUzNDJlMzBneTgxVUV3ZG1MSitWaDJocjQ3am41RVBFWU81ZXJoTmVHOUw0U1dreVBnPQ==;MTE1Mzk0MEAzMjMwMmUzNDJlMzBXa3M3Vm9YZ2wwaXM4L2pnbjlrakVXNFptbi8zQkxhN3JxZHhHWlhFWWFnPQ==;Mgo+DSMBMAY9C3t2VVhkQlFac19JXnxId0x0RWFab196cVZMY1hBNQtUQF1hSn5Rd01jWHpecnZVRGRf;MTE1Mzk0MkAzMjMwMmUzNDJlMzBmNGtXcEN1YnQ1ODFNQjZpZFArV3NCd05HNm5uQXVGa3NhdmphQThITUhRPQ==;MTE1Mzk0M0AzMjMwMmUzNDJlMzBmVTF5Y0VCV2ZheHdlQzN6dVN3K3lUWDF0VURUZzVaUUdubWhYMmJCN3VJPQ==;MTE1Mzk0NEAzMjMwMmUzNDJlMzBneTgxVUV3ZG1MSitWaDJocjQ3am41RVBFWU81ZXJoTmVHOUw0U1dreVBnPQ==');
+
+
+export const {componentName}: React.FC = () => {
+    const dispatch = useAppDispatch();
+    const [data, setData] = useState<AxiosResponse>(null);
+    const pageSettings = { pageSize: 6 };
+    const editOptions = { allowEditing: true, allowAdding: true, allowDeleting: true };
+    const toolbarOptions = ['Add', 'Edit', 'Delete', 'Update', 'Cancel'];
+
+    useEffect(() => {
+        getAll{modelName}(1, 100).then(
+            data => {
+                setData(data.data.document.records);
+            }
+        )
+    }, [data])
+
+    const actionComplete = async (args) => {
+        if (args.requestType === 'save') {
+            ////console.log(args.requestType, ": ARGS : ", args);
+            if (args.action === 'add') {
+                const response = await add{modelName}(args.data);
+                if (response) {
+                    dispatch(set{modelName}Message("Added Successfully"));
+                } else {
+                    dispatch(set{modelName}Message("Some error occured While Adding!"));
+                }
+            }
+            else if (args.action === 'edit') {
+                const old_id = args.previousData.{primaryKeyList};
+                const new_data = args.data;
+                const response = await update{modelName}(old_id, new_data);
+                if (response) {
+                    dispatch(set{modelName}Message("Updated Successfully"));
+                } else {
+                    dispatch(set{modelName}Message("Some error occured while Editing!"));
+                }
+            }
+            setData(args.data);
+        }
+        else if (args.requestType === 'delete') {
+           //console.log(args.requestType, ": ARGS : ", args);
+            if (args.data) {
+                const response = await delete{modelName}((args.data)[0].{primaryKeyList});
+                if (response) {
+                    dispatch(set{modelName}Message("Deleted Successfully"));
+                } else {
+                    dispatch(set{modelName}Message("Some error occured while Deleting!"));
+                }
+            }
+            setData(args.data);
+        }
+    };
+
+    const columns = {fetchColumns}
+
+    return (
+        <>
+            <h1>{modelName}</h1>
+            <GridComponent dataSource={data}
+                allowPaging={true}
+                pageSettings={pageSettings}
+                editSettings={editOptions}
+                toolbar={toolbarOptions}
+                actionComplete={actionComplete}
+            >
+                <ColumnsDirective>
+                    {columns.map((column, index) => (
+                        <ColumnDirective key={index} field={column.field} headerText={column.headerText} isPrimaryKey={column.isPrimaryKey} width='150' textAlign='Left' />
+                    ))}
+                </ColumnsDirective>
+                <Inject services={[Page, Edit, Toolbar]} />
+            </GridComponent>
+        </>
+    )
+}
+
+// {primaryKeyList} = "backend_stack_id"
+// {modelName} = "Backend_Stacks"
+// {tableName} = "backend_stacks"
+// {componentName} = 'Backend_Stack_grid'
+// {fetchColumns} = [all Column Properties] 
+i.e. 
+[
+        {
+            field: 'backend_stack_id',
+            headerText: 'backend_stack_id',
+            isPrimaryKey: true
+        },
+        {
+            field: 'backend_stack_name',
+            headerText: 'backend_stack_name'
+        },
+        {
+            field: 'createdAt',
+            headerText: 'createdAt',
+            type: 'date'
+        },
+        {
+            field: 'createdBy',
+            headerText: 'createdBy'
+        },
+        {
+            field: 'isActive',
+            headerText: 'isActive'
+        },
+        {
+            field: 'modifiedAt',
+            headerText: 'modifiedAt'
+        },
+        {
+            field: 'modifiedBy',
+            headerText: 'modifiedBy'
+        }
+    ];
