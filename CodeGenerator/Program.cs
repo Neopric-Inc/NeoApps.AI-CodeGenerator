@@ -1174,7 +1174,7 @@ WHERE
 
             return new string(passwordArray);
         }
-        public static void ProcessFiles(string adminUsername, string adminPassword, string path, string server, string uid, string username, string password, string databaseName, string script, string statusOfGeneration, string projectName, string DBexists, string port, string rabbitMQConn, string noderedurl, string swgurl,string project_id,IGeneratorManager generatorManager)
+        public static void ProcessFiles(string adminUsername, string adminPassword, string path, string server, string uid, string username, string password, string databaseName, string script, string statusOfGeneration, string projectName, string DBexists, string port, string rabbitMQConn, string noderedurl, string swgurl,string project_id)
         {
             try
             {
@@ -1373,7 +1373,7 @@ END;
                         username = adminUsername,
                         password = adminPassword
                     };
-                    generatorManager.send_to_consumer(masterCredentialModel);
+
                     connection_string += "database=" + databaseName + ";";
                     string conn1 = connection_string;
                     string createTableSql = "CREATE TABLE IF NOT EXISTS messageQueue (id INT AUTO_INCREMENT PRIMARY KEY, queueName VARCHAR(255) Unique,PrimaryKey VARCHAR(255))";
@@ -2962,17 +2962,7 @@ APIResponse Update{tableName}Transactional({primaryKeyListParam},{tableName}Tran
            .SetBasePath(Directory.GetCurrentDirectory())
            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
            .Build();
-            string rabbitMqConnection = configuration.GetConnectionString("RabitMQ");
-            //services.AddTransient(_ => new RabbitMqConnection(rabbitMqConnection));
-            ConnectionFactory factory = new ConnectionFactory();
-            factory.Uri = new Uri(rabbitMqConnection);
-            IConnection connection = factory.CreateConnection();
-            services.AddScoped<IRabitMQAsyncProducer, RabitMQAsyncProducer>();
-            services.AddTransient<IChannelManager, ChannelManager>();
-            services.AddSingleton<IConnection>(connection);
-            services.AddTransient<IGeneratorManager, GeneratorManager>();
-            var serviceProvider = services.BuildServiceProvider();
-            var generatorManager = serviceProvider.GetService<IGeneratorManager>();
+     
             string parameter = Environment.GetEnvironmentVariable("PARAMETER");
             Console.WriteLine("parameter:" + parameter);
             // Define a regular expression pattern to match key-value pairs
@@ -3255,7 +3245,7 @@ APIResponse Update{tableName}Transactional({primaryKeyListParam},{tableName}Tran
                         kubectlProcess.BeginErrorReadLine();
                         string adminUsername = GenerateUsername();
                         string adminPassword = GeneratePassword();
-                        DotNet_MySQL.DotNet_MySQL_Template(adminUsername, adminPassword,server, uid, username, password, databaseName, script, statusOfGeneration, projectName, DBexists, port, rabbitMQConn, Technology_Frontend, Baackend_technology, projectType, noderedurl, swgurl,project_id,generatorManager);
+                        DotNet_MySQL.DotNet_MySQL_Template(adminUsername, adminPassword,server, uid, username, password, databaseName, script, statusOfGeneration, projectName, DBexists, port, rabbitMQConn, Technology_Frontend, Baackend_technology, projectType, noderedurl, swgurl,project_id);
                         string[] drpath = Directory.GetDirectories("/", (uid + "_*"));
                         string fname = drpath[0].Split("/").Last();
                         string[] upt = Directory.GetFiles($"/{fname}/{projectName}/zip/", "generatedBackend*.zip");
@@ -3283,7 +3273,7 @@ APIResponse Update{tableName}Transactional({primaryKeyListParam},{tableName}Tran
                             link = link,
                             is_successful = 1
                         };
-                        generatorManager.send_to_consumer(generatorResponseModel);
+                       
                     }
                     else
                     {
@@ -3295,7 +3285,7 @@ APIResponse Update{tableName}Transactional({primaryKeyListParam},{tableName}Tran
                             error_log = errors_list,
                             is_successful = 0
                         };
-                        generatorManager.send_to_consumer(generatorResponseModel);
+                       
                     }
                 }
                 catch (Exception ex)
@@ -3310,7 +3300,7 @@ APIResponse Update{tableName}Transactional({primaryKeyListParam},{tableName}Tran
                         error_log = errors_list,
                         is_successful = 0
                     };
-                    generatorManager.send_to_consumer(generatorResponseModel);
+                   
                 }
 
             }
@@ -3508,7 +3498,7 @@ APIResponse Update{tableName}Transactional({primaryKeyListParam},{tableName}Tran
     }
     class DotNet_MySQL : Program
     {
-        public static void DotNet_MySQL_Template(string adminUsername, string adminPassword, string server, string uid, string username, string password, string databaseName, string script, string statusOfGeneration, string projectName, string DBexists, string port, string rabbitMQConn, string frontEndTechnology, string backendTechnology, string projectType, string noderedurl, string swgurl,string project_id,IGeneratorManager generatorManager)
+        public static void DotNet_MySQL_Template(string adminUsername, string adminPassword, string server, string uid, string username, string password, string databaseName, string script, string statusOfGeneration, string projectName, string DBexists, string port, string rabbitMQConn, string frontEndTechnology, string backendTechnology, string projectType, string noderedurl, string swgurl,string project_id)
         {
             try
             {
@@ -3725,7 +3715,7 @@ CREATE TABLE IF NOT EXISTS `workflow_trigger_conditions` (
                 //}
                 ProcessFiles( adminUsername,  adminPassword, @currentDir, server, uid, username, password, databaseName,
                              script, statusOfGeneration, projectName, DBexists, port,
-                             rabbitMQConn, noderedurl, swgurl,project_id,generatorManager);
+                             rabbitMQConn, noderedurl, swgurl,project_id);
 
                 // ProcessFiles(@currentDir, "localhost", "", "root", "", "myeshopAPI",
                 // "http://localhost/sqlScript/myeshop.sql", "", "myeshopAPI", "YES",

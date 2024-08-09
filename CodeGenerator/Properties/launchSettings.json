@@ -3,47 +3,7 @@
     "NoCodeAppGenerator": {
       "commandName": "Project",
       "environmentVariables": {
-        "PARAMETER": "{project_id:919,server:localhost,uid:1,username:root,password:,databaseName:splitbill,script:http://localhost/splitbill_sqlscript.sql,statusOfGeneration:null,projectName:ContentPlannertest,DBexists:YES,port:3306,rabbitMQConn:amqp://user30037:***@172.178.58.89:30158/,redisConn:172.178.58.89:31158,password=password30037,apiflowurl:,fronttemplateurl:null,Technology_Frontend:ReactTs,Backend_technology:null,buttonClicked:Generate,projectType:dnd,swgurl:null,noderedurl:null}",
-
-
-        //        "PARAMETER": "{project_id:643,server:localhost,uid:1,username:root,password:,databaseName:test3,script:https://nyc3.digitaloceanspaces.com/nocodes3dev/466/pfmscript_script_20230828162610360.sql?AWSAccessKeyId=DO0089PZREULYLFACQZJ&Expires=1693243568&Signature=XLflrpBvo73%2BcMA4A6LmKn0Flvs%3D,statusOfGeneration:null,projectName:Chatbottest,DBexists:NO,port:3306,rabbitMQConn:amqp://user29983:***@20.232.143.107:30104/,redisConn:20.232.143.107:31104,password=password29983,Technology_Frontend:ReactJs,Backend_technology:null,buttonClicked:Generate,projectType:dnd,swgurl:https://cbt1.neoapps.ai/backend/v1/api,noderedurl:https://cbt1.neoapps.ai/nodered}",
-        //"PARAMETER": "{project_id:643,server:neoappsiodev.mysql.database.azure.com,uid:1,username:User_466,password:User_466@pfm_466,databaseName:pfm_466,script:null,statusOfGeneration:null,projectName:Chatbottest,DBexists:YES,port:3306,rabbitMQConn:https://cbt1.neoapps.ai/backend/v1/api,redisConn:null,Technology_Frontend:ReactTs,Backend_technology:null,buttonClicked:Generate,projectType:dnd,swgurl:null,noderedurl:null}",
-        //"PARAMETER": "{project_id:826,server:neoappsiodev.mysql.database.azure.com,uid:1,username:User_511,password:User_511@split17Db826_511,databaseName:split17Db826_511,script:null,statusOfGeneration:null,projectName:Split17,DBexists:YES,port:3306,rabbitMQConn:https://split17.neoapps.ai/backend/v1/api,redisConn:null,apiflowurl:,fronttemplateurl:https://nyc3.digitaloceanspaces.com/nocodes3dev/196/196_frontendTemplateURL_20231213122101517.json?AWSAccessKeyId=DO0089PZREULYLFACQZJ&Expires=1702451462&Signature=JlT60hFCaurVciXVvWQvOfhAHZE%3D,Technology_Frontend:ReactTs,Backend_technology:null,buttonClicked:Generate,projectType:dnd,swgurl:null,noderedurl:null}",
-        //"PARAMETER": "{project_id:828,server:localhost,uid:1,username:root,password:,databaseName:splitbill,script:null,statusOfGeneration:null,projectName:Split17,DBexists:YES,port:3306,rabbitMQConn:https://split17.neoapps.ai/backend/v1/api,redisConn:null,apiflowurl:,fronttemplateurl:,Technology_Frontend:ReactTs,Backend_technology:null,buttonClicked:Generate,projectType:dnd,swgurl:null,noderedurl:null}",
-        //"PARAMETER": "{project_id:828,server:neoappsiodev.mysql.database.azure.com,uid:1,username:User_512,password:User_512@surevyBuilder1_512,databaseName:surevyBuilder1_512,script:null,statusOfGeneration:null,projectName:SurveyBuilder1,DBexists:YES,port:3306,rabbitMQConn:https://svb1.neoapps.ai/backend/v1/api,redisConn:null,apiflowurl:,fronttemplateurl:,Technology_Frontend:ReactTs,Backend_technology:null,buttonClicked:Generate,projectType:dnd,swgurl:null,noderedurl:null}",
-        //"PARAMETER": "{project_id:846,server:localhost,uid:1,username:root,password:,databaseName:splitbill,script:http://localhost/splitbill_sqlscript.sql,statusOfGeneration:null,projectName:Splitdndtest2,DBexists:YES,port:3306,rabbitMQConn:https://splitdndtest2.neoapps.ai/backend/v1/api,redisConn:null,apiflowurl:,fronttemplateurl:,Technology_Frontend:ReactTs,Backend_technology:null,buttonClicked:Generate,projectType:dnd,swgurl:null,noderedurl:null}",
-        //"PARAMETER": "{project_id:883,server:neoappsiodev.mysql.database.azure.com,uid:1,username:User_528,password:User_528@splittest_528,databaseName:splittest_528,script:http://localhost/splitbill_sqlscript.sql,statusOfGeneration:null,projectName:Splitest,DBexists:NO,port:3306,rabbitMQConn:amqp://user30025:***@172.178.58.89:30146/,redisConn:172.178.58.89:31146,password=password30025,apiflowurl:,fronttemplateurl:null,Technology_Frontend:null,Backend_technology:dotnet,buttonClicked:Generate,projectType:null,swgurl:https://splittestiii.neoapps.ai/backend/v1/api,noderedurl:https://splittestiii.neoapps.ai/nodered}",
-        //"PARAMETER": "{project_id:826,server:neoappsiodev.mysql.database.azure.com,uid:1,username:User_511,password:User_511@split17Db826_511,databaseName:split17Db826_511,script:http://localhost/splitbill_sqlscript.sql,statusOfGeneration:null,projectName:Split17,DBexists:NO,port:3306,rabbitMQConn:amqp://user30011:***@172.178.58.89:30132/,redisConn:172.178.58.89:31132,password=password30011,apiflowurl:,fronttemplateurl:null,Technology_Frontend:null,Backend_technology:dotnet,buttonClicked:Generate,projectType:null,swgurl:https://split17.neoapps.ai/backend/v1/api,noderedurl:https://split17.neoapps.ai/nodered}",
-        //"PARAMETER": "{project_id:826,server:neoappsiodev.mysql.database.azure.com,uid:1,username:User_511,password:User_511@split17Db826_511,databaseName:split17Db826_511,script:null,statusOfGeneration:null,projectName:Split17,DBexists:YES,port:3306,rabbitMQConn:https://split17.neoapps.ai/backend/v1/api,redisConn:null,apiflowurl:,fronttemplateurl:https://nyc3.digitaloceanspaces.com/nocodes3dev/202/202_frontendTemplateURL_20231221120632033.json?AWSAccessKeyId=DO0089PZREULYLFACQZJ&Expires=1703141793&Signature=%2B7uJwKge1PUrVwS%2F9rUBI6B1VMo%3D,Technology_Frontend:ReactTs,Backend_technology:null,buttonClicked:Generate,projectType:dnd,swgurl:null,noderedurl:null}",
-        //"PARAMETER": "{project_id:822,server:localhost,uid:1,username:root,password:,databaseName:surveybuilder,script:http://localhost/splitbill_sqlscript.sql,statusOfGeneration:null,projectName:split13,DBexists:YES,port:3306,rabbitMQConn:amqp://user30007:***@172.178.58.89:30128/,redisConn:172.178.58.89:31128,password=password30007,apiflowurl:,fronttemplateurl:http://localhost/templatejson.txt,Technology_Frontend:ReactTs,Backend_technology:null,buttonClicked:Generate,projectType:dnd,swgurl:null,noderedurl:null}",
-        //"PARAMETER": "{project_id:828,server:localhost,uid:1,username:root,password:,databaseName:splitbill,script:null,statusOfGeneration:null,projectName:Split17,DBexists:YES,port:3306,rabbitMQConn:https://split17.neoapps.ai/backend/v1/api,redisConn:null,apiflowurl:null,fronttemplateurl:null,Technology_Frontend:ReactTs,Backend_technology:null,buttonClicked:Generate,projectType:nodered,swgurl:null,noderedurl:null}",
-
-        "ARG3": "root",
-        "ARG4": "",
-        "ARG5": "test",
-        "ARG6": "blink",
-        "ARG8": "Onlinemeet",
-        "ARG9": "YES",
-        "ARG10": "3306",
-        //"ARG11": "https://connectionstringtest.neoapps.ai/367/backend/1/v1/api",
-        "ARG11": "amqp://user29995:password29995@139.59.81.94:31116/",
-        "ARG13": "Dotnet",
-        "ARG14": "generate",
-        "ARG25": "rabbitmq-204-1",
-        "ARG26": "user29995",
-        "ARG27": "password29995",
-        "ARG28": "30116",
-        "ARG29": "31116",
-        "ARG2": "1",
-        "ARG16": "https://nyc3.digitaloceanspaces.com/nocodes3dev/1/150/23/22441/generatedBackend638226863802046121.zip?AWSAccessKeyId=DO0089PZREULYLFACQZJ&Expires=1687090660&Signature=RwXS9bNevgMyNYT2THCMy6uoJrg%3D",
-        "ARG15": "https://nyc3.digitaloceanspaces.com/nocodes3dev/1/150/23/22441/1_Onlinemeet_generatedFrontend_workflow_638224231361734832.zip?AWSAccessKeyId=DO0089PZREULYLFACQZJ&Expires=1686807442&Signature=rKrobBiTmgWMj1QNo39RAY5F%2Buk%3D",
-        "ARG17": "/199/frontend/1",
-        "ARG19": "dop_v1_53ea52811349d42d267f5cb90b0dcb4f79dbe8ede92bb78f778bff53",
-        "ARG23": "dop_v1_53ea52811349d42d267f5cb90b0dcb4f79dbe8ede92bb78f778bff53",
-        "ARG22": "dop_v1_53ea52811349d42d267f5cb90b0dcb4f79dbe8ede92bb78f778bff53",
-        "ARG24": "registry.digitalocean.com",
-        "ARG20": "latest",
-        "ARG30": "nodered"
+        "PARAMETER": "{project_id:1,server:localhost,uid:1,username:root,password:,databaseName:splitthebill,script:http://localhost/split_app_script.sql,statusOfGeneration:null,projectName:ContentPlannerTest,DBexists:No,port:3306,rabbitMQConn:amqp://user12345:12345@localhost:5672/,redisConn:localhost:6379,password=12345,apiflowurl:,fronttemplateurl:,Technology_Frontend:,Backend_technology:dotnet,buttonClicked:generate,projectType:,swgurl:,noderedurl:null}",
       },
         "remoteDebugEnabled": false
       }
