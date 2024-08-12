@@ -51,7 +51,7 @@ Add the following configurations to `appsettings.json` for MinIO (S3), Redis, an
     "Connection": "localhost:6379,password=${REDIS_PASSWORD}"
   },
   "RabbitMQ": {
-    "Connection": "amqp://${REDIS_USER}:${REDIS_PASSWORD}@localhost:5672/"
+    "Connection": "amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@localhost:5672/"
   }
 }
 ```
