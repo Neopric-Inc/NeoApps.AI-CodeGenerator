@@ -136,3 +136,12 @@ After copying the projects, run the .NET API as needed.
 ---
 
 Follow these steps, and you should be able to run the project and generate the apps without any issues.
+
+## Documentation
+
+To help you get started and make the most of NeoApps.ai, we have prepared comprehensive documentation:
+
+- **[Tutorials](https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator/blob/main/tutorials.md):** Hands-on tutorials to help you build and deploy your first app.
+
+
+
