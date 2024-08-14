@@ -1,0 +1,162 @@
+CREATE TABLE users (
+    user_id INT AUTO_INCREMENT PRIMARY KEY,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL,
+    has_mfa TINYINT(1) DEFAULT '0',
+    role VARCHAR(50) NOT NULL,
+    createdBy VARCHAR(255) NOT NULL,
+    modifiedBy VARCHAR(255) NOT NULL,
+    createdAt DATETIME NOT NULL,
+    modifiedAt DATETIME NOT NULL,
+    isActive TINYINT(1) NOT NULL DEFAULT '1'
+);
+
+CREATE TABLE user_profiles (
+    profile_id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    notification_preferences TEXT,
+    privacy_settings TEXT,
+    interface_customizations TEXT,
+    FOREIGN KEY (user_id) REFERENCES users(user_id),
+    createdBy VARCHAR(255) NOT NULL,
+    modifiedBy VARCHAR(255) NOT NULL,
+    createdAt DATETIME NOT NULL,
+    modifiedAt DATETIME NOT NULL,
+    isActive TINYINT(1) NOT NULL DEFAULT '1'
+);
+
+CREATE TABLE tasks (
+    task_id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    priority INT,
+    deadline DATETIME,
+    status VARCHAR(50),
+    FOREIGN KEY (user_id) REFERENCES users(user_id),
+    createdBy VARCHAR(255) NOT NULL,
+    modifiedBy VARCHAR(255) NOT NULL,
+    createdAt DATETIME NOT NULL,
+    modifiedAt DATETIME NOT NULL,
+    isActive TINYINT(1) NOT NULL DEFAULT '1'
+);
+
+CREATE TABLE task_categories (
+    category_id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    user_id INT NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(user_id),
+    createdBy VARCHAR(255) NOT NULL,
+    modifiedBy VARCHAR(255) NOT NULL,
+    createdAt DATETIME NOT NULL,
+    modifiedAt DATETIME NOT NULL,
+    isActive TINYINT(1) NOT NULL DEFAULT '1'
+);
+
+CREATE TABLE task_tags (
+    tag_id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    task_id INT NOT NULL,
+    FOREIGN KEY (task_id) REFERENCES tasks(task_id),
+    createdBy VARCHAR(255) NOT NULL,
+    modifiedBy VARCHAR(255) NOT NULL,
+    createdAt DATETIME NOT NULL,
+    modifiedAt DATETIME NOT NULL,
+    isActive TINYINT(1) NOT NULL DEFAULT '1'
+);
+
+CREATE TABLE notebooks (
+    notebook_id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    FOREIGN KEY (user_id) REFERENCES users(user_id),
+    createdBy VARCHAR(255) NOT NULL,
+    modifiedBy VARCHAR(255) NOT NULL,
+    createdAt DATETIME NOT NULL,
+    modifiedAt DATETIME NOT NULL,
+    isActive TINYINT(1) NOT NULL DEFAULT '1'
+);
+
+CREATE TABLE notes (
+    note_id INT AUTO_INCREMENT PRIMARY KEY,
+    notebook_id INT,
+    title VARCHAR(255) NOT NULL,
+    content TEXT NOT NULL,
+    FOREIGN KEY (notebook_id) REFERENCES notebooks(notebook_id),
+    createdBy VARCHAR(255) NOT NULL,
+    modifiedBy VARCHAR(255) NOT NULL,
+    createdAt DATETIME NOT NULL,
+    modifiedAt DATETIME NOT NULL,
+    isActive TINYINT(1) NOT NULL DEFAULT '1'
+);
+
+CREATE TABLE note_tags (
+    tag_id INT AUTO_INCREMENT PRIMARY KEY,
+    note_id INT NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    FOREIGN KEY (note_id) REFERENCES notes(note_id),
+    createdBy VARCHAR(255) NOT NULL,
+    modifiedBy VARCHAR(255) NOT NULL,
+    createdAt DATETIME NOT NULL,
+    modifiedAt DATETIME NOT NULL,
+    isActive TINYINT(1) NOT NULL DEFAULT '1'
+);
+
+CREATE TABLE events (
+    event_id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    start_time DATETIME NOT NULL,
+    end_time DATETIME NOT NULL,
+    reminder_time DATETIME,
+    FOREIGN KEY (user_id) REFERENCES users(user_id),
+    createdBy VARCHAR(255) NOT NULL,
+    modifiedBy VARCHAR(255) NOT NULL,
+    createdAt DATETIME NOT NULL,
+    modifiedAt DATETIME NOT NULL,
+    isActive TINYINT(1) NOT NULL DEFAULT '1'
+);
+
+CREATE TABLE activity_logs (
+    log_id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    action VARCHAR(255) NOT NULL,
+    description TEXT NOT NULL,
+    timestamp DATETIME NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(user_id),
+    createdBy VARCHAR(255) NOT NULL,
+    modifiedBy VARCHAR(255) NOT NULL,
+    createdAt DATETIME NOT NULL,
+    modifiedAt DATETIME NOT NULL,
+    isActive TINYINT(1) NOT NULL DEFAULT '1'
+);
+
+CREATE TABLE task_logs (
+    log_id INT AUTO_INCREMENT PRIMARY KEY,
+    task_id INT NOT NULL,
+    user_id INT NOT NULL,
+    action VARCHAR(50) NOT NULL,
+    description VARCHAR(255),
+    timestamp DATETIME NOT NULL,
+    FOREIGN KEY (task_id) REFERENCES tasks(task_id),
+    FOREIGN KEY (user_id) REFERENCES users(user_id),
+    createdBy VARCHAR(255) NOT NULL,
+    modifiedBy VARCHAR(255) NOT NULL,
+    createdAt DATETIME NOT NULL,
+    modifiedAt DATETIME NOT NULL,
+    isActive TINYINT(1) NOT NULL DEFAULT '1'
+);
+
+DELIMITER $$
+
+CREATE TRIGGER after_task_insert
+AFTER INSERT ON tasks
+FOR EACH ROW
+BEGIN
+    INSERT INTO task_logs (task_id, user_id, action, description, timestamp, createdBy, modifiedBy, createdAt, modifiedAt, isActive)
+    VALUES (NEW.task_id, NEW.user_id, 'INSERT', CONCAT('Task created: ', NEW.title), NOW(), 'system', 'system', NOW(), NOW(), 1);
+END$$
+
+DELIMITER ;
