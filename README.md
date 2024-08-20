@@ -24,10 +24,10 @@ Use the following Docker commands to set up Redis, RabbitMQ, and MinIO (S3):
 
 - **Redis**
   ```bash
-  docker run -d --name redis -p 6379:6379 --env-file .env \
-  -e REDIS_PASSWORD=${REDIS_PASSWORD} \
-  -v redis-data:/data redis:latest \
-  redis-server --requirepass ${REDIS_PASSWORD} --appendonly yes
+docker run -d --name redis -p 6379:6379 --env-file .env \
+-v redis-data:/data redis:latest \
+redis-server --requirepass "$(grep REDIS_PASSWORD .env | cut -d '=' -f2)" --appendonly yes
+
   ```
 
 - **RabbitMQ**
