@@ -38,7 +38,7 @@ Learn how to test APIs created in .NET after running your project locally:
 
 Stay updated with more tutorials and videos by subscribing to our YouTube channel:
 
-[Subscribe to NeoApps.ai YouTube Channel](https://www.youtube.com/channel/UCDY6QLtPz5M7wNdbRLO-NnA)
+[Subscribe to NeoApps.ai YouTube Channel](https://www.youtube.com/@NeoAppsAI)
 
 ### Subscribe Button
 
