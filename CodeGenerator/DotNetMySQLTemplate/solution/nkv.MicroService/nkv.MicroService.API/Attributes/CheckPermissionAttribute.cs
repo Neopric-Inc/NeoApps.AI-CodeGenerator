@@ -90,28 +90,28 @@ namespace nkv.MicroService.API.Attributes
             {
                 // If the permission doesn't exist in cache, fetch it from the database
                 EntitiesModel entitiesModel = entitiesManager.GetEntitiesByName(_entityName);
-                PermissionmatrixModel permissionmatrixModel = null;
+                PermissionMatrixModel PermissionMatrixModel = null;
                 if (entitiesModel != null)
                 {
                     int entity_id = entitiesModel.entity_id;
-                    permissionmatrixModel = permissionmatrixManager.HasEntityPermission(role_id, userID, entity_id);
+                    PermissionMatrixModel = permissionmatrixManager.HasEntityPermission(role_id, userID, entity_id);
                 }
 
-                if (permissionmatrixModel != null)
+                if (PermissionMatrixModel != null)
                 {
                     switch (_actionType.ToLower())
                     {
                         case "get":
-                            isAuthorized = permissionmatrixModel.can_read == 1;
+                            isAuthorized = PermissionMatrixModel.can_read == 1;
                             break;
                         case "post":
-                            isAuthorized = permissionmatrixModel.can_write == 1;
+                            isAuthorized = PermissionMatrixModel.can_write == 1;
                             break;
                         case "put":
-                            isAuthorized = permissionmatrixModel.can_update == 1;
+                            isAuthorized = PermissionMatrixModel.can_update == 1;
                             break;
                         case "delete":
-                            isAuthorized = permissionmatrixModel.can_delete == 1;
+                            isAuthorized = PermissionMatrixModel.can_delete == 1;
                             break;
                         default:
                             isAuthorized = false;
