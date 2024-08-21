@@ -109,6 +109,130 @@ Update `launchSettings.json` with the following parameters for backend generatio
 }
 ```
 
+Update `launchSettings.json` with the following parameters for frontend generation:
+
+```json
+{
+    "project_id": 1,
+    "server": "localhost",
+    "uid": 1,
+    "username": "root",
+    "password": "",
+    "databaseName": "splitthebill",
+    "script": "http://localhost/split_app_script.sql",
+    "statusOfGeneration": "",
+    "projectName": "ContentPlannerTest",
+    "DBexists": "Yes",
+    "port": 3306,
+    "rabbitMQConn": "https://localhost:5001/v1/api/",
+    "redisConn": "localhost:6379",
+    "password": "12345",
+    "apiflowurl": "",
+    "fronttemplateurl": "",
+    "Technology_Frontend": "reactts",
+    "Backend_technology": "",
+    "buttonClicked": "generate",
+    "projectType": "dnd",
+    "swgurl": "",
+    "noderedurl": ""
+}
+
+```
+Configuration Parameters
+Below is a list of configuration parameters used in the project setup along with their explanations:
+
+project_id:
+The unique identifier for the project. You can use any number. 
+Example: 1
+
+server:
+The server where the database is hosted. This will be database server (mysql). Do not use production database server here.
+Example: localhost
+
+uid:
+The unique identifier for the user. Dont change this one.
+Example: 1
+
+username:
+The database username. Make sure its admin user. 
+Example: root
+
+password:
+The password for the database user.
+Example: "" (empty string)
+
+databaseName:
+The name of the database to be used for the project.
+Example: splitthebill
+
+script:
+The URL or path to the SQL script used to initialize the database. So if you notice the file is hosted in webserver in xampp htdocs.
+Example: http://localhost/split_app_script.sql
+
+statusOfGeneration:
+The status of the project generation process. Ignore it but dont change it.
+Example: "" (empty string, to be updated during the process)
+
+projectName:
+The name of the project. Use the ProjectName without number and special character in order to run it smoothly.
+Example: ContentPlannerTest
+
+DBexists:
+Indicates whether the database already exists. For backend generation this will be NO and it will reacreate the database tables. For Frontend It will be YES.
+Example: "Yes"
+
+port:
+The port number on which the database server is listening.
+Example: 3306
+
+rabbitMQConn:
+The connection URL will be used for rabbitMQ connection when generating backend and As API connection url while generating frontend.
+Example: https://localhost:5001/v1/api/
+
+redisConn:
+The connection string for Redis, typically used for caching.
+Example: localhost:6379
+
+password:
+The password for Redis connection.
+Example: 12345
+
+apiflowurl:
+The URL for the API flow and this will be explained in future docs and videos.
+Example: "" (empty, to be defined based on your setup)
+
+fronttemplateurl:
+The URL for the frontend template, used for project scaffolding. Future roadmap.
+Example: "" (empty, to be defined based on your setup)
+
+Technology_Frontend:
+The technology stack used for the frontend development. Dont change for now.
+Example: reactts (React with TypeScript)
+
+Backend_technology:
+The technology stack used for backend development. Dont change for now and it wll be different for backend.
+Example: "" (empty, to be specified based on your project)
+
+buttonClicked:
+Indicates the action taken by the user, such as generating the project. Dont change for now. This will be use to controll  generate,build and deploy.
+Example: "generate"
+
+projectType:
+The type of project being generated, e.g., drag-and-drop (DND).
+Example: "dnd"
+
+swgurl:
+The URL for Swagger, used for API documentation.
+Example: "" (empty, to be filled after project setup)
+
+noderedurl:
+The URL for Node-RED, a flow-based development tool.
+Example: "" (empty, to be filled based on setup)
+
+
+
+
+
 ### 6. Generate Backend
 
 Once you generate the project, the generated code will be available in the `bin/debug` folder.
@@ -138,6 +262,13 @@ After copying the projects, run the .NET API as needed.
 Follow these steps, and you should be able to run the project and generate the apps without any issues.
 
 ## Documentation
+
+Setup and Installation Guide
+For a detailed guide on setting up the project, generating the API, and hosting it locally, please refer to the Setup and Installation Guide.
+
+- **[Tutorials](https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator/blob/main/README-Setup-Guide):** Hands-on tutorials to help you setup project , generate code , build code and host locally.
+
+This guide includes step-by-step instructions and a video tutorial to help you through the entire process.
 
 To help you get started and make the most of NeoApps.ai, we have prepared comprehensive documentation:
 
