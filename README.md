@@ -138,99 +138,97 @@ Update `launchSettings.json` with the following parameters for frontend generati
 }
 
 ```
-Configuration Parameters
-Below is a list of configuration parameters used in the project setup along with their explanations:
+  # **Configuration Parameters**
 
-project_id:
-The unique identifier for the project. You can use any number. 
-Example: 1
+  Below is a list of configuration parameters used in the project setup, along with their explanations:
 
-server:
-The server where the database is hosted. This will be database server (mysql). Do not use production database server here.
-Example: localhost
+  ##### `project_id`
+  - **Description:** The unique identifier for the project. You can use any number.
+- **Example:** `1`
 
-uid:
-The unique identifier for the user. Dont change this one.
-Example: 1
+### `server`
+- **Description:** The server where the database is hosted. This will be the database server (MySQL). Do not use a production database server here.
+- **Example:** `localhost`
 
-username:
-The database username. Make sure its admin user. 
-Example: root
+### `uid`
+- **Description:** The unique identifier for the user. Don't change this one.
+- **Example:** `1`
 
-password:
-The password for the database user.
-Example: "" (empty string)
+### `username`
+- **Description:** The database username. Make sure it's an admin user.
+- **Example:** `root`
 
-databaseName:
-The name of the database to be used for the project.
-Example: splitthebill
+### `password`
+- **Description:** The password for the database user.
+- **Example:** `""` (empty string)
 
-script:
-The URL or path to the SQL script used to initialize the database. So if you notice the file is hosted in webserver in xampp htdocs.
-Example: http://localhost/split_app_script.sql
+### `databaseName`
+- **Description:** The name of the database to be used for the project.
+- **Example:** `splitthebill`
 
-statusOfGeneration:
-The status of the project generation process. Ignore it but dont change it.
-Example: "" (empty string, to be updated during the process)
+### `script`
+- **Description:** The URL or path to the SQL script used to initialize the database. This file is typically hosted on a web server in the XAMPP `htdocs` directory.
+- **Example:** `http://localhost/split_app_script.sql`
 
-projectName:
-The name of the project. Use the ProjectName without number and special character in order to run it smoothly.
-Example: ContentPlannerTest
+### `statusOfGeneration`
+- **Description:** The status of the project generation process. Ignore this, but don't change it.
+- **Example:** `""` (empty string, to be updated during the process)
 
-DBexists:
-Indicates whether the database already exists. For backend generation this will be NO and it will reacreate the database tables. For Frontend It will be YES.
-Example: "Yes"
+### `projectName`
+- **Description:** The name of the project. Use the project name without numbers or special characters to ensure smooth operation.
+- **Example:** `ContentPlannerTest`
 
-port:
-The port number on which the database server is listening.
-Example: 3306
+### `DBexists`
+- **Description:** Indicates whether the database already exists. For backend generation, this will be `NO`, and it will recreate the database tables. For frontend generation, it will be `YES`.
+- **Example:** `"Yes"`
 
-rabbitMQConn:
-The connection URL will be used for rabbitMQ connection when generating backend and As API connection url while generating frontend.
-Example: https://localhost:5001/v1/api/
+### `port`
+- **Description:** The port number on which the database server is listening.
+- **Example:** `3306`
 
-redisConn:
-The connection string for Redis, typically used for caching.
-Example: localhost:6379
+### `rabbitMQConn`
+- **Description:** The connection URL for RabbitMQ, used when generating the backend and as an API connection URL while generating the frontend.
+- **Example:** `https://localhost:5001/v1/api/`
 
-password:
-The password for Redis connection.
-Example: 12345
+### `redisConn`
+- **Description:** The connection string for Redis, typically used for caching.
+- **Example:** `localhost:6379`
 
-apiflowurl:
-The URL for the API flow and this will be explained in future docs and videos.
-Example: "" (empty, to be defined based on your setup)
+### `password` *(for Redis)*
+- **Description:** The password for Redis connection.
+- **Example:** `12345`
 
-fronttemplateurl:
-The URL for the frontend template, used for project scaffolding. Future roadmap.
-Example: "" (empty, to be defined based on your setup)
+### `apiflowurl`
+- **Description:** The URL for the API flow. This will be explained in future documentation and videos.
+- **Example:** `""` (empty, to be defined based on your setup)
 
-Technology_Frontend:
-The technology stack used for the frontend development. Dont change for now.
-Example: reactts (React with TypeScript)
+### `fronttemplateurl`
+- **Description:** The URL for the frontend template, used for project scaffolding. Future roadmap.
+- **Example:** `""` (empty, to be defined based on your setup)
 
-Backend_technology:
-The technology stack used for backend development. Dont change for now and it wll be different for backend.
-Example: "" (empty, to be specified based on your project)
+### `Technology_Frontend`
+- **Description:** The technology stack used for frontend development. Don't change this for now.
+- **Example:** `reactts` (React with TypeScript)
 
-buttonClicked:
-Indicates the action taken by the user, such as generating the project. Dont change for now. This will be use to controll  generate,build and deploy.
-Example: "generate"
+### `Backend_technology`
+- **Description:** The technology stack used for backend development. Don't change this for now. It will be different for the backend.
+- **Example:** `""` (empty, to be specified based on your project)
 
-projectType:
-The type of project being generated, e.g., drag-and-drop (DND). No need to change anything here.
-Example: "dnd"
+### `buttonClicked`
+- **Description:** Indicates the action taken by the user, such as generating the project. Don't change this for now. This will be used to control generate, build, and deploy actions.
+- **Example:** `"generate"`
 
-swgurl:
-The URL for Swagger, used for API documentation.
-Example: "" (empty, to be filled after project setup). No need to change anything here for now.
+### `projectType`
+- **Description:** The type of project being generated, e.g., drag-and-drop (DND). No need to change anything here.
+- **Example:** `"dnd"`
 
-noderedurl:
-The URL for Node-RED, a flow-based development tool. No need to change anything here for now.
-Example: "" (empty, to be filled based on setup)
+### `swgurl`
+- **Description:** The URL for Swagger, used for API documentation.
+- **Example:** `""` (empty, to be filled after project setup). No need to change anything here for now.
 
-
-
+### `noderedurl`
+- **Description:** The URL for Node-RED, a flow-based development tool. No need to change anything here for now.
+- **Example:** `""` (empty, to be filled based on setup)
 
 
 ### 6. Generate Backend
