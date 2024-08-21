@@ -1,4 +1,6 @@
 # NeoApps.AI- Code Generator
+<img src="https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator/blob/main/logo.png" alt="NeoApps.AI Logo" width="700">
+
 # Project Setup and App Generation Guide
 
 ## Prerequisites
