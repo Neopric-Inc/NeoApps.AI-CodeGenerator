@@ -229,8 +229,6 @@ The URL for Node-RED, a flow-based development tool. No need to change anything 
 Example: "" (empty, to be filled based on setup)
 
 
-
-
 ### 6. Generate Backend
 
 Once you generate the project, the generated code will be available in the `bin/debug` folder.
