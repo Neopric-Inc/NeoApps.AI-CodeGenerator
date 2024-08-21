@@ -218,15 +218,15 @@ Indicates the action taken by the user, such as generating the project. Dont cha
 Example: "generate"
 
 projectType:
-The type of project being generated, e.g., drag-and-drop (DND).
+The type of project being generated, e.g., drag-and-drop (DND). No need to change anything here.
 Example: "dnd"
 
 swgurl:
 The URL for Swagger, used for API documentation.
-Example: "" (empty, to be filled after project setup)
+Example: "" (empty, to be filled after project setup). No need to change anything here for now.
 
 noderedurl:
-The URL for Node-RED, a flow-based development tool.
+The URL for Node-RED, a flow-based development tool. No need to change anything here for now.
 Example: "" (empty, to be filled based on setup)
 
 
