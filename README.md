@@ -89,58 +89,13 @@ Set up your MySQL database with the following parameters:
 Update `launchSettings.json` with the following parameters for backend generation:
 
 ```json
-{
-  "project_id": 1,
-  "server": "localhost",
-  "uid": 1,
-  "username": "root",
-  "password": "",
-  "databaseName": "splitthebill",
-  "script": "http://localhost/split_app_script.sql",
-  "statusOfGeneration": null,
-  "projectName": "SplitTheBill",
-  "DBexists": "No",
-  "port": 3306,
-  "rabbitMQConn": "amqp://user:password@localhost:5672/",
-  "redisConn": "localhost:6379,password=REDIS_PASSWORD=yourredispassword",
-  "apiflowurl": "",
-  "fronttemplateurl": "",
-  "Technology_Frontend": "",
-  "Backend_technology": "dotnet",
-  "buttonClicked": "generate",
-  "projectType": "",
-  "swgurl": "",
-  "noderedurl": null
-}
+PARAMETER: "{project_id:1,server:localhost,uid:1,username:root,password:,databaseName:splitthebill,script:http://localhost/split_app_script.sql,statusOfGeneration:null,projectName:ContentPlannerTest,DBexists:No,port:3306,rabbitMQConn:amqp://user12345:12345@localhost:5672/,redisConn:localhost:6379,password=12345,apiflowurl:,fronttemplateurl:,Technology_Frontend:,Backend_technology:dotnet,buttonClicked:generate,projectType:,swgurl:,noderedurl:null}"
 ```
 
 Update `launchSettings.json` with the following parameters for frontend generation:
 
 ```json
-{
-    "project_id": 1,
-    "server": "localhost",
-    "uid": 1,
-    "username": "root",
-    "password": "",
-    "databaseName": "splitthebill",
-    "script": "http://localhost/split_app_script.sql",
-    "statusOfGeneration": "",
-    "projectName": "ContentPlannerTest",
-    "DBexists": "Yes",
-    "port": 3306,
-    "rabbitMQConn": "https://localhost:5001/v1/api/",
-    "redisConn": "localhost:6379",
-    "password": "12345",
-    "apiflowurl": "",
-    "fronttemplateurl": "",
-    "Technology_Frontend": "reactts",
-    "Backend_technology": "",
-    "buttonClicked": "generate",
-    "projectType": "dnd",
-    "swgurl": "",
-    "noderedurl": ""
-}
+PARAMETER: "{project_id:1,server:localhost,uid:1,username:root,password:,databaseName:splitthebill,script:http://localhost/split_app_script.sql,statusOfGeneration:,projectName:ContentPlannerTest,DBexists:Yes,port:3306,rabbitMQConn:amqp://user12345:12345@localhost:5672/,redisConn:localhost:6379,password=12345,apiflowurl:,fronttemplateurl:,Technology_Frontend:reactts,Backend_technology:,buttonClicked:generate,projectType:dnd,swgurl:,noderedurl:}"
 
 ```
   # **Configuration Parameters**
