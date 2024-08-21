@@ -88,9 +88,9 @@ namespace nkv.MicroService.DataAccess.Impl
             return null;
         }
 
-        public List<PermissionmatrixModel> GetAllPermissionmatrix(int page = 1, int itemsPerPage = 100, List<OrderByModel> orderBy = null)
+        public List<PermissionMatrixModel> GetAllPermissionmatrix(int page = 1, int itemsPerPage = 100, List<OrderByModel> orderBy = null)
         {
-            var ret = new List<PermissionmatrixModel>();
+            var ret = new List<PermissionMatrixModel>();
             int offset = (page - 1) * itemsPerPage;
             try
             {
@@ -105,7 +105,7 @@ namespace nkv.MicroService.DataAccess.Impl
                     using (var reader = cmd.ExecuteReader())
                         while (reader.Read())
                         {
-                            var t = new PermissionmatrixModel()
+                            var t = new PermissionMatrixModel()
                             {
                                 permission_id = reader.GetValue<Int32>("permission_id"),
                                 role_id = reader.GetValue<Int32>("role_id"),
@@ -136,9 +136,9 @@ namespace nkv.MicroService.DataAccess.Impl
             return ret;
         }
 
-        public List<PermissionmatrixModel> SearchPermissionmatrix(string searchKey, int page = 1, int itemsPerPage = 100, List<OrderByModel> orderBy = null)
+        public List<PermissionMatrixModel> SearchPermissionmatrix(string searchKey, int page = 1, int itemsPerPage = 100, List<OrderByModel> orderBy = null)
         {
-            var ret = new List<PermissionmatrixModel>();
+            var ret = new List<PermissionMatrixModel>();
             int offset = (page - 1) * itemsPerPage;
             try
             {
@@ -154,7 +154,7 @@ namespace nkv.MicroService.DataAccess.Impl
                     using (var reader = cmd.ExecuteReader())
                         while (reader.Read())
                         {
-                            var t = new PermissionmatrixModel()
+                            var t = new PermissionMatrixModel()
                             {
                                 permission_id = reader.GetValue<Int32>("permission_id"),
                                 role_id = reader.GetValue<Int32>("role_id"),
@@ -185,7 +185,7 @@ namespace nkv.MicroService.DataAccess.Impl
             return ret;
         }
 
-        public PermissionmatrixModel GetPermissionmatrixByID(int permission_id)
+        public PermissionMatrixModel GetPermissionmatrixByID(int permission_id)
         {
 
             try
@@ -200,7 +200,7 @@ namespace nkv.MicroService.DataAccess.Impl
                     using (var reader = cmd.ExecuteReader())
                         while (reader.Read())
                         {
-                            return new PermissionmatrixModel()
+                            return new PermissionMatrixModel()
                             {
                                 permission_id = reader.GetValue<Int32>("permission_id"),
                                 role_id = reader.GetValue<Int32>("role_id"),
@@ -228,7 +228,7 @@ namespace nkv.MicroService.DataAccess.Impl
             finally { mySqlDatabaseConnector.CloseConnection(); }
             return null;
         }
-        public PermissionmatrixModel GetPermissionmatrixByUserRoleID(int role_id, int user_id, int entity_id)
+        public PermissionMatrixModel GetPermissionmatrixByUserRoleID(int role_id, int user_id, int entity_id)
         {
 
             try
@@ -245,7 +245,7 @@ namespace nkv.MicroService.DataAccess.Impl
                     using (var reader = cmd.ExecuteReader())
                         while (reader.Read())
                         {
-                            return new PermissionmatrixModel()
+                            return new PermissionMatrixModel()
                             {
                                 permission_id = reader.GetValue<Int32>("permission_id"),
                                 role_id = reader.GetValue<Int32>("role_id"),
@@ -274,7 +274,7 @@ namespace nkv.MicroService.DataAccess.Impl
             return null;
         }
 
-        public bool UpdatePermissionmatrix(PermissionmatrixModel model)
+        public bool UpdatePermissionmatrix(PermissionMatrixModel model)
         {
             try
             {
@@ -312,7 +312,7 @@ namespace nkv.MicroService.DataAccess.Impl
             return false;
         }
 
-        public long AddPermissionmatrix(PermissionmatrixModel model)
+        public long AddPermissionmatrix(PermissionMatrixModel model)
         {
             try
             {
@@ -375,9 +375,9 @@ namespace nkv.MicroService.DataAccess.Impl
             finally { mySqlDatabaseConnector.CloseConnection(); }
             return false;
         }
-        public List<PermissionmatrixModel> FilterPermissionmatrix(List<FilterModel> filterBy, string andOr, int page, int itemsPerPage, List<OrderByModel> orderBy)
+        public List<PermissionMatrixModel> FilterPermissionmatrix(List<FilterModel> filterBy, string andOr, int page, int itemsPerPage, List<OrderByModel> orderBy)
         {
-            var ret = new List<PermissionmatrixModel>();
+            var ret = new List<PermissionMatrixModel>();
             int offset = (page - 1) * itemsPerPage;
             try
             {
@@ -443,7 +443,7 @@ namespace nkv.MicroService.DataAccess.Impl
                     using (var reader = cmd.ExecuteReader())
                         while (reader.Read())
                         {
-                            var t = new PermissionmatrixModel()
+                            var t = new PermissionMatrixModel()
                             {
                                 permission_id = reader.GetValue<Int32>("permission_id"),
                                 role_id = reader.GetValue<Int32>("role_id"),

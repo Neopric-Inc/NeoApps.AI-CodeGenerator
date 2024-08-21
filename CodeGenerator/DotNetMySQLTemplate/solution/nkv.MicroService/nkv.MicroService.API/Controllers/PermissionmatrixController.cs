@@ -102,7 +102,7 @@ namespace nkv.MicroService.API.Controllers
 
         [HttpPost]
         [Route(APIEndpoint.DefaultRoute)]
-        public ActionResult Post(PermissionmatrixModel model)
+        public ActionResult Post(PermissionMatrixModel model)
         {
             try
             {
@@ -126,7 +126,7 @@ namespace nkv.MicroService.API.Controllers
 
         [HttpPut]
         [Route(APIEndpoint.DefaultRoute + "/{permission_id}")]
-        public ActionResult Put(int permission_id, PermissionmatrixModel model)
+        public ActionResult Put(int permission_id, PermissionMatrixModel model)
         {
             try
             {

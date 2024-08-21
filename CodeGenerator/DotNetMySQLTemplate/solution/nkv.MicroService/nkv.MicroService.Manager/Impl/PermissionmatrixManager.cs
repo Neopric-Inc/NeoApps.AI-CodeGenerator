@@ -47,7 +47,7 @@ namespace nkv.MicroService.Manager.Impl
             }
         }
 
-        public PermissionmatrixModel HasEntityPermission(int role_id, int user_id, int entity_id)
+        public PermissionMatrixModel HasEntityPermission(int role_id, int user_id, int entity_id)
         {
             var result = DataAccess.GetPermissionmatrixByUserRoleID(role_id, user_id, entity_id);
             if (result != null)
@@ -61,7 +61,7 @@ namespace nkv.MicroService.Manager.Impl
         }
 
 
-        public APIResponse UpdatePermissionmatrixWithToken(int permission_id, PermissionmatrixModel model, string token)
+        public APIResponse UpdatePermissionmatrixWithToken(int permission_id, PermissionMatrixModel model, string token)
         {
             model.permission_id = permission_id;
 
@@ -91,7 +91,7 @@ namespace nkv.MicroService.Manager.Impl
                 return null;
             }
         }
-        public APIResponse AddPermissionmatrixWithToken(PermissionmatrixModel model, string token)
+        public APIResponse AddPermissionmatrixWithToken(PermissionMatrixModel model, string token)
         {
             var result = DataAccess.AddPermissionmatrix(model);
             if (result > 0)
