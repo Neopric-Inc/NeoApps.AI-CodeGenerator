@@ -11,9 +11,10 @@
 Before running the project, ensure you have the following installed:
 
 1. **Visual Studio** or **Visual Studio Code**
-2. **Docker**
-3. **XAMPP**
-4. **Redis, RabbitMQ, and MinIO (S3)**
+2. **.NET SDK**
+3. **Docker**
+4. **XAMPP**
+5. **Redis, RabbitMQ, and MinIO (S3)**
 
 ### Docker Setup for Redis, RabbitMQ, and MinIO (S3)
 
