@@ -264,7 +264,7 @@ Follow these steps, and you should be able to run the project and generate the a
 Setup and Installation Guide
 For a detailed guide on setting up the project, generating the API, and hosting it locally, please refer to the Setup and Installation Guide.
 
-- **[Tutorials](https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator/blob/main/README-Setup-Guide):** Hands-on tutorials to help you setup project , generate code , build code and host locally.
+- **[Tutorials](https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator/blob/main/README-Setup-Guide.md):** Hands-on tutorials to help you setup project , generate code , build code and host locally.
 
 This guide includes step-by-step instructions and a video tutorial to help you through the entire process.
 
