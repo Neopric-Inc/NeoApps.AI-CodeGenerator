@@ -6,6 +6,15 @@
 
 # Project Setup and App Generation Guide
 
+## Demo
+
+<details>
+<summary><kbd>Watch the demo!</kbd></summary>
+
+[![Watch the video](https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator/blob/main/neoapps_ai_thumbnail.png)](https://www.youtube.com/watch?v=i2SOFnlYknU)
+
+</details>
+
 ## Prerequisites
 
 Before running the project, ensure you have the following installed:
@@ -15,6 +24,7 @@ Before running the project, ensure you have the following installed:
 3. **Docker**
 4. **XAMPP**
 5. **Redis, RabbitMQ, and MinIO (S3)**
+6. **Node**
 
 ### Docker Setup for Redis, RabbitMQ, and MinIO (S3)
 
