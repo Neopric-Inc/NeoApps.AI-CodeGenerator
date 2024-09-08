@@ -1,0 +1,368 @@
+
+Use this template to provide responses - Prompt template 
+
+"I am looking to create a [describe the type of application, e.g., simple bookkeeping app] with [specific functionality, e.g., report functionality] so that it can be used in [describe the context or purpose, e.g., my business]. 
+
+Please generate comprehensive project requirements based on this idea. Clearly state the project type and scope, and list the core functionalities of the app as functional requirements. Include non-functional requirements as specified below, along with detailed user stories, user journeys, and database design(Keep it detailed database ready to start). Make sure all details are thorough enough to allow direct commencement of project development without further clarification. 
+
+Guidelines for Generating Requirements: 
+
+Project Type and Scope: 
+
+Define the type of application (e.g., web app, mobile app, etc.). 
+
+Specify the scope of the project, including target users and primary objectives. 
+
+Functional Requirements: 
+
+List the main features and functionalities required in the app. 
+
+Ensure each functionality is described in detail, covering all user interactions and system responses. 
+
+Non-Functional Requirements: 
+
+The application will be a web app with the frontend built in React and the backend in .NET. 
+
+It will use MySQL as the database. 
+
+The architecture should follow a microservice pattern designed for an event-driven approach, where user actions trigger backend workflows. 
+
+Include support for a drag-and-drop designer for designing webpages and a no-code/low-code workflow design tool for post-event processing using Node-RED. 
+
+The app must be containerized using Docker to facilitate deployment on cloud platforms like Azure, AWS, and GCP. 
+
+Ensure scalability, performance, and security standards are met for a production environment. 
+
+User Experience and Screens: 
+
+Detail the user interface design, including key screens, navigation, and user interactions. 
+
+Provide a user flow for each major feature to ensure a seamless experience. 
+
+User Stories and User Journeys: 
+
+Offer a set of user stories that describe specific interactions from the user's perspective. 
+
+Outline user journeys to map out the end-to-end experience for different user roles. 
+
+Database Guidelines:  
+
+Database Naming: Use lowercase, descriptive names, including a prefix indicating the environment (prod_, dev_). Prefix is only for database name. Please provide complete .sql script ready to download.
+
+Character Set and Collation: Default to UTF-8 (utf8mb4) and use the collation that best suits your language requirements. 
+
+Table Design Guidelines  
+
+I will have this tables already so do not create such tables and for users please create separate table and use as reference. 
+
+CREATE TABLE Roles (
+  role_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  role_name VARCHAR(50) NOT NULL,
+  createdBy VARCHAR(255),
+  modifiedBy VARCHAR(255),
+  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  modifiedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  isActive tinyint(1) NOT NULL DEFAULT '1'
+);
+INSERT INTO Roles (role_name, isActive) 
+VALUES ('Administrator', 1);
+
+CREATE TABLE Users (
+  user_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  username VARCHAR(50) NOT NULL,
+  password_hash VARCHAR(255) NOT NULL,
+  role_id INT NOT NULL,
+  createdBy VARCHAR(255),
+  modifiedBy VARCHAR(255),
+  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  modifiedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  isActive tinyint(1) NOT NULL DEFAULT '1',
+  FOREIGN KEY (role_id) REFERENCES Roles(role_id)
+  
+);
+INSERT INTO Users (username, password_hash, role_id,isActive)
+VALUES ('{adminUsername}', '{adminPassword}', 1, 1);
+
+CREATE TABLE Entities (
+  entity_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  entity_name VARCHAR(100) NOT NULL,
+  createdBy VARCHAR(255),
+  modifiedBy VARCHAR(255),
+  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  modifiedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  isActive tinyint(1) NOT NULL DEFAULT '1'
+);
+
+CREATE TABLE PermissionMatrix (
+  permission_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  role_id INT NOT NULL,
+  entity_id INT NOT NULL,
+  can_read TINYINT(1),
+  can_write TINYINT(1),
+  can_update TINYINT(1),
+  can_delete TINYINT(1),
+  user_id INT, -- Attribute for user identity
+  owner_name VARCHAR(255), -- Attribute for owner of the resource
+  createdBy VARCHAR(255),
+  modifiedBy VARCHAR(255),
+  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  modifiedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  isActive tinyint(1) NOT NULL DEFAULT '1',
+  FOREIGN KEY (role_id) REFERENCES Roles(role_id),
+  FOREIGN KEY (entity_id) REFERENCES Entities(entity_id)
+  
+);
+
+CREATE TRIGGER prevent_admin_insert
+BEFORE INSERT ON Users
+FOR EACH ROW
+BEGIN
+  IF NEW.username = '{adminUsername}' AND NEW.password_hash = '{adminPassword}' THEN
+    SIGNAL SQLSTATE '45000'
+      SET MESSAGE_TEXT = 'Cannot insert the specified record';
+  END IF;
+END;
+
+CREATE TRIGGER prevent_admin_delete
+BEFORE DELETE ON Users
+FOR EACH ROW
+BEGIN
+  IF OLD.username = '{adminUsername}' AND OLD.password_hash = '{adminPassword}' THEN
+    SIGNAL SQLSTATE '45000'
+      SET MESSAGE_TEXT = 'Cannot delete the specified record';
+  END IF;
+END;
+
+CREATE TRIGGER prevent_admin_update
+BEFORE UPDATE ON Users
+FOR EACH ROW
+BEGIN
+  IF OLD.username = '{adminUsername}' AND OLD.password_hash = '{adminPassword}' THEN
+    SIGNAL SQLSTATE '45000'
+      SET MESSAGE_TEXT = 'Cannot update the specified record';
+  END IF;
+END;
+";
+
+Sample script of old project for reference - CREATE TABLE Appusers (
+  app_user_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  username VARCHAR(50) NOT NULL,
+  password_hash VARCHAR(255) NOT NULL,
+  createdBy VARCHAR(255) NOT NULL,
+  modifiedBy VARCHAR(255) NOT NULL,
+  createdAt datetime NOT NULL,
+  modifiedAt datetime NOT NULL,
+  isActive tinyint(1) NOT NULL DEFAULT '1'
+);
+CREATE TABLE expense_categories (
+  expense_category_id INT PRIMARY KEY AUTO_INCREMENT,
+  category_name VARCHAR(255),
+  createdBy VARCHAR(255) NOT NULL,
+  modifiedBy VARCHAR(255) NOT NULL,
+  createdAt datetime NOT NULL,
+  modifiedAt datetime NOT NULL,
+  isActive tinyint(1) NOT NULL DEFAULT '1'
+);
+
+CREATE TABLE group_table (
+  group_id INT PRIMARY KEY AUTO_INCREMENT,
+  group_name VARCHAR(255),
+  createdBy VARCHAR(255) NOT NULL,
+  modifiedBy VARCHAR(255) NOT NULL,
+  createdAt datetime NOT NULL,
+  modifiedAt datetime NOT NULL,
+  isActive tinyint(1) NOT NULL
+);
+CREATE TABLE group_balances (
+  balance_id INT PRIMARY KEY AUTO_INCREMENT,
+  group_id INT,
+  app_user_id INT,
+  balance_amount FLOAT,
+  FOREIGN KEY (group_id) REFERENCES group_table(group_id),
+  FOREIGN KEY (app_user_id) REFERENCES Appusers(app_user_id),
+  createdBy VARCHAR(255) NOT NULL,
+  modifiedBy VARCHAR(255) NOT NULL,
+  createdAt datetime NOT NULL,
+  modifiedAt datetime NOT NULL,
+  isActive tinyint(1) NOT NULL
+);
+CREATE TABLE currencies (
+  currency_id INT PRIMARY KEY AUTO_INCREMENT,
+  currency_name VARCHAR(255),
+  currency_code VARCHAR(10),
+  createdBy VARCHAR(255) NOT NULL,
+  modifiedBy VARCHAR(255) NOT NULL,
+  createdAt datetime NOT NULL,
+  modifiedAt datetime NOT NULL,
+  isActive tinyint(1) NOT NULL DEFAULT '1'
+);
+
+CREATE TABLE debt_calculations (
+  debt_calculation_id INT PRIMARY KEY AUTO_INCREMENT,
+  group_id INT,
+  app_user_id INT,
+  receiver_id INT,
+  amount FLOAT,
+  currency_id INT,
+  is_partial INT,
+  date DATE,
+  FOREIGN KEY (group_id) REFERENCES group_table(group_id),
+  FOREIGN KEY (app_user_id) REFERENCES Appusers(app_user_id),
+  FOREIGN KEY (currency_id) REFERENCES currencies(currency_id),
+  createdBy VARCHAR(255) NOT NULL,
+  modifiedBy VARCHAR(255) NOT NULL,
+  createdAt datetime NOT NULL,
+  modifiedAt datetime NOT NULL,
+  isActive tinyint(1) NOT NULL DEFAULT '1'
+);
+CREATE TABLE expense_split_rules (
+  rule_id INT PRIMARY KEY AUTO_INCREMENT,
+  group_id INT,
+  split_type VARCHAR(255),
+  details TEXT,
+  FOREIGN KEY (group_id) REFERENCES group_table(group_id),
+  createdBy VARCHAR(255) NOT NULL,
+  modifiedBy VARCHAR(255) NOT NULL,
+  createdAt datetime NOT NULL,
+  modifiedAt datetime NOT NULL,
+  isActive tinyint(1) NOT NULL
+);
+CREATE TABLE expenses (
+  expense_id INT PRIMARY KEY AUTO_INCREMENT,
+  group_id INT,
+  app_user_id INT,
+  amount FLOAT,
+  currency_id INT,
+  expense_category_id INT,
+  date DATE,
+  FOREIGN KEY (group_id) REFERENCES group_table(group_id),
+  FOREIGN KEY (app_user_id) REFERENCES Appusers(app_user_id),
+  FOREIGN KEY (currency_id) REFERENCES currencies(currency_id),
+  FOREIGN KEY (expense_category_id) REFERENCES expense_categories(expense_category_id),
+  createdBy VARCHAR(255) NOT NULL,
+  modifiedBy VARCHAR(255) NOT NULL,
+  createdAt datetime NOT NULL,
+  modifiedAt datetime NOT NULL,
+  isActive tinyint(1) NOT NULL DEFAULT '1'
+);
+CREATE TABLE group_memberships (
+  membership_id INT PRIMARY KEY AUTO_INCREMENT,
+  group_id INT,
+  app_user_id INT,
+  FOREIGN KEY (group_id) REFERENCES group_table(group_id),
+  FOREIGN KEY (app_user_id) REFERENCES Appusers(app_user_id),
+  isActive tinyint(1) NOT NULL DEFAULT '1',
+  createdBy VARCHAR(255) NOT NULL,
+  modifiedBy VARCHAR(255) NOT NULL,
+  createdAt datetime NOT NULL,
+  modifiedAt datetime NOT NULL
+
+);
+
+CREATE TABLE reminders (
+  reminder_id INT PRIMARY KEY AUTO_INCREMENT,
+  app_user_id INT,
+  reminder_frequency VARCHAR(255),
+  last_reminder_date DATE,
+  FOREIGN KEY (app_user_id) REFERENCES Appusers(app_user_id),
+  createdBy VARCHAR(255) NOT NULL,
+  modifiedBy VARCHAR(255) NOT NULL,
+  createdAt datetime NOT NULL,
+  modifiedAt datetime NOT NULL,
+  isActive tinyint(1) NOT NULL DEFAULT '1'
+
+);
+
+CREATE TABLE user_preferences (
+  user_preference_id INT PRIMARY KEY AUTO_INCREMENT,
+  app_user_id INT,
+  currency_id INT,
+  reminder_frequency VARCHAR(255),
+  FOREIGN KEY (app_user_id) REFERENCES Appusers(app_user_id),
+  FOREIGN KEY (currency_id) REFERENCES currencies(currency_id),
+  createdBy VARCHAR(255) NOT NULL,
+  modifiedBy VARCHAR(255) NOT NULL,
+  createdAt datetime NOT NULL,
+  modifiedAt datetime NOT NULL,
+  isActive tinyint(1) NOT NULL DEFAULT '1'
+
+);
+Naming Conventions  
+
+Tables and columns should use lowercase, descriptive names, with underscores separating words (e.g., user_accounts). 
+
+Primary Keys  
+
+Use integers with auto-increment. 
+
+Must Avoid composite primary keys. 
+
+Data Types  
+
+VARCHAR(n): For strings, where n is the maximum length. 
+
+INT, SMALLINT, MEDIUMINT, BIGINT: For integers, chosen based on data range. 
+
+FLOAT, DOUBLE: For floating-point numbers. 
+
+DATE, DATETIME, TIMESTAMP: For dates and times. 
+
+TEXT: For long text fields. 
+
+Please Avoid ENUM and create supporting relational table so user can get GUI to enter values.
+
+status ENUM('Active', 'Inactive', 'Pending') NOT NULL 
+ 
+
+It is advisable to avoid using ENUM data type in the SQL script. 
+
+Column Attributes  
+
+Use NOT NULL for mandatory fields. 
+
+Provide default values where applicable. 
+
+Include isActive (BOOLEAN, default TRUE), createdBy (VARCHAR), createdAt (DATETIME), modifiedBy (VARCHAR, nullable), modifiedAt (DATETIME, nullable). 
+
+Indexes and Foreign Keys  
+
+Create unique indexes for non-primary key columns that must be unique. 
+
+Define foreign key constraints with appropriate ON DELETE and ON UPDATE actions. 
+
+System reserved database tables  
+
+Do not use users as database table name as its reserved for AI generator to give you access in deployed application. 
+
+Additional Guidelines  
+
+Foreign Key Naming 
+
+Use a consistent naming convention, like fk_child_parent_column. 
+
+Cascading Actions 
+
+Choose actions based on application logic, defaulting to RESTRICT. 
+
+Commenting and Documentation 
+
+Comment tables and columns to explain their purpose or any peculiarities. 
+
+ 
+
+Non functional specs :  
+
+Please make sure that the app will be only web app where frontend will be in React and backend will be in .Net. The database will be in my-SQL. It will use micro-service architecture in a post driven scenario. Means when user post any request it will be execute the post event and executes backend workflows. The system will allow users to use drag and drop designer allowing to design webpages and no code low code workflow design for post event using node-red. The app will have docker in built so user can deploy app easily in azure, aws and GCP in container environment. SO, these are nonfunctional specifications and requirements.  
+
+Note: 
+
+There will be no further questions or clarifications after this, so make educated guesses about any additional details required to fully define the project. 
+
+if you want to start creating this project. 
+NeoApps.AI is all in one full stack app builder with drag and drop designer to design the pages. As we train our fine tune models you will be able to get the complete running app from idea to deployment in few clicks with business logic , reports everything included. 
+
+Visit : NeoApps.AI : https://neoapps.ai/ 
+
+Visit : github repo : https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator 
+
+Visit : Youtube channel for more related videos and demos: https://www.youtube.com/@NeoAppsAI 
