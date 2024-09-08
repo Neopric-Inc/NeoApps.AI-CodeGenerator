@@ -9,7 +9,14 @@
 ## Demo
 
 <details>
-<summary><kbd>Watch the demo!</kbd></summary>
+<summary><kbd>Watch the demo - Manual Setup!</kbd></summary>
+
+[![Watch the video](https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator/blob/main/neoapps_ai_thumbnail.png)](https://www.youtube.com/watch?v=i2SOFnlYknU)
+
+</details>
+
+<details>
+<summary><kbd>Watch the demo - Simplified Version -Streamlit App!</kbd></summary>
 
 [![Watch the video](https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator/blob/main/neoapps_ai_thumbnail.png)](https://www.youtube.com/watch?v=i2SOFnlYknU)
 
@@ -25,6 +32,40 @@ Before running the project, ensure you have the following installed:
 4. **XAMPP**
 5. **Redis, RabbitMQ, and MinIO (S3)**
 6. **Node**
+7. **Python 3.x installed and pip3 or pip (Python package installer).**
+
+# Simplified GUI Version with Streamlit App
+
+1. **Pull the repository** and check the prerequisites.
+2. **Set up the Claude project** according to the instructions.
+3. **Generate the requirements** for your project.
+4. **Save the database file** as `app.sql`.
+5. **Drop the database file** into the `htdocs` folder of XAMPP. Ensure that **XAMPP** is running and **Docker** is up and running.
+6. Navigate to the `CodeGenerator` folder and **run `pip install -r requirements.txt` and then **run `./codegenerator_script.sh`**.
+7. The **Streamlit app** will open.
+8. **Review the inputs**: You can change the project name or leave it as is. Experiment with other settings once you're comfortable.
+9. **Hit submit** and scroll down to see the results.
+10. Go to the newly generated folder and **execute the command `dotnet run`**.
+11. After execution, **copy the API URL**.
+12. **Terminate the Streamlit app** with `Ctrl+C`.
+13. **Re-run the app** using `./codegenerator_script.sh`.
+14. When the app reopens, **click on Frontend** and update the API URL you copied (replace `localhost` and the port number in the URL as needed, e.g., `https://localhost:5001/v1/api/`).
+15. **Submit and experiment** further if needed by following the instructions at the bottom of the page.
+16. A new project will be generated in the same folder named `ReactTsOutput1`.
+17. **Open the newly generated React project**.
+18. **Install the necessary Node packages**.
+19. **Run the app**.
+20. This will open the **login window**.
+21. Go to the database and **copy the username and password** (note: the password is not hashed for development purposes, but you can apply your own hashing algorithm).
+22. **Login to the app** and design your pages.
+23. Click **Update UI** to save your changes, **Release UI** to finalize it, and **Preview UI** to see a preview.
+24. Once satisfied, **disable the DnD (drag and drop designer)** by updating the `.env` file.
+25. **Re-run the project** using `npm run dev`, and it will open the newly designed app directly.
+26. **Congratulations!** You’ve created your first app without writing any code, but still built a custom-developed application.
+27. **Deploy the app** on a Docker container or **contact us on Discord** if you need help with deployment.
+
+
+# Manual Setup --------------------------
 
 ### Docker Setup for Redis, RabbitMQ, and MinIO (S3)
 
@@ -229,6 +270,9 @@ After copying the projects, run the .NET API as needed.
 ---
 
 Follow these steps, and you should be able to run the project and generate the apps without any issues.
+
+
+
 
 ## Documentation
 
