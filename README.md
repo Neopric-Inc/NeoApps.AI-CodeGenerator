@@ -18,7 +18,7 @@
 <details>
 <summary><kbd>Watch the demo - Simplified Version -Streamlit App!</kbd></summary>
 
-[![Watch the video](https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator/blob/main/neoapps_ai_thumbnail.png)](https://www.youtube.com/watch?v=i2SOFnlYknU)
+[![Watch the video](https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator/blob/main/neoapps_ai_thumbnail.png)](https://youtu.be/F5bmjPtciLw)
 
 </details>
 
