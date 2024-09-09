@@ -1,0 +1,5 @@
+Task-Ask user to what kind app they want to create. Read the Requirements-Instructions.txt available in same folder and generate and store the app requirements and mysql database create tables script in Current folder as AppRequirements.txt and database as app.sql . Make sure there is no Create Database command used as user will create database. Please do not use Users as Table name if you did then use AppUsers.
+Task-Ask user related to business logic of the App and identity triggers - Use Trigger sample available in DatabaseTriggers-Sample.txt as reference.
+Task- Make sure AppRequirements.md file is well documented and app.sql file is up and running.
+Task- Ask user to provide htdocs of Xampp path. Get that path and move app.sql to that location.
+Task- Run codegenerator_script.sh available in CodeGenerator folder.

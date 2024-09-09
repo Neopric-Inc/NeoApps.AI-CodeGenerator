@@ -1,0 +1,9 @@
+Task-Ask user to what kind app they want to create. Read the Requirements-Instructions.txt available in same folder and generate and store the app requirements and mysql database create tables script in Current folder as AppRequirements.txt and database as app.sql . Make sure there is no Create Database command used as user will create database. Please do not use Users as Table name if you did then use AppUsers.
+Task-Ask user related to business logic of the App and identity triggers - Use Trigger sample available in DatabaseTriggers-Sample.txt as reference.
+Task- Make sure AppRequirements.md file is well documented and app.sql file is up and running.
+Task- Ask user to provide htdocs of Xampp path. Get that path and move app.sql to that location.
+Task- Read App.py of streamlit app for Backend functinality and prepare the parameter by asking user database name , project name and last two check box clicked and perform all tasks available as a result of submit click event for backend.
+Task- Once its done go to newly generated folder having DotNet_Output and go upto .API folder and run dotnet run. and copy the api url displayed in last 10-20 lines.
+Task- Once its done Go to App.py and mimic Frontend functinality submit click event and make sure the API url is similar what displayed in last command. If not then change it. Save Parameter to launchsettings which was done previously.
+Task- Go to CodeGenerator folder and execute dotnet run again and this will create folder having reactTs containing folder name. Go that folder and then execute npm install --legacy-peer-deps. After everything done execute npm run dev.
+Task- Connect to newly created database and read username and password_hash from Users table and present that to user.

@@ -1,0 +1,146 @@
+-- Trigger 1: Expense Split Calculation
+DELIMITER //
+CREATE TRIGGER after_expense_insert_update
+AFTER INSERT ON expenses
+FOR EACH ROW
+BEGIN
+    DECLARE total_members INT;
+    DECLARE split_amount DECIMAL(10, 2);
+    
+    -- Get the total number of active members in the group
+    SELECT COUNT(*) INTO total_members
+    FROM group_memberships
+    WHERE group_id = NEW.group_id AND isActive = 1;
+    
+    -- Calculate split amount
+    SET split_amount = NEW.amount / total_members;
+    
+    -- Insert or update debt calculations for each group member
+    INSERT INTO debt_calculations (group_id, app_user_id, receiver_id, amount, currency_id, date)
+    SELECT 
+        NEW.group_id,
+        gm.app_user_id,
+        NEW.app_user_id,
+        CASE 
+            WHEN gm.app_user_id = NEW.app_user_id THEN -NEW.amount + split_amount
+            ELSE split_amount
+        END,
+        NEW.currency_id,
+        NEW.date
+    FROM group_memberships gm
+    WHERE gm.group_id = NEW.group_id AND gm.isActive = 1
+    ON DUPLICATE KEY UPDATE
+        amount = amount + VALUES(amount),
+        modifiedAt = NOW();
+END;
+//
+DELIMITER ;
+
+-- Trigger 2: Group Balance Updates
+DELIMITER //
+CREATE TRIGGER after_debt_calculation_insert_update
+AFTER INSERT ON debt_calculations
+FOR EACH ROW
+BEGIN
+    -- Update or insert group balance for the payer
+    INSERT INTO group_balances (group_id, app_user_id, balance_amount)
+    VALUES (NEW.group_id, NEW.app_user_id, NEW.amount)
+    ON DUPLICATE KEY UPDATE
+        balance_amount = balance_amount + NEW.amount,
+        modifiedAt = NOW();
+    
+    -- Update or insert group balance for the receiver
+    INSERT INTO group_balances (group_id, app_user_id, balance_amount)
+    VALUES (NEW.group_id, NEW.receiver_id, -NEW.amount)
+    ON DUPLICATE KEY UPDATE
+        balance_amount = balance_amount - NEW.amount,
+        modifiedAt = NOW();
+END;
+//
+DELIMITER ;
+
+-- Trigger 3: Debt Simplification
+DELIMITER //
+CREATE TRIGGER after_group_balance_update
+AFTER UPDATE ON group_balances
+FOR EACH ROW
+BEGIN
+    DECLARE done INT DEFAULT FALSE;
+    DECLARE debtor_id, creditor_id INT;
+    DECLARE debt_amount, credit_amount DECIMAL(10, 2);
+    DECLARE cur CURSOR FOR
+        SELECT gb1.app_user_id, gb2.app_user_id, ABS(gb1.balance_amount)
+        FROM group_balances gb1
+        JOIN group_balances gb2 ON gb1.group_id = gb2.group_id
+        WHERE gb1.group_id = NEW.group_id
+          AND gb1.balance_amount < 0
+          AND gb2.balance_amount > 0
+        ORDER BY ABS(gb1.balance_amount) DESC;
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
+
+    OPEN cur;
+    
+    debt_loop: LOOP
+        FETCH cur INTO debtor_id, creditor_id, debt_amount;
+        IF done THEN
+            LEAVE debt_loop;
+        END IF;
+        
+        SELECT balance_amount INTO credit_amount
+        FROM group_balances
+        WHERE group_id = NEW.group_id AND app_user_id = creditor_id;
+        
+        IF debt_amount > credit_amount THEN
+            SET debt_amount = credit_amount;
+        END IF;
+        
+        -- Update debt_calculations
+        INSERT INTO debt_calculations (group_id, app_user_id, receiver_id, amount, currency_id, date)
+        VALUES (NEW.group_id, debtor_id, creditor_id, debt_amount, 
+                (SELECT currency_id FROM user_preferences WHERE app_user_id = debtor_id LIMIT 1), 
+                CURDATE())
+        ON DUPLICATE KEY UPDATE
+            amount = amount + VALUES(amount),
+            modifiedAt = NOW();
+        
+        -- Update group_balances
+        UPDATE group_balances
+        SET balance_amount = balance_amount + debt_amount
+        WHERE group_id = NEW.group_id AND app_user_id = debtor_id;
+        
+        UPDATE group_balances
+        SET balance_amount = balance_amount - debt_amount
+        WHERE group_id = NEW.group_id AND app_user_id = creditor_id;
+    END LOOP;
+    
+    CLOSE cur;
+END;
+//
+DELIMITER ;
+
+-- Trigger 4: Currency Conversion for Multi-Currency Groups
+DELIMITER //
+CREATE TRIGGER before_expense_insert_update
+BEFORE INSERT ON expenses
+FOR EACH ROW
+BEGIN
+    DECLARE group_currency_id INT;
+    DECLARE conversion_rate DECIMAL(10, 4);
+    
+    -- Get the group's default currency
+    SELECT currency_id INTO group_currency_id
+    FROM group_table
+    WHERE group_id = NEW.group_id;
+    
+    -- If the expense currency differs from the group currency, convert the amount
+    IF NEW.currency_id != group_currency_id THEN
+        -- In a real-world scenario, you would fetch the actual conversion rate from an API or database
+        -- This is a simplified example
+        SET conversion_rate = 1.0;  -- Replace with actual conversion logic
+        
+        SET NEW.amount = NEW.amount * conversion_rate;
+        SET NEW.currency_id = group_currency_id;
+    END IF;
+END;
+//
+DELIMITER ;
