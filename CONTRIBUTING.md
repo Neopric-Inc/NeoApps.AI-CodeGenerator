@@ -71,7 +71,7 @@ If you discover any security vulnerabilities in the project, please report them 
 
 ## Code of Conduct
 
-Please note that all contributors are expected to follow our [Code of Conduct](link-to-your-code-of-conduct) to maintain a respectful and productive community.
+Please note that all contributors are expected to follow our [Code of Conduct](https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator/blob/main/CODE_OF_CONDUCT.md) to maintain a respectful and productive community.
 
 ---
 
