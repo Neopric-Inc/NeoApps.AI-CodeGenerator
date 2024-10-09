@@ -1,0 +1,22 @@
+name: Star Thank You
+
+on:
+  watch:  # This event triggers when a repository is starred or unstarred
+    types: [started]
+
+jobs:
+  thank_you:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Thank the user
+        uses: actions/github-script@v3
+        with:
+          script: |
+            const { context, github } = require('@actions/github');
+            const user = context.payload.sender.login;
+            github.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Thank you, @${user}!`,
+              body: `🎉 Thank you @${user} for starring this repository! Your support means a lot.`
+            });
