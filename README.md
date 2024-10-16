@@ -21,7 +21,9 @@
 [![Watch the video](https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator/blob/main/neoapps_ai_thumbnail.png)](https://youtu.be/F5bmjPtciLw)
 
 </details>
-
+## Our Youtube channel
+<summary><kbd>Our Youtube Channel</kbd></summary>
+https://www.youtube.com/@NeoAppsAI
 ## Prerequisites
 
 Before running the project, ensure you have the following installed:
