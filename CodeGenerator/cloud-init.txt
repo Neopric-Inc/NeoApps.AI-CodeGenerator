@@ -1,0 +1,53 @@
+#cloud-config
+
+package_update: true
+package_upgrade: true
+
+packages:
+  - ufw
+  - docker.io
+  - python3
+  - python3-pip
+  - python3-venv
+  - git
+
+runcmd:
+  # Configure firewall first
+  - ufw default deny incoming
+  - ufw default allow outgoing
+  - ufw allow 22/tcp    # SSH
+  - ufw allow 80/tcp    # HTTP
+  - ufw allow 443/tcp   # HTTPS
+  - ufw allow 8501/tcp  # Streamlit
+  - ufw allow 5672/tcp  # RabbitMQ
+  - ufw allow 15672/tcp # RabbitMQ management
+  - ufw allow 6379/tcp  # Redis
+  - ufw allow 3000/tcp  # Frontend Application
+  - ufw allow 3001/tcp  # Frontend Drag and Drop Designer
+  - ufw allow 5001/tcp  # Backend API (Swagger OpenAPI)
+  - ufw allow 1880/tcp  # Node-RED Workflow Designer
+  - echo "y" | ufw enable
+
+  # Enable and start Docker service
+  - systemctl enable docker
+  - systemctl start docker
+
+  # Add current user to docker group
+  - usermod -aG docker $USER
+
+  # Create and activate virtual environment
+  - python3 -m venv /home/azureuser/projectenv
+  - source /home/azureuser/projectenv/bin/activate
+
+  # Clone the repository
+  - git clone https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator.git /home/azureuser/NeoApps.AI-CodeGenerator
+  - cd /home/azureuser/NeoApps.AI-CodeGenerator/CodeGenerator
+
+  # Install Python requirements
+  - pip install -r requirements.txt
+
+  # Run the codegenerator script
+  - chmod +x codegenerator_script.sh
+  - ./codegenerator_script.sh
+
+final_message: "The system is finally up, after $UPTIME seconds"

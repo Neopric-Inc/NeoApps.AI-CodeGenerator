@@ -1,0 +1,27 @@
+#!/bin/bash
+
+# Replace these with the actual values
+RESOURCE_GROUP="<Resource Group Name>"
+VM_NAME="<VM Name>"
+
+# Get the NSG name
+NSG_NAME=$(az vm show --resource-group $RESOURCE_GROUP --name $VM_NAME --query "networkProfile.networkInterfaces[0].id" -o tsv | cut -d'/' -f9 | sed 's/-nic/-nsg/')
+
+# List of ports to open
+PORTS=(22 80 443 8501 5672 15672 6379 3000 3001 5001 1880)
+
+# Create rules for each port
+for PORT in "${PORTS[@]}"; do
+  az network nsg rule create \
+    --resource-group $RESOURCE_GROUP \
+    --nsg-name $NSG_NAME \
+    --name "Allow${PORT}" \
+    --priority $((1000 + PORT)) \
+    --destination-port-ranges $PORT \
+    --direction Inbound \
+    --access Allow \
+    --protocol Tcp \
+    --description "Allow port ${PORT}"
+done
+
+echo "All specified ports have been opened in the NSG."

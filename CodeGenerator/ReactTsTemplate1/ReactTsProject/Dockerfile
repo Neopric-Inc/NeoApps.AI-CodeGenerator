@@ -1,26 +1,36 @@
-# stage1 as builder
+# Stage 1: Build the React application
 FROM node:alpine as builder
 
+# Set the working directory inside the container
 WORKDIR /nextjs-ui
 
-# copy the package.json to install dependencies
+# Copy the package.json and package-lock.json
 COPY package.json package-lock.json ./
 
-# Install the dependencies and make the folder
-RUN npm install --force 
+# Install the dependencies
+RUN npm install --force
 
+# Copy the entire project into the container
 COPY . .
 
-# Build the project and copy the files
+# Build the application
 ENV NODE_OPTIONS="--max-old-space-size=16000"
 RUN npm run build
 
+# Stage 2: Serve the built application
+FROM node:alpine
 
-FROM nginx:alpine
+# Install `serve` to serve static files
+RUN npm install -g serve
 
-EXPOSE 80
-#!/bin/sh
+# Set the working directory
+WORKDIR /nextjs-ui
 
-COPY ./default.conf /etc/nginx/conf.d/default.conf
-# Copy from the stahg 1
-COPY --from=builder /nextjs-ui/build /usr/share/nginx/html
+# Copy the build output from the previous stage
+COPY --from=builder /nextjs-ui/build /nextjs-ui/build
+
+# Expose port 3000
+EXPOSE 3000
+
+# Command to serve the static files
+CMD ["serve", "-s", "build", "-l", "3000"]

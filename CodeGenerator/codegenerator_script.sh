@@ -6,7 +6,7 @@ command_exists() {
 }
 
 # Check for required commands
-for cmd in docker streamlit dotnet sed; do
+for cmd in docker streamlit dotnet sed curl; do
     if ! command_exists $cmd; then
         echo "Error: $cmd is not installed. Please install it and try again."
         exit 1
@@ -17,8 +17,10 @@ done
 echo "Current directory contents:"
 ls -la
 echo "-------------------------"
+
 cd ..
 cd Prerequisites
+
 # Check if .env file exists
 if [ ! -f ".env" ]; then
     echo "Error: .env file not found in the current directory."
@@ -47,6 +49,23 @@ if [ ! -f "app.py" ]; then
     exit 1
 fi
 
+# Get the current IP address
+IP_ADDRESS=$(curl -s https://api.ipify.org)
+
+# Check if there's a domain or subdomain attached
+DOMAIN=$(curl -s https://api.ipify.org/hostname)
+
+if [ "$DOMAIN" != "$IP_ADDRESS" ]; then
+    # If a domain is found, use it
+    REPLACE_WITH="$DOMAIN:"
+else
+    # Otherwise, use the IP address
+    REPLACE_WITH="$IP_ADDRESS:"
+fi
+echo $IP_ADDRESS
+# Replace localhost: with the current IP or domain in app.py
+
+
 # Run Streamlit app
 echo "Running Streamlit app..."
 streamlit run app.py &
@@ -55,4 +74,3 @@ streamlit run app.py &
 echo "Please use the Streamlit app to enter details and upload the .sql file."
 echo "Once you've submitted the form, press Enter to continue."
 read -p "Press Enter to continue..."
-
