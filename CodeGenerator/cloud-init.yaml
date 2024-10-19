@@ -10,44 +10,84 @@ packages:
   - python3-pip
   - python3-venv
   - git
+  - openssl
+  - wget
+
+write_files:
+  - path: /home/azureuser/setup_ports.sh
+    permissions: '0755'
+    content: |
+      #!/bin/bash
+      curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+      az login --identity
+      RESOURCE_GROUP=$(az vm show --name $HOSTNAME --resource-group myResourceGroup --query "resourceGroup" -o tsv)
+      NIC_NAME=$(az vm show --name $HOSTNAME --resource-group $RESOURCE_GROUP --query "networkProfile.networkInterfaces[0].id" -o tsv | cut -d'/' -f9)
+      NSG_NAME=$(az network nic show --name $NIC_NAME --resource-group $RESOURCE_GROUP --query "networkSecurityGroup.id" -o tsv | cut -d'/' -f9)
+      PORTS=(22 80 443 8501 5672 15672 6379 3000 3001 5001 1880)
+      for PORT in "${PORTS[@]}"; do
+        az network nsg rule create \
+          --resource-group $RESOURCE_GROUP \
+          --nsg-name $NSG_NAME \
+          --name "Allow${PORT}" \
+          --priority $((1000 + PORT)) \
+          --destination-port-ranges $PORT \
+          --direction Inbound \
+          --access Allow \
+          --protocol Tcp \
+          --description "Allow port ${PORT}"
+      done
 
 runcmd:
-  # Configure firewall first
+  # Configure firewall
   - ufw default deny incoming
   - ufw default allow outgoing
-  - ufw allow 22/tcp    # SSH
-  - ufw allow 80/tcp    # HTTP
-  - ufw allow 443/tcp   # HTTPS
-  - ufw allow 8501/tcp  # Streamlit
-  - ufw allow 5672/tcp  # RabbitMQ
-  - ufw allow 15672/tcp # RabbitMQ management
-  - ufw allow 6379/tcp  # Redis
-  - ufw allow 3000/tcp  # Frontend Application
-  - ufw allow 3001/tcp  # Frontend Drag and Drop Designer
-  - ufw allow 5001/tcp  # Backend API (Swagger OpenAPI)
-  - ufw allow 1880/tcp  # Node-RED Workflow Designer
+  - ufw allow 22/tcp
+  - ufw allow 80/tcp
+  - ufw allow 443/tcp
+  - ufw allow 8501/tcp
+  - ufw allow 5672/tcp
+  - ufw allow 15672/tcp
+  - ufw allow 6379/tcp
+  - ufw allow 3000/tcp
+  - ufw allow 3001/tcp
+  - ufw allow 5001/tcp
+  - ufw allow 1880/tcp
   - echo "y" | ufw enable
+
+  # Generate SSL certificate
+  - mkdir -p /etc/ssl/private
+  - openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/ssl/private/nginx-selfsigned.key -out /etc/ssl/certs/nginx-selfsigned.crt -subj "/C=US/ST=State/L=City/O=Organization/OU=Organizational Unit/CN=localhost"
 
   # Enable and start Docker service
   - systemctl enable docker
   - systemctl start docker
 
-  # Add current user to docker group
-  - usermod -aG docker $USER
+  # Install .NET 6.0
+  - sudo -u azureuser wget https://dot.net/v1/dotnet-install.sh -O /home/azureuser/dotnet-install.sh
+  - sudo -u azureuser chmod +x /home/azureuser/dotnet-install.sh
+  - sudo -u azureuser /home/azureuser/dotnet-install.sh --channel 6.0
+  - echo 'export DOTNET_ROOT=$HOME/.dotnet' >> /home/azureuser/.bashrc
+  - echo 'export PATH=$PATH:$HOME/.dotnet:$HOME/.dotnet/tools' >> /home/azureuser/.bashrc
 
-  # Create and activate virtual environment
-  - python3 -m venv /home/azureuser/projectenv
-  - source /home/azureuser/projectenv/bin/activate
+  # Create virtual environment
+  - mkdir -p /home/azureuser/projectenv
+  - chown azureuser:azureuser /home/azureuser/projectenv
+  - sudo -u azureuser python3 -m venv /home/azureuser/projectenv
+
+  # Upgrade pip in the virtual environment
+  - sudo -u azureuser /home/azureuser/projectenv/bin/pip install --upgrade pip
 
   # Clone the repository
-  - git clone https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator.git /home/azureuser/NeoApps.AI-CodeGenerator
-  - cd /home/azureuser/NeoApps.AI-CodeGenerator/CodeGenerator
+  - sudo -u azureuser git clone https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator.git /home/azureuser/NeoApps.AI-CodeGenerator
 
   # Install Python requirements
-  - pip install -r requirements.txt
-
+  - sudo -u azureuser /home/azureuser/projectenv/bin/pip install -r /home/azureuser/NeoApps.AI-CodeGenerator/CodeGenerator/requirements.txt
+  # Run the port setup script
+  - /home/azureuser/setup_ports.sh
   # Run the codegenerator script
-  - chmod +x codegenerator_script.sh
-  - ./codegenerator_script.sh
+  - sudo -u azureuser chmod +x /home/azureuser/NeoApps.AI-CodeGenerator/CodeGenerator/codegenerator_script.sh
+  - sudo -u azureuser bash -c 'source /home/azureuser/projectenv/bin/activate && /home/azureuser/NeoApps.AI-CodeGenerator/CodeGenerator/codegenerator_script.sh'
+
+
 
 final_message: "The system is finally up, after $UPTIME seconds"

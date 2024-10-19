@@ -1,0 +1,318 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      "virtualMachineName": {
+        "type": "string",
+        "defaultValue": "myVM",
+        "metadata": {
+          "description": "Name of the virtual machine."
+        }
+      },
+      "adminUsername": {
+        "type": "string",
+        "metadata": {
+          "description": "Username for the Virtual Machine."
+        }
+      },
+      "adminPassword": {
+        "type": "securestring",
+        "metadata": {
+          "description": "Password for the Virtual Machine."
+        }
+      },
+      "virtualMachineSize": {
+        "type": "string",
+        "defaultValue": "Standard_B2s",
+        "metadata": {
+          "description": "Size of the virtual machine."
+        }
+      },
+      "imageReference": {
+        "type": "object",
+        "defaultValue": {
+          "publisher": "Canonical",
+          "offer": "UbuntuServer",
+          "sku": "22.04-LTS",
+          "version": "latest"
+        },
+        "metadata": {
+          "description": "Image Reference for the virtual machine."
+        }
+      }
+    },
+    "variables": {
+      "networkInterfaceName": "[concat(parameters('virtualMachineName'), '-nic')]",
+      "networkSecurityGroupName": "[concat(parameters('virtualMachineName'), '-nsg')]",
+      "virtualNetworkName": "[concat(parameters('virtualMachineName'), '-vnet')]",
+      "publicIpAddressName": "[concat(parameters('virtualMachineName'), '-ip')]",
+      "vnetAddressPrefix": "10.0.0.0/16",
+      "subnetName": "default",
+      "subnetPrefix": "10.0.0.0/24",
+      "customData": "[base64('#cloud-config\n\npackage_update: true\npackage_upgrade: true\n\npackages:\n  - ufw\n  - docker.io\n  - python3\n  - python3-pip\n  - python3-venv\n  - git\n  - openssl\n  - wget\n\nruncmd:\n  - ufw default deny incoming\n  - ufw default allow outgoing\n  - ufw allow 22/tcp\n  - ufw allow 80/tcp\n  - ufw allow 443/tcp\n  - ufw allow 8501/tcp\n  - ufw allow 5672/tcp\n  - ufw allow 15672/tcp\n  - ufw allow 6379/tcp\n  - ufw allow 3000/tcp\n  - ufw allow 3001/tcp\n  - ufw allow 5001/tcp\n  - ufw allow 1880/tcp\n  - echo \"y\" | ufw enable\n  - mkdir -p /etc/ssl/private\n  - openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/ssl/private/nginx-selfsigned.key -out /etc/ssl/certs/nginx-selfsigned.crt -subj \"/C=US/ST=State/L=City/O=Organization/OU=Organizational Unit/CN=localhost\"\n  - systemctl enable docker\n  - systemctl start docker\n  - sudo -u azureuser wget https://dot.net/v1/dotnet-install.sh -O /home/azureuser/dotnet-install.sh\n  - sudo -u azureuser chmod +x /home/azureuser/dotnet-install.sh\n  - sudo -u azureuser /home/azureuser/dotnet-install.sh --channel 6.0\n  - echo ''export DOTNET_ROOT=$HOME/.dotnet'' >> /home/azureuser/.bashrc\n  - echo ''export PATH=$PATH:$HOME/.dotnet:$HOME/.dotnet/tools'' >> /home/azureuser/.bashrc\n  - mkdir -p /home/azureuser/projectenv\n  - chown azureuser:azureuser /home/azureuser/projectenv\n  - sudo -u azureuser python3 -m venv /home/azureuser/projectenv\n  - sudo -u azureuser /home/azureuser/projectenv/bin/pip install --upgrade pip\n  - sudo -u azureuser git clone https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator.git /home/azureuser/NeoApps.AI-CodeGenerator\n  - sudo -u azureuser /home/azureuser/projectenv/bin/pip install -r /home/azureuser/NeoApps.AI-CodeGenerator/CodeGenerator/requirements.txt\n  - sudo -u azureuser chmod +x /home/azureuser/NeoApps.AI-CodeGenerator/CodeGenerator/codegenerator_script.sh\n  - sudo -u azureuser bash -c ''source /home/azureuser/projectenv/bin/activate && /home/azureuser/NeoApps.AI-CodeGenerator/CodeGenerator/codegenerator_script.sh''\n  - sudo -u azureuser bash -c ''source /home/azureuser/projectenv/bin/activate && nohup streamlit run /home/azureuser/NeoApps.AI-CodeGenerator/CodeGenerator/app.py &''\n')]"
+    },
+    "resources": [
+      {
+        "type": "Microsoft.Network/networkSecurityGroups",
+        "apiVersion": "2019-02-01",
+        "name": "[variables('networkSecurityGroupName')]",
+        "location": "[resourceGroup().location]",
+        "properties": {
+          "securityRules": [
+            {
+              "name": "SSH",
+              "properties": {
+                "priority": 1000,
+                "protocol": "TCP",
+                "access": "Allow",
+                "direction": "Inbound",
+                "sourceAddressPrefix": "*",
+                "sourcePortRange": "*",
+                "destinationAddressPrefix": "*",
+                "destinationPortRange": "22"
+              }
+            },
+            {
+              "name": "HTTP",
+              "properties": {
+                "priority": 1001,
+                "protocol": "TCP",
+                "access": "Allow",
+                "direction": "Inbound",
+                "sourceAddressPrefix": "*",
+                "sourcePortRange": "*",
+                "destinationAddressPrefix": "*",
+                "destinationPortRange": "80"
+              }
+            },
+            {
+              "name": "HTTPS",
+              "properties": {
+                "priority": 1002,
+                "protocol": "TCP",
+                "access": "Allow",
+                "direction": "Inbound",
+                "sourceAddressPrefix": "*",
+                "sourcePortRange": "*",
+                "destinationAddressPrefix": "*",
+                "destinationPortRange": "443"
+              }
+            },
+            {
+              "name": "Streamlit",
+              "properties": {
+                "priority": 1003,
+                "protocol": "TCP",
+                "access": "Allow",
+                "direction": "Inbound",
+                "sourceAddressPrefix": "*",
+                "sourcePortRange": "*",
+                "destinationAddressPrefix": "*",
+                "destinationPortRange": "8501"
+              }
+            },
+            {
+              "name": "RabbitMQ",
+              "properties": {
+                "priority": 1004,
+                "protocol": "TCP",
+                "access": "Allow",
+                "direction": "Inbound",
+                "sourceAddressPrefix": "*",
+                "sourcePortRange": "*",
+                "destinationAddressPrefix": "*",
+                "destinationPortRange": "5672"
+              }
+            },
+            {
+              "name": "RabbitMQManagement",
+              "properties": {
+                "priority": 1005,
+                "protocol": "TCP",
+                "access": "Allow",
+                "direction": "Inbound",
+                "sourceAddressPrefix": "*",
+                "sourcePortRange": "*",
+                "destinationAddressPrefix": "*",
+                "destinationPortRange": "15672"
+              }
+            },
+            {
+              "name": "Redis",
+              "properties": {
+                "priority": 1006,
+                "protocol": "TCP",
+                "access": "Allow",
+                "direction": "Inbound",
+                "sourceAddressPrefix": "*",
+                "sourcePortRange": "*",
+                "destinationAddressPrefix": "*",
+                "destinationPortRange": "6379"
+              }
+            },
+            {
+              "name": "FrontendApp",
+              "properties": {
+                "priority": 1007,
+                "protocol": "TCP",
+                "access": "Allow",
+                "direction": "Inbound",
+                "sourceAddressPrefix": "*",
+                "sourcePortRange": "*",
+                "destinationAddressPrefix": "*",
+                "destinationPortRange": "3000"
+              }
+            },
+            {
+              "name": "FrontendDragAndDrop",
+              "properties": {
+                "priority": 1008,
+                "protocol": "TCP",
+                "access": "Allow",
+                "direction": "Inbound",
+                "sourceAddressPrefix": "*",
+                "sourcePortRange": "*",
+                "destinationAddressPrefix": "*",
+                "destinationPortRange": "3001"
+              }
+            },
+            {
+              "name": "BackendAPI",
+              "properties": {
+                "priority": 1009,
+                "protocol": "TCP",
+                "access": "Allow",
+                "direction": "Inbound",
+                "sourceAddressPrefix": "*",
+                "sourcePortRange": "*",
+                "destinationAddressPrefix": "*",
+                "destinationPortRange": "5001"
+              }
+            },
+            {
+              "name": "NodeRED",
+              "properties": {
+                "priority": 1010,
+                "protocol": "TCP",
+                "access": "Allow",
+                "direction": "Inbound",
+                "sourceAddressPrefix": "*",
+                "sourcePortRange": "*",
+                "destinationAddressPrefix": "*",
+                "destinationPortRange": "1880"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "type": "Microsoft.Network/virtualNetworks",
+        "apiVersion": "2019-09-01",
+        "name": "[variables('virtualNetworkName')]",
+        "location": "[resourceGroup().location]",
+        "properties": {
+          "addressSpace": {
+            "addressPrefixes": [
+              "[variables('vnetAddressPrefix')]"
+            ]
+          },
+          "subnets": [
+            {
+              "name": "[variables('subnetName')]",
+              "properties": {
+                "addressPrefix": "[variables('subnetPrefix')]"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "type": "Microsoft.Network/publicIpAddresses",
+        "apiVersion": "2019-02-01",
+        "name": "[variables('publicIpAddressName')]",
+        "location": "[resourceGroup().location]",
+        "sku": {
+          "name": "Basic"
+        },
+        "properties": {
+          "publicIpAllocationMethod": "Dynamic"
+        }
+      },
+      {
+        "type": "Microsoft.Network/networkInterfaces",
+        "apiVersion": "2019-07-01",
+        "name": "[variables('networkInterfaceName')]",
+        "location": "[resourceGroup().location]",
+        "dependsOn": [
+          "[resourceId('Microsoft.Network/publicIpAddresses', variables('publicIpAddressName'))]",
+          "[resourceId('Microsoft.Network/virtualNetworks', variables('virtualNetworkName'))]",
+          "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupName'))]"
+        ],
+        "properties": {
+          "ipConfigurations": [
+            {
+              "name": "ipconfig1",
+              "properties": {
+                "subnet": {
+                  "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworkName'), variables('subnetName'))]"
+                },
+                "privateIPAllocationMethod": "Dynamic",
+                "publicIpAddress": {
+                  "id": "[resourceId('Microsoft.Network/publicIpAddresses', variables('publicIpAddressName'))]"
+                }
+              }
+            }
+          ],
+          "networkSecurityGroup": {
+            "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupName'))]"
+          }
+        }
+      },
+      {
+        "type": "Microsoft.Compute/virtualMachines",
+        "apiVersion": "2019-07-01",
+        "name": "[parameters('virtualMachineName')]",
+        "location": "[resourceGroup().location]",
+        "dependsOn": [
+          "[resourceId('Microsoft.Network/networkInterfaces', variables('networkInterfaceName'))]"
+        ],
+        "properties": {
+          "hardwareProfile": {
+            "vmSize": "[parameters('virtualMachineSize')]"
+          },
+          "osProfile": {
+            "computerName": "[parameters('virtualMachineName')]",
+            "adminUsername": "[parameters('adminUsername')]",
+            "adminPassword": "[parameters('adminPassword')]",
+            "customData": "[variables('customData')]"
+          },
+          "storageProfile": {
+            "imageReference": "[parameters('imageReference')]",
+            "osDisk": {
+              "createOption": "FromImage",
+              "managedDisk": {
+                "storageAccountType": "Premium_LRS"
+              }
+            }
+          },
+          "networkProfile": {
+            "networkInterfaces": [
+              {
+                "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('networkInterfaceName'))]"
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "outputs": {
+      "adminUsername": {
+        "type": "string",
+        "value": "[parameters('adminUsername')]"
+      },
+      "publicIPAddress": {
+        "type": "string",
+        "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses', variables('publicIPAddressName'))).ipAddress]"
+      }
+    }
+  }

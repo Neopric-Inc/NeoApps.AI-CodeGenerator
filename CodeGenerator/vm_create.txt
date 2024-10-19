@@ -1,6 +1,38 @@
+az group create --name myResourceGroup --location canadacentral
+# Set variables
+RESOURCE_GROUP="myResourceGroup"
+VM_NAME="myVM"
+LOCATION="eastus"  # or your preferred location
+
+# Create resource group
+az group create --name $RESOURCE_GROUP --location $LOCATION
+
+# Create the VM with a system-assigned managed identity
 az vm create \
-  --resource-group myResourceGroup \
-  --name myVM \
+  --resource-group $RESOURCE_GROUP \
+  --name $VM_NAME \
   --image Ubuntu2204 \
+  --admin-username azureuser \
+  --generate-ssh-keys \
+  --size Standard_B2s \
   --custom-data cloud-init.yaml \
-  --generate-ssh-keys
+  --assign-identity [system]
+
+# Get the principal ID of the VM's managed identity
+PRINCIPAL_ID=$(az vm show --resource-group $RESOURCE_GROUP --name $VM_NAME --query "identity.principalId" -o tsv)
+
+# Grant the VM's managed identity permission to modify the NSG
+SUBSCRIPTION_ID=$(az account show --query id -o tsv)
+az role assignment create \
+  --assignee $PRINCIPAL_ID \
+  --role "Network Contributor" \
+  --scope "/subscriptions/$SUBSCRIPTION_ID/resourceGroups/$RESOURCE_GROUP"
+
+# Wait for VM to be ready
+az vm wait --resource-group $RESOURCE_GROUP --name $VM_NAME --created
+
+# Get the public IP of the VM
+PUBLIC_IP=$(az vm show --resource-group $RESOURCE_GROUP --name $VM_NAME --show-details --query publicIps --output tsv)
+
+echo "VM created and configured. You can SSH into it using: ssh azureuser@$PUBLIC_IP"
+echo "Streamlit app should be accessible at: http://$PUBLIC_IP:8501"
