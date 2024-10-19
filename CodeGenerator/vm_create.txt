@@ -1,0 +1,6 @@
+az vm create \
+  --resource-group myResourceGroup \
+  --name myVM \
+  --image Ubuntu2204 \
+  --custom-data cloud-init.yaml \
+  --generate-ssh-keys
