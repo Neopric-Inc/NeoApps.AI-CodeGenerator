@@ -733,8 +733,7 @@ elif selected_tab == "Generate, Build and Deploy":
         st.markdown(f"Status: {'🟢' if status == 'Deployed' else '🔴'} {status}")
 
     st.markdown("---")
-    st.warning("Developer Area - If you don't want to mess up here, please do not change anything in this area.")
-
+    
     tab1, tab2, tab3 = st.tabs(["Backend API", "Frontend", "Node-RED"])
 
     with tab1:
@@ -763,19 +762,9 @@ elif selected_tab == "Generate, Build and Deploy":
             swgurl = st.text_input("Swagger URL", "")
             noderedurl = st.text_input("Node-RED URL", "null")
 
-            if 'backend_create_db' not in st.session_state:
-                st.session_state.backend_create_db = True
-
-            if 'backend_drop_tables' not in st.session_state:
-                st.session_state.backend_drop_tables = True
-
-            if 'backend_build_docker' not in st.session_state:
-                st.session_state.backend_build_docker = True
-            create_db = st.checkbox("Create database if not exists", value=st.session_state.backend_create_db, key='backend_create_db')
-            drop_tables = st.checkbox("Drop all tables in the database", value=st.session_state.backend_drop_tables, key='backend_drop_tables')
-            build_docker = st.checkbox("Build and run Docker containers for Backend", value=st.session_state.backend_build_docker, key='backend_build_docker')
-
-            
+            create_db = st.checkbox("Create database if not exists")
+            drop_tables = st.checkbox("Drop all tables in the database")
+            build_docker = st.checkbox("Build and run Docker containers for Backend")
 
             submit_backend_button = st.form_submit_button(label='Submit Backend')
             st.session_state['submit_backend_button'] = submit_backend_button
