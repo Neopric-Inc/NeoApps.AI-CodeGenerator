@@ -1,15 +1,16 @@
 {
-    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
-    "contentVersion": "1.0.0.0",
-    "parameters": {
-      "virtualMachineName": {
-        "value": "myVM"
-      },
-      "adminUsername": {
-        "value": "azureuser"
-      },
-      "adminPassword": {
-        "value": "YourSecurePassword123!"
-      }
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "virtualMachineName": {
+      "value": "myVM"
+    },
+    "adminUsername": {
+      "value": "azureuser"
+    },
+    "adminPassword": {
+      "value": "YourSecurePassword123!"
     }
   }
+}
+
