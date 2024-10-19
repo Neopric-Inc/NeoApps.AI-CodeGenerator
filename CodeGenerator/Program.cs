@@ -3173,7 +3173,7 @@ APIResponse Update{tableName}Transactional({primaryKeyListParam},{tableName}Tran
                                 if (dlf.Length != 0)
                                     File.Delete(dlf[0]);
                                 upath = drpath[0] + "/" + projectName + "/zip/" + uid + "_" + projectName + "_generatedFrontend_nodered_" + DateTime.Now.Ticks + ".zip";
-                                ZipFile.CreateFromDirectory(drpath[0] + "/" + projectName + "/ReactTs_Output4", upath);
+                              //  ZipFile.CreateFromDirectory(drpath[0] + "/" + projectName + "/ReactTs_Output4", upath);
 
                             }
                             catch (Exception e)

@@ -153,7 +153,7 @@ const Login: React.FC = () => {
                 </Container>
                 <Box sx={{ p: 2, textAlign: "center" }}>
                     <Typography variant="body2" color="textSecondary">
-                        &copy; Split17 {new Date().getFullYear().toString()}
+                        &copy; Neopric Inc.(NeoApps.AI) {new Date().getFullYear().toString()}
                     </Typography>
                 </Box>
             </Box>

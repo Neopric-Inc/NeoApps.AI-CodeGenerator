@@ -59,112 +59,7 @@ def drop_all_tables(connection):
             cursor.close()
             connection.close()
 
-def modify_file(file_path, old_string, new_string):
-    try:
-        with open(file_path, 'r') as file:
-            file_content = file.read()
-        
-        modified_content = file_content.replace(old_string, new_string)
-        
-        with open(file_path, 'w') as file:
-            file.write(modified_content)
-        
-        logger.info(f"Successfully modified {file_path}")
-    except Exception as e:
-        logger.error(f"Error modifying {file_path}: {str(e)}")
-        st.error(f"Error modifying {file_path}: {str(e)}")
-
-def run_docker_command(command):
-    try:
-        result = subprocess.run(command, shell=True, capture_output=True, text=True, check=True)
-        st.success(f"Docker command executed successfully: {command}")
-        st.code(result.stdout)
-        logger.info(f"Docker command executed: {command}")
-        logger.debug(f"Docker command output: {result.stdout}")
-    except subprocess.CalledProcessError as e:
-        st.error(f"Error executing Docker command: {command}")
-        st.code(e.stderr)
-        logger.error(f"Error executing Docker command: {command}")
-        logger.error(f"Error output: {e.stderr}")
-
-def build_and_run_backend(project_name):
-    # Build and run Backend API
-    modify_file('Dockerfile', '{projectName}', project_name)
-    run_docker_command(f"docker build -t backend-api -f Dockerfile .")
-    run_docker_command(f"docker run -d --name backend-api -p 5001:5001 -e projectName={project_name} backend-api")
-    
-    # Build and run Backend Consumer
-    modify_file('Dockerfile-Consumer', '{projectName}', project_name)
-    run_docker_command(f"docker build -t backend-consumer -f Dockerfile-Consumer .")
-    run_docker_command(f"docker run -d --name backend-consumer -p 8080:80 backend-consumer")
-
-def build_frontend(is_dnd, current_dir):
-    dnd_value = "1" if is_dnd else "0"
-    image_name = f"frontend-dnd{dnd_value}"
-    container_name = f"frontend-dnd{dnd_value}"
-    port = "3001" if is_dnd else "3000"
-
-    env_file = os.path.join(current_dir, '.env')
-    if os.path.exists(env_file):
-        # Modify .env file
-        modify_file(env_file, f'REACT_APP_IS_DND_ON=.*', f'REACT_APP_IS_DND_ON="{dnd_value}"')
-    else:
-        logger.error(f".env file not found in {current_dir}")
-        st.error(f".env file not found in {current_dir}")
-        return
-
-    dockerfile_path = os.path.join(current_dir, 'Dockerfile')
-    if os.path.exists(dockerfile_path):
-        # Build Docker image
-        run_docker_command(f"docker build -t {image_name} -f {dockerfile_path} {current_dir}")
-        
-        # Run Docker container
-        if is_dnd:
-            run_docker_command(f"docker run -d --name {container_name} -e REACT_APP_IS_DND_ON={dnd_value} -p {port}:3000 {image_name}")
-        else:
-            run_docker_command(f"docker run -d --name {container_name} -p {port}:3000 {image_name}")
-        
-        st.success(f"Frontend Docker image {image_name} built and container {container_name} started on port {port}")
-    else:
-        logger.error(f"Dockerfile not found in {current_dir}")
-        st.error(f"Dockerfile not found in {current_dir}")
-
-def build_and_run_node_red():
-    run_docker_command("docker build -t node-red -f dockerfile-node .")
-    run_docker_command("docker run -d --name node-red -p 1880:1880 node-red")
-
-def check_container_health(container_name):
-    try:
-        result = subprocess.run(f"docker inspect --format='{{{{.State.Health.Status}}}}' {container_name}",
-                                shell=True, capture_output=True, text=True, check=True)
-        health_status = result.stdout.strip()
-        if health_status == "healthy":
-            st.success(f"Container {container_name} is healthy")
-        else:
-            st.warning(f"Container {container_name} health status: {health_status}")
-    except subprocess.CalledProcessError as e:
-        st.error(f"Error checking health of container {container_name}: {e}")
-
-def cleanup_docker_resources():
-    containers = ["backend-api", "backend-consumer", "node-red"]
-    images = ["backend-api", "backend-consumer", "frontend-dnd0", "frontend-dnd1", "node-red"]
-    
-    for container in containers:
-        try:
-            subprocess.run(f"docker stop {container}", shell=True, check=True)
-            subprocess.run(f"docker rm {container}", shell=True, check=True)
-            st.success(f"Stopped and removed container: {container}")
-        except subprocess.CalledProcessError as e:
-            st.error(f"Error cleaning up container {container}: {e}")
-    
-    for image in images:
-        try:
-            subprocess.run(f"docker rmi {image}", shell=True, check=True)
-            st.success(f"Removed image: {image}")
-        except subprocess.CalledProcessError as e:
-            st.error(f"Error removing image {image}: {e}")
-
-async def execute_backend_instructions(script_output, project_name, cwd):
+async def execute_backend_instructions(script_output, project_name,cwd):
     try:
         output_path = os.path.dirname(script_output.strip().split('\n')[-1])
         logger.debug(f"Extracted output path: {output_path}")
@@ -186,12 +81,7 @@ async def execute_backend_instructions(script_output, project_name, cwd):
             if project_name in os.listdir():
                 os.chdir(project_name)
                 logger.debug(f"Changed working directory to: {os.getcwd()}")
-                logger.debug(f"Project directory contents: {os.listdir()}") 
-
-                if build_docker:
-                    build_and_run_backend(project_name)
-                    check_container_health("backend-api")
-                    check_container_health("backend-consumer")
+                logger.debug(f"Project directory contents: {os.listdir()}")
 
                 api_folder = f"{project_name}.API"
                 if api_folder in os.listdir():
@@ -199,8 +89,10 @@ async def execute_backend_instructions(script_output, project_name, cwd):
                     logger.debug(f"Changed working directory to: {os.getcwd()}")
                     logger.debug(f"API directory contents: {os.listdir()}")
 
-                    st.success(f"Backend setup completed successfully. Working directory: {os.getcwd()}")
-                    logger.info(f"Backend setup completed. Working directory: {os.getcwd()}")
+                    # Inform user to run `dotnet run` manually
+                    st.success(f"Backend setup completed successfully. Please navigate to the following directory in your terminal and run `dotnet run`:\n\n{os.getcwd()}")
+                    logger.info(f"User should navigate to {os.getcwd()} and run `dotnet run`.")
+                    
                 else:
                     logger.error(f"No {api_folder} folder found in {os.getcwd()}")
                     st.error(f"No {api_folder} folder found in {os.getcwd()}")
@@ -215,75 +107,22 @@ async def execute_backend_instructions(script_output, project_name, cwd):
         logger.error(f"An error occurred while executing commands: {str(e)}")
         st.error(f"An error occurred while executing commands: {str(e)}")
     finally:
+        # Always return to the original directory
         os.chdir(cwd)
         logger.debug(f"Returned to original directory: {os.getcwd()}")
 
-async def execute_frontend_instructions(script_output, project_name, cwd):
+async def execute_frontend_instructions(script_output, project_name,cwd):
     try:
-        logger.debug(f"Starting directory (CodeGenerator): {cwd}")
-
-        # Move up to NeoApps.AI-CodeGenerator
-        parent_dir = os.path.dirname(cwd)
-        logger.debug(f"Parent directory (NeoApps.AI-CodeGenerator): {parent_dir}")
-
-        # Move into the project-specific folder (starts with a number)
-        project_root = next(d for d in os.listdir(parent_dir) if d.split('_')[0].isdigit())
-        project_path = os.path.join(parent_dir, project_root)
-        logger.debug(f"Project root path: {project_path}")
-
-        if not os.path.isdir(project_path):
-            logger.error(f"Project directory not found: {project_path}")
-            st.error(f"Project directory not found: {project_path}")
-            return
-
-        # Move into the project-specific directory (using project_name)
-        project_specific_path = os.path.join(project_path, project_name)
-        if not os.path.isdir(project_specific_path):
-            logger.error(f"{project_name} directory not found in {project_path}")
-            st.error(f"{project_name} directory not found in {project_path}")
-            return
-
-        # Move into the ReactTs_Output1 directory
-        reactts_path = os.path.join(project_specific_path, "ReactTs_Output1")
-        if not os.path.isdir(reactts_path):
-            logger.error(f"ReactTs_Output1 directory not found in {project_specific_path}")
-            st.error(f"ReactTs_Output1 directory not found in {project_specific_path}")
-            return
-
-        os.chdir(reactts_path)
-        logger.debug(f"Changed working directory to: {os.getcwd()}")
-        logger.debug(f"ReactTs_Output1 directory contents: {os.listdir()}")
-
-        st.success(f"Frontend setup completed successfully. Your React app is located at: {os.getcwd()}")
-        logger.info(f"Frontend setup completed. Working directory: {os.getcwd()}")
-
-        if build_docker:
-            build_frontend(False,os.getcwd())  # Build DND0
-            build_frontend(True,os.getcwd())   # Build DND1
-            st.success("Frontend Docker images built successfully.")
+        # Instead of reading the last line, provide instructions to the user
+        st.success(f"Frontend setup completed successfully. Your React app is located beside the API as `ReacTs_Output1`. Please navigate to the following directory in your terminal and run:\n\n`npm install --legacy-peer-deps`\n\nThen run:\n\n`npm run dev`\n\n")
+        logger.info(f"User should navigate beside API folder to `ReacTs_Output1` and run `npm install` and then `npm run dev`.")
 
     except Exception as e:
         logger.error(f"An error occurred while executing commands: {str(e)}")
         st.error(f"An error occurred while executing commands: {str(e)}")
+   
     finally:
-        os.chdir(cwd)
-        logger.debug(f"Returned to original directory: {os.getcwd()}")
-async def execute_nodered_instructions(script_output, project_name, cwd):
-    try:
-        st.success(f"Node-RED setup completed successfully. Please follow these steps:\n\n"
-                   f"1. Ensure Node-RED is installed on your system.\n"
-                   f"2. Open a terminal and navigate to your project directory.\n"
-                   f"3. Start Node-RED by running `node-red`.\n"
-                   f"4. Open a web browser and go to `http://localhost:1880` to access the Node-RED editor.\n"
-                   f"5. In the Node-RED editor, you can start creating your flow or import an existing one.\n\n"
-                   f"Your project name is: {project_name}")
-        
-        logger.info(f"User should start Node-RED and access it at http://localhost:1880. Project name: {project_name}")
-
-    except Exception as e:
-        logger.error(f"An error occurred while providing Node-RED instructions: {str(e)}")
-        st.error(f"An error occurred while providing Node-RED instructions: {str(e)}")
-    finally:
+        # Always return to the original directory
         os.chdir(cwd)
         logger.debug(f"Returned to original directory: {os.getcwd()}")
 
@@ -320,7 +159,6 @@ with tab1:
 
         create_db = st.checkbox("Create database if not exists")
         drop_tables = st.checkbox("Drop all tables in the database")
-        build_docker = st.checkbox("Build and run Docker containers for Backend")
 
         submit_backend_button = st.form_submit_button(label='Submit Backend')
 
@@ -356,9 +194,9 @@ with tab1:
             st.text("Script output:")
             st.code(result.stdout)
 
-            asyncio.run(execute_backend_instructions(result.stdout, project_name, os.getcwd()))
+            # Call the async function to inform the user to manually run `dotnet run`
+            asyncio.run(execute_backend_instructions(result.stdout, project_name,os.getcwd()))
 
-            
         except subprocess.CalledProcessError as e:
             logger.error(f"An error occurred while executing the script: {e}")
             st.error(f"An error occurred while executing the script: {e}")
@@ -382,7 +220,7 @@ with tab2:
         script = st.text_input("Script URL", "http://localhost/app.sql", key='frontend_script')
         status_of_generation = st.text_input("Status of Generation", "null", key='frontend_status_of_generation')
         project_name = st.text_input("Project Name", "ContentPlannerTest", key='frontend_project_name')
-        db_exists = st.selectbox("DB Exists", ["No", "Yes"], index=1, key='frontend_db_exists')
+        db_exists = st.selectbox("DB Exists", ["No", "Yes"], index=1, key='frontend_db_exists')  # Changed index to 1 for "Yes"
         port = st.text_input("Port", "3306", key='frontend_port')
         rabbitmq_conn = st.text_input("API Connection URL", "https://localhost:5001/v1/api/", key='frontend_rabbitmq_conn')
         redis_conn = st.text_input("Redis Connection String", "localhost:6379", key='frontend_redis_conn')
@@ -398,7 +236,6 @@ with tab2:
 
         create_db = st.checkbox("Create database if not exists", key='frontend_create_db')
         drop_tables = st.checkbox("Drop all tables in the database", key='frontend_drop_tables')
-        build_docker = st.checkbox("Build Docker images for Frontend")
 
         submit_frontend_button = st.form_submit_button(label='Submit Frontend')
 
@@ -434,9 +271,8 @@ with tab2:
             st.text("Script output:")
             st.code(result.stdout)
 
-            asyncio.run(execute_frontend_instructions(result.stdout, project_name, os.getcwd()))
-
-            
+            # Call the async function to inform the user to manually run frontend commands
+            asyncio.run(execute_frontend_instructions(result.stdout, project_name,os.getcwd()))
 
         except subprocess.CalledProcessError as e:
             logger.error(f"An error occurred while executing the script: {e}")
@@ -446,6 +282,7 @@ with tab2:
             st.text("Error output:")
             st.code(e.stderr)
         except Exception as e:
+            logger.error(f"An unexpected error occurred: {str(e)}")
             logger.error(f"An unexpected error occurred: {str(e)}")
             st.error(f"An unexpected error occurred: {str(e)}")
 
@@ -477,7 +314,6 @@ with tab3:
 
         create_db = st.checkbox("Create database if not exists", key='nodered_create_db')
         drop_tables = st.checkbox("Drop all tables in the database", key='nodered_drop_tables')
-        build_docker = st.checkbox("Build and run Docker container for Node-RED")
 
         submit_nodered_button = st.form_submit_button(label='Submit Node-RED')
 
@@ -513,11 +349,8 @@ with tab3:
             st.text("Script output:")
             st.code(result.stdout)
 
-            asyncio.run(execute_nodered_instructions(result.stdout, project_name, os.getcwd()))
-
-            if build_docker:
-                build_and_run_node_red()
-                check_container_health("node-red")
+            # Call the async function to inform the user about next steps
+            asyncio.run(execute_nodered_instructions(result.stdout, project_name,os.getcwd()))
 
         except subprocess.CalledProcessError as e:
             logger.error(f"An error occurred while executing the script: {e}")
@@ -529,7 +362,30 @@ with tab3:
         except Exception as e:
             logger.error(f"An unexpected error occurred: {str(e)}")
             st.error(f"An unexpected error occurred: {str(e)}")
+async def execute_nodered_instructions(script_output, project_name,cwd):
+    try:
+        # Provide instructions to the user
+        st.success(f"Node-RED setup completed successfully. Please follow these steps:\n\n"
+                   f"1. Ensure Node-RED is installed on your system.\n"
+                   f"2. Open a terminal and navigate to your project directory.\n"
+                   f"3. Start Node-RED by running `node-red`.\n"
+                   f"4. Open a web browser and go to `http://localhost:1880` to access the Node-RED editor.\n"
+                   f"5. In the Node-RED editor, you can start creating your flow or import an existing one.\n\n"
+                   f"Your project name is: {project_name}")
+        
+        logger.info(f"User should start Node-RED and access it at http://localhost:1880. Project name: {project_name}")
 
-# Add a cleanup button at the end of your Streamlit app
-if st.button("Cleanup Docker Resources"):
-    cleanup_docker_resources()
+    except Exception as e:
+        logger.error(f"An error occurred while providing Node-RED instructions: {str(e)}")
+        st.error(f"An error occurred while providing Node-RED instructions: {str(e)}")
+    try:
+        st.success(f"Node-RED setup completed successfully. Please follow these steps:\n\n1. Ensure Node-RED is installed on your system.\n2. Start Node-RED by running `node-red` in your terminal.\n3. Open a web browser and navigate to `http://localhost:1880` to access the Node-RED editor.\n4. Import your flow or start creating a new one.\n\nYour project name is: {project_name}")
+        logger.info(f"User should start Node-RED and access it at http://localhost:1880. Project name: {project_name}")
+
+    except Exception as e:
+        logger.error(f"An error occurred while providing Node-RED instructions: {str(e)}")
+        st.error(f"An error occurred while providing Node-RED instructions: {str(e)}")
+    finally:
+        # Always return to the original directory
+        os.chdir(cwd)
+        logger.debug(f"Returned to original directory: {os.getcwd()}")
