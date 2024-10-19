@@ -1,39 +1,143 @@
-CREATE TABLE AccountTypes (
-  account_type_id int NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  account_type_name varchar(50) NOT NULL
+CREATE TABLE Appusers (
+  app_user_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  username VARCHAR(50) NOT NULL,
+  password_hash VARCHAR(255) NOT NULL,
+  createdBy VARCHAR(255) NOT NULL,
+  modifiedBy VARCHAR(255) NOT NULL,
+  createdAt datetime NOT NULL,
+  modifiedAt datetime NOT NULL,
+  isActive tinyint(1) NOT NULL DEFAULT '1'
+);
+CREATE TABLE expense_categories (
+  expense_category_id INT PRIMARY KEY AUTO_INCREMENT,
+  category_name VARCHAR(255),
+  createdBy VARCHAR(255) NOT NULL,
+  modifiedBy VARCHAR(255) NOT NULL,
+  createdAt datetime NOT NULL,
+  modifiedAt datetime NOT NULL,
+  isActive tinyint(1) NOT NULL DEFAULT '1'
 );
 
-CREATE TABLE CategoryTypes (
-  category_type_id int NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  category_type_name varchar(50) NOT NULL
+CREATE TABLE group_table (
+  group_id INT PRIMARY KEY AUTO_INCREMENT,
+  group_name VARCHAR(255),
+  createdBy VARCHAR(255) NOT NULL,
+  modifiedBy VARCHAR(255) NOT NULL,
+  createdAt datetime NOT NULL,
+  modifiedAt datetime NOT NULL,
+  isActive tinyint(1) NOT NULL
+);
+CREATE TABLE group_balances (
+  balance_id INT PRIMARY KEY AUTO_INCREMENT,
+  group_id INT,
+  app_user_id INT,
+  balance_amount FLOAT,
+  FOREIGN KEY (group_id) REFERENCES group_table(group_id),
+  FOREIGN KEY (app_user_id) REFERENCES Appusers(app_user_id),
+  createdBy VARCHAR(255) NOT NULL,
+  modifiedBy VARCHAR(255) NOT NULL,
+  createdAt datetime NOT NULL,
+  modifiedAt datetime NOT NULL,
+  isActive tinyint(1) NOT NULL
+);
+CREATE TABLE currencies (
+  currency_id INT PRIMARY KEY AUTO_INCREMENT,
+  currency_name VARCHAR(255),
+  currency_code VARCHAR(10),
+  createdBy VARCHAR(255) NOT NULL,
+  modifiedBy VARCHAR(255) NOT NULL,
+  createdAt datetime NOT NULL,
+  modifiedAt datetime NOT NULL,
+  isActive tinyint(1) NOT NULL DEFAULT '1'
 );
 
-CREATE TABLE Accounts (
-  account_id int NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  account_name varchar(100) NOT NULL,
-  account_type_id int NOT NULL,
-  balance decimal(15,2) NOT NULL,
-  created_at timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (account_type_id) REFERENCES AccountTypes(account_type_id)
+CREATE TABLE debt_calculations (
+  debt_calculation_id INT PRIMARY KEY AUTO_INCREMENT,
+  group_id INT,
+  app_user_id INT,
+  receiver_id INT,
+  amount FLOAT,
+  currency_id INT,
+  is_partial INT,
+  date DATE,
+  FOREIGN KEY (group_id) REFERENCES group_table(group_id),
+  FOREIGN KEY (app_user_id) REFERENCES Appusers(app_user_id),
+  FOREIGN KEY (currency_id) REFERENCES currencies(currency_id),
+  createdBy VARCHAR(255) NOT NULL,
+  modifiedBy VARCHAR(255) NOT NULL,
+  createdAt datetime NOT NULL,
+  modifiedAt datetime NOT NULL,
+  isActive tinyint(1) NOT NULL DEFAULT '1'
+);
+CREATE TABLE expense_split_rules (
+  rule_id INT PRIMARY KEY AUTO_INCREMENT,
+  group_id INT,
+  split_type VARCHAR(255),
+  details TEXT,
+  FOREIGN KEY (group_id) REFERENCES group_table(group_id),
+  createdBy VARCHAR(255) NOT NULL,
+  modifiedBy VARCHAR(255) NOT NULL,
+  createdAt datetime NOT NULL,
+  modifiedAt datetime NOT NULL,
+  isActive tinyint(1) NOT NULL
+);
+CREATE TABLE expenses (
+  expense_id INT PRIMARY KEY AUTO_INCREMENT,
+  group_id INT,
+  app_user_id INT,
+  amount FLOAT,
+  currency_id INT,
+  expense_category_id INT,
+  date DATE,
+  FOREIGN KEY (group_id) REFERENCES group_table(group_id),
+  FOREIGN KEY (app_user_id) REFERENCES Appusers(app_user_id),
+  FOREIGN KEY (currency_id) REFERENCES currencies(currency_id),
+  FOREIGN KEY (expense_category_id) REFERENCES expense_categories(expense_category_id),
+  createdBy VARCHAR(255) NOT NULL,
+  modifiedBy VARCHAR(255) NOT NULL,
+  createdAt datetime NOT NULL,
+  modifiedAt datetime NOT NULL,
+  isActive tinyint(1) NOT NULL DEFAULT '1'
+);
+CREATE TABLE group_memberships (
+  membership_id INT PRIMARY KEY AUTO_INCREMENT,
+  group_id INT,
+  app_user_id INT,
+  FOREIGN KEY (group_id) REFERENCES group_table(group_id),
+  FOREIGN KEY (app_user_id) REFERENCES Appusers(app_user_id),
+  isActive tinyint(1) NOT NULL DEFAULT '1',
+  createdBy VARCHAR(255) NOT NULL,
+  modifiedBy VARCHAR(255) NOT NULL,
+  createdAt datetime NOT NULL,
+  modifiedAt datetime NOT NULL
+
 );
 
-CREATE TABLE Categories (
-  category_id int NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  category_name varchar(100) NOT NULL,
-  category_type_id int NOT NULL,
-  created_at timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (category_type_id) REFERENCES CategoryTypes(category_type_id)
+CREATE TABLE reminders (
+  reminder_id INT PRIMARY KEY AUTO_INCREMENT,
+  app_user_id INT,
+  reminder_frequency VARCHAR(255),
+  last_reminder_date DATE,
+  FOREIGN KEY (app_user_id) REFERENCES Appusers(app_user_id),
+  createdBy VARCHAR(255) NOT NULL,
+  modifiedBy VARCHAR(255) NOT NULL,
+  createdAt datetime NOT NULL,
+  modifiedAt datetime NOT NULL,
+  isActive tinyint(1) NOT NULL DEFAULT '1'
+
 );
 
-CREATE TABLE Transactions (
-  transaction_id int NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  account_id int NOT NULL,
-  category_id int NOT NULL,
-  amount decimal(15,2) NOT NULL,
-  transaction_date date NOT NULL,
-  transaction_type_id int NOT NULL,
-  description varchar(255) DEFAULT NULL,
-  created_at timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (account_id) REFERENCES Accounts(account_id),
-  FOREIGN KEY (category_id) REFERENCES Categories(category_id)
+CREATE TABLE user_preferences (
+  user_preference_id INT PRIMARY KEY AUTO_INCREMENT,
+  app_user_id INT,
+  currency_id INT,
+  reminder_frequency VARCHAR(255),
+  FOREIGN KEY (app_user_id) REFERENCES Appusers(app_user_id),
+  FOREIGN KEY (currency_id) REFERENCES currencies(currency_id),
+  createdBy VARCHAR(255) NOT NULL,
+  modifiedBy VARCHAR(255) NOT NULL,
+  createdAt datetime NOT NULL,
+  modifiedAt datetime NOT NULL,
+  isActive tinyint(1) NOT NULL DEFAULT '1'
+
 );
