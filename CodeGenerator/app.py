@@ -32,7 +32,7 @@ def gpt_call(api_key, prompt, content):
         "Content-Type": "application/json"
     }
     data = {
-        "model": "gpt-3.5-turbo",
+        "model": "gpt-4o-mini",
         "messages": [
             {"role": "system", "content": "You are a helpful assistant."},
             {"role": "user", "content": f"{prompt}\n\nContent: {content}"}
@@ -571,11 +571,10 @@ if selected_tab == "Welcome":
     4. **Quick App Creation with NeoApps.ai**
        - Create apps similar to ProjectPilot AI quickly and easily
        - Develop specialized applications like:
-         * OCR apps for your PDFs
-         * Data-driven apps
-         * AI chatbots
-         * RAG (Retrieval-Augmented Generation) apps
-       - Book a demo now for a discovery call and explore the possibilities!
+         * Internal Tools for Various Industries: Project Management Tools, Ticketing Systems, Internal Digital Process Tools, Inventory Management Systems, CRM Apps, Content Calendars, and more.
+         * Use Server as Standalone API server
+         * Use Node red workflows in IOT Project
+       - Book a demo now for a discovery call and explore the possibilities! 
     
     Ready to take the next step? Click the button below to visit NeoApps.ai and book a demo for a discovery call 
     to bring your concept to life quickly and efficiently!
