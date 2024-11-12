@@ -40,7 +40,7 @@
 
 For additional tutorials and in-depth guides on using NeoApps.AI, check out these YouTube videos:
 
-- **[Using NeoApps.AI Drag-and-Drop Designer](https://youtu.be/Xa59gzPzNPI?si=UZP-qYhb553kEftu)**: A complete guide to designing and previewing your Brain Dump application with NeoApps.AI’s drag-and-drop designer.
+- **[Using NeoApps.AI Drag-and-Drop Designer](https://youtu.be/FzqgCyV2ZVk?si=s1l0h00iTOEnyZdX)**: A complete guide to designing and previewing your Brain Dump application with NeoApps.AI’s drag-and-drop designer.
 
 - **[Building a Timesheet Tracker App](https://youtu.be/iVvRGH0gfI8?si=LpPRQ6l__wlRUotq)**: A step-by-step walkthrough of creating a robust Timesheet Tracker application.
 
