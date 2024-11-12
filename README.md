@@ -22,6 +22,28 @@
 
 </details>
 
+<details>
+<summary><kbd>Watch the demo - NeoApps.AI App Builder Platform  Walkthrough </kbd></summary>
+
+[![Watch the video](https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator/blob/main/neoapps_ai_thumbnail.png)](https://youtu.be/auRU5O11HyY?si=a7rAUD7iKuAOr2UV)
+
+</details>
+
+<details>
+<summary><kbd>Watch the demo - BrainDump using ChatGPT & NeoApps.AI </kbd></summary>
+
+[![Watch the video](https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator/blob/main/neoapps_ai_thumbnail.png)](https://youtu.be/f67EsCN4rMY?si=KI5C4qpa19xEyxEw)
+
+</details>
+
+## YouTube Videos
+
+For additional tutorials and in-depth guides on using NeoApps.AI, check out these YouTube videos:
+
+- **[Using NeoApps.AI Drag-and-Drop Designer](https://youtu.be/FzqgCyV2ZVk?si=s1l0h00iTOEnyZdX)**: A complete guide to designing and previewing your Brain Dump application with NeoApps.AI’s drag-and-drop designer.
+
+- **[Building a Timesheet Tracker App](https://youtu.be/iVvRGH0gfI8?si=LpPRQ6l__wlRUotq)**: A step-by-step walkthrough of creating a robust Timesheet Tracker application.
+
 ## Prerequisites
 
 Before running the project, ensure you have the following installed:
@@ -41,7 +63,7 @@ Before running the project, ensure you have the following installed:
 3. **Generate the requirements** for your project.
 4. **Save the database file** as `app.sql`.
 5. **Drop the database file** into the `htdocs` folder of XAMPP. Ensure that **XAMPP** is running and **Docker** is up and running.
-6. Navigate to the `CodeGenerator` folder and **run `pip install -r requirements.txt` and then **run `./codegenerator_script.sh`**.
+6. Navigate to the `CodeGenerator` folder and **run `pip install -r requirements.txt` and then **run `./codegenerator_script.sh`\*\*.
 7. The **Streamlit app** will open.
 8. **Review the inputs**: You can change the project name or leave it as is. Experiment with other settings once you're comfortable.
 9. **Hit submit** and scroll down to see the results.
@@ -64,7 +86,6 @@ Before running the project, ensure you have the following installed:
 26. **Congratulations!** You’ve created your first app without writing any code, but still built a custom-developed application.
 27. **Deploy the app** on a Docker container or **contact us on Discord** if you need help with deployment.
 
-
 # Manual Setup --------------------------
 
 ### Docker Setup for Redis, RabbitMQ, and MinIO (S3)
@@ -72,6 +93,7 @@ Before running the project, ensure you have the following installed:
 Use the following Docker commands to set up Redis, RabbitMQ, and MinIO (S3):
 
 - **MinIO**
+
   ```bash
   docker run -d --name minio -p 9000:9000 --env-file .env \
   -e MINIO_ROOT_USER=${MINIO_ROOT_USER} \
@@ -80,6 +102,7 @@ Use the following Docker commands to set up Redis, RabbitMQ, and MinIO (S3):
   ```
 
 - **Redis**
+
   ```bash
   docker run -d --name redis -p 6379:6379 --env-file .env \
   -v redis-data:/data redis:latest \
@@ -150,98 +173,120 @@ Update `launchSettings.json` with the following parameters for frontend generati
 "PARAMETER": "{project_id:1,server:localhost,uid:1,username:root,password:,databaseName:splitthebill,script:http://localhost/split_app_script.sql,statusOfGeneration:,projectName:ContentPlannerTest,DBexists:Yes,port:3306,rabbitMQConn:amqp://user12345:12345@localhost:5672/,redisConn:localhost:6379,password=12345,apiflowurl:,fronttemplateurl:,Technology_Frontend:reactts,Backend_technology:,buttonClicked:generate,projectType:dnd,swgurl:,noderedurl:}"
 
 ```
-  # **Configuration Parameters**
 
-  Below is a list of configuration parameters used in the project setup, along with their explanations:
+# **Configuration Parameters**
 
-  ##### `project_id`
-  - **Description:** The unique identifier for the project. You can use any number.
+Below is a list of configuration parameters used in the project setup, along with their explanations:
+
+##### `project_id`
+
+- **Description:** The unique identifier for the project. You can use any number.
 - **Example:** `1`
 
 ### `server`
+
 - **Description:** The server where the database is hosted. This will be the database server (MySQL). Do not use a production database server here.
 - **Example:** `localhost`
 
 ### `uid`
+
 - **Description:** The unique identifier for the user. Don't change this one.
 - **Example:** `1`
 
 ### `username`
+
 - **Description:** The database username. Make sure it's an admin user.
 - **Example:** `root`
 
 ### `password`
+
 - **Description:** The password for the database user.
 - **Example:** `""` (empty string)
 
 ### `databaseName`
+
 - **Description:** The name of the database to be used for the project.
 - **Example:** `splitthebill`
 
 ### `script`
+
 - **Description:** The URL or path to the SQL script used to initialize the database. This file is typically hosted on a web server in the XAMPP `htdocs` directory.
 - **Example:** `http://localhost/split_app_script.sql`
 
 ### `statusOfGeneration`
+
 - **Description:** The status of the project generation process. Ignore this, but don't change it.
 - **Example:** `""` (empty string, to be updated during the process)
 
 ### `projectName`
+
 - **Description:** The name of the project. Use the project name without numbers or special characters to ensure smooth operation.
 - **Example:** `ContentPlannerTest`
 
 ### `DBexists`
+
 - **Description:** Indicates whether the database already exists. For backend generation, this will be `NO`, and it will recreate the database tables. For frontend generation, it will be `YES`.
 - **Example:** `"Yes"`
 
 ### `port`
+
 - **Description:** The port number on which the database server is listening.
 - **Example:** `3306`
 
 ### `rabbitMQConn`
+
 - **Description:** The connection URL for RabbitMQ, used when generating the backend and as an API connection URL while generating the frontend.
 - **Example:** `https://localhost:5001/v1/api/`
 
 ### `redisConn`
+
 - **Description:** The connection string for Redis, typically used for caching.
 - **Example:** `localhost:6379`
 
-### `password` *(for Redis)*
+### `password` _(for Redis)_
+
 - **Description:** The password for Redis connection.
-- **Example:** `12345`
+- **Example:** `1234
 
 ### `apiflowurl`
+
 - **Description:** The URL for the API flow. This will be explained in future documentation and videos.
 - **Example:** `""` (empty, to be defined based on your setup)
 
 ### `fronttemplateurl`
+
 - **Description:** The URL for the frontend template, used for project scaffolding. Future roadmap.
 - **Example:** `""` (empty, to be defined based on your setup)
 
 ### `Technology_Frontend`
+
 - **Description:** The technology stack used for frontend development. Don't change this for now.
 - **Example:** `reactts` (React with TypeScript)
 
 ### `Backend_technology`
+
 - **Description:** The technology stack used for backend development. Don't change this for now. It will be different for the backend.
 - **Example:** `""` (empty, to be specified based on your project)
 
 ### `buttonClicked`
+
 - **Description:** Indicates the action taken by the user, such as generating the project. Don't change this for now. This will be used to control generate, build, and deploy actions.
 - **Example:** `"generate"`
 
 ### `projectType`
+
 - **Description:** The type of project being generated, e.g., drag-and-drop (DND). No need to change anything here.
 - **Example:** `"dnd"`
 
 ### `swgurl`
+
 - **Description:** The URL for Swagger, used for API documentation.
 - **Example:** `""` (empty, to be filled after project setup). No need to change anything here for now.
 
 ### `noderedurl`
+
 - **Description:** The URL for Node-RED, a flow-based development tool. No need to change anything here for now.
 - **Example:** `""` (empty, to be filled based on setup)
-
 
 ### 6. Generate Backend
 
@@ -271,9 +316,6 @@ After copying the projects, run the .NET API as needed.
 
 Follow these steps, and you should be able to run the project and generate the apps without any issues.
 
-
-
-
 ## Documentation
 
 Setup and Installation Guide
@@ -286,6 +328,3 @@ This guide includes step-by-step instructions and a video tutorial to help you t
 To help you get started and make the most of NeoApps.ai, we have prepared comprehensive documentation:
 
 - **[Tutorials](https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator/blob/main/tutorials.md):** Hands-on tutorials to help you build and deploy your first app.
-
-
-
