@@ -72,27 +72,44 @@ Before running the project, ensure you have the following installed:
 Use the following Docker commands to set up Redis, RabbitMQ, and MinIO (S3):
 
 - **MinIO**
+  #### MacOS/ Linux
   ```bash
   docker run -d --name minio -p 9000:9000 --env-file .env \
   -e MINIO_ROOT_USER=${MINIO_ROOT_USER} \
   -e MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD} \
   -v minio-data:/data minio/minio:latest server /data
   ```
+  #### Windows
+  ```bash
+  docker run -d --name minio -p 9000:9000 --env-file .env -e MINIO_ROOT_USER=$env:MINIO_ROOT_USER -e MINIO_ROOT_PASSWORD=$env:MINIO_ROOT_PASSWORD -v ${PWD}\minio-data:/data minio/minio:latest server /data
 
+  ```
 - **Redis**
+  #### MacOS/ Linux
   ```bash
   docker run -d --name redis -p 6379:6379 --env-file .env \
   -v redis-data:/data redis:latest \
   redis-server --requirepass "$(grep REDIS_PASSWORD .env | cut -d '=' -f2)" --appendonly yes
 
   ```
+  #### Windows
+
+  ```bash
+    docker run -d  --name redis -p 6379:6379 --env-file .env `-v redis-data:/data redis:latest ` redis-server --requirepass $(Get-Content .env | Select-String 'REDIS_PASSWORD' | ForEach-Object { ($_ -split '=')[1].Trim() }) --appendonly yes
+
+
+  ```
 
 - **RabbitMQ**
+  #### MacOS/ Linux
   ```bash
   docker run -d --name rabbitmq -p 5672:5672 -p 15672:15672 --env-file .env \
   -v rabbitmq-data:/var/lib/rabbitmq rabbitmq:management
   ```
-
+  #### Windows
+   ```bash
+  docker run -d --name rabbitmq -p 5672:5672 -p 15672:15672 --env-file .env ` -v rabbitmq-data:/var/lib/rabbitmq rabbitmq:management      
+  ```
 ### Configuration
 
 Add the following configurations to `appsettings.json` for MinIO (S3), Redis, and RabbitMQ:
@@ -141,13 +158,13 @@ Set up your MySQL database with the following parameters:
 Update `launchSettings.json` with the following parameters for backend generation:
 
 ```json
-"PARAMETER": "{project_id:1,server:localhost,uid:1,username:root,password:,databaseName:splitthebill,script:http://localhost/split_app_script.sql,statusOfGeneration:null,projectName:ContentPlannerTest,DBexists:No,port:3306,rabbitMQConn:amqp://user12345:12345@localhost:5672/,redisConn:localhost:6379,password=12345,apiflowurl:,fronttemplateurl:,Technology_Frontend:,Backend_technology:dotnet,buttonClicked:generate,projectType:,swgurl:,noderedurl:null}"
+"PARAMETER": "{project_id:1,server:localhost,uid:1,username:root,password:,databaseName:splitthebill,script:http://localhost/split_app_script.sql,statusOfGeneration:null,projectName:DemoApplication,DBexists:No,port:3306,rabbitMQConn:amqp://user:password@localhost:5672/,redisConn:localhost:6379,password=yourredispassword,apiflowurl:,fronttemplateurl:,Technology_Frontend:,Backend_technology:dotnet,buttonClicked:generate,projectType:,swgurl:,noderedurl:null}"
 ```
 
 Update `launchSettings.json` with the following parameters for frontend generation:
 
 ```json
-"PARAMETER": "{project_id:1,server:localhost,uid:1,username:root,password:,databaseName:splitthebill,script:http://localhost/split_app_script.sql,statusOfGeneration:,projectName:ContentPlannerTest,DBexists:Yes,port:3306,rabbitMQConn:amqp://user12345:12345@localhost:5672/,redisConn:localhost:6379,password=12345,apiflowurl:,fronttemplateurl:,Technology_Frontend:reactts,Backend_technology:,buttonClicked:generate,projectType:dnd,swgurl:,noderedurl:}"
+"PARAMETER": "{project_id:1,server:localhost,uid:1,username:root,password:,databaseName:splitthebill,script:http://localhost/split_app_script.sql,statusOfGeneration:,projectName:DemoApplication,DBexists:Yes,port:3306,rabbitMQConn:amqp://user:passord@localhost:5672/,redisConn:localhost:6379,password=yourredispassword,apiflowurl:,fronttemplateurl:,Technology_Frontend:reactts,Backend_technology:,buttonClicked:generate,projectType:dnd,swgurl:,noderedurl:}"
 
 ```
   # **Configuration Parameters**
