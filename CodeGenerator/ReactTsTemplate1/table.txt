@@ -1,8 +1,10 @@
 ﻿import React, { useEffect, useState } from "react";
+import { Toast } from 'utils/Toast';
 import DataTable from "react-data-table-component";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { IconName } from "@fortawesome/fontawesome-svg-core";
-
+import { library } from '@fortawesome/fontawesome-svg-core';
+import { fas } from '@fortawesome/free-solid-svg-icons';
 import {
   Box,
   Button,
@@ -24,6 +26,7 @@ import {
   CustomGridLayout,
   CustomGridLayoutDynamic,
   CustomGridLayoutDynamicV2,
+  CustomGridLayoutDynamicV3,
   DefaultGridTest,
 } from "Dnd/Dnd Designer/Components/DefaultGridTest";
 import { useSelector } from "react-redux";
@@ -42,6 +45,8 @@ import { DataGrid, GridToolbar } from "@mui/x-data-grid";
 import { makeStyles } from "@mui/styles";
 {importFKRedux}
 {importFKService}
+
+library.add(fas);
 const useStyles = makeStyles({
   root: {
     "& .MuiDataGrid-cell": {
@@ -49,21 +54,29 @@ const useStyles = makeStyles({
       alignItems: "center",
     },
     "& .MuiDataGrid-root": {
-      color: (props) =>
-        props["RowColor"] !== undefined ? props["RowColor"] : "#223336",
-      backgroundColor: (props) =>
-        props["RowBackgroundColor"] !== undefined
-          ? props["RowBackgroundColor"]
-          : "#e7eef0",
+      color: "#000000", // Black text color
+      backgroundColor: "transparent", // or "white" if you prefer white background
     },
     "& .MuiDataGrid-columnsContainer": {
-      color: (props) =>
-        props["HeadRowColor"] !== undefined ? props["HeadRowColor"] : "#223336",
-      backgroundColor: (props) =>
-        props["HeadRowBackgroundColor"] !== undefined
-          ? props["HeadRowBackgroundColor"]
-          : "#e7eef0",
+      color: "#000000", // Black text color for header
+      backgroundColor: "transparent", // or "white" if you prefer white background
     },
+    // Additional styling to ensure consistent colors throughout the grid
+    "& .MuiDataGrid-row": {
+      color: "#000000",
+      backgroundColor: "transparent", // or "white"
+      borderBottom: "1px solid rgba(0, 0, 0, 0.2)", // Add underline to each row
+    },
+    "& .MuiDataGrid-columnHeaders": {
+      color: "#000000",
+      backgroundColor: "transparent", // or "white"
+      borderBottom: "2px solid rgba(0, 0, 0, 0.3)", // Slightly thicker underline for header
+    },
+    "& .MuiDataGrid-footerContainer": {
+      color: "#000000",
+      backgroundColor: "transparent", // or "white"
+      borderTop: "1px solid rgba(0, 0, 0, 0.2)", // Add line above footer
+    }
   },
 });
 type Props = {
@@ -200,6 +213,13 @@ const columns = [
           variant="contained"
           size="small"
           onClick={() => handleRowEdit(params.row)}
+        sx={{
+          backgroundColor: 'black',
+          color: 'white',
+          '&:hover': {
+            backgroundColor: '#333333', // slightly lighter black on hover
+          }
+        }}
         >
           Edit
         </Button>
@@ -219,6 +239,13 @@ const columns = [
           color="secondary"
           size="small"
           onClick={() => handleRowDeleteClick(params.row)}
+          sx={{
+            backgroundColor: 'black',
+            color: 'white',
+            '&:hover': {
+              backgroundColor: '#333333', // slightly lighter black on hover
+            }
+          }}
         >
           Delete
         </Button>
@@ -292,16 +319,25 @@ const columns = [
         field: buttonName,
         headerName: "",
         sortable: false,
-        width: 100,
+        // Remove fixed width or make it flexible
+        flex: 1, // This allows the column to grow
+        minWidth: 120, // Minimum width to prevent too narrow columns
         renderCell: (params) => (
           <Button
 	    style={{
               whiteSpace: "normal", // Allows the text to wrap
               wordWrap: "break-word", // Ensures long words are broken and wrapped
+              width: '100%', // Takes full width of the cell
+              height: 'auto', // Adjusts height based on content
+              padding: '8px', // Add some padding
             }}
             sx={{
               backgroundColor: buttonColor ? buttonColor : "primary",
               color: textColor ? textColor : "primary",
+              textAlign: 'center',
+              '& .MuiButton-endIcon': {
+                marginLeft: 'auto', // Properly aligns the icon
+              }
             }}
             endIcon={
               icon ? (
@@ -533,7 +569,14 @@ style={{
                 className="btn-icon-split float-right"
                 onClick={handleAddButtonClick}
                 variant="contained"
-                endIcon={<AddIcon />}
+               endIcon={<AddIcon sx={{ color: 'white' }} />}
+               sx={{
+                 backgroundColor: 'black',
+                 color: 'white',
+                 '&:hover': {
+                   backgroundColor: '#333333', // slightly lighter black on hover
+                 }
+               }}
               >
                 {config[`add_new_button_new_name1`] !== undefined
                   ? config[`add_new_button_new_name1`]
@@ -544,15 +587,20 @@ style={{
         }
     />
     <CardContent>
-      <Grid container spacing={2} justifyContent="flex-end">
+    <Grid container spacing={2}>
         <Grid item xs={12} md={3}>
-          {(config[`search_button_visible1`] || config[`search_button_visible1`]===undefined) && (
               <TextField
                 placeholder="Search"
                 variant="outlined"
                 fullWidth
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
+      sx={{
+        '& .MuiOutlinedInput-root': {
+          height: '40px', // Reduced height
+          width: '300px', // Increased width for textbox
+        }
+      }}
                 InputProps={{
                   endAdornment: (
                     <InputAdornment position="end">
@@ -560,6 +608,18 @@ style={{
                         disabled={search.length <= 2}
                         variant="contained"
                         onClick={handleSearch}
+              sx={{
+                backgroundColor: 'black',
+                color: 'white',
+                height: '30px', // Reduced button height
+                '&:hover': {
+                  backgroundColor: '#333333', // slightly lighter black on hover
+                },
+                '&.Mui-disabled': {
+                  backgroundColor: '#666666', // grey when disabled
+                  color: '#cccccc'
+                }
+              }}
                       >
                         Search
                       </Button>
@@ -567,7 +627,6 @@ style={{
                   ),
                 }}
               />
-            )}
         </Grid>
       </Grid>
       <Box mt={2}></Box>
@@ -653,6 +712,31 @@ style={{
                   Toolbar: GridToolbar,
                 }}
                 className={classes.root}
+                componentsProps={{
+                  toolbar: {
+                    sx: {
+                      backgroundColor: 'white',
+                      borderBottom: '1px solid rgba(0, 0, 0, 0.12)',
+                      '& .MuiButton-root': { // Filter buttons
+                        color: 'black',
+                        '&:hover': {
+                          backgroundColor: 'rgba(0, 0, 0, 0.04)'
+                        }
+                      },
+                      '& .MuiFormControl-root': { // Search input
+                        '& .MuiInputBase-root': {
+                          color: 'black',
+                          '& .MuiOutlinedInput-notchedOutline': {
+                            borderColor: 'rgba(0, 0, 0, 0.23)'
+                          },
+                          '&:hover .MuiOutlinedInput-notchedOutline': {
+                            borderColor: 'black'
+                          }
+                        }
+                      }
+                    }
+                  }
+                }}
               />
             </div>
           )}

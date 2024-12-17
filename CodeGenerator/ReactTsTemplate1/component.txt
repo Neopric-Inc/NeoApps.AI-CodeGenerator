@@ -7,6 +7,7 @@ import { useAppDispatch } from "redux/store";
 import { get{modelName},filter{modelName}WithColumns } from "services/{tableName}Service";
 {importFKRedux}
 {importFKService}
+import ApiIcon from "@mui/icons-material/Api";
 import Layout from "template";
 import { Constant } from "template/Constant";
 import { {modelName}Form } from "./form";
@@ -284,7 +285,7 @@ return (
             display="flex"
             alignItems="center"
             justifyContent="space-between"
-            mb={4}
+            mb={2}
           >
             <div
               style={{
