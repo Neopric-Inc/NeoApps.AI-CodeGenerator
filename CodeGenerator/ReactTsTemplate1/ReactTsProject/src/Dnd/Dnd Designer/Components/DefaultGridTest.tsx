@@ -354,7 +354,7 @@ const DynamicComponentRenderer =({
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${'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'}`,
+          'Authorization': `Bearer `,
         },
         body: JSON.stringify({
           model: 'gpt-4o-mini',
