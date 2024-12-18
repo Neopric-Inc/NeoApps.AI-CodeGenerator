@@ -88,8 +88,18 @@ export const {modelName}Form: React.FC<Props> = ({ row, hideShowForm, getData, a
   const handleCloseSignatureDialog = () => {
 
     setOpenSignatureDialog(false);};
-  {fkReduxInit}
+  
+{fkReduxInit}
   {useEffectForFK}
+  
+    const useStyles = makeStyles({
+      richTextEditor: {
+        '& .ql-container': {
+          height: '300px'
+        }
+      }
+    });
+    const classes = useStyles();
 
   useEffect(() => {
     if ({tableName}Data && {tableName}Data.list && {tableName}Data.list.length === 0) {
@@ -312,9 +322,19 @@ setFieldValue,
                 {isSaving ? (
                   <CircularProgress color="inherit" />
                 ) : (
-                  <Button type="submit" variant="contained">
-                    Save
-                  </Button>
+                   <Button 
+  type="submit" 
+  variant="contained"
+  sx={{
+    backgroundColor: 'black',
+    color: 'white',
+    '&:hover': {
+      backgroundColor: '#333' // slightly lighter black on hover
+    }
+  }}
+>
+  Save
+</Button>
                 )}
               </div>
               </Form>

@@ -30,7 +30,7 @@ const Heading = (props) => {
         }
     }
     return (
-        <div style={{ backgroundColor: backgroundColor, color: color, fontFamily: fontFamily, padding: "6px", borderRadius: "6px", textAlign: "center" }}>
+        <div style={{ backgroundColor: backgroundColor, color: color, fontFamily: fontFamily, padding: "1px", borderRadius: "1px", textAlign: "center" }}>
             {renderHeader(config.headerSize, innerContent)}
         </div>
     )

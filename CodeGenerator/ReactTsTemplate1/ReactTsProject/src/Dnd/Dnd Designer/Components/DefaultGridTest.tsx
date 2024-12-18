@@ -1,11 +1,748 @@
-import { Box } from "@mui/material";
-import React, { useRef, useState, useCallback } from "react";
+
+import React, { useRef, useState, useCallback, useEffect } from "react";
 import { Responsive, WidthProvider } from "react-grid-layout";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
 
+import {
+  Card,
+  CardHeader,
+  CardContent,
+  Typography,
+  Box,
+  Grid,
+  Select,
+  MenuItem,
+  IconButton,
+  Tooltip,
+  Pagination,
+  Toolbar
+} from '@mui/material';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import { makeStyles } from '@mui/styles';
+import { ChevronRight, ChevronRightSharp, Visibility } from "@mui/icons-material";
+import { config } from "process";
 const ResponsiveGridLayout = WidthProvider(Responsive);
 // Conversion of DefaultGridTest class component
+
+
+export const CustomGridLayoutDynamicV3 = ({ 
+  rowData,
+  layoutItems,
+  filteredColumns,
+  onLayoutChange,
+  config,
+}) => {
+  console.log('filtered column',JSON.stringify(filteredColumns, null, 2));
+  console.log('config',JSON.stringify(config, null, 2));
+  const calculateTotalHeight = (layoutItems, rowHeight) => {
+    const totalRows = layoutItems.reduce((max, item) => {
+      const bottomY = item.y + item.h;
+      return bottomY > max ? bottomY : max;
+    }, 0);
+    return totalRows * rowHeight;
+  };
+
+  const totalHeight = calculateTotalHeight(layoutItems, 30); // Adjust rowHeight if needed
+
+  // Filter the columns based on the config visibility settings
+  const visibleColumns = filteredColumns.filter((column) => {
+    if (config.hasOwnProperty(`${column.field}_visible`)) {
+      return config[`${column.field}_visible`];
+    }
+    if (column.field === "edit" && config.hasOwnProperty("edit_button_visible1")) {
+      return config["edit_button_visible1"];
+    }
+    if (column.field === "delete" && config.hasOwnProperty("delete_button_visible1")) {
+      return config["delete_button_visible1"];
+    }
+    // Default to showing the column if no specific config is found
+    return true;
+  });
+
+  // return (
+  //   <Card 
+  //     variant="outlined" 
+  //     sx={{
+  //       height: totalHeight,
+  //       display: 'flex', 
+  //       flexDirection: 'column'
+  //     }}
+  //   >
+  //     <CardHeader
+  //       title={rowData.checklist_name || 'Item'}
+  //       subheader={rowData.createdAt ? `Created: ${rowData.createdAt}` : ''}
+  //       sx={{
+  //         backgroundColor: '#f5f5f5',
+  //         borderBottom: '1px solid #ccc'
+  //       }}
+  //     />
+      
+  //     <CardContent sx={{ flexGrow: 1, overflowY: 'auto' }}>
+  //       <Grid container spacing={2}>
+  //         {visibleColumns.map((column, index) => {
+  //           // Render the cell content
+  //           const cellContent = column.renderCell 
+  //             ? column.renderCell({ row: rowData, field: column.field })
+  //             : rowData[column.field];
+            
+  //           return (
+  //             <Grid item xs={12} sm={6} md={4} key={index}>
+  //               <Box display="flex" flexDirection="column">
+  //                 <Typography variant="body2" fontWeight="bold">
+  //                   {column.headerName || column.field}
+  //                 </Typography>
+  //                 <Typography variant="body2">
+  //                   {cellContent}
+  //                 </Typography>
+  //               </Box>
+  //             </Grid>
+  //           );
+  //         })}
+  //       </Grid>
+  //     </CardContent>
+  //   </Card>
+  // );
+
+  
+ 
+
+  // return (
+  //   <Card
+  //     variant="outlined"
+  //     sx={{
+  //       height: totalHeight,
+  //       display: 'flex',
+  //       flexDirection: 'column'
+  //     }}
+  //   >
+  //     <CardContent sx={{ flexGrow: 1, overflowY: 'auto', p: 2 }}>
+  
+  //       {(() => {
+  //         // Find the 'checklist_name' column for the avatar
+  //         const checklistNameCol = visibleColumns.find(col => col.field === 'checklist_name');
+  //         const createdAtCol = visibleColumns.find(col => col.field === 'createdAt');
+  
+  //         // We assume the next columns after 'checklist_name' can be used for title/snippet
+  //         const otherCols = visibleColumns.filter(col => col.field !== 'checklist_name' && col.field !== 'createdAt');
+  
+  //         // The primary text column could be the first column after checklist_name
+  //         const primaryCol = otherCols[0];
+  //         // The snippet column could be the second column after checklist_name
+  //         const snippetCol = otherCols[1];
+  
+  //         // Render cell for checklist_name
+  //         let avatarContent = checklistNameCol 
+  //           ? (checklistNameCol.renderCell 
+  //               ? checklistNameCol.renderCell({ row: rowData, field: checklistNameCol.field })
+  //               : rowData[checklistNameCol.field])
+  //           : null;
+  
+  //         // If avatarContent is a string, assume it's a URL and render an img
+  //         const isAvatarUrl = typeof avatarContent === 'string';
+          
+  //         const primaryContent = primaryCol 
+  //           ? (primaryCol.renderCell 
+  //               ? primaryCol.renderCell({ row: rowData, field: primaryCol.field })
+  //               : rowData[primaryCol.field])
+  //           : null;
+  
+  //         const snippetContent = snippetCol
+  //           ? (snippetCol.renderCell
+  //               ? snippetCol.renderCell({ row: rowData, field: snippetCol.field })
+  //               : rowData[snippetCol.field])
+  //           : null;
+  
+  //         const timeContent = createdAtCol
+  //           ? (createdAtCol.renderCell
+  //               ? createdAtCol.renderCell({ row: rowData, field: createdAtCol.field })
+  //               : rowData[createdAtCol.field])
+  //           : null;
+  
+  //         return (
+  //           <Box display="flex" alignItems="center" justifyContent="space-between">
+  //             {/* Left side - Avatar and text */}
+  //             <Box display="flex" alignItems="center">
+  //               <Box
+  //                 sx={{
+  //                   width: 40,
+  //                   height: 40,
+  //                   borderRadius: '50%',
+  //                   backgroundColor: '#ccc',
+  //                   mr: 2,
+  //                   overflow: 'hidden',
+  //                   display: 'flex',
+  //                   alignItems: 'center',
+  //                   justifyContent: 'center'
+  //                 }}
+  //               >
+  //                 {isAvatarUrl ? (
+  //                   <img 
+  //                     src={avatarContent}
+  //                     alt="Avatar"
+  //                     style={{ width: '100%', height: 'auto', objectFit: 'cover' }}
+  //                   />
+  //                 ) : (
+  //                   // If not a string URL, just render the content directly (e.g., an icon or element)
+  //                   <Box>{avatarContent}</Box>
+  //                 )}
+  //               </Box>
+  
+  //               <Box display="flex" flexDirection="column">
+  //                 {/* Primary text (e.g., name) */}
+  //                 {primaryContent && (
+  //                   <Typography variant="body1" fontWeight="bold" sx={{ lineHeight: 1.2 }}>
+  //                     {primaryContent}
+  //                   </Typography>
+  //                 )}
+  //                 {/* Snippet text */}
+  //                 {snippetContent && (
+  //                   <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.2 }}>
+  //                     {snippetContent}
+  //                   </Typography>
+  //                 )}
+  //               </Box>
+  //             </Box>
+  
+  //             {/* Right side - Time */}
+  //             {timeContent && (
+  //               <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: 'nowrap', ml: 2 }}>
+  //                 {timeContent}
+  //               </Typography>
+  //             )}
+  //           </Box>
+  //         );
+  //       })()}
+  //     </CardContent>
+  //   </Card>
+  // );
+  
+ //Working version
+   
+  // return (
+  //   <Card
+  //     variant="outlined"
+  //     sx={{
+  //       height: totalHeight,
+  //       display: 'flex',
+  //       flexDirection: 'column'
+  //     }}
+  //   >
+  //     <CardContent sx={{ flexGrow: 1, overflowY: 'auto' }}>
+  //       <Grid container spacing={2}>
+  //         {visibleColumns.map((column, index) => {
+  //           const cellContent = column.renderCell 
+  //             ? column.renderCell({ row: rowData, field: column.field })
+  //             : rowData[column.field];
+            
+  //           return (
+  //             <Grid item xs={12} sm={6} md={4} key={index}>
+  //               <Box display="flex" flexDirection="column">
+  //                 <Typography variant="body2" fontWeight="bold">
+  //                   {column.headerName || column.field}
+  //                 </Typography>
+  //                 <Typography variant="body2">
+  //                   {cellContent}
+  //                 </Typography>
+  //               </Box>
+  //             </Grid>
+  //           );
+  //         })}
+  //       </Grid>
+  //     </CardContent>
+  //   </Card>
+  // );
+
+//  Dynamic Renderer using chatgpt
+  return (
+      <DynamicComponentRenderer visibleColumns={visibleColumns}
+  rowData={rowData}
+  totalHeight={totalHeight}
+  filteredColumns={filteredColumns} config={config} />
+  );
+};
+
+// Hardcoded system prompt for component generation
+
+const DynamicComponentRenderer =({ 
+  visibleColumns,
+  rowData,
+  totalHeight,
+  config,
+  filteredColumns
+}) => {
+  const [component, setComponent] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const systemPrompt = `You are a React component generator specializing in Material-UI (MUI) components. You must maintain specific display logic for data rendering. Just Provide JSX component only no extra clarification.
+
+  Available imports:
+  - Card, CardHeader, CardContent from @mui/material
+  - Typography, Box, Grid from @mui/material
+  - Select, MenuItem from @mui/material
+  - IconButton, Tooltip from @mui/material
+  - Pagination, Toolbar from @mui/material
+  
+  Core Display Logic Requirements:
+  1. Always maintain the column mapping structure:
+     {visibleColumns.map((column, index) => {
+       const cellContent = column.renderCell 
+         ? column.renderCell({ row: rowData, field: column.field })
+         : rowData[column.field];
+     })}
+  
+  2. Preserve the Grid layout structure:
+     - Grid container with spacing
+     - Grid items with responsive breakpoints (xs, sm, md)
+     - Box wrapper for content layout
+  
+  3. Keep the base structure:
+     - Card with variant="outlined"
+     - CardContent with flexGrow and overflow handling
+     - Nested Grid system for layout
+     - Typography components for headers and content
+  
+  Styling Requirements:
+  1. Use sx prop for styling
+  2. Maintain height control: sx={{ height: totalHeight }}
+  3. Keep flex layout: sx={{ display: 'flex', flexDirection: 'column' }}
+  4. Preserve overflow handling: sx={{ flexGrow: 1, overflowY: 'auto' }}
+  
+  Data Display Pattern:
+  1. Always handle both direct field access and renderCell function
+  2. Maintain the column.headerName || column.field pattern
+  3. Keep the nested Typography structure for labels and values
+  4. Preserve the key={index} pattern for mapped elements
+  
+  Base Component Structure:
+  <Card variant="outlined" sx={{height: totalHeight, display: 'flex', flexDirection: 'column'}}>
+    <CardContent sx={{ flexGrow: 1, overflowY: 'auto' }}>
+      <Grid container spacing={2}>
+        {visibleColumns.map((column, index) => {
+          const cellContent = column.renderCell 
+            ? column.renderCell({ row: rowData, field: column.field })
+            : rowData[column.field];
+          
+          return (
+            <Grid item xs={12} sm={6} md={4} key={index}>
+              <Box display="flex" flexDirection="column">
+                <Typography variant="body2" fontWeight="bold">
+                  {column.headerName || column.field}
+                </Typography>
+                <Typography variant="body2">
+                  {cellContent}
+                </Typography>
+              </Box>
+            </Grid>
+          );
+        })}
+      </Grid>
+    </CardContent>
+  </Card>
+  
+  Any modifications should build upon this base structure while maintaining all core display logic and data handling. Also sending config and column settings for better decision`+config+'columns'+filteredColumns;
+  
+  
+  const generateComponent = async (userPrompt) => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization':,
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt }
+          ],
+          temperature: 0.7,
+          max_tokens: 8000
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`OpenAI API error: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      const componentJSX = data.choices[0].message.content;
+    
+      let componentString = data.choices[0].message.content
+      .replace(/```jsx/g, '')
+      .replace(/```/g, '')
+      .trim();
+      console.log('Generated Component',componentString);
+      // Replace dynamic values in the string
+      const evaluatedString = eval('`' + componentString + '`');
+      setComponent(evaluatedString);
+    } catch (err) {
+     // console.error('Error generating component:', err);
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    // Example prompt
+ //   const prompt = "Create grid view with tabular format and needs to look solid, hide column headers and keep only one column header like checklist_name as Image , Height auto , hide all columns except image";
+ //   generateComponent(prompt);
+  }, []);
+
+  if (isLoading) return <div className="p-4">Loading component...</div>;
+  if (error) return <div className="p-4 text-red-500">Error: {error}</div>;
+
+  return (
+    <div className="dynamic-component-container">
+     {/* <div 
+      className="dynamic-component-container"
+      dangerouslySetInnerHTML={{ __html: component }} 
+    /> */}
+    <Card variant="outlined" sx={{ height: totalHeight, display: 'flex', flexDirection: 'column' }}>
+  <CardContent sx={{ flexGrow: 1, overflowY: 'auto' }}>
+    <Grid container spacing={2}>
+      <Grid item xs={12}>
+        <Typography variant="h6" fontWeight="bold" align="center">
+          Checklist Name
+        </Typography>
+      </Grid>
+      {visibleColumns.map((column, index) => {
+        const cellContent = column.renderCell 
+          ? column.renderCell({ row: rowData, field: column.field })
+          : rowData[column.field];
+        
+        return (
+          <Grid item xs={12} sm={6} md={4} key={index}>
+            <Box display="flex" flexDirection="column">
+              <Typography variant="body2">
+                {cellContent}
+              </Typography>
+            </Box>
+          </Grid>
+        );
+      })}
+    </Grid>
+  </CardContent>
+</Card>
+    <Card variant="outlined" sx={{ height: 'auto', display: 'flex', flexDirection: 'column' }}>
+  <CardContent sx={{ flexGrow: 1, overflowY: 'auto' }}>
+    <Grid container spacing={2}>
+      {visibleColumns.map((column, index) => {
+        const cellContent = column.renderCell 
+          ? column.renderCell({ row: rowData, field: column.field })
+          : rowData[column.field];
+        
+        return (
+          <Grid item xs={12} sm={6} md={4} key={index}>
+            <Box display="flex" flexDirection="column" sx={{ bgcolor: 'background.paper', p: 2, borderRadius: 1, boxShadow: 1 }}>
+              <Typography variant="body2" fontWeight="bold" sx={{ mb: 1 }}>
+                {column.headerName || column.field}
+              </Typography>
+              <Typography variant="body2">
+                {cellContent}
+              </Typography>
+            </Box>
+          </Grid>
+        );
+      })}
+    </Grid>
+  </CardContent>
+</Card>
+    <Card variant="outlined" sx={{ height: 'auto', display: 'flex', flexDirection: 'column' }}>
+  <CardContent sx={{ flexGrow: 1, overflowY: 'auto' }}>
+    <Grid container spacing={2}>
+      {visibleColumns.filter(column => column.field === 'image').map((column, index) => {
+        const cellContent = column.renderCell 
+          ? column.renderCell({ row: rowData, field: column.field })
+          : rowData[column.field];
+        
+        return (
+          <Grid item xs={12} sm={6} md={4} key={index}>
+            <Box display="flex" flexDirection="column">
+              <Box display="flex" justifyContent="space-between" alignItems="center">
+                <IconButton aria-label="edit">
+                  <EditIcon />
+                </IconButton>
+                <IconButton aria-label="delete">
+                  <DeleteIcon />
+                </IconButton>
+              </Box>
+              <Box>
+                {cellContent}
+              </Box>
+            </Box>
+          </Grid>
+        );
+      })}
+    </Grid>
+  </CardContent>
+</Card>
+    <Card variant="outlined" sx={{ height: 'auto', display: 'flex', flexDirection: 'column' }}>
+  <CardContent sx={{ flexGrow: 1, overflowY: 'auto' }}>
+    <Grid container spacing={2}>
+      {visibleColumns.map((column, index) => {
+        const cellContent = column.renderCell 
+          ? column.renderCell({ row: rowData, field: column.field })
+          : rowData[column.field];
+          
+        return (
+          <Grid item xs={12} sm={6} md={4} key={index}>
+            <Box display="flex" flexDirection="column">
+              <Typography variant="body2" sx={{ display: 'none' }}>
+                {column.headerName || column.field}
+              </Typography>
+              <Typography variant="body2">
+                {cellContent}
+              </Typography>
+            </Box>
+          </Grid>
+        );
+      })}
+    </Grid>
+  </CardContent>
+</Card>
+    <Card variant="outlined" sx={{ height: totalHeight, display: 'flex', flexDirection: 'column' }}>
+  <CardContent sx={{ flexGrow: 1, overflowY: 'auto' }}>
+    <Grid container spacing={2}>
+      {visibleColumns.map((column, index) => {
+        const cellContent = column.renderCell 
+          ? column.renderCell({ row: rowData, field: column.field })
+          : rowData[column.field];
+        
+        return (
+          <Grid item xs={12} sm={6} md={4} key={index}>
+            <Box display="flex" flexDirection="column">
+              <Typography variant="body2" sx={{ display: 'none' }}>
+                {column.headerName || column.field}
+              </Typography>
+              <Typography variant="body2">
+                {cellContent}
+              </Typography>
+            </Box>
+          </Grid>
+        );
+      })}
+    </Grid>
+  </CardContent>
+</Card>
+      <Card
+      variant="outlined"
+      sx={{
+        height: totalHeight,
+        display: 'flex',
+        flexDirection: 'column'
+      }}
+    >
+      <CardContent sx={{ flexGrow: 1, overflowY: 'auto' }}>
+        <Grid container spacing={2}>
+          {visibleColumns.map((column, index) => {
+            const cellContent = column.renderCell 
+              ? column.renderCell({ row: rowData, field: column.field })
+              : rowData[column.field];
+            
+            return (
+              <Grid item xs={12} sm={6} md={4} key={index}>
+                <Box display="flex" flexDirection="column">
+                  <Typography variant="body2" fontWeight="bold">
+                    {column.headerName || column.field}
+                  </Typography>
+                  <Typography variant="body2">
+                    {cellContent}
+                  </Typography>
+                </Box>
+              </Grid>
+            );
+          })}
+        </Grid>
+      </CardContent>
+    </Card> <Card variant="outlined" sx={{ 
+      height: 'auto', 
+      display: 'flex', 
+      flexDirection: 'column',
+      mb: 4,
+      borderRadius: '12px',
+      boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
+    }}>
+      <CardContent sx={{ flexGrow: 1, overflowY: 'auto' }}>
+        <Grid container spacing={2}>
+          {visibleColumns.map((column, index) => (
+            <Grid item xs={12} sm={6} md={4} key={index}>
+              <Box display="flex" flexDirection="column">
+                <Box display="flex" justifyContent="space-between" alignItems="center">
+                  <Typography variant="h6" gutterBottom>
+                    {column.headerName || 'Event'}
+                  </Typography>
+                  <Box>
+                    <IconButton aria-label="edit">
+                      <EditIcon />
+                    </IconButton>
+                    <IconButton aria-label="delete">
+                      <DeleteIcon />
+                    </IconButton>
+                  </Box>
+                </Box>
+                <Box sx={{ mt: 2 }}>
+                  {column.renderCell ? column.renderCell({ row: rowData, field: column.field }) : rowData[column.field]}
+                </Box>
+              </Box>
+            </Grid>
+          ))}
+        </Grid>
+      </CardContent>
+    </Card>
+
+    {/* Blog Style Card */}
+    <Card variant="outlined" sx={{ 
+      height: 'auto', 
+      display: 'flex', 
+      flexDirection: 'column',
+      mb: 4,
+      borderRadius: '8px',
+      bgcolor: '#fff'
+    }}>
+      <CardContent sx={{ flexGrow: 1, overflowY: 'auto' }}>
+        <Grid container spacing={2}>
+          {visibleColumns.map((column, index) => (
+            <Grid item xs={12} sm={6} md={4} key={index}>
+              <Box display="flex" flexDirection="column" sx={{ p: 2, bgcolor: '#f5f5f5', borderRadius: '4px' }}>
+                <Typography variant="overline" color="text.secondary">
+                  {column.headerName || column.field}
+                </Typography>
+                <Box sx={{ mt: 2 }}>
+                  {column.renderCell ? column.renderCell({ row: rowData, field: column.field }) : rowData[column.field]}
+                </Box>
+              </Box>
+            </Grid>
+          ))}
+        </Grid>
+      </CardContent>
+    </Card>
+
+    {/* Social Media Style Card */}
+    <Card variant="outlined" sx={{ 
+      height: 'auto', 
+      display: 'flex', 
+      flexDirection: 'column',
+      mb: 4,
+      borderRadius: '8px'
+    }}>
+      <CardHeader
+        action={
+          <Box>
+            <IconButton aria-label="edit">
+              <EditIcon />
+            </IconButton>
+            <IconButton aria-label="delete">
+              <DeleteIcon />
+            </IconButton>
+          </Box>
+        }
+      />
+      <CardContent sx={{ flexGrow: 1, overflowY: 'auto' }}>
+        <Grid container spacing={2}>
+          {visibleColumns.map((column, index) => (
+            <Grid item xs={12} key={index}>
+              <Box display="flex" flexDirection="column" sx={{ borderBottom: '1px solid #eee', pb: 2 }}>
+                <Box sx={{ mb: 2 }}>
+                  {column.renderCell ? column.renderCell({ row: rowData, field: column.field }) : rowData[column.field]}
+                </Box>
+              </Box>
+            </Grid>
+          ))}
+        </Grid>
+      </CardContent>
+    </Card>
+
+    {/* Netflix Style Card */}
+    <Card variant="outlined" sx={{ 
+      height: 'auto', 
+      display: 'flex', 
+      flexDirection: 'column',
+      mb: 4,
+      borderRadius: '4px',
+      bgcolor: '#141414',
+      color: 'white'
+    }}>
+      <CardContent sx={{ flexGrow: 1, overflowY: 'auto' }}>
+        <Grid container spacing={2}>
+          {visibleColumns.map((column, index) => (
+            <Grid item xs={12} sm={6} md={3} key={index}>
+              <Box 
+                display="flex" 
+                flexDirection="column" 
+                sx={{ 
+                  position: 'relative',
+                  '&:hover': {
+                    transform: 'scale(1.05)',
+                    zIndex: 1
+                  }
+                }}
+              >
+                <Box>
+                  {column.renderCell ? column.renderCell({ row: rowData, field: column.field }) : rowData[column.field]}
+                </Box>
+                <Box 
+                  sx={{ 
+                    position: 'absolute',
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    bgcolor: 'rgba(0,0,0,0.8)',
+                    p: 1
+                  }}
+                >
+                  <Typography variant="body2">
+                    {column.headerName || column.field}
+                  </Typography>
+                </Box>
+              </Box>
+            </Grid>
+          ))}
+        </Grid>
+      </CardContent>
+    </Card>
+
+    {/* Twitter Style Card */}
+    <Card variant="outlined" sx={{ 
+      height: 'auto', 
+      display: 'flex', 
+      flexDirection: 'column',
+      mb: 4,
+      borderRadius: '16px',
+      p: 2
+    }}>
+      <CardContent sx={{ flexGrow: 1, overflowY: 'auto' }}>
+        <Grid container spacing={2}>
+          {visibleColumns.map((column, index) => (
+            <Grid item xs={12} key={index}>
+              <Box display="flex" alignItems="flex-start" sx={{ mb: 2 }}>
+                <Box sx={{ ml: 2, flex: 1 }}>
+                  <Typography variant="subtitle1" component="div">
+                    {column.headerName || column.field}
+                  </Typography>
+                  <Box sx={{ mt: 1 }}>
+                    {column.renderCell ? column.renderCell({ row: rowData, field: column.field }) : rowData[column.field]}
+                  </Box>
+                </Box>
+              </Box>
+            </Grid>
+          ))}
+        </Grid>
+      </CardContent>
+    </Card>
+  </div>
+  );
+};
+
+export default DynamicComponentRenderer;
+
 
 export const CustomGridLayout = ({ layoutItems }) => {
   return (
@@ -108,7 +845,8 @@ export const CustomGridLayoutDynamicV2 = ({
     }, 0);
     return totalRows * rowHeight;
   };
-
+  console.log('Filtered Columns',JSON.stringify(filteredColumns, null, 2));
+  console.log('config',JSON.stringify(filteredColumns, null, 2));
   const totalHeight = calculateTotalHeight(layoutItems, 30); // Assuming rowHeight is 30
 
   return (
@@ -287,3 +1025,7 @@ export const InnerRefCallbackTest = () => {
 
   return <ResponsiveGridLayout innerRef={handleRef} />;
 };
+function useStyles() {
+  throw new Error("Function not implemented.");
+}
+

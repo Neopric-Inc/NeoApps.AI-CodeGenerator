@@ -1766,26 +1766,24 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\kaiva\\.nuget\\packages\\": {}
+    "C:\\Users\\HP\\.nuget\\packages\\": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\kaiva\\source\\repos\\NeoApps.AI-Codegenerator-Github-Repo\\NeoApps.AI-CodeGenerator\\CodeGenerator\\NoCodeAppGenerator.csproj",
+      "projectUniqueName": "C:\\Projects\\Final project\\NeoApps.AI-CodeGenerator\\CodeGenerator\\NoCodeAppGenerator.csproj",
       "projectName": "NoCodeAppGenerator",
-      "projectPath": "C:\\Users\\kaiva\\source\\repos\\NeoApps.AI-Codegenerator-Github-Repo\\NeoApps.AI-CodeGenerator\\CodeGenerator\\NoCodeAppGenerator.csproj",
-      "packagesPath": "C:\\Users\\kaiva\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\kaiva\\source\\repos\\NeoApps.AI-Codegenerator-Github-Repo\\NeoApps.AI-CodeGenerator\\CodeGenerator\\obj\\",
+      "projectPath": "C:\\Projects\\Final project\\NeoApps.AI-CodeGenerator\\CodeGenerator\\NoCodeAppGenerator.csproj",
+      "packagesPath": "C:\\Users\\HP\\.nuget\\packages\\",
+      "outputPath": "C:\\Projects\\Final project\\NeoApps.AI-CodeGenerator\\CodeGenerator\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "C:\\Users\\kaiva\\AppData\\Roaming\\NuGet\\NuGet.Config",
-        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+        "C:\\Users\\HP\\AppData\\Roaming\\NuGet\\NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "netcoreapp6.0"
       ],
       "sources": {
-        "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
         "https://api.nuget.org/v3/index.json": {}
       },
       "frameworks": {
@@ -1798,7 +1796,13 @@
         "warnAsError": [
           "NU1605"
         ]
-      }
+      },
+      "restoreAuditProperties": {
+        "enableAudit": "true",
+        "auditLevel": "low",
+        "auditMode": "all"
+      },
+      "SdkAnalysisLevel": "9.0.100"
     },
     "frameworks": {
       "net6.0": {
@@ -1857,8 +1861,20 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\7.0.203\\RuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.100\\RuntimeIdentifierGraph.json"
       }
     }
-  }
+  },
+  "logs": [
+    {
+      "code": "NU1904",
+      "level": "Warning",
+      "warningLevel": 1,
+      "message": "Package 'System.Drawing.Common' 4.7.0 has a known critical severity vulnerability, https://github.com/advisories/GHSA-rxg9-xrhp-64gj",
+      "libraryId": "System.Drawing.Common",
+      "targetGraphs": [
+        "net6.0"
+      ]
+    }
+  ]
 }

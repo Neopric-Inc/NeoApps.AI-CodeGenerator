@@ -3,7 +3,8 @@
     "NoCodeAppGenerator": {
       "commandName": "Project",
       "environmentVariables": {
-        "PARAMETER": "{project_id:1,server:localhost,uid:1,username:root,password:,databaseName:splitthebill,script:http://localhost/split_app_script.sql,statusOfGeneration:null,projectName:ContentPlannerTest,DBexists:No,port:3306,rabbitMQConn:amqp://user12345:12345@localhost:5672/,redisConn:localhost:6379,password=12345,apiflowurl:,fronttemplateurl:,Technology_Frontend:,Backend_technology:dotnet,buttonClicked:generate,projectType:,swgurl:,noderedurl:null}",
+        "PARAMETER": "{project_id:1,server:localhost,uid:1,username:root,password:,databaseName:dataroom,script:http://localhost/dataroom.sql,statusOfGeneration:,projectName:DataRoomApp,DBexists:Yes,port:3306,rabbitMQConn:https://localhost:5001/v1/api/,redisConn:localhost:6379,password=yourredispassword,apiflowurl:,fronttemplateurl:,Technology_Frontend:reactts,Backend_technology:,buttonClicked:generate,projectType:dnd,swgurl:,noderedurl:}"
+
       },
         "remoteDebugEnabled": false
       }

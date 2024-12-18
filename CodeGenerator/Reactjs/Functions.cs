@@ -910,6 +910,7 @@ useEffect(() => {{
                                     < Field name = ""{col}"" >
                                       { ({ field }) => (
                                         < ReactQuill
+                                          className={classes.richTextEditor}
                                           value ={ field.value}
                     onChange ={
                         (newValue) =>
