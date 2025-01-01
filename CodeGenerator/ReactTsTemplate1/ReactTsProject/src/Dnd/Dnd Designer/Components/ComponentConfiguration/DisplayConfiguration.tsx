@@ -1,23 +1,16 @@
-import React, { useRef, useState, useEffect } from "react";
-import { useDrag } from "react-dnd";
+import React, { useState, useEffect } from "react";
 import { useAppDispatch } from "redux/store";
 import { useSelector } from "react-redux";
 import { RootState } from "redux/reducers";
-import { MdHelp } from "react-icons/md";
-import { Tooltip as ReactTooltip } from "react-tooltip";
-import { Row, Col, Form } from "react-bootstrap";
 import GridView1 from "./gridView1";
 import KanbanView from "./kanbanView";
 import { DemoViews } from "components/static";
 import {
-    ErrorControlList,
     getColumnNameList,
     getViewList,
     displayControlList,
 } from "Dnd/Dnd Designer/Utility/constants";
 // import Tooltip from "@mui/material/Tooltip";
-import IconButton from "@mui/material/IconButton";
-import RemoveIcon from "@mui/icons-material/Remove";
 import {
     Checkbox,
     Table,
@@ -33,21 +26,15 @@ import {
     InputLabel,
     Select,
     MenuItem,
-    Divider,
-    Grid,
-    Typography,
     Popover,
     Box,
-    Tooltip,
     RadioGroup,
     Radio,
     FormControlLabel,
     FormLabel,
 } from "@mui/material";
-import { Help } from "@mui/icons-material";
 import {
     getS3bucket,
-    filterS3bucketWithColumns,
 } from "services/s3bucketService";
 import {
     setS3bucketList,
@@ -127,19 +114,7 @@ const DisplayConfig = ({
             refcol[index] = null;
         }
     });
-    //   let refcol = [];
-    //   options.forEach((option, index) => {
-    //     if (option.fkey) {
-    //       refcol[index] = getColumnNameList(option.slice);
-    //     } else {
-    //       refcol[index] = null;
-    //     }
-    //   });
-    // {
-    //   list: [
-    //     { bucket_id: 1, bucket_name: "main", bucket_url: "sdfdfdfdfdfdfdf" },
-    //   ],
-    // };
+  
     const [value, setValue] = useState("");
     const [flag, setflag] = useState(false);
     const changeRender = () => {
@@ -205,25 +180,7 @@ const DisplayConfig = ({
             ""
         );
     }, []);
-    //     const urlList = s3bucketData1.list.filter(
-    //         (dict, index, self) =>
-    //             self.findIndex((d) => d.bucket_url === dict.bucket_url) === index
-    //     );
-    //    //console.log(urlList);
-    //     const [s3bucketData, sets3bucketData] = useState(s3bucketData1);
-
-    //     const filterBucketName = (eurl) => {
-    //         const filteredData = s3bucketData1.list.filter(
-    //             (e) => e.bucket_url === eurl
-    //         );
-    //         sets3bucketData({ ...s3bucketData1, list: filteredData });
-    //     };
-    //     const handleChange = (event) => {
-    //         setValue(event.target.value);
-    //         ////console.log("e.target.name :", event.target.name);
-    //         customConfig[componentId][inputType] = event.target.value;
-    //     };
-
+    
     const [selectedView, setselectedView] = useState("defaultView");
     if (
         nconfig[componentId][`selectedView`] !== null &&

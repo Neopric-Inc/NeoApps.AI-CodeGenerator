@@ -1,5 +1,4 @@
 ﻿import React, { useState,useEffect } from "react";
-//import { Alert, Button } from "react-bootstrap";
 import { useSelector } from "react-redux";
 import { set{modelName}List, set{modelName}Message,reset{modelName}ToInit } from "redux/actions";
 import { RootState } from "redux/reducers";
@@ -17,7 +16,7 @@ import {
   useRowSelector,
   getRowElement,
 } from "Dnd/Dnd Designer/Utility/constants";
-//import TableSkeleton from "./../skeletone";
+
 
 export const {modelName}{viewName} = (props) => {
   let config = props.config;
@@ -228,54 +227,6 @@ export const {modelName}{viewName} = (props) => {
 const columnDefinitions=[{tableColumn}];
 
 return (
-  /*  <div>
-      <div className="container-fluid">
-        <div className="d-sm-flex align-items-center justify-content-between mb-4">
-          <div
-            style={{
-              backgroundColor: backgroundColor,
-              color: color,
-              fontFamily: fontFamily,
-              padding: "6px",
-              borderRadius: "6px",
-              textAlign: "center",
-            }}
-          >
-            {renderHeader(config.headerSize, innerContent)}
-          
-          </div>
-        </div>
-        <div className="d-flex flex-column min-vh-100">
-          {rData.message && (
-            <Alert
-              variant={Constant.defaultAlertVarient}
-              className="alert-dismissible fade"
-              onClose={() => dispatch(set{modelName}Message(""))}
-              sx={{ mt: 2 }}
-            >
-              {rData.message}
-            </Alert>
-          )}
-          {action ? (
-            <{modelName}Form
-              hideShowForm={setAction}
-              action={action}
-              row={row}
-              config={config}
-              getData={getData}
-            />
-          ) : (
-            <{modelName}Table
-              columnDefinitions={columnDefinitions}
-              handleRowEdit={handleRowEdit}
-              hideShowForm={setAction}
-              getData={getData}
-              config={config}
-            />
-          )}
-        </div>
-      </div>
-    </div>*/
 
 
     <div>

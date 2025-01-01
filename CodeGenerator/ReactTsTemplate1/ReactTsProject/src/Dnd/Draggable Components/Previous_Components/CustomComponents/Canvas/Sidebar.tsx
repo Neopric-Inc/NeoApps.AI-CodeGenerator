@@ -1,8 +1,7 @@
-import React, { useRef, useState } from 'react';
-import { useDrag, useDrop, DndProvider } from 'react-dnd';
+import React, { useState } from 'react';
+import { useDrop, DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { COMPONENT, SIDEBAR_ITEM, functionTOmap } from "Dnd/Dnd Designer/Utility/constants";
-import { Button } from 'react-bootstrap';
 import "./style.css";
 
 const SideBar = () => {
@@ -32,16 +31,6 @@ const SideBar = () => {
         })
     })
 
-
-    // const [{ isDragging }, drag] = useDrag({
-    //     type: "AUTOCOMPLETE",
-    //     item: { type: "AUTOCOMPLETE" },
-    //     collect: monitor => ({
-    //         isDragging: monitor.isDragging()
-    //     })
-    // });
-    // const opacity = isDragging ? 0.3 : 1;
-    // drag(ref);
 
     return (
         <>

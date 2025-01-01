@@ -1,36 +1,16 @@
-import type { FC } from "react";
-import { useMemo, useState } from "react";
-import PropTypes from "prop-types";
-import dayjs from "dayjs";
+import { useState } from "react";
 //import toast from "react-hot-toast";
-import { addMinutes } from "date-fns";
-import * as Yup from "yup";
-import { useFormik } from "formik";
 import {
   Box,
   Button,
   Dialog,
   Divider,
-  FormControlLabel,
-  FormHelperText,
-  Grid,
-  IconButton,
-  MenuItem,
-  Select,
-  Switch,
   TextField,
   Typography,
 } from "@mui/material";
 // import DateTimePicker from "@mui/lab/DateTimePicker";
-import { Trash as TrashIcon } from "components/icons/trash";
 import { useDispatch } from "react-redux";
 // import LocalizationProvider from "@mui/lab/LocalizationProvider";
-import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-import AdapterDateFns from "@mui/lab/AdapterDateFns";
-import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
-import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
-import ReactQuill from "react-quill";
-import { DatePicker } from "@mui/x-date-pickers";
 
 export const ImportConfigDialog = (props) => {
   const { nconfig, componentId, onClose, open, customConfig } = props;

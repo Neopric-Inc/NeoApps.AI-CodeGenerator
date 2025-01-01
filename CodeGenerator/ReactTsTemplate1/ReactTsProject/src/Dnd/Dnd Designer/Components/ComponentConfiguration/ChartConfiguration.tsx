@@ -1,113 +1,29 @@
-import React, { useRef, useState, useEffect } from "react";
-import { useDrag } from "react-dnd";
+import React, { useState, useEffect } from "react";
 import { useAppDispatch } from "redux/store";
-import { useSelector } from "react-redux";
-import { RootState } from "redux/reducers";
-import { MdHelp } from "react-icons/md";
-import { Tooltip as ReactTooltip } from "react-tooltip";
-import { Row, Col, Form } from "react-bootstrap";
-import {
-  ErrorControlList,
-  getColumnNameList,
-  displayControlList,
-} from "Dnd/Dnd Designer/Utility/constants";
 // import Tooltip from "@mui/material/Tooltip";
 import IconButton from "@mui/material/IconButton";
-import RemoveIcon from "@mui/icons-material/Remove";
 import { SketchPicker } from "react-color";
 import { IoIosColorPalette } from "react-icons/io";
 import {
   Checkbox,
   Table,
-  Button,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
-  TextField,
   Paper,
   FormControl,
   InputLabel,
   Select,
   MenuItem,
-  Divider,
-  Grid,
   Typography,
   Popover,
-  Box,
-  Tooltip,
 } from "@mui/material";
-import { Help } from "@mui/icons-material";
-import {
-  getS3bucket,
-  filterS3bucketWithColumns,
-} from "services/s3bucketService";
-import {
-  setS3bucketList,
-  setS3bucketMessage,
-  resetS3bucketToInit,
-} from "redux/actions";
-import { Constant } from "template/Constant";
 import { getAllChartData } from "services/flowService";
 
 const dataset1 = null;
-const dataset = {
-  Simple_PieChart: [
-    "/flows/Simple_PieChart/hello1",
-    "/flows/Simple_PieChart/hello2",
-    "/flows/Simple_PieChart/hello3",
-  ],
-  Simple_BarChart: [
-    "/flows/Simple_BarChart/data1",
-    "/flows/Simple_BarChart/data2",
-  ],
-  Simple_LineChart: [
-    "/flows/Simple_LineChart/line1",
-    "/flows/Simple_LineChart/line2",
-    "/flows/Simple_LineChart/line3",
-  ],
-  Shadow_LineChart: [
-    "/flows/Shadow_LineChart/line1",
-    "/flows/Shadow_LineChart/line2",
-    "/flows/Shadow_LineChart/line3",
-  ],
-  Simple_BarChart2: [
-    "/flows/Simple_BarChart2/data1",
-    "/flows/Simple_BarChart2/data2",
-    "/flows/Simple_BarChart2/data3",
-  ],
-  Complex_LineChart: [
-    "/flows/Complex_LineChart/line1",
-    "/flows/Complex_LineChart/line2",
-    "/flows/Complex_LineChart/line3",
-  ],
-  Complex_PieChart: [
-    "/flows/Complex_PieChart/hello1",
-    "/flows/Complex_PieChart/hello2",
-    "/flows/Complex_PieChart/hello3",
-  ],
-  Straight_LineChart: [
-    "/flows/Straight_LineChart/line1",
-    "/flows/Straight_LineChart/line2",
-    "/flows/Straight_LineChart/line3",
-  ],
-  Simple_PieChart2: [
-    "/flows/Simple_PieChart2/hello1",
-    "/flows/Simple_PieChart2/hello2",
-    "/flows/Simple_PieChart2/hello3",
-  ],
-  Horizontal_BarChart: [
-    "/flows/Horizontal_BarChart/data1",
-    "/flows/Horizontal_BarChart/data2",
-  ],
-  Multi_BarChart: [
-    "/flows/Multi_BarChart/data1",
-    "/flows/Multi_BarChart/data2",
-  ],
 
-  // Add more flows for other charts as needed
-};
 export const ChartSelector = ({
   nconfig,
   componentId,
@@ -129,9 +45,6 @@ export const ChartSelector = ({
     getData();
   }, []);
 
- //console.log(apidata);
- //console.log(chartOptions);
-  // Initialize state values based on default values or customConfig
   const [selectedChart, setSelectedChart] = useState(
     customConfig[componentId]?.chart || ""
   );

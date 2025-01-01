@@ -1,6 +1,6 @@
 import { ButtonComponent } from '@syncfusion/ej2-react-buttons';
 import { AnimationSettingsModel, DialogComponent } from '@syncfusion/ej2-react-popups';
-import { QueryBuilderComponent, RuleModel } from '@syncfusion/ej2-react-querybuilder';
+import { QueryBuilderComponent } from '@syncfusion/ej2-react-querybuilder';
 import { AxiosResponse } from 'axios';
 import { useEffect, useState } from 'react';
 import { getAll{modelName} } from 'services/{tableName}Service';
@@ -11,11 +11,7 @@ export const {componentName}: React.FC = () => {
     let dialogInstance: DialogComponent;
     let animationSettings: AnimationSettingsModel = { effect: 'Zoom', duration: 400, delay: 0 };
     const [data, setData] = useState<AxiosResponse>(null);
-    let ButtonOptions = {
-        groupDelete: true,
-        groupInsert: true,
-        ruleDelete: true
-    };
+    
 
     function getSql(): void {
         dialogInstance.content = qryBldrObj.getSqlFromRules(qryBldrObj.getRules());

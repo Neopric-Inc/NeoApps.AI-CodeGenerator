@@ -1,8 +1,6 @@
 import type { FC } from "react";
 import { addDays, addHours, differenceInDays, isAfter } from "date-fns";
 import {
-  Avatar,
-  AvatarGroup,
   Box,
   Card,
   CardHeader,
@@ -12,7 +10,6 @@ import {
   List,
   ListItem,
   ListItemText,
-  Tooltip,
 } from "@mui/material";
 import { DotsHorizontal as DotsHorizontalIcon } from "components/icons/dots-horizontal";
 

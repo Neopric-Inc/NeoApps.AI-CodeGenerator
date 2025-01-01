@@ -23,24 +23,18 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
-  List,
   ListItem,
   ListItemText,
   Grid,
-  InputAdornment,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import CloseIcon from "@mui/icons-material/Close";
 import { SidebarComponent } from "@syncfusion/ej2-react-navigations";
-import { ButtonComponent } from "@syncfusion/ej2-react-buttons";
-import { TextBoxComponent } from "@syncfusion/ej2-react-inputs";
 import { Popup } from "./../Component";
 // import "./style.css";
 import { registerLicense } from "@syncfusion/ej2-base";
 import IconButton from "@mui/material/IconButton";
 import Divider from "@mui/material/Divider";
-import Drawer from "@mui/material/Drawer";
-import ListItemIcon from "@mui/material/ListItemIcon";
 import SwipeableDrawer from "@mui/material/SwipeableDrawer";
 import MenuIcon from "@mui/icons-material/Menu";
 import { Tooltip } from "@mui/material";
@@ -548,71 +542,8 @@ const Sidebar = ({
           </AccordionDetails>
           <Divider />
           <AccordionDetails>
-            {/* Dev1 For all threee edit field liek this */}
-            {/* <List sx={{ width: "60vw", maxHeight: "65vh", overflow: "auto" }}>
-              {links.map((link, index) => (
-                <React.Fragment key={link.id}>
-                  {editing === link.id ? (
-                    <>
-                      <Grid
-                        container
-                        spacing={2}
-                        sx={{ justifyContent: "space-between", my: 2 }}
-                      >
-                        <Grid item xs={12} md={12}>
-                          <Input
-                            id="pageName"
-                            placeholder={link.name}
-                            onChange={handleonChange}
-                            defaultValue={pageName}
-                            fullWidth
-                            endAdornment={
-                              <InputAdornment position="end">
-                                <Button
-                                  variant="text"
-                                  size="medium"
-                                  onClick={handleonClick}
-                                >
-                                  Change
-                                </Button>
-                              </InputAdornment>
-                            }
-                          />
-                        </Grid>
-                      </Grid>
-                    </>
-                  ) : (
-                    renderListItem(link, index)
-                  )}
-                  {link.submenu !== undefined &&
-                    index === openS &&
-                    link.submenu.map((sublink, subindex) => (
-                      <React.Fragment key={sublink.id}>
-                        {editing === sublink.id ? (
-                          <Box sx={{ mb: 2 }}>
-                            <Input
-                              id="pageName"
-                              placeholder={sublink.name}
-                              onChange={handleonChange}
-                              defaultValue={pageName}
-                              fullWidth
-                            />
-                            <Button
-                              variant="contained"
-                              fullWidth
-                              onClick={(e) => handleonSubClick(e, link.id)}
-                            >
-                              Change
-                            </Button>
-                          </Box>
-                        ) : (
-                          renderSubListItem(sublink, index, subindex)
-                        )}
-                      </React.Fragment>
-                    ))}
-                </React.Fragment>
-              ))}
-            </List> */}
+            {}
+            {}
             <TreeView
               defaultCollapseIcon={<ExpandMoreIcon />}
               defaultExpandIcon={<ChevronRightIcon />}
@@ -837,42 +768,7 @@ const Sidebar = ({
           </AccordionDetails>
           <Divider />
           <AccordionDetails>
-            {/* <List sx={{ width: "60vw", maxHeight: "65vh", overflow: "auto" }}>
-              {popuplinks.map((sublink, subindex) => (
-                <React.Fragment key={sublink.id}>
-                  {editing === sublink.id ? (
-                    <Grid
-                      container
-                      spacing={2}
-                      sx={{ justifyContent: "space-between", my: 2 }}
-                    >
-                      <Grid item xs={12} md={12}>
-                        <Input
-                          id="pageName"
-                          placeholder={sublink.name}
-                          onChange={handleonChange}
-                          defaultValue={pageName}
-                          fullWidth
-                          endAdornment={
-                            <InputAdornment position="end">
-                              <Button
-                                variant="text"
-                                size="medium"
-                                onClick={handleonpopupClick}
-                              >
-                                Change
-                              </Button>
-                            </InputAdornment>
-                          }
-                        />
-                      </Grid>
-                    </Grid>
-                  ) : (
-                    renderPopListItem(sublink, subindex)
-                  )}
-                </React.Fragment>
-              ))}
-            </List> */}
+            {}
             <TreeView sx={{ width: "60vw", maxHeight: "65vh" }}>
               {popuplinks.map((sublink, subindex) => (
                 <TreeItem
@@ -990,42 +886,7 @@ const Sidebar = ({
           </AccordionDetails>
           <Divider />
           <AccordionDetails>
-            {/* <List sx={{ width: "60vw", maxHeight: "65vh", overflow: "auto" }}>
-              {drawerlinks.map((sublink, subindex) => (
-                <React.Fragment key={sublink.id}>
-                  {editing === sublink.id ? (
-                    <Grid
-                      container
-                      spacing={2}
-                      sx={{ justifyContent: "space-between", my: 2 }}
-                    >
-                      <Grid item xs={12} md={12}>
-                        <Input
-                          id="pageName"
-                          placeholder={sublink.name}
-                          onChange={handleonChange}
-                          defaultValue={pageName}
-                          fullWidth
-                          endAdornment={
-                            <InputAdornment position="end">
-                              <Button
-                                variant="text"
-                                size="medium"
-                                onClick={handleondrawerClick}
-                              >
-                                Change
-                              </Button>
-                            </InputAdornment>
-                          }
-                        />
-                      </Grid>
-                    </Grid>
-                  ) : (
-                    renderDrawerListItem(sublink, subindex)
-                  )}
-                </React.Fragment>
-              ))}
-            </List> */}
+            {}
             <TreeView sx={{ width: "60vw", maxHeight: "65vh" }}>
               {drawerlinks.map((sublink, subindex) => (
                 <TreeItem
@@ -1143,42 +1004,7 @@ const Sidebar = ({
           </AccordionDetails>
           <Divider />
           <AccordionDetails>
-            {/* <List sx={{ width: "60vw", maxHeight: "65vh", overflow: "auto" }}>
-              {Componentlinks.map((sublink, subindex) => (
-                <React.Fragment key={sublink.id}>
-                  {editing === sublink.id ? (
-                    <Grid
-                      container
-                      spacing={2}
-                      sx={{ justifyContent: "space-between", my: 2 }}
-                    >
-                      <Grid item xs={12} md={12}>
-                        <Input
-                          id="pageName"
-                          placeholder={sublink.name}
-                          onChange={handleonChange}
-                          defaultValue={pageName}
-                          fullWidth
-                          endAdornment={
-                            <InputAdornment position="end">
-                              <Button
-                                variant="text"
-                                size="medium"
-                                onClick={handleonComponentClick}
-                              >
-                                Change
-                              </Button>
-                            </InputAdornment>
-                          }
-                        />
-                      </Grid>
-                    </Grid>
-                  ) : (
-                    renderComponentListItem(sublink, subindex)
-                  )}
-                </React.Fragment>
-              ))}
-            </List> */}
+            {}
             <TreeView sx={{ width: "60vw", maxHeight: "65vh" }}>
               {componentlinks.map((sublink, subindex) => (
                 <TreeItem

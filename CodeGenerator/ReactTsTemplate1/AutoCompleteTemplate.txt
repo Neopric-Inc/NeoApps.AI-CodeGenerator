@@ -1,19 +1,15 @@
-import { AutoCompleteComponent, DropDownListComponent } from '@syncfusion/ej2-react-dropdowns';
-import { AxiosResponse } from 'axios';
-import { useEffect, useRef, useState } from 'react';
+import { AutoCompleteComponent } from '@syncfusion/ej2-react-dropdowns';
+import { useEffect, useState } from 'react';
 import { getAll{modelName} } from 'services/{tableName}Service';
 import './style.css'
-import { DndProvider, useDrag } from 'react-dnd';
-import { SIDEBAR_ITEM } from 'Dnd/Dnd Designer/Utility/constants';
+import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 
 export const {componentName}: React.FC = () => {
-    const ref = useRef(null);
-
+   
     const [data, setData] = useState([]);
     const [content, setContent] = useState([]);
-    const fields: object = { text: '{secondaryKeyList}', value: '{primaryKeyList}' };
-
+    
     useEffect(() => {
         getAll{modelName}(1, 100).then(
             data => {
@@ -23,13 +19,6 @@ export const {componentName}: React.FC = () => {
             }
         )
     }, [])
-
-    let itemTemplate = (data: any): JSX.Element => {
-       //console.log("Item Template data :- ", data)
-        return (
-            <span><span className='name'>{data.{primaryKeyList}}</span><span className='city'>{data.{secondaryKeyList}}</span></span>
-        );
-    }
 
 
     return (
@@ -48,53 +37,3 @@ export const {componentName}: React.FC = () => {
         </DndProvider>
     )
 }
-
-
-// fields={fields}
-// popupHeight="250px"
-// popupWidth="350px"
-// width="350px"
-// change={onChange}
-
-
-// import { AutoCompleteComponent, DropDownListComponent } from '@syncfusion/ej2-react-dropdowns';
-// import { AxiosResponse } from 'axios';
-// import { useEffect, useState } from 'react';
-// import { getAllBackend_Stacks } from 'services/{tableName}Service';
-// import './style.css'
-
-// export const AutoComplete: React.FC = () => {
-//     const [data, setData] = useState([]);
-//     const [content, setContent] = useState([]);
-//     const fields: object = { text: '{secondaryKeyList}', value: '{primaryKeyList}' };
-
-//     useEffect(() => {
-//         getAllBackend_Stacks(1, 100).then(
-//             data => {
-//                 setData(data.data.document.records);
-//                 setContent((data.data.document.records).map(obj => obj.{secondaryKeyList}));
-//                //console.log("data :- ", data);
-//             }
-//         )
-//     }, [])
-
-//     let itemTemplate = (data: any): JSX.Element => {
-//        //console.log("Item Template data :- ", data)
-//         return (
-//             <span><span className='name'>{data.{primaryKeyList}}</span><span className='city'>{data.{secondaryKeyList}}</span></span>
-//         );
-//     }
-
-//     return (
-//         <div>
-//             <h1>Autocompletion</h1>
-//             <AutoCompleteComponent id="atcelement"
-//                 dataSource={content}
-//                 placeholder="Type a Field Name"
-//                 width="350px"
-//             // itemTemplate={itemTemplate = itemTemplate.bind(this)}
-//             />
-//             <hr />
-//         </div>
-//     )
-// }

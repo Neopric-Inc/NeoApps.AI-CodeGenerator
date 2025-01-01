@@ -7,8 +7,6 @@ import { useAppDispatch } from "redux/store";
 import { setJWTToken } from "redux/actions";
 import { setError } from "redux/slices/auth";
 import { tokenAPICALL } from "services/authService";
-import CloseIcon from "@mui/icons-material/Close";
-import IconButton from "@mui/material/IconButton";
 import * as yup from "yup";
 import {
     Box,

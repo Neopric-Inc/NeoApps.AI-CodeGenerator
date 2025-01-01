@@ -1,5 +1,4 @@
 import { DropDownListComponent } from '@syncfusion/ej2-react-dropdowns';
-import { AxiosResponse } from 'axios';
 import { useEffect, useState } from 'react';
 import { getAll{modelName} } from 'services/{tableName}Service';
 import './style.css'
@@ -37,16 +36,12 @@ export const {componentName}: React.FC = () => {
         );
     }
     const onChange = (args) => {
-       //console.log("Selected Data Item :- ", args.itemData);
     }
     return (
         <DropDownListComponent id='ddlelement'
             dataSource={data}
             fields={fields}
             placeholder="Select a Field"
-            //popupHeight="250px"
-            //popupWidth="350px"
-            //width="350px"
             headerTemplate={headerTemplate = headerTemplate.bind(this)}
             itemTemplate={itemTemplate = itemTemplate.bind(this)}
             actionFailureTemplate={failureTemplate = failureTemplate.bind(this)}
