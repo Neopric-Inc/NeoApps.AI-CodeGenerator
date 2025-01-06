@@ -4378,8 +4378,8 @@ WHERE kcu.TABLE_NAME = '" + tbl + "' AND kcu.TABLE_SCHEMA='" + databaseName + "'
                     {
                         continue;
                     }
-                    if (!Directory.Exists(@des + "/src/components/" + tbl))
-                        Directory.CreateDirectory(@des + "/src/components/" + tbl);
+                    // if (!Directory.Exists(@des + "/src/components/" + tbl))
+                    //     Directory.CreateDirectory(@des + "/src/components/" + tbl);
                     if (!Directory.Exists(@des + "/src/redux/slices/" + tbl))
                         Directory.CreateDirectory(@des + "/src/redux/slices/" + tbl);
                 }

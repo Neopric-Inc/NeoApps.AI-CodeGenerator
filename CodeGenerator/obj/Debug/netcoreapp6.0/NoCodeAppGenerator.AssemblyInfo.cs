@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("NoCodeAppGenerator")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+839e0233051e0286eab9d8244e4f795abc75de84")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+ec01993054c462e2f8aa65d06cf38b3cabbf5732")]
 [assembly: System.Reflection.AssemblyProductAttribute("NoCodeAppGenerator")]
 [assembly: System.Reflection.AssemblyTitleAttribute("NoCodeAppGenerator")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
