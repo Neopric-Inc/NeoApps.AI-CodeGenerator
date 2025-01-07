@@ -1,5 +1,7 @@
 
 import React, { useRef, useState, useCallback, useEffect } from "react";
+
+import React, { useRef, useState, useCallback, useEffect } from "react";
 import { Responsive, WidthProvider } from "react-grid-layout";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
@@ -645,6 +647,8 @@ export const CustomGridLayoutDynamicV2 = ({
   };
   console.log('Filtered Columns',JSON.stringify(filteredColumns, null, 2));
   console.log('config',JSON.stringify(filteredColumns, null, 2));
+  console.log('Filtered Columns',JSON.stringify(filteredColumns, null, 2));
+  console.log('config',JSON.stringify(filteredColumns, null, 2));
   const totalHeight = calculateTotalHeight(layoutItems, 30); // Assuming rowHeight is 30
 
   return (
@@ -823,6 +827,10 @@ export const InnerRefCallbackTest = () => {
 
   return <ResponsiveGridLayout innerRef={handleRef} />;
 };
+function useStyles() {
+  throw new Error("Function not implemented.");
+}
+
 function useStyles() {
   throw new Error("Function not implemented.");
 }
