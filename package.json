@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "@monaco-editor/react": "^4.6.0",
+    "dotenv": "^16.4.7",
+    "openai": "^4.77.0",
+    "react-error-boundary": "^5.0.0"
+  }
+}

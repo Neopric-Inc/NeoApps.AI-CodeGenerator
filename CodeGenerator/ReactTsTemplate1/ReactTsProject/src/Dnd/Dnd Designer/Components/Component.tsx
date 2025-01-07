@@ -4,21 +4,10 @@ import { COMPONENT, functionTOmap } from "../Utility/constants";
 import { Configurations } from "../Utility/constants";
 import FilterForm from "./FilterRowsCRUD/FilterForm";
 import { useAppDispatch } from "redux/store";
-import { useSelector } from "react-redux";
-import { RootState } from "redux/reducers";
-import { MdHelp } from "react-icons/md";
 import { IoIosColorPalette } from "react-icons/io";
-import { Tooltip as ReactTooltip } from "react-tooltip";
-import { Row, Col, Form } from "react-bootstrap";
 import { SketchPicker } from "react-color";
 import SwipeableDrawer from "@mui/material/SwipeableDrawer";
 import TabNavigation from "./Tabs";
-import {
-  ErrorControlList,
-  getColumnNameList,
-  getViewList,
-  displayControlList,
-} from "Dnd/Dnd Designer/Utility/constants";
 // import Tooltip from "@mui/material/Tooltip";
 import IconButton from "@mui/material/IconButton";
 import RemoveIcon from "@mui/icons-material/Remove";
@@ -50,23 +39,11 @@ import {
   Tooltip,
 } from "@mui/material";
 import { Help } from "@mui/icons-material";
-import {
-  getS3bucket,
-  filterS3bucketWithColumns,
-} from "services/s3bucketService";
-import {
-  setS3bucketList,
-  setS3bucketMessage,
-  resetS3bucketToInit,
-} from "redux/actions";
-import { Constant } from "template/Constant";
-import DefaultView from "./ComponentConfiguration/defaultView";
 import FieldConfig from "./ComponentConfiguration/FieldsConfiguration";
 import SubFieldConfig from "./ComponentConfiguration/subFieldConfiguration";
 import DisplayConfig from "./ComponentConfiguration/DisplayConfiguration";
 import ErrorConfig from "./ComponentConfiguration/ErrorConfiguration";
-import GridView1 from "./ComponentConfiguration/gridView1";
-import VisibleConfig, {
+import {
   ChartSelector,
 } from "./ComponentConfiguration/ChartConfiguration";
 import { ColorConfig } from "./ComponentConfiguration/ChartConfiguration";
@@ -114,26 +91,7 @@ export const Popup = (props) => {
       customConfig[componentId][inputType] = event.target.value;
     };
     return (
-      // <div>
-      //   <label className="form-label" htmlFor={inputType}>
-      //     {inputType.split(/(?=[A-Z])/).join(" ")}
-      //   </label>
-      //   <select
-      //     className="select-control"
-      //     id={inputType}
-      //     name={inputType}
-      //     value={value}
-      //     onChange={handleChange}
-      //   >
-      //     {options.map((option) => (
-      //       <option key={option} value={option}>
-      //         {option}
-      //       </option>
-      //     ))}
-      //   </select>
-      //   <hr />
-      // </div>
-      //Dev1
+     
       //UI change inheading textfield
       <TableContainer>
         <Table>
@@ -268,25 +226,7 @@ export const Popup = (props) => {
           </TableBody>
         </Table>
       </TableContainer>
-      //Dev1 old code
-
-      // <Grid
-      //   item
-      //   xs={12}
-      //   md={6}
-      //   //sx={{ display: "flex", ml: 2, flexDirection: "column" }}
-      // >
-      //   <Typography variant="body1" sx={{ textAlign: "center" }}>
-      //     {`${inputType.split(/(?=[A-Z])/).join(" ")}`}
-      //   </Typography>
-      //   <TextField
-      //     value={inputValue}
-      //     onChange={handleChange}
-      //     variant="outlined"
-      //     label={`${inputType.split(/(?=[A-Z])/).join(" ")}`}
-      //     sx={{ textAlign: "center" }}
-      //   />
-      // </Grid>
+     
     );
   };
   interface Condition {
@@ -1908,182 +1848,6 @@ export const Popup = (props) => {
       {/* </div> */}
     </SwipeableDrawer>
 
-    // <div className="config-popup-box">
-    //   <div className="config-box">
-    //     <span className="config-close-icon" onClick={props.handleClose}>
-    //       &#x2718;
-    //     </span>
-    //     {setInputUsingConfig()}
-    //     {(() => {
-    //       accumulatedJSXElements1 = inputFieldsJSX1.map((element, index) => (
-    //         <div key={index}>{element}</div>
-    //       ));
-    //       accumulatedJSXElements11 = inputFieldsJSX11.map((element, index) => (
-    //         <div key={index}>{element}</div>
-    //       ));
-    //       accumulatedJSXElements12 = inputFieldsJSX12.map((element, index) => (
-    //         <div key={index}>{element}</div>
-    //       ));
-    //       accumulatedJSXElements13 = inputFieldsJSX13.map((element, index) => (
-    //         <div key={index}>{element}</div>
-    //       ));
-    //       accumulatedJSXElements14 = inputFieldsJSX14.map((element, index) => (
-    //         <div key={index}>{element}</div>
-    //       ));
-    //       accumulatedJSXElements2 = inputFieldsJSX2.map((element, index) => (
-    //         <div key={index}>{element}</div>
-    //       ));
-    //       accumulatedJSXElements3 = inputFieldsJSX3.map((element, index) => (
-    //         <div key={index}>{element}</div>
-    //       ));
-    //     })()}
-    //     {inputFieldsJSX1.length !== 0 && (
-    //       <>
-    //         <div className="p-1 mb-1">
-    //           <h3>
-    //             Configuration : Heading
-    //             <small className="p-2">
-    //               <MdHelp id="help-1" />
-    //             </small>
-    //             <ReactTooltip
-    //               className="tooltipContent"
-    //               anchorId="help-1"
-    //               place="right"
-    //               content="configure heading"
-    //             />
-    //           </h3>
-    //         </div>
-    //         <div className="form-container mb-3">{accumulatedJSXElements1}</div>
-    //       </>
-    //     )}
-    //     {inputFieldsJSX11.length !== 0 && (
-    //       <>
-    //         <div className="p-1 mb-1">
-    //           <h3>
-    //             Configuration : Heading Color
-    //             <small className="p-2">
-    //               <MdHelp id="help-1" />
-    //             </small>
-    //             <ReactTooltip
-    //               className="tooltipContent"
-    //               anchorId="help-1"
-    //               place="right"
-    //               content="configure heading color"
-    //             />
-    //           </h3>
-    //         </div>
-    //         <div className="form-container mb-3">
-    //           {accumulatedJSXElements11}
-    //         </div>
-    //       </>
-    //     )}
-    //     {inputFieldsJSX12.length !== 0 && (
-    //       <>
-    //         <div className="p-1 mb-1">
-    //           <h3>
-    //             Configuration : Table Heading Color
-    //             <small className="p-2">
-    //               <MdHelp id="help-1" />
-    //             </small>
-    //             <ReactTooltip
-    //               className="tooltipContent"
-    //               anchorId="help-1"
-    //               place="right"
-    //               content="configure table heading color"
-    //             />
-    //           </h3>
-    //         </div>
-    //         <div className="form-container mb-3">
-    //           {accumulatedJSXElements12}
-    //         </div>
-    //       </>
-    //     )}
-    //     {inputFieldsJSX13.length !== 0 && (
-    //       <>
-    //         <div className="p-1 mb-1">
-    //           <h3>
-    //             Configuration : Table Color
-    //             <small className="p-2">
-    //               <MdHelp id="help-1" />
-    //             </small>
-    //             <ReactTooltip
-    //               className="tooltipContent"
-    //               anchorId="help-1"
-    //               place="right"
-    //               content="configure table color"
-    //             />
-    //           </h3>
-    //         </div>
-    //         <div className="form-container mb-3">
-    //           {accumulatedJSXElements13}
-    //         </div>
-    //       </>
-    //     )}
-    //     {inputFieldsJSX14.length !== 0 && (
-    //       <>
-    //         <div className="p-1 mb-1">
-    //           <h3>
-    //             Configuration : Table Properties Color
-    //             <small className="p-2">
-    //               <MdHelp id="help-1" />
-    //             </small>
-    //             <ReactTooltip
-    //               className="tooltipContent"
-    //               anchorId="help-1"
-    //               place="right"
-    //               content="configure table properties color"
-    //             />
-    //           </h3>
-    //         </div>
-    //         <div className="form-container mb-3">
-    //           {accumulatedJSXElements14}
-    //         </div>
-    //       </>
-    //     )}
-    //     {inputFieldsJSX2.length !== 0 && (
-    //       <>
-    //         <div className="p-1 mb-1">
-    //           <h3>
-    //             Configuration : Columns
-    //             <small className="p-2">
-    //               <MdHelp id="help-2" />
-    //             </small>
-    //             <ReactTooltip
-    //               className="tooltipContent"
-    //               anchorId="help-2"
-    //               place="right"
-    //               content="configure column"
-    //             />
-    //           </h3>
-    //         </div>
-    //         <div className="form-container mb-3">{accumulatedJSXElements2}</div>
-    //       </>
-    //     )}
-    //     {inputFieldsJSX3.length !== 0 && (
-    //       <>
-    //         <div className="p-1 mb-1">
-    //           <h3>
-    //             Configuration : Filter
-    //             <small className="p-2">
-    //               <MdHelp id="help-3" />
-    //             </small>
-    //             <ReactTooltip
-    //               className="tooltipContent"
-    //               anchorId="help-3"
-    //               place="right"
-    //               content="configure filter"
-    //             />
-    //           </h3>
-    //         </div>
-    //         <div className="form-container mb-3">{accumulatedJSXElements3}</div>
-    //       </>
-    //     )}
-    //     <button className="form-btn" type="submit" onClick={handleSubmit}>
-    //       Submit
-    //     </button>
-    //   </div>
-    //   {/* {console.log("inputFieldsJSX :", inputFieldsJSX)} */}
-    // </div>
   );
 };
 
@@ -2237,11 +2001,6 @@ const Component = ({
   );
 };
 export default Component;
-
-// {/* {console.log("For Data.id : ", data.id, " | Component : ", Component)} */}
-// {/* <div>{Component.content}</div> */ }
-// {/* <div>{HtmlParser(Component.content)}</div> */ }
-// {/* <div dangerouslySetInnerHTML={{ __html: Component.content }}></div> */ }
 
 {
   /* {(<Popup

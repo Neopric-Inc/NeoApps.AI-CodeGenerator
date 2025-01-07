@@ -1,17 +1,7 @@
 import React, { useEffect, useState } from "react";
 import shortid from "shortid";
-import GridViewIcon from "@mui/icons-material/GridView";
 import ApiIcon from "@mui/icons-material/Api";
-import GridOnIcon from "@mui/icons-material/GridOn";
-import ListIcon from "@mui/icons-material/List";
-import CropSquareIcon from "@mui/icons-material/CropSquare";
-import FormatColorTextIcon from "@mui/icons-material/FormatColorText";
-import BadgeIcon from "@mui/icons-material/Badge";
-import EmailIcon from "@mui/icons-material/Email";
-import PhoneIcon from "@mui/icons-material/Phone";
-import ImageIcon from "@mui/icons-material/Image";
 import TitleIcon from "@mui/icons-material/Title";
-import AddCardIcon from "@mui/icons-material/AddCard";
 import { Card } from "Dnd/Draggable Components/Previous_Components/CustomComponents/Card/card";
 import Heading from "Dnd/Draggable Components/Previous_Components/CustomComponents/Heading/heading";
 import { GetDataUrl } from "services/fileUploadService";
@@ -111,7 +101,6 @@ export const getGridList = (name) => {
         "shortDescription",
         "title",
       ];
-      break;
     case "gridView2":
       return [
         "avatar",
@@ -121,55 +110,40 @@ export const getGridList = (name) => {
         "follower_count",
         "updatedAt",
       ];
-      break;
     case "gridView3":
       return ["mimeType", "name", "size", "url"];
-      break;
     case "gridView4":
       return ["avatar", "username", "cover", "profile_url", "platform"];
-      break;
     case "gridView5":
       return ["avatar", "name", "createdAt", "likes", "media", "message"];
-      break;
     case "gridView6":
       return ["avatar", "username", "follower_count", "email"];
-      break;
 
     case "groupedList1":
       return ["customerAvatar", "customerName", "description", "createdAt"];
-      break;
 
     case "groupedList2":
       return ["username", "email", "profile_url"];
-      break;
     case "groupedList3":
       return ["title"];
-      break;
 
     case "groupedList4":
       return ["value", "type", "message"];
-      break;
     case "groupedList5":
       return ["image", "name", "sales", "profit", "currency", "conversionRate"];
 
-      break;
 
     case "groupedList6":
       return ["date", "sender", "type", "amount", "currency"];
-      break;
 
     case "groupedList7":
       return ["username", "email", "avatar", "date"];
-      break;
     case "groupedList8":
       return ["avatar", "name", "job"];
-      break;
     case "groupedList9":
       return ["avatar", "rating", "media_url", "text", "date"];
-      break;
     case "groupedList10":
       return ["avatar", "subject", "description", "createdAt"];
-      break;
     case "groupedList11":
       return [
         "campaign_name",
@@ -179,10 +153,8 @@ export const getGridList = (name) => {
         "influencer_name",
         "end_date",
       ];
-      break;
     case "detailList1":
       return ["impressions", "likes", "comments", "shares"];
-      break;
     case "detailList2":
       return [
         "email",
@@ -193,13 +165,10 @@ export const getGridList = (name) => {
         "address1",
         "address2",
       ];
-      break;
     case "detailList3":
       return ["profile_url", "username", "platform", "created_by"];
-      break;
     case "detailList6":
       return ["media_url", "schedule_date_time", "text"];
-      break;
     case "detailList7":
       return [
         "username",
@@ -208,10 +177,8 @@ export const getGridList = (name) => {
         "start_date",
         "end_date",
       ];
-      break;
     default:
       return ["null"];
-      break;
   }
 };
 export const getNavNameList = () => {
@@ -274,7 +241,6 @@ export const getRowElement = (
             style={{ width: "50px", height: "50px" }}
           />
         );
-        break;
       case "audio":
         return (
           <audio controls>
@@ -282,7 +248,6 @@ export const getRowElement = (
             Your browser does not support the audio element.
           </audio>
         );
-        break;
       case "video":
         return (
           <video controls>
@@ -290,14 +255,12 @@ export const getRowElement = (
             Your browser does not support the video tag.
           </video>
         );
-        break;
       case "pdf":
         return (
           <iframe src={srcData} style={{ width: "600px", height: "500px" }}>
             Your browser does not support the iframe tag.
           </iframe>
         );
-        break;
       default:
         break;
     }
@@ -311,7 +274,6 @@ export const getRowElement = (
             style={{ width: "50px", height: "50px" }}
           />
         );
-        break;
       case "audio":
         return (
           <audio controls>
@@ -319,7 +281,6 @@ export const getRowElement = (
             Your browser does not support the audio element.
           </audio>
         );
-        break;
       case "video":
         return (
           <video controls>
@@ -327,19 +288,14 @@ export const getRowElement = (
             Your browser does not support the video tag.
           </video>
         );
-        break;
       case "Object(ex.pdf)":
         return <object data={field}></object>;
-        break;
       case "webpages":
         return <iframe src={field}></iframe>;
-        break;
       case "Embed audio":
         return <embed src={field} type="audio/mpeg" />;
-        break;
       case "Embed video":
         return <embed src={field} type="video/mp4" />;
-        break;
       default:
         break;
     }
@@ -418,7 +374,6 @@ export const ValidationControl = (value, m1, m2) => {
                 isValid: false,
                 errorMessage: ErrorControlList["password"]["max"],
               };
-          break;
         case "min":
           var regexp = /^.{8,}$/i;
           let minvalid = regexp.test(value);
@@ -430,7 +385,6 @@ export const ValidationControl = (value, m1, m2) => {
                 isValid: false,
                 errorMessage: ErrorControlList["password"]["min"],
               };
-          break;
         case "upperCase":
           var regexp = /^(?=.*[A-Z])/;
           let upvalid = regexp.test(value);
@@ -443,7 +397,6 @@ export const ValidationControl = (value, m1, m2) => {
                 errorMessage: ErrorControlList["password"]["upperCase"],
               };
 
-          break;
         case "lowerCase":
           var regexp = /^(?=.*[a-z])/;
           let lowvalid = regexp.test(value);
@@ -455,14 +408,11 @@ export const ValidationControl = (value, m1, m2) => {
                 isValid: false,
                 errorMessage: ErrorControlList["password"]["min"],
               };
-          break;
         default:
           return {
             isValid: true,
           };
-          break;
       }
-      break;
     case "number":
       switch (m2) {
         case "max":
@@ -476,7 +426,6 @@ export const ValidationControl = (value, m1, m2) => {
                 isValid: false,
                 errorMessage: ErrorControlList["number"]["max"],
               };
-          break;
         case "min":
           var regexp = /^.{8,}$/i;
           let minvalid = regexp.test(value);
@@ -488,14 +437,11 @@ export const ValidationControl = (value, m1, m2) => {
                 isValid: false,
                 errorMessage: ErrorControlList["number"]["min"],
               };
-          break;
         default:
           return {
             isValid: true,
           };
-          break;
       }
-      break;
     case "email":
       var regexp = /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/g;
       let emvalid = regexp.test(value);
@@ -507,7 +453,6 @@ export const ValidationControl = (value, m1, m2) => {
             isValid: false,
             errorMessage: m2,
           };
-      break;
     case "text":
       var regexp = /[\S\s]+[\S]+/;
       let maxvalid = regexp.test(value);
@@ -519,7 +464,6 @@ export const ValidationControl = (value, m1, m2) => {
             isValid: false,
             errorMessage: m2,
           };
-      break;
     case "url":
       var urlRegexp = new RegExp(
         "^" +
@@ -552,13 +496,11 @@ export const ValidationControl = (value, m1, m2) => {
             isValid: false,
             errorMessage: m2,
           };
-      break;
 
     default:
       return {
         isValid: true,
       };
-      break;
   }
 };
 
@@ -1417,13 +1359,10 @@ export const functionTOmap = (
   switch (component) {
     case "Heading":
       return <Heading config={config} />;
-      break;
     case "Card":
       return <Card config={config} />;
-      break;
     case "SyncFusion GRID":
       return <Grid />;
-      break;
     /*case "S3bucketDropDownList":
             return < S3bucketDropDownList config={config} />
             break;*/
@@ -1448,7 +1387,6 @@ export const functionTOmap = (
           handleConfigurationChange={handleConfigurationChange}
         />
       );
-      break;
     /*case "EngagementtypeDropDownList":
             return < EngagementtypeDropDownList config={config} />
             break;*/
@@ -1473,7 +1411,6 @@ export const functionTOmap = (
           handleConfigurationChange={handleConfigurationChange}
         />
       );
-      break;
     /*case "ContentstatusDropDownList":
             return < ContentstatusDropDownList config={config} />
             break;*/
@@ -1498,7 +1435,6 @@ export const functionTOmap = (
           handleConfigurationChange={handleConfigurationChange}
         />
       );
-      break;
     /*case "UsersDropDownList":
             return < UsersDropDownList config={config} />
             break;*/
@@ -1523,7 +1459,6 @@ export const functionTOmap = (
           handleConfigurationChange={handleConfigurationChange}
         />
       );
-      break;
     /*case "SocialmediaaccountsDropDownList":
             return < SocialmediaaccountsDropDownList config={config} />
             break;*/
@@ -1548,7 +1483,6 @@ export const functionTOmap = (
           handleConfigurationChange={handleConfigurationChange}
         />
       );
-      break;
     /*case "ContentDropDownList":
             return < ContentDropDownList config={config} />
             break;*/
@@ -1573,7 +1507,6 @@ export const functionTOmap = (
           handleConfigurationChange={handleConfigurationChange}
         />
       );
-      break;
     /*case "EngagementDropDownList":
             return < EngagementDropDownList config={config} />
             break;*/
@@ -1598,7 +1531,6 @@ export const functionTOmap = (
           handleConfigurationChange={handleConfigurationChange}
         />
       );
-      break;
     /*case "AnalyticsDropDownList":
             return < AnalyticsDropDownList config={config} />
             break;*/
@@ -1623,7 +1555,6 @@ export const functionTOmap = (
           handleConfigurationChange={handleConfigurationChange}
         />
       );
-      break;
     /*case "InfluencerDropDownList":
             return < InfluencerDropDownList config={config} />
             break;*/
@@ -1648,7 +1579,6 @@ export const functionTOmap = (
           handleConfigurationChange={handleConfigurationChange}
         />
       );
-      break;
     /*case "CollaborationDropDownList":
             return < CollaborationDropDownList config={config} />
             break;*/
@@ -1673,36 +1603,25 @@ export const functionTOmap = (
           handleConfigurationChange={handleConfigurationChange}
         />
       );
-      break;
 
     case "Button":
       return <CustomButton config={config} />;
-      break;
     case "input":
       return <CustomTextField config={config} />;
-      break;
     case "MenuBar":
       return <MenuBar />;
-      break;
     case "GridList":
       return <DataGridlist />;
-      break;
     case "List":
       return <DropDownList />;
-      // return <NestedList config={config} />
-      break;
     case "name":
       return <h3>Some Name</h3>;
-      break;
     case "email":
       return "Some email";
-      break;
     case "phone":
       return "Some phone";
-      break;
     case "image":
       return "Some image";
-      break;
     default:
       return <p>Cant't find any Component</p>;
   }

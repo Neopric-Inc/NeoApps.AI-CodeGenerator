@@ -3,7 +3,6 @@ import DropZone from "./Components/DropZone";
 import TrashDropZone from "./Components/TrashDropZone";
 import SideBarItem from "./Components/SideBarItem";
 import Row from "./Components/Row";
-import initialData from "./Utility/initial-data";
 import {
     handleMoveWithinParent,
     handleMoveToDifferentParent,
@@ -13,17 +12,12 @@ import {
 import "./Static/style.css";
 import ApiIcon from "@mui/icons-material/Api";
 import { Definition } from "./Static/definition";
-import { LayoutClipBoard } from "./Static/definition";
 import { Search as SearchIcon } from "components/icons/search";
 import {
-    Box,
     Button,
-    Divider,
-    IconButton,
     InputAdornment,
     TextField,
 } from "@mui/material";
-import { makeStyles } from "@mui/styles";
 import {
     getOneDnd_ui_versions,
     addDnd_ui_versions,
@@ -40,7 +34,6 @@ import shortid from "shortid";
 import JSZip from "jszip";
 import Sidebar from "./Components/DND_Sidebar_Pages/SideBar";
 import { useNavigate } from "react-router";
-import { updateDnd_Builders } from "services/dnd_builderService_old";
 import { updateDnd_ui_versions } from "../../services/dnd_ui_versionsService";
 import { ImportGlobalConfigDialog } from "./importGlobalConfig";
 
@@ -137,32 +130,12 @@ const Container = ({ id, project_id }) => {
             setComponents(formatted_components);
             setLayout([]);
 
-            // const content = JSON.stringify({ "layout": dnd_builder_layout, "components": formatted_components }, undefined, 4);
-            // const blob = new Blob([content], {
-            //     type: "application/json"
-            // });
-            // const url = URL.createObjectURL(blob);
-            // const a = document.createElement('a');
-            // a.href = url;
-            // a.download = 'Definition.json';
-            // document.body.appendChild(a);
-            // a.click();
-            // URL.revokeObjectURL(url);
+           
         } else {
            //console.log("Some error occured While Fetching!");
         }
 
-        // const stored_layoutList = LayoutClipBoard.layout;
-        // const stored_pages = LayoutClipBoard.pages;
-        // const stored_components = LayoutClipBoard.components;
-        // ////console.log("stored_layoutList ", stored_layoutList, "stored_pages ", stored_pages)
-
-        // setActiveLink(0);
-        // setLayoutList(stored_layoutList);
-        // setSidebarLinks(stored_pages);
-        // setComponents(stored_components);
-        // setLayout(stored_layoutList[0]);
-        // // handleLinkClick(0);
+       
     }
     const previousInputValue = useRef(true);
     //Dev2
@@ -172,27 +145,14 @@ const Container = ({ id, project_id }) => {
         }
         previousInputValue.current = false;
     }, [getLayout, id, previousInputValue]);
-    // useCallback(() => {
-    //   if (id !== undefined) {
-    //     getLayout();
-    //   }
-    // }, [id]);
-
+   
     function handleLinkClick(id) {
        //console.log(layoutList);
         setLayoutList((prevState) => ({ ...prevState, [activeLink]: layout }));
         setActiveLink(id);
-        ////console.log("set active ID in Example :- ", id)
-        // const [layoutList, setLayoutList] = useState({ activeLink: layout });
-        // setLayoutList(prevState => ({
-        //     ...prevState,
-        //     [id]: [],
-        // }));
+        
         setLayout(layoutList[id]);
-        ////console.log("layoutList[id] from handleClick : ", layoutList[id]);
-        // setLayoutList(prevState => ({ ...prevState, [activeLink]: layout }));
-        ////console.log("LayoutList from handleLinkClick : ", layoutList)
-        // setLayout(layout)
+        
     }
     function handleTabLinkClick(id, condition?) {
         return (
@@ -220,18 +180,7 @@ const Container = ({ id, project_id }) => {
         );
     }
     function handleButtonLinkClick(id, condition?) {
-       //console.log(layoutList);
-        ////console.log("set active ID in Example :- ", id)
-        // const [layoutList, setLayoutList] = useState({ activeLink: layout });
-        // setLayoutList(prevState => ({
-        //     ...prevState,
-        //     [id]: [],
-        // }));
-
-        ////console.log("layoutList[id] from handleClick : ", layoutList[id]);
-        // setLayoutList(prevState => ({ ...prevState, [activeLink]: layout }));
-        ////console.log("LayoutList from handleLinkClick : ", layoutList)
-        // setLayout(layout)
+       
         if (condition) {
             layoutList[id].map((row, index) => {
                 row.children.map((column, index) => {
@@ -370,65 +319,7 @@ const Container = ({ id, project_id }) => {
        //console.log("Layout Has been changed from useEffect.");
     }, [layout]);
 
-    // useEffect(() => {
-    //     const getData = async () => {
-    //         const response = await getOneDnd_ui_versions(id);
-    //         if (response) {
-    //             ////console.log("Fetched Successfully");
-    //             const dnd_builder_data = response["data"]["document"];
-    //            //console.log("Fetched Data : ", dnd_builder_data);
-    //             let dnd_builder_layout = JSON.parse(dnd_builder_data['layout']);
-    //             let dnd_builder_layoutList = dnd_builder_layout["layoutList"];
-    //             let dnd_builder_pages = JSON.parse(dnd_builder_data["ui_pages"]);
-    //             let dnd_builder_components = JSON.parse(dnd_builder_data['components']);
-    //             ////console.log("layoutList : ", dnd_builder_layoutList, "pages : ", dnd_builder_pages);
-    //             let formatted_components = {};
-    //             ////console.log("Raw Components Data : ", dnd_builder_components)
-    //             Object.keys(dnd_builder_components).forEach((key) => {
-    //                 const component_id = dnd_builder_components[key]['id'];
-    //                 // let temp_component = { id: dnd_builder_components[key]['id'], type: SIDEBAR_ITEM, component: { type: dnd_builder_components[key]['type'], content: dnd_builder_components[key]['content'], icon: ApiIcon } };
-    //                 // let temp_component = { id: dnd_builder_components[key]['id'], type: dnd_builder_components[key]['type'], content: mapNametoComponent[dnd_builder_components[key]['content']], icon: ApiIcon }
-    //                 let temp_config = {};
-    //                 temp_config[component_id] = dnd_builder_components[key]['config'];
-    //                 // dnd_builder_components[key]['config'] ? temp_config = dnd_builder_components[key]['config'] : temp_config = {};
-    //                 setConfigurations((prevState) => ({ ...prevState, ...temp_config }));
-    //                 let temp_component = { id: dnd_builder_components[key]['id'], type: dnd_builder_components[key]['type'], content: functionTOmap(dnd_builder_components[key]['content'], temp_config), icon: ApiIcon }
-    //                 // dnd_builder_components[key]['icon_name'] !== undefined ? temp_component["component"]["icon"] = '<' + dnd_builder_components[key]['icon_name'] + " className='dnd sidebarIcon' />" : temp_component["component"]["icon"] = temp_component["component"]["icon"];
-    //                 formatted_components[component_id] = temp_component;
-    //                 ////console.log("mapNametoComponent : ", dnd_builder_components[key], mapNametoComponent[dnd_builder_components[key]['content']])
-    //             })
-    //             ////console.log("formatted components : ", formatted_components)
-    //             // setLayout(dnd_builder_layout);
-    //             // setComponents(formatted_components);
-
-    //             ////console.log("layoutList : ", dnd_builder_layoutList, "pages : ", dnd_builder_pages, "components : ", formatted_components);
-    //             ////console.log("layout from getLayout : ", dnd_builder_layoutList[0])
-    //             setActiveLink(0);
-    //             setLayoutList(dnd_builder_layoutList);
-    //             setSidebarLinks(dnd_builder_pages);
-    //             ////console.log("errorneous layout ", dnd_builder_layoutList[0]);
-    //             // (dnd_builder_layoutList[0] === undefined || dnd_builder_layoutList[0] === null) ? setLayout([]) : setLayout(dnd_builder_layoutList[0]);
-    //             setComponents(formatted_components);
-    //             setLayout(dnd_builder_layoutList[0]);
-
-    //             // const content = JSON.stringify({ "layout": dnd_builder_layout, "components": formatted_components }, undefined, 4);
-    //             // const blob = new Blob([content], {
-    //             //     type: "application/json"
-    //             // });
-    //             // const url = URL.createObjectURL(blob);
-    //             // const a = document.createElement('a');
-    //             // a.href = url;
-    //             // a.download = 'Definition.json';
-    //             // document.body.appendChild(a);
-    //             // a.click();
-    //             // URL.revokeObjectURL(url);
-    //         } else {
-    //            //console.log("Some error occured While Fetching!");
-    //         }
-    //     }
-    //     if (id)
-    //         getData();
-    // }, [])
+   
 
     const handleDropToTrashBin = useCallback(
         (dropZone, item) => {
@@ -637,29 +528,7 @@ const Container = ({ id, project_id }) => {
            //console.log("Some error occured While Adding!");
         }
         navigate(`/dndBuilder/${response["data"]["document"]}`);
-        ////console.log("project_id from save : ", project_id);
-        //const Project_DND_UI_Obj = { "project_id": parseInt(project_id), "dnd_ui_version_id": parseInt(response["data"]["document"]), "createdBy": "Jeelesh", "modifiedBy": "Jeelesh", "isActive": 1, "createdAt": "2012-07-26T01:25:58", "modifiedAt": "2012-07-26T01:25:58" };
-        //console.log("Project_DND_UI_Obj :- ", Project_DND_UI_Obj);
-        // const Project_DND_UI_response = await addProject_dnd_ui_versions(Project_DND_UI_Obj);
-        // if (Project_DND_UI_response) {
-        //    //console.log("Added Successfully : ", Project_DND_UI_response);
-        // } else {
-        //    //console.log("Some error occured While Adding!");
-        // }
-        ////console.log("dnd_builder_obj : ", dnd_builder_obj);
-
-        // const content = JSON.stringify({ "layout": layout, "components": components }, undefined, 4);
-        // // const content = JSON.stringify(dnd_builder_obj, undefined, 4);
-        // const blob = new Blob([content], {
-        //     type: "application/json"
-        // });
-        // const url = URL.createObjectURL(blob);
-        // const a = document.createElement('a');
-        // a.href = url;
-        // a.download = 'Definition.json';
-        // document.body.appendChild(a);
-        // a.click();
-        // URL.revokeObjectURL(url);
+      
     }
     const [releaseLoad, setReleaseLoad] = useState(false);
     async function ReleaseUi() {
@@ -816,16 +685,7 @@ const Container = ({ id, project_id }) => {
             undefined,
             4
         );
-        // const blob = new Blob([content], {
-        //     type: "application/json"
-        // });
-        // const url = URL.createObjectURL(blob);
-        // const a = document.createElement('a');
-        // a.href = url;
-        // a.download = 'Definition.json';
-        // document.body.appendChild(a);
-        // a.click();
-        // URL.revokeObjectURL(url);
+       
         navigator.clipboard.writeText(content);
        //console.log("layoutList from Clipboard : ", layoutList);
     }
@@ -1039,38 +899,3 @@ const Container = ({ id, project_id }) => {
     );
 };
 export default Container;
-
-// const response = await getOneDnd_Builder(id);
-// if (response) {
-//    //console.log("Fetched Successfully");
-//     const dnd_builder_data = response["data"]["document"];
-//     let dnd_builder_layout = JSON.parse(dnd_builder_data['layout']);
-//     let dnd_builder_components = JSON.parse(dnd_builder_data['components']);
-//     let formatted_components = {};
-//    //console.log("Raw Components Data : ", dnd_builder_components)
-//     Object.keys(dnd_builder_components).forEach((key) => {
-//         const component_id = dnd_builder_components[key]['id'];
-//         // let temp_component = { id: dnd_builder_components[key]['id'], type: SIDEBAR_ITEM, component: { type: dnd_builder_components[key]['type'], content: dnd_builder_components[key]['content'], icon: ApiIcon } };
-//         let temp_component = { id: dnd_builder_components[key]['id'], type: dnd_builder_components[key]['type'], content: mapNametoComponent[dnd_builder_components[key]['content']], icon: ApiIcon }
-//         // dnd_builder_components[key]['icon_name'] !== undefined ? temp_component["component"]["icon"] = '<' + dnd_builder_components[key]['icon_name'] + " className='dnd sidebarIcon' />" : temp_component["component"]["icon"] = temp_component["component"]["icon"];
-//         formatted_components[component_id] = temp_component;
-//         ////console.log("mapNametoComponent : ", dnd_builder_components[key], mapNametoComponent[dnd_builder_components[key]['content']])
-//     })
-//    //console.log("layout : ", dnd_builder_layout, "formatted components : ", formatted_components)
-//     setLayout(dnd_builder_layout);
-//     setComponents(formatted_components);
-
-//     // const content = JSON.stringify({ "layout": dnd_builder_layout, "components": formatted_components }, undefined, 4);
-//     // const blob = new Blob([content], {
-//     //     type: "application/json"
-//     // });
-//     // const url = URL.createObjectURL(blob);
-//     // const a = document.createElement('a');
-//     // a.href = url;
-//     // a.download = 'Definition.json';
-//     // document.body.appendChild(a);
-//     // a.click();
-//     // URL.revokeObjectURL(url);
-// } else {
-//    //console.log("Some error occured While Fetching!");
-// }

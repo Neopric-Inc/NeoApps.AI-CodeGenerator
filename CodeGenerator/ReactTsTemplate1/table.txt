@@ -33,7 +33,6 @@ import { useSelector } from "react-redux";
 import { RootState } from "redux/reducers";
 import { useAppDispatch } from "redux/store";
 import { reset{modelName}ToInit, set{modelName}Message } from "redux/actions";
-//import { Box, Button, Card, CardHeader, CardContent, TextField, InputAdornment, IconButton, Grid, Typography } from "@mui/material";
 import { Constant } from "template/Constant";
 import ConfirmationModal from "template/ConfirmationModal";
 import { delete{modelName} } from "services/{tableName}Service";
@@ -142,11 +141,6 @@ export const {modelName}Table: React.FC<Props> = ({
     }
   };
 
-  //const handlePerRowsChange = async (newPerPage: number, page: number) => {
-  // await getData(page, newPerPage, "");
-  //};
-
-  // Handle page change (note the +1 since DataGrid page is 0-based and API might be 1-based)
   const handlePageChange = (newPage: number) => {
     setPage(newPage); // Optionally reset to the first page on page size change
    //console.log("page changed", newPage);
@@ -351,11 +345,7 @@ const columns = [
             color="primary"
             size="small"
             onClick={() => {
-              // handleButtonClick(
-              //   params.row,
-              //   passValue ? params.row[column] : null,
-              //   type
-              // )
+             
               if (passValue) {
                 const condition = {
                   columnName: column,
@@ -390,28 +380,7 @@ const columns = [
     maxH: number;
   }
 
-  const generateLayout = () => {
-    const layout = [];
-
-    for (let i = 0; i < columnDefinitions.length; i++) {
-      // Adjust the number for more items
-      layout.push({
-        i: i.toString(),
-        x: (i * 2) % 12,
-        y: Math.floor(i / 6), // Adjust if necessary for your layout
-        w: 1,
-        h: 1,
-        minW: 1,
-        maxW: 12,
-        minH: 1,
-        maxH: 1000,
-      });
-    }
-    return layout;
-  };
-
-  const layoutItems = generateLayout();
-
+  
   // Generate a standard layout for a row
   const generateStandardLayout = () => {
     return filteredColumns.map((col, index) => ({
@@ -446,88 +415,7 @@ const columns = [
     : 12;
   /////////////End of Experimental code /////////////////////////////
   return (
-    /*<Card className="shadow mb-4">
-      <Card.Header className="py-3">
-        <h6 className="m-0 font-weight-bold text-primary">
-          {modelName} List ({rData.list.length})
-          <Button variant="outlined" className="btn-circle btn-sm ml-2" onClick={handleReset}>
-            <i className="fa fa-refresh"></i>
-          </Button>
-          <Button className="btn-icon-split float-right" onClick={handleAddButtonClick}>
-            <span className="icon text-white-50">
-              <i className="fas fa-add"></i>
-            </span>
-            <span className="text">Add New</span>
-          </Button>
-        </h6>
-      </Card.Header>
-      <Card.Body>
-        <Col className="ml-auto" style={{ padding: "4px" }} md={3} xs={12} xl={3}>
-          {config[`search_button_visible1`] && (
-              <TextField
-                placeholder="Search"
-                variant="outlined"
-                fullWidth
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                InputProps={{
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <Button
-                        disabled={search.length <= 2}
-                        variant="contained"
-                        onClick={handleSearch}
-                      >
-                        Search
-                      </Button>
-                    </InputAdornment>
-                  ),
-                }}
-              />
-            )}
-        </Col>
-        <div className="table-responsive">
-          <DataTable
-            selectableRows
-            onSelectedRowsChange={handleRowSelection}
-            paginationPerPage={Constant.defaultPageNumber}
-            paginationRowsPerPageOptions={Constant.paginationRowsPerPageOptions}
-            columns={filteredColumns}
-            data={rData.list}
-            onChangeRowsPerPage={handlePerRowsChange}
-            paginationTotalRows={rData.totalCount}
-            className="custom-datatable table table-bordered"
-            pagination
-            paginationServer
-            onChangePage={handlePageChange}
-            customStyles={{
-              headRow: {
-                style: {
-                  color: config["HeadRowColor"] !== undefined ? config["HeadRowColor"] : "#223336",
-                  backgroundColor: config["HeadRowBackgroundColor"] !== undefined ? config["HeadRowBackgroundColor"] : "#e7eef0",
-                  wordWrap: "break-word",
-                },
-              },
-              rows: {
-                style: {
-                  color: config["RowColor"] !== undefined ? config["RowColor"] : "#223336",
-                  backgroundColor: config["RowBackgroundColor"] !== undefined ? config["RowBackgroundColor"] : "#e7eef0",
-                },
-              },
-            }}
-          />
-        </div>
-      </Card.Body>
-      <ConfirmationModal
-        buttonNegative="Cancel"
-        buttonPositive="Delete"
-        title="Delete Confirmation"
-        show={showDelete}
-        body="Are you sure?"
-        onNegative={() => setShowDelete(false)}
-        onPositive={handleServerDelete}
-      />
-    </Card>*/
+   
      <Card className="shadow mb-4">
     <CardHeader
 style={{
@@ -631,16 +519,9 @@ style={{
       </Grid>
       <Box mt={2}></Box>
       <Box mt={2}>
-          {/* <div style={{ height: 800, width: "100%" }} className={classes.root}>
-            <CustomGridLayout layoutItems={layoutItems} />
-          </div> */}
+          {}
 
-          {/* <div style={{ height: 800, width: "100%" }} className={classes.root}>
-            <CustomGridLayoutDynamic
-              layoutItems={layoutItems}
-              filteredColumns={filteredColumns}
-            />
-          </div> */}
+          {}
           {config["BYOViewConfig"] !== undefined ? (
             <>
               <Grid container spacing={2}>

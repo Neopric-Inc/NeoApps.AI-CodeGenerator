@@ -186,65 +186,7 @@ export const {modelName}Form: React.FC<Props> = ({ row, hideShowForm, getData, a
   };
 
     return (
-        /*<Card className="shadow mb-4">
-            <Card.Header className="py-3">
-                <h6 className="m-0 font-weight-bold text-primary text-capitalize">{action} {modelName}
-                    <Button className="btn-icon-split float-right" onClick={() => hideShowForm(false)}>
-                        <span className="icon text-white-50">
-                            <i className="fas fa-list"></i>
-                        </span>
-                        <span className="text">View {modelName}</span>
-                    </Button>
-                </h6>
 
-            </Card.Header>
-            <Card.Body>
-            <Formik
-            initialValues= {initialValue}
-        onSubmit= {async (values) => {
-	    {PrimaryKeyConversion}
-            if (action === 'edit') {
-                const response = await update{modelName}({PrimaryKeyInitialization},values);
-                if (response) {
-                    dispatch(set{modelName}Message("Updated Successfully"));
-                    getData(Constant.defaultPageNumber, Constant.defaultPageSize, '');
-                    hideShowForm('');
-                } else {
-                    dispatch(set{modelName}Message("Some error occured!"));
-                }
-            } else if (action === 'add') {
-                const response = await add{modelName}(values);
-                if (response) {
-                    dispatch(set{modelName}Message("Added Successfully"));
-                    getData(Constant.defaultPageNumber, Constant.defaultPageSize, '');
-                    hideShowForm('');
-                } else {
-                    dispatch(set{modelName}Message("Some error occured!"));
-                }
-            }
-        }}
-        validationSchema= {yup.object({
-           {yupValidationList}
-        })}>
-        {({
-            errors,
-            handleBlur,
-            handleChange,
-            handleSubmit,
-            isSubmitting,
-            touched,
-            values,
-          }) => (
-                <Form onSubmit={handleSubmit}>
-                  {formGroupWithValidation}
-                    <Form.Group>
-                        <Button type="submit" className="float-right" variant="primary">Save</Button>
-                    </Form.Group>
-                </Form>
-                         )}
-        </Formik>
-            </Card.Body>
-        </Card>*/
          <Card className="shadow mb-4">
         <CardHeader
         title={`${

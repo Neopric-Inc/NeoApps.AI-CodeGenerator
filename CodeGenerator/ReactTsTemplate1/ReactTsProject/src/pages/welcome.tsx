@@ -1,7 +1,5 @@
 import React from 'react';
 import { Button, Card, CardContent, Grid, Typography } from "@mui/material";
-// import { useHistory } from "react-router-dom"; // You'll need to use the appropriate routing library for your application
-// import { Work, TouchApp, Lock } from "@mui/icons-material"; // Import the icons you want to use
 import { useNavigate } from "react-router";
 
 const Welcome: React.FC = () => {

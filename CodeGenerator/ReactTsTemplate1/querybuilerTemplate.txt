@@ -1,6 +1,5 @@
-import { ButtonComponent } from '@syncfusion/ej2-react-buttons';
 import { AnimationSettingsModel, DialogComponent } from '@syncfusion/ej2-react-popups';
-import { QueryBuilderComponent, RuleModel } from '@syncfusion/ej2-react-querybuilder';
+import { QueryBuilderComponent } from '@syncfusion/ej2-react-querybuilder';
 import { AxiosResponse } from 'axios';
 import { useEffect, useState } from 'react';
 import { getAll{modelName} } from 'services/{tableName}Service';
@@ -12,11 +11,6 @@ export const {componentName}: React.FC = () => {
     let dialogInstance: DialogComponent;
     let animationSettings: AnimationSettingsModel = { effect: 'Zoom', duration: 400, delay: 0 };
     const [data, setData] = useState<AxiosResponse>(null);
-    let ButtonOptions = {
-        groupDelete: true,
-        groupInsert: true,
-        ruleDelete: true
-    };
 
     function getSql(): void {
         dialogInstance.content = qryBldrObj.getSqlFromRules(qryBldrObj.getRules());
@@ -42,8 +36,6 @@ export const {componentName}: React.FC = () => {
             < QueryBuilderComponent dataSource={data} enableNotCondition={true} width='100%' summaryView={true} ref={(scope) => { qryBldrObj = scope as QueryBuilderComponent; }} />;
             <br />
             <div className="e-qb-button">
-                /*<ButtonComponent cssClass='e-primary' content='To Sql' onClick={getSql} />
-                <ButtonComponent cssClass='e-primary' content='To Rule' onClick={getRule} />*/
                 <Button variant="contained" color="primary" onClick={getSql}>
           To SQL
         </Button>

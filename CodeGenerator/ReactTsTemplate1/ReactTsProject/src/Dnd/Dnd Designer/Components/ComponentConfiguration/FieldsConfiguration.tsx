@@ -1,25 +1,16 @@
-import React, { useRef, useState, useEffect } from "react";
-import { useDrag } from "react-dnd";
+import React, { useState, useEffect } from "react";
 import { useAppDispatch } from "redux/store";
 import { useSelector } from "react-redux";
 import { RootState } from "redux/reducers";
-import { MdHelp } from "react-icons/md";
-import { Tooltip as ReactTooltip } from "react-tooltip";
-import { Row, Col, Form } from "react-bootstrap";
 import {
-    ErrorControlList,
     getColumnNameList,
-    displayControlList,
     getGridListData,
     getType,
 } from "Dnd/Dnd Designer/Utility/constants";
 // import Tooltip from "@mui/material/Tooltip";
-import IconButton from "@mui/material/IconButton";
-import RemoveIcon from "@mui/icons-material/Remove";
 import {
     Checkbox,
     Table,
-    Button,
     TableBody,
     TableCell,
     TableContainer,
@@ -31,26 +22,16 @@ import {
     InputLabel,
     Select,
     MenuItem,
-    Divider,
-    Grid,
-    Typography,
-    Popover,
-    Box,
-    Tooltip,
 } from "@mui/material";
-import { Help } from "@mui/icons-material";
 import {
     getS3bucket,
-    filterS3bucketWithColumns,
 } from "services/s3bucketService";
 import {
     setS3bucketList,
     setS3bucketMessage,
     resetS3bucketToInit,
-    resetS3bucket_foldersToInit,
 } from "redux/actions";
 import { Constant } from "template/Constant";
-import { DatePicker, DateTimePicker } from "@mui/x-date-pickers";
 import moment from "moment";
 import { getS3bucket_folders } from "services/s3bucket_foldersService";
 
@@ -165,37 +146,7 @@ const FieldConfig = ({
             ""
         );
     }, []);
-    // const s3bucketFolderData1 = useSelector(
-    //     (state: RootState) => state.s3bucket_folders
-    //   );
-
-    //   useEffect(() => {
-    //     if (
-    //       s3bucketFolderData1 &&
-    //       s3bucketFolderData1.list &&
-    //       s3bucketFolderData1.list.length === 0
-    //     ) {
-    //       dispatch(resetS3bucket_foldersToInit());
-    //       getS3BucketFolderData(
-    //         Constant.defaultPageNumber,
-    //         Constant.defaultPageSize,
-    //         ""
-    //       );
-    //     }
-    //   }, [s3bucketFolderData1.list.length]);
-    // const urlList = s3bucketData1.list.filter(
-    //   (dict, index, self) =>
-    //     self.findIndex((d) => d.bucket_url === dict.bucket_url) === index
-    // );
-    // //console.log(urlList);
-
-    //const [s3BucketFolder, sets3BucketFolder] = useState(s3bucketFolderData1);
-    // const filterBucketName = (eurl) => {
-    //   const filteredData = s3bucketData1.list.filter(
-    //     (e) => e.bucket_url === eurl
-    //   );
-    //   sets3bucketData({ ...s3bucketData1, list: filteredData });
-    // };
+   
     const handleChange = (event) => {
         setValue(event.target.value);
         ////console.log("e.target.name :", event.target.name);
@@ -314,29 +265,7 @@ const FieldConfig = ({
                             </TableCell>
                             <TableCell>
                                 <FormControl>
-                                    {/* <Select
-                    fullWidth
-                    labelId={`${columnName.name}-default-value`}
-                    defaultValue={
-                      customConfig[componentId][
-                        `${columnName.name}_defaultValue`
-                      ]
-                    }
-                    onChange={(e) => {
-                      customConfig[componentId][
-                        `${columnName.name}_defaultValue`
-                      ] = e.target.value;
-                      changeRender();
-                      return customConfig;
-                    }}
-                  >
-                    <MenuItem value="">Select input control</MenuItem>
-                    {columnName.icontrol.map((controlName) => (
-                      <MenuItem key={controlName} value={controlName}>
-                        {controlName}
-                      </MenuItem>
-                    ))}
-                  </Select> */}
+                                    {}
                                     {(() => {
                                         switch (getType(columnName.type)) {
                                             case "text":

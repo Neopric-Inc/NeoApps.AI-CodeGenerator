@@ -1,9 +1,7 @@
 import * as React from 'react';
 import { ColumnDirective, Edit, ColumnsDirective, GridComponent, Inject, Page, Toolbar } from '@syncfusion/ej2-react-grids';
-// import { setBackend_stacksMessage } from 'redux/actions';
 import { useState, useEffect } from 'react';
 import { useAppDispatch } from 'redux/store';
-// import { addBackend_stacks, deleteBackend_stacks, getAllBackend_stacks, updateBackend_stacks } from 'services/backend_stacksService';
 import { AxiosResponse } from 'axios';
 import "../style.css";
 import { registerLicense } from '@syncfusion/ej2-base';
