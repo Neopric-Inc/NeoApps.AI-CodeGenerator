@@ -6,10 +6,10 @@
         "PARAMETER": "{project_id:1,server:localhost,uid:1,username:root,password:,databaseName:dataroom,script:http://localhost/dataroom.sql,statusOfGeneration:,projectName:DataRoomApp,DBexists:Yes,port:3306,rabbitMQConn:https://localhost:5001/v1/api/,redisConn:localhost:6379,password=yourredispassword,apiflowurl:,fronttemplateurl:,Technology_Frontend:reactts,Backend_technology:,buttonClicked:generate,projectType:dnd,swgurl:,noderedurl:}"
 
 
+
+
       },
         "remoteDebugEnabled": false
       }
   }
 }
-
-
