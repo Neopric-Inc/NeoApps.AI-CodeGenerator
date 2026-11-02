@@ -293,9 +293,17 @@ const SplitNow: React.FC<{ record: Row; onChanged: () => void }> = ({ record, on
   );
 };
 
-const randomPassword = () => {
+/** Random initial password from the browser's cryptographic RNG (rejection sampling avoids modulo bias). */
+const randomPassword = (length = 14) => {
   const c = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
-  return Array.from({ length: 10 }, () => c[Math.floor(Math.random() * c.length)]).join("") + "@1";
+  const limit = 256 - (256 % c.length);
+  const out: string[] = [];
+  const buf = new Uint8Array(32);
+  while (out.length < length) {
+    window.crypto.getRandomValues(buf);
+    for (const b of Array.from(buf)) if (b < limit && out.length < length) out.push(c[b % c.length]);
+  }
+  return out.join("") + "@1";
 };
 
 const CreateLogin: React.FC<{ record: Row; onChanged: () => void }> = ({ record, onChanged }) => {
