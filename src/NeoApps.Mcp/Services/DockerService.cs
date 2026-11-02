@@ -28,8 +28,11 @@ public sealed class DockerService(NeoAppsSettings settings, ProjectStore store)
         await File.WriteAllTextAsync(file, BuildComposeFile(p, includeConsumer), ct);
         log($"Wrote {file}");
 
-        var up = await InfraUpAsync(log, ct);
-        if (!up.Ok) return up;
+        if (!settings.SkipInfra)
+        {
+            var up = await InfraUpAsync(log, ct);
+            if (!up.Ok) return up;
+        }
 
         return await Compose(["-f", file, "-p", ComposeProjectName(p.Name), "up", "-d", "--build", "--remove-orphans"],
             store.ProjectDir(p.Name), log, TimeSpan.FromMinutes(30), ct);

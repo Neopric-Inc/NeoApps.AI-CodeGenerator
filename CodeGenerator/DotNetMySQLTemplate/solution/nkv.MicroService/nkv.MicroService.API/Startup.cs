@@ -62,7 +62,6 @@ namespace nkv.MicroService.API
                   .AllowAnyMethod();
                    });
             });
-            services.AddScoped<CheckPermissionAttribute>();
             services.AddSingleton<IConnectionMultiplexer>(x =>
             ConnectionMultiplexer.Connect(Configuration.GetConnectionString("Redis")));
         services.AddScoped<IRabitMQProducer, RabitMQProducer>();

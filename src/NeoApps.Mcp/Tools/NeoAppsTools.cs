@@ -1,3 +1,4 @@
+using ModelContextProtocol;
 using System.ComponentModel;
 using ModelContextProtocol.Server;
 using NeoApps.Mcp.Services;
@@ -99,9 +100,9 @@ public sealed class NeoAppsTools(
         name = ProjectStore.ValidateName(name);
         var template = NormalizeTemplate(frontendTemplate);
         if (string.IsNullOrWhiteSpace(sqlSchema) == string.IsNullOrWhiteSpace(sqlFilePath))
-            throw new ArgumentException("Provide exactly one of sqlSchema or sqlFilePath.");
+            throw new McpException("Provide exactly one of sqlSchema or sqlFilePath.");
         if (sqlFilePath is not null && !File.Exists(sqlFilePath))
-            throw new ArgumentException($"SQL file not found: {sqlFilePath}");
+            throw new McpException($"SQL file not found: {sqlFilePath}");
 
         var existing = store.Get(name);
         var (apiPort, webPort) = existing is { ApiPort: > 0 } ? (existing.ApiPort, existing.WebPort) : store.AllocatePorts();
@@ -281,8 +282,8 @@ public sealed class NeoAppsTools(
 
     private async Task EnsureInfraAsync(Job job, CancellationToken ct)
     {
-        if (!string.Equals(settings.MySqlHost, "127.0.0.1", StringComparison.Ordinal) && !string.Equals(settings.MySqlHost, "localhost", StringComparison.Ordinal))
-            return; // user points at their own MySQL
+        if (settings.SkipInfra)
+            return; // user runs their own MySQL/Redis/RabbitMQ
         job.Log("Ensuring shared infrastructure (MySQL, Redis, RabbitMQ) is running...");
         var r = await docker.InfraUpAsync(job.Log, ct);
         if (!r.Ok)
@@ -305,6 +306,6 @@ public sealed class NeoAppsTools(
     {
         null or "" or "app" or "frontend" or "admin" => "app",
         "dnd" or "designer" or "drag-and-drop" => "dnd",
-        _ => throw new ArgumentException("frontendTemplate must be 'app' or 'dnd'."),
+        _ => throw new McpException("frontendTemplate must be 'app' or 'dnd'."),
     };
 }

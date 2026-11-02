@@ -1,3 +1,4 @@
+using ModelContextProtocol;
 using System.Net;
 using System.Net.Sockets;
 using System.Text.Json;
@@ -36,7 +37,7 @@ public sealed partial class ProjectStore(NeoAppsSettings settings)
     {
         name = name?.Trim() ?? "";
         if (!ValidName().IsMatch(name))
-            throw new ArgumentException(
+            throw new McpException(
                 $"Invalid project name '{name}'. Use letters, digits and underscores, starting with a letter (it becomes a C# namespace), max 40 chars.");
         return name;
     }

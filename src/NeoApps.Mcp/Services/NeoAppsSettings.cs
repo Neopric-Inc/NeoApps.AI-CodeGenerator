@@ -29,6 +29,9 @@ public sealed record NeoAppsSettings
     public string HostRabbitMqUrl { get; init; } = "amqp://neoapps:neoapps@localhost:5672/";
     public string HostRedis { get; init; } = "localhost:6379";
 
+    /// <summary>Don't start the bundled Docker infra (you run MySQL/Redis/RabbitMQ yourself). NEOAPPS_SKIP_INFRA=true</summary>
+    public bool SkipInfra { get; init; }
+
     public int FirstApiPort { get; init; } = 5100;
     public int FirstWebPort { get; init; } = 3100;
 
@@ -55,6 +58,7 @@ public sealed record NeoAppsSettings
             DockerNetwork = Env("NEOAPPS_DOCKER_NETWORK") ?? defaults.DockerNetwork,
             HostRabbitMqUrl = Env("NEOAPPS_RABBITMQ_URL") ?? defaults.HostRabbitMqUrl,
             HostRedis = Env("NEOAPPS_REDIS") ?? defaults.HostRedis,
+            SkipInfra = string.Equals(Env("NEOAPPS_SKIP_INFRA"), "true", StringComparison.OrdinalIgnoreCase),
             FirstApiPort = EnvInt("NEOAPPS_FIRST_API_PORT", defaults.FirstApiPort),
             FirstWebPort = EnvInt("NEOAPPS_FIRST_WEB_PORT", defaults.FirstWebPort),
         };
