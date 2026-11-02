@@ -103,8 +103,7 @@
       "children": [
         "visits",
         "documents",
-        "study_assignments",
-        "chat_threads"
+        "study_assignments"
       ],
       "fields": {
         "nct_number": {
