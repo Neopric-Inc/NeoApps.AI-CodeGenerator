@@ -21,6 +21,8 @@ public static class UiKit
         "roles", "users", "entities", "permissionmatrix", "messagequeue", "s3bucket", "s3bucket_folders",
         "dnd_ui_versions", "project_dnd_ui_versions", "workflow", "workflows", "workflows_projects", "workflow_builds",
         "workflow_runs", "workflow_deployments", "workflow_triggers", "workflow_trigger_conditions",
+        // AI assistant (created by the API on first use)
+        "ai_files", "ai_chunks", "ai_conversations", "ai_messages", "ai_runs",
     };
 
     private static readonly JsonSerializerOptions Pretty = new() { WriteIndented = true };
@@ -36,6 +38,9 @@ public static class UiKit
         var config = LoadConfig(uiConfigPath) ?? new JsonObject();
         config["appName"] ??= Humanize(appName);
         File.WriteAllText(Path.Combine(publicDir, "ui.config.json"), config.ToJsonString(Pretty));
+        // The API reads the "ai" section (assistant instructions, tools, workflows) from its own copy.
+        var apiDir = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(frontendDir).TrimEnd('/', '\\'))!, "DotNet_Output", "solution", appName, appName + ".API");
+        if (Directory.Exists(apiDir)) File.WriteAllText(Path.Combine(apiDir, "ui.config.json"), config.ToJsonString(Pretty));
         Console.WriteLine($"UI kit installed (schema.json, ui.config.json{(uiConfigPath != null ? " from " + uiConfigPath : "")}).");
     }
 
@@ -127,6 +132,7 @@ public static class UiKit
                     columnType = r.GetString(3).ToLowerInvariant(),
                     nullable = r.GetString(4) == "YES",
                     hasDefault = !r.IsDBNull(5),
+                    defaultValue = r.IsDBNull(5) ? null : r.GetString(5),
                     maxLength = r.IsDBNull(6) ? (long?)null : Convert.ToInt64(r.GetValue(6)),
                     isPrimaryKey = isPk,
                     isAutoIncrement = r.GetString(8).Contains("auto_increment", StringComparison.OrdinalIgnoreCase),

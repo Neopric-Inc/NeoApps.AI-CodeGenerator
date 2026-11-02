@@ -1,62 +1,372 @@
 {
   "appName": "Research Site OS",
   "tagline": "Studies, regulatory documents and startup in one place",
-  "theme": { "primary": "#1f5fbf", "secondary": "#0ca678" },
+  "theme": {
+    "primary": "#1f5fbf",
+    "secondary": "#0ca678"
+  },
   "menu": [
-    { "group": "Studies", "items": ["studies", "sponsors", "trial_opportunities"] },
-    { "group": "Startup", "items": ["visits", "assessments", "visit_assessments", "source_documents", "automation_runs"] },
-    { "group": "Documents", "items": ["documents", "connectors"] },
-    { "group": "Ask", "items": ["chat_threads", "chat_messages", "message_citations"] },
-    { "group": "Team", "items": ["site_staff", "study_assignments"] }
+    {
+      "group": "Studies",
+      "items": [
+        "studies",
+        "sponsors",
+        "trial_opportunities"
+      ]
+    },
+    {
+      "group": "Startup",
+      "items": [
+        "visits",
+        "assessments",
+        "visit_assessments",
+        "source_documents",
+        "automation_runs"
+      ]
+    },
+    {
+      "group": "Documents",
+      "items": [
+        "documents",
+        "connectors"
+      ]
+    },
+    {
+      "group": "Team",
+      "items": [
+        "site_staff",
+        "study_assignments"
+      ]
+    }
   ],
   "dashboard": {
     "cards": [
-      { "table": "studies", "label": "Studies" },
-      { "table": "documents", "label": "Documents" },
-      { "table": "source_documents", "label": "Source documents" },
-      { "table": "trial_opportunities", "label": "Opportunities" }
+      {
+        "table": "studies",
+        "label": "Studies"
+      },
+      {
+        "table": "documents",
+        "label": "Documents"
+      },
+      {
+        "table": "source_documents",
+        "label": "Source documents"
+      },
+      {
+        "table": "trial_opportunities",
+        "label": "Opportunities"
+      }
     ],
     "recentTable": "documents"
   },
   "roles": {
-    "Coordinator": { "*": "r", "documents": "cru", "visits": "cru", "visit_assessments": "cru", "source_documents": "cru", "chat_threads": "cru", "chat_messages": "cru" },
-    "Viewer": { "*": "r" }
+    "Coordinator": {
+      "*": "r",
+      "documents": "cru",
+      "visits": "cru",
+      "visit_assessments": "cru",
+      "source_documents": "cru",
+      "assessments": "cru"
+    },
+    "Viewer": {
+      "*": "r"
+    }
   },
   "tables": {
     "studies": {
       "icon": "science",
       "description": "Trials the site is running or evaluating",
       "displayField": "protocol_number",
-      "listColumns": ["protocol_number", "title", "sponsor_id", "phase", "status", "current_enrollment", "target_enrollment"],
-      "formFields": ["sponsor_id", "protocol_number", "title", "nct_number", "phase", "therapeutic_area", "status", "start_date", "target_enrollment", "current_enrollment", "budget_amount"],
-      "children": ["visits", "documents", "study_assignments", "chat_threads"],
+      "listColumns": [
+        "protocol_number",
+        "title",
+        "sponsor_id",
+        "phase",
+        "status",
+        "current_enrollment",
+        "target_enrollment"
+      ],
+      "formFields": [
+        "sponsor_id",
+        "protocol_number",
+        "title",
+        "nct_number",
+        "phase",
+        "therapeutic_area",
+        "status",
+        "start_date",
+        "target_enrollment",
+        "current_enrollment",
+        "budget_amount"
+      ],
+      "children": [
+        "visits",
+        "documents",
+        "study_assignments",
+        "chat_threads"
+      ],
       "fields": {
-        "nct_number": { "label": "NCT #", "placeholder": "NCT01234567", "help": "ClinicalTrials.gov identifier" },
-        "phase": { "widget": "select", "options": ["Phase 1", "Phase 2", "Phase 3", "Phase 4"] },
-        "status": { "widget": "select", "options": ["startup", "enrolling", "follow-up", "closed"],
-                    "colors": { "startup": "warning", "enrolling": "success", "follow-up": "info", "closed": "default" } },
-        "budget_amount": { "label": "Budget" }
+        "nct_number": {
+          "label": "NCT #",
+          "placeholder": "NCT01234567",
+          "help": "ClinicalTrials.gov identifier"
+        },
+        "phase": {
+          "widget": "select",
+          "options": [
+            "Phase 1",
+            "Phase 2",
+            "Phase 3",
+            "Phase 4"
+          ]
+        },
+        "status": {
+          "widget": "select",
+          "options": [
+            "startup",
+            "enrolling",
+            "follow-up",
+            "closed"
+          ],
+          "colors": {
+            "startup": "warning",
+            "enrolling": "success",
+            "follow-up": "info",
+            "closed": "default"
+          }
+        },
+        "budget_amount": {
+          "label": "Budget"
+        }
       }
     },
     "documents": {
       "displayField": "title",
-      "listColumns": ["title", "document_type", "study_id", "version", "status", "effective_date"],
+      "listColumns": [
+        "title",
+        "document_type",
+        "study_id",
+        "version",
+        "status",
+        "effective_date"
+      ],
       "fields": {
-        "document_type": { "label": "Type", "widget": "select", "options": ["protocol", "icf", "sop", "budget", "roster", "training_log", "other"] },
-        "status": { "widget": "select", "options": ["draft", "current", "superseded"], "colors": { "current": "success", "draft": "warning", "superseded": "default" } },
-        "file_url": { "label": "File" }
+        "document_type": {
+          "label": "Type",
+          "widget": "select",
+          "options": [
+            "protocol",
+            "icf",
+            "sop",
+            "budget",
+            "roster",
+            "training_log",
+            "other"
+          ]
+        },
+        "status": {
+          "widget": "select",
+          "options": [
+            "draft",
+            "current",
+            "superseded"
+          ],
+          "colors": {
+            "current": "success",
+            "draft": "warning",
+            "superseded": "default"
+          }
+        },
+        "file_url": {
+          "label": "File"
+        }
       }
     },
-    "visits": { "displayField": "visit_name", "defaultSort": "visit_sequence|ASC", "children": ["visit_assessments", "source_documents"] },
-    "assessments": { "fields": { "category": { "widget": "select", "options": ["safety", "efficacy", "pk", "other"] } } },
-    "visit_assessments": { "label": "Schedule of Assessments", "singular": "Scheduled assessment" },
-    "source_documents": { "fields": { "status": { "widget": "select", "options": ["draft", "in_review", "approved"], "colors": { "approved": "success", "draft": "warning" } } } },
-    "automation_runs": { "label": "Automations", "fields": { "status": { "widget": "select", "options": ["queued", "running", "completed", "failed"], "colors": { "completed": "success", "failed": "error", "running": "info" } } } },
-    "chat_threads": { "label": "Questions", "singular": "Question", "children": ["chat_messages"] },
-    "chat_messages": { "label": "Answers", "displayField": "content", "fields": { "sender": { "widget": "select", "options": ["user", "agent"] }, "found_in_sources": { "label": "Answered from sources" } } },
-    "message_citations": { "label": "Citations" },
-    "site_staff": { "label": "Site Staff", "singular": "Staff member", "displayField": "full_name", "fields": { "fte": { "label": "FTE" } } },
-    "trial_opportunities": { "label": "Opportunities", "fields": { "status": { "widget": "select", "options": ["new", "evaluating", "pursuing", "declined"] }, "fit_score": { "label": "Fit score" } } },
-    "connectors": { "fields": { "connector_type": { "label": "Type", "widget": "select", "options": ["google_drive", "gmail", "ctms", "clinicaltrials_gov"] }, "status": { "widget": "select", "options": ["connected", "paused", "error"], "colors": { "connected": "success", "error": "error" } } } }
+    "visits": {
+      "displayField": "visit_name",
+      "defaultSort": "visit_sequence|ASC",
+      "children": [
+        "visit_assessments",
+        "source_documents"
+      ]
+    },
+    "assessments": {
+      "fields": {
+        "category": {
+          "widget": "select",
+          "options": [
+            "safety",
+            "efficacy",
+            "pk",
+            "other"
+          ]
+        }
+      }
+    },
+    "visit_assessments": {
+      "label": "Schedule of Assessments",
+      "singular": "Scheduled assessment"
+    },
+    "source_documents": {
+      "fields": {
+        "status": {
+          "widget": "select",
+          "options": [
+            "draft",
+            "in_review",
+            "approved"
+          ],
+          "colors": {
+            "approved": "success",
+            "draft": "warning"
+          }
+        },
+        "content": {
+          "label": "Worksheet",
+          "widget": "textarea"
+        }
+      }
+    },
+    "automation_runs": {
+      "label": "Automations",
+      "fields": {
+        "status": {
+          "widget": "select",
+          "options": [
+            "queued",
+            "running",
+            "completed",
+            "failed"
+          ],
+          "colors": {
+            "completed": "success",
+            "failed": "error",
+            "running": "info"
+          }
+        }
+      }
+    },
+    "site_staff": {
+      "label": "Site Staff",
+      "singular": "Staff member",
+      "displayField": "full_name",
+      "fields": {
+        "fte": {
+          "label": "FTE"
+        }
+      }
+    },
+    "trial_opportunities": {
+      "label": "Opportunities",
+      "fields": {
+        "status": {
+          "widget": "select",
+          "options": [
+            "new",
+            "evaluating",
+            "pursuing",
+            "declined"
+          ]
+        },
+        "fit_score": {
+          "label": "Fit score"
+        },
+        "rationale": {
+          "label": "Why it fits",
+          "widget": "textarea"
+        }
+      },
+      "listColumns": [
+        "title",
+        "nct_number",
+        "phase",
+        "condition_name",
+        "fit_score",
+        "status"
+      ]
+    },
+    "connectors": {
+      "fields": {
+        "connector_type": {
+          "label": "Type",
+          "widget": "select",
+          "options": [
+            "google_drive",
+            "gmail",
+            "ctms",
+            "clinicaltrials_gov"
+          ]
+        },
+        "status": {
+          "widget": "select",
+          "options": [
+            "connected",
+            "paused",
+            "error"
+          ],
+          "colors": {
+            "connected": "success",
+            "error": "error"
+          }
+        }
+      }
+    }
+  },
+  "ai": {
+    "enabled": true,
+    "model": "claude-sonnet-5-5",
+    "assistantName": "Site Assistant",
+    "instructions": "You help a clinical research site (coordinators, regulatory staff, investigators) run studies. Protocols, ICFs, SOPs and budgets are uploaded as files on Documents records. When quoting protocol rules (eligibility, windows, dosing, procedures), be exact and cite the page. Never give medical advice about a specific patient.",
+    "documentTables": [
+      "documents"
+    ],
+    "tools": [
+      "documents",
+      "records",
+      "clinicaltrials_gov"
+    ],
+    "suggestions": [
+      "What are the key inclusion and exclusion criteria for our protocols?",
+      "Which studies are enrolling and how close are they to target?",
+      "What is the visit window for the Week 4 visit?",
+      "Find recruiting atopic dermatitis trials we could bid on"
+    ],
+    "workflows": [
+      {
+        "id": "soa_to_source",
+        "label": "Build visit schedule & source docs",
+        "table": "documents",
+        "when": {
+          "document_type": "protocol"
+        },
+        "description": "Reads the protocol's Schedule of Assessments and creates visits, assessments, the visit/assessment grid and a draft source document worksheet per visit.",
+        "targets": [
+          "visits",
+          "assessments",
+          "visit_assessments",
+          "source_documents"
+        ],
+        "inherit": {
+          "study_id": "study_id",
+          "document_id": "document_id"
+        },
+        "instructions": "Find the Schedule of Assessments (SoA / schedule of activities / study flowchart) in the attached protocol text.\n1. Create one visits row per visit column in order: visit_name as written (e.g. 'Screening', 'Day 1', 'Week 4'), visit_sequence 1..n, day_offset = study day relative to Day 1 (screening negative, e.g. -28), window_days = the allowed +/- window (0 if none).\n2. Create one assessments row per distinct procedure row (name, category such as Safety, Efficacy, Lab, PK, Administrative, instructions = short protocol guidance incl. section reference if given).\n3. Create a visit_assessments row (visit_id='@<visit ref>', assessment_id='@<assessment ref>', is_required=1) for every marked cell; put footnote text in notes (max 250 chars).\n4. Create one source_documents row per visit: title '<visit_name> source worksheet', status 'draft', content = a checklist worksheet listing each required assessment with blank fields to record (date/time, result, initials) and relevant footnotes.\nUse only what the protocol says."
+      },
+      {
+        "id": "find_trials",
+        "label": "Find trial opportunities",
+        "targets": [
+          "trial_opportunities",
+          "sponsors"
+        ],
+        "tools": [
+          "records",
+          "clinicaltrials_gov"
+        ],
+        "description": "Looks at your studies and searches ClinicalTrials.gov for recruiting trials that fit the site's therapeutic areas and experience.",
+        "instructions": "1. Read the site's studies (therapeutic_area, phase, status, sponsor) and the existing trial_opportunities (to avoid duplicates by nct_number) and sponsors.\n2. Search ClinicalTrials.gov for RECRUITING or NOT_YET_RECRUITING trials in the site's therapeutic areas (and the user's note, if any). Prefer US sites unless the note says otherwise.\n3. Propose up to 8 new trial_opportunities: title, nct_number, phase (e.g. 'Phase 2'), condition_name, found_via 'clinicaltrials.gov', status 'new', fit_score 0-100 based on therapeutic-area match, phase experience and sponsor relationship, rationale = 1-2 sentences.\n4. sponsor_id: the existing sponsor_id when the lead sponsor is already in sponsors (match by name); otherwise add a sponsors row (name, sponsor_type 'pharma', 'biotech', 'academic' or 'cro') and point at it with '@<ref>'."
+      }
+    ]
   }
 }

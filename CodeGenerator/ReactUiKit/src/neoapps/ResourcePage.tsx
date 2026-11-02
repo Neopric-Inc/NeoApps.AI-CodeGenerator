@@ -6,8 +6,9 @@ import {
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import SearchIcon from "@mui/icons-material/Search";
-import { deleteRecord, listRecords } from "./api";
+import { countWhere, deleteRecord, listRecords } from "./api";
 import { useApp } from "./AppContext";
+import { WorkflowButtons } from "./ai/Workflows";
 import { DataTable } from "./DataTable";
 import { Icon } from "./icons";
 import { RecordForm } from "./RecordForm";
@@ -19,6 +20,19 @@ export function useDelete(tableName: string, onDone: () => void) {
   const [target, setTarget] = useState<Record<string, any> | null>(null);
   const [error, setError] = useState<string>();
   const t = tables[tableName];
+  const [blockers, setBlockers] = useState<string[] | null>(null);
+  /** Deletes are soft (isActive = 0), so the database can't stop orphans: check related records first. */
+  const ask = async (row: Record<string, any> | null) => {
+    if (!row) return setTarget(null);
+    const id = row[t.primaryKey];
+    const refs = Object.values(tables).flatMap((c) => c.schema.columns
+      .filter((col) => col.references && col.references.table === tableName)
+      .map((col) => ({ child: c, column: col.name })));
+    const counts = await Promise.all(refs.map(async (r) => ({ ...r, n: await countWhere(r.child.name, r.column, id) })));
+    const used = counts.filter((c) => c.n > 0).map((c) => `${c.n} ${c.n === 1 ? c.child.singular.toLowerCase() : c.child.label.toLowerCase()}`);
+    if (used.length) setBlockers(used);
+    else setTarget(row);
+  };
   const confirm = async () => {
     if (!target) return;
     try {
@@ -42,17 +56,22 @@ export function useDelete(tableName: string, onDone: () => void) {
           <Button color="error" variant="contained" onClick={confirm}>Delete</Button>
         </DialogActions>
       </Dialog>
+      <Dialog open={!!blockers} onClose={() => setBlockers(null)}>
+        <DialogTitle>Can't delete this {t?.singular.toLowerCase()} yet</DialogTitle>
+        <DialogContent><DialogContentText>It is still used by {blockers?.join(", ")}. Delete or reassign those first.</DialogContentText></DialogContent>
+        <DialogActions><Button variant="contained" onClick={() => setBlockers(null)}>OK</Button></DialogActions>
+      </Dialog>
       <Snackbar open={!!error} autoHideDuration={6000} onClose={() => setError(undefined)}>
         <Alert severity="error" onClose={() => setError(undefined)}>{error}</Alert>
       </Snackbar>
     </>
   );
-  return { ask: setTarget, dialog };
+  return { ask, dialog };
 }
 
 export const ResourcePage: React.FC = () => {
   const { table: name = "" } = useParams();
-  const { tables, can } = useApp();
+  const { tables, can, ai } = useApp();
   const navigate = useNavigate();
   const table = tables[name];
   const [rows, setRows] = useState<Record<string, any>[]>([]);
@@ -119,6 +138,7 @@ export const ResourcePage: React.FC = () => {
           <TextField size="small" placeholder={`Search ${table.label.toLowerCase()}`} value={search} onChange={(e) => setSearch(e.target.value)}
             InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }} sx={{ width: { xs: "100%", sm: 260 }, bgcolor: "background.paper" }} />
         </form>
+        {ai?.enabled && <WorkflowButtons workflows={ai.workflows.filter((w) => !w.table && w.targets[0] === name)} onApplied={() => setReload((r) => r + 1)} />}
         {can(name, "create") && (
           <Button variant="contained" startIcon={<AddIcon />} onClick={() => setEditing(null)}>New {table.singular.toLowerCase()}</Button>
         )}

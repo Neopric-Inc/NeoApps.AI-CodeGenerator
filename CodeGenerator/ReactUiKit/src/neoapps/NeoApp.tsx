@@ -6,6 +6,7 @@ import { AppProvider, useApp } from "./AppContext";
 import { Customize } from "./admin/Customize";
 import { Members } from "./admin/Members";
 import { Roles } from "./admin/Roles";
+import { Assistant } from "./ai/Assistant";
 import { Dashboard } from "./Dashboard";
 import { Login } from "./Login";
 import { RecordPage } from "./RecordPage";
@@ -43,6 +44,7 @@ const Routed: React.FC = () => {
         <Route element={<Shell />}>
           <Route path="/" element={<Dashboard />} />
           <Route path="/dashboard" element={<Navigate to="/" replace />} />
+          <Route path="/assistant" element={<Assistant />} />
           <Route path="/r/:table" element={<ResourcePage />} />
           <Route path="/r/:table/:id" element={<RecordPage />} />
           <Route path="/admin/members" element={<AdminOnly element={<Members />} />} />

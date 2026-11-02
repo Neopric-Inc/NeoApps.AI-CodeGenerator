@@ -25,9 +25,11 @@ import StarOutline from "@mui/icons-material/StarOutline";
 import ShoppingCartOutlined from "@mui/icons-material/ShoppingCartOutlined";
 import SchoolOutlined from "@mui/icons-material/SchoolOutlined";
 import HomeOutlined from "@mui/icons-material/HomeOutlined";
+import AutoAwesomeOutlined from "@mui/icons-material/AutoAwesomeOutlined";
 
 /** Icon names usable in ui.config.json ("icon": "science"). */
 export const ICONS: Record<string, React.ComponentType<any>> = {
+  auto_awesome: AutoAwesomeOutlined,
   table: TableChartOutlined,
   people: PeopleOutline,
   description: DescriptionOutlined,

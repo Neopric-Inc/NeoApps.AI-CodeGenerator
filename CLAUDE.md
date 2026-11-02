@@ -15,7 +15,7 @@ This repo turns a MySQL schema into an app: a .NET 10 Web API plus a React admin
    - **never** reuse a built-in table name: `roles`, `users`, `entities`, `permissionmatrix`, `messagequeue`,
      `s3bucket`, `s3bucket_folders`, `dnd_ui_versions`, `project_dnd_ui_versions`, `workflow`, `workflows`,
      `workflows_projects`, `workflow_builds`, `workflow_runs`, `workflow_deployments`, `workflow_triggers`,
-     `workflow_trigger_conditions` (use e.g. `members`, `automation_runs`)
+     `workflow_trigger_conditions`, `ai_files`, `ai_chunks`, `ai_conversations`, `ai_messages`, `ai_runs` (use e.g. `members`, `automation_runs`)
    - plain `CREATE TABLE` / `INSERT` only: no `CREATE DATABASE`, `USE`, `DELIMITER`, procedures
    Save it as `workspace/<App>.sql` (git-ignored), or under `samples/` if it should be committed.
 3. **Design the UI** (recommended): write `workspace/<App>.ui.json` following `neoapps_ui_config_guide`
@@ -24,6 +24,9 @@ This repo turns a MySQL schema into an app: a .NET 10 Web API plus a React admin
    who does what. Model enum-like columns as VARCHAR in the schema and give them options here.
    **Generate:** `./neoapps new <App> --schema workspace/<App>.sql --ui workspace/<App>.ui.json` (App = PascalCase identifier, e.g. `TodoApp`).
    Add `--deploy` to build and run it in Docker, and `--template dnd` for the drag-and-drop designer UI.
+   **AI:** if the app needs document Q&A, "ask your data", or AI-driven record creation, add an `ai` section to the
+   ui.json (assistant instructions, `documentTables`, `tools`, `workflows`; see the guide) instead of modelling chat
+   tables. It runs on the Claude API when the API process has `ANTHROPIC_API_KEY` set (never put the key in files).
 4. **Report back:** web URL, Swagger URL, admin username/password (printed by the command and kept in
    `workspace/<App>/project.json`), and where the code is (`1_<ticks>/<App>/DotNet_Output/solution/<App>` and
    `.../ReactTs_Output3`).
@@ -44,6 +47,10 @@ ASPNETCORE_URLS=http://0.0.0.0:5100 dotnet run            # GET /health, /swagge
 cd ../../../../ReactTs_Output3                            # .env already points at the API port
 CYPRESS_INSTALL_BINARY=0 npm install --force && npm run build && npx serve -s build -l 3100
 ```
+
+Pass the key to the API from the environment, e.g. `set -a; . ~/secrets/anthropic.env; set +a` before `dotnet run`
+(`--deploy` forwards `ANTHROPIC_API_KEY` into the container). AI endpoints: `/v1/api/Ai/status`, `files`, `ask`,
+`conversations`, `workflows/{id}/preview|apply`.
 
 Login: `POST /v1/api/Token {"username","password"}` → `document.accessToken`. Use it as a Bearer token on `/v1/api/<Table>`.
 Rows are owner-scoped (`createdBy` = the logged-in user), so seed rows inserted with another `createdBy` won't show up.

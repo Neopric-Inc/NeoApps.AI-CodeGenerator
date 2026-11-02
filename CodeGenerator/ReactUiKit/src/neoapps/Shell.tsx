@@ -23,7 +23,7 @@ const NavItem: React.FC<{ to: string; icon: string; label: string; onClick?: () 
 };
 
 export const Shell: React.FC = () => {
-  const { config, schema, menu, tables, me, logout } = useApp();
+  const { config, schema, menu, tables, me, ai, logout } = useApp();
   const theme = useTheme();
   const desktop = useMediaQuery(theme.breakpoints.up("md"));
   const [open, setOpen] = useState(false);
@@ -43,6 +43,7 @@ export const Shell: React.FC = () => {
       <Box sx={{ overflowY: "auto", flex: 1, py: 1 }}>
         <List dense disablePadding>
           <NavItem to="/" icon="dashboard" label="Dashboard" onClick={close} />
+          {ai?.enabled && <NavItem to="/assistant" icon="auto_awesome" label={ai.assistantName || "Assistant"} onClick={close} />}
         </List>
         {menu.map((g) => (
           <List key={g.group} dense subheader={<ListSubheader sx={{ lineHeight: "32px", fontSize: 11, textTransform: "uppercase", letterSpacing: 0.6, bgcolor: "transparent" }}>{g.group}</ListSubheader>}>

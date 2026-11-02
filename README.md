@@ -123,6 +123,7 @@ Each app gets its own ports: API from 5100 (`http://localhost:5100/swagger`), we
 | `NEOAPPS_RABBITMQ_URL` / `NEOAPPS_REDIS` | `amqp://neoapps:neoapps@localhost:5672/` / `localhost:6379` | Written into the generated `appsettings.json` for `dotnet run` |
 | `NEOAPPS_DOCKER_*` | `mysql`, `rabbitmq`, `redis` | Hostnames apps use inside the `neoapps` Docker network |
 | `NEOAPPS_FIRST_API_PORT` / `NEOAPPS_FIRST_WEB_PORT` | `5100` / `3100` | Port ranges for new apps |
+| `ANTHROPIC_API_KEY` | (unset) | Enables the AI assistant in generated APIs (read at runtime, never written to disk) |
 
 ## Option 2: Command line
 
@@ -188,6 +189,20 @@ and **Admin > Members / Roles / Customize UI**.
   - Roles grant view/create/edit/delete per table. Declare them in `ui.config.json` (`"roles": {"Coordinator": {"*": "r", "documents": "cru"}}`, defaulting to Member + Viewer), or manage them in **Admin > Roles**.
   - **Admin > Members** adds users and assigns roles. The API enforces every permission, and the UI hides menus and buttons you can't use.
   - Passwords are stored as BCrypt hashes.
+
+## AI assistant (Claude)
+
+Add an `ai` section to `ui.config.json` and run the API with `ANTHROPIC_API_KEY` set. The app then gets:
+
+- **Assistant page.** Answers questions from uploaded documents, with `[S1]` citations that open the file and page, and from the app's own records ("ask your data"). It says plainly when the sources don't contain the answer, keeps a conversation history per user, and is limited to the tables each user may read.
+- **Files panel** on the record pages of `documentTables`. Upload PDF, DOCX, TXT, MD, CSV or JSON. Text is extracted (PDF tables keep their column layout) and indexed in MySQL full-text search.
+- **Workflows.** Buttons that have Claude read a record's documents (or external data such as ClinicalTrials.gov) and propose new records across several tables. The user reviews the proposal, unticks rows if needed, and applies it in one transaction.
+- **Ask AI** on every record page, which opens the assistant focused on that record.
+
+The key is read only from the environment, so it never touches generated files. `--deploy` passes it into the
+container and keeps uploads in a Docker volume. See the `ai` section of
+[`samples/clinical-research-site.ui.json`](samples/clinical-research-site.ui.json): protocol Q&A, a Schedule of
+Assessments → visits, assessments and source worksheets workflow, and a ClinicalTrials.gov trial finder.
 
 ## Writing a schema
 

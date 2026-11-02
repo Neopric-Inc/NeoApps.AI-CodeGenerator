@@ -28,7 +28,8 @@ public static class SchemaReader
     public static DataTable GetTables(MySqlConnection connection)
     {
         var dt = Query(connection,
-            "SELECT * FROM information_schema.tables WHERE table_schema = DATABASE() AND table_type = 'BASE TABLE' ORDER BY table_name",
+            // ai_* tables belong to the generated API's AI assistant (created at runtime); they get no generated CRUD.
+            "SELECT * FROM information_schema.tables WHERE table_schema = DATABASE() AND table_type = 'BASE TABLE' AND table_name NOT LIKE 'ai\\_%' ORDER BY table_name",
             null);
         if (IsCaseInsensitive(connection))
         {

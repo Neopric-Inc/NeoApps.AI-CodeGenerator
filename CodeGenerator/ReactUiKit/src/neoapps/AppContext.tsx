@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { api, getToken, setToken } from "./api";
+import { aiStatus, AiStatus } from "./ai/aiApi";
 import { mergeConfig, resolveAll, resolveMenu } from "./config";
 import { AppSchema, Me, MenuGroup, Permission, ResolvedTable, UiConfig } from "./types";
 
@@ -13,6 +14,8 @@ interface AppState {
   tables: Record<string, ResolvedTable>;
   menu: MenuGroup[];
   me: Me | null;
+  /** AI assistant status for this user; null while loading or when the API has no AI module. */
+  ai: AiStatus | null;
   can: (table: string, action: keyof Permission) => boolean;
   refreshSession: () => Promise<void>;
   saveConfig: (cfg: UiConfig) => Promise<void>;
@@ -38,6 +41,7 @@ export const AppProvider: React.FC = ({ children }) => {
   const [serverConfig, setServerConfig] = useState<UiConfig | null>(null);
   const [preview, setPreview] = useState<UiConfig | null>(null);
   const [me, setMe] = useState<Me | null>(null);
+  const [ai, setAi] = useState<AiStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>();
 
@@ -60,6 +64,7 @@ export const AppProvider: React.FC = ({ children }) => {
       const [meRes, cfgRes] = await Promise.all([api<any>("GET", "Access/me"), api<any>("GET", "Access/ui-config").catch(() => null)]);
       setMe(meRes?.document || null);
       setServerConfig(cfgRes?.document || null);
+      aiStatus().then(setAi).catch(() => setAi({ enabled: false, configured: false, model: "", assistantName: "Assistant", documentTables: [], suggestions: [], workflows: [] }));
     } catch {
       setToken(null);
       setMe(null);
@@ -103,7 +108,7 @@ export const AppProvider: React.FC = ({ children }) => {
   }, []);
 
   const value: AppState = {
-    loading, error, schema, config, baseConfig, tables, menu, me, can, refreshSession, saveConfig,
+    loading, error, schema, config, baseConfig, tables, menu, me, ai, can, refreshSession, saveConfig,
     previewConfig: setPreview, logout,
   };
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

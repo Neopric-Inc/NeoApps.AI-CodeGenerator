@@ -17,8 +17,15 @@ interface Props {
   onSaved: () => void;
 }
 
+/** MySQL column default as a form value ('pharma' -> pharma); expressions like CURRENT_TIMESTAMP are left to the server. */
+export function columnDefault(f: ResolvedField): any {
+  const raw = f.column.defaultValue;
+  if (raw === undefined || raw === null || /^(NULL|CURRENT_TIMESTAMP.*|now\(\).*)$/i.test(raw)) return undefined;
+  return raw.replace(/^'(.*)'$/, "$1");
+}
+
 function initialValue(f: ResolvedField, record?: Record<string, any> | null, defaults?: Record<string, any>) {
-  const v = record ? record[f.name] : defaults && f.name in defaults ? defaults[f.name] : f.defaultValue;
+  const v = record ? record[f.name] : defaults && f.name in defaults ? defaults[f.name] : f.defaultValue ?? columnDefault(f);
   switch (f.widget) {
     case "checkbox": return v === undefined || v === null ? 0 : Number(v) === 1 || v === true ? 1 : 0;
     case "date": return toDateInput(v);
@@ -70,7 +77,10 @@ export const RecordForm: React.FC<Props> = ({ table, record, defaults, open, onC
       const numeric = ["int", "bigint", "smallint", "mediumint", "tinyint", "decimal", "float", "double", "year"].includes(f.column.dataType);
       if (f.widget === "date" || f.widget === "datetime") out[f.name] = toApiDate(v);
       else if (f.widget === "checkbox") out[f.name] = v ? 1 : 0;
-      else if (v === "" || v === undefined) out[f.name] = f.column.nullable ? null : numeric ? 0 : "";
+      else if (v === "" || v === undefined) {
+        const d = columnDefault(f);
+        out[f.name] = d !== undefined ? (numeric ? Number(d) : d) : f.column.nullable ? null : numeric ? 0 : "";
+      }
       else out[f.name] = numeric ? Number(v) : v;
     }
     // Dates the user didn't touch are sent back in API format, not the display format.
@@ -93,6 +103,14 @@ export const RecordForm: React.FC<Props> = ({ table, record, defaults, open, onC
       invalidateReferences(table.name);
       onSaved();
     } catch (e: any) {
+      if (e.fieldErrors) {
+        const fe: Record<string, string> = {};
+        for (const [k, msgs] of Object.entries<any>(e.fieldErrors)) {
+          const f = table.fields[k];
+          if (f) fe[k] = `${f.label}: ${String(msgs[0] || "invalid").replace(/^The \S+ field /, "")}`;
+        }
+        setErrors(fe);
+      }
       setError(/foreign key/i.test(e.message) ? "One of the selected related records no longer exists." : e.message);
     } finally {
       setBusy(false);

@@ -6,6 +6,7 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Log4Net.AspNetCore" Version="8.0.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="10.3.1" />
     <PackageReference Include="StackExchange.Redis" Version="2.13.23" />
+    <PackageReference Include="PdfPig" Version="0.1.16" />
   </ItemGroup>
 
   <ItemGroup>
