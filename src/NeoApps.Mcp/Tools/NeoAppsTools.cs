@@ -178,6 +178,20 @@ public sealed class NeoAppsTools(
 
     // ---------------------------------------------------------------- UI configuration
 
+    [McpServerTool(Name = "neoapps_preview_app")]
+    [Description("""
+        Plans an app before generating it (and re-plans when requirements change). Saves the schema/ui config into
+        workspace/<name>/ and writes preview.html: data-model diagram, screens, who-can-do-what matrix, AI features,
+        issues to fix, and what changed since the last saved version. Show it to the user and iterate; when they approve,
+        call again with saveVersion=true, then neoapps_create_app. Keep workspace/<name>/requirements.md up to date too.
+        """)]
+    public object PreviewApp(
+        [Description("App name (PascalCase), e.g. SplitBills.")] string name,
+        [Description("Full MySQL CREATE TABLE script; omit to reuse workspace/<name>/schema.sql.")] string? sqlSchema = null,
+        [Description("ui.config.json content; omit to reuse the saved one.")] string? uiConfig = null,
+        [Description("Record this plan as the next approved version (history/vN).")] bool saveVersion = false) =>
+        Requirements.Preview(store, name, sqlSchema, uiConfig, saveVersion);
+
     [McpServerTool(Name = "neoapps_ui_config_guide", ReadOnly = true, Idempotent = true)]
     [Description("Format of ui.config.json: how to set labels, field widgets (select/checkbox/currency/textarea/reference...), list columns, form order, menu groups, icons, dashboard cards, theme and RBAC roles.")]
     public static string UiConfigGuide() => UiConfigTools.Guide;

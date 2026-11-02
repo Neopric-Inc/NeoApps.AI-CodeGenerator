@@ -5,8 +5,17 @@ This repo turns a MySQL schema into an app: a .NET 10 Web API plus a React admin
 
 ## Generating an app from requirements
 
-1. **Clarify briefly.** Get the core entities, their key fields and the relations. Make reasonable assumptions and state them.
-   Don't over-ask.
+Work in the app's planning folder `workspace/<App>/` (git-ignored): `requirements.md`, `schema.sql`, `ui.config.json`.
+
+1. **Collect requirements with the user.** Users often don't know exactly what they want yet, so help them shape it.
+   Ask in short rounds (2-4 questions each, with multiple-choice options where the tool exists), starting from what they
+   already said: the goal and who uses it; the things to track and their key details; how those things relate; who may
+   do what; the screens and dashboard numbers they care about; and whether they want AI (questions over documents,
+   questions over their data, or AI that creates records). Suggest sensible defaults, and don't ask about what you can
+   assume. If the user just wants it built, assume and state your assumptions.
+   Keep **`requirements.md`** as the living record, in plain language for the user: Goal · Users & roles · What it
+   tracks (with key details) · How things relate · Screens & dashboard · AI · Assumptions · Open questions ·
+   Changelog (one dated line per version).
 2. **Write the schema.** Follow the rules from `./neoapps guidelines` (also in `src/NeoApps.Mcp/Tools/SchemaGuidelines.cs`):
    - every table: `<singular>_id INT AUTO_INCREMENT PRIMARY KEY` plus the audit columns
      `createdBy, modifiedBy VARCHAR(255) NOT NULL`, `createdAt, modifiedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP`,
@@ -17,17 +26,28 @@ This repo turns a MySQL schema into an app: a .NET 10 Web API plus a React admin
      `workflows_projects`, `workflow_builds`, `workflow_runs`, `workflow_deployments`, `workflow_triggers`,
      `workflow_trigger_conditions`, `ai_files`, `ai_chunks`, `ai_conversations`, `ai_messages`, `ai_runs` (use e.g. `members`, `automation_runs`)
    - plain `CREATE TABLE` / `INSERT` only: no `CREATE DATABASE`, `USE`, `DELIMITER`, procedures
-   Save it as `workspace/<App>.sql` (git-ignored), or under `samples/` if it should be committed.
-3. **Design the UI** (recommended): write `workspace/<App>.ui.json` following `neoapps_ui_config_guide`
+   Save it as `workspace/<App>/schema.sql` (copy it to `samples/` if it should be committed).
+3. **Design the UI** (recommended): write `workspace/<App>/ui.config.json` following `neoapps_ui_config_guide`
    (`src/NeoApps.Mcp/Tools/UiConfigTools.cs`). It sets menu groups, labels, select options and colours for
    status/type columns, list columns, form order, dashboard cards, theme, and `roles` matching how the user described
    who does what. Model enum-like columns as VARCHAR in the schema and give them options here.
-   **Generate:** `./neoapps new <App> --schema workspace/<App>.sql --ui workspace/<App>.ui.json` (App = PascalCase identifier, e.g. `TodoApp`).
+   **Preview before generating:** `./neoapps preview <App>` (MCP: `neoapps_preview_app`) checks the plan and writes
+   `workspace/<App>/preview.html`, a one-page visual with a data-model diagram, every screen's list and form fields, a
+   who-can-do-what matrix, the AI features, and issues to fix. Fix the issues, then show the page to the user
+   (publish it as an artifact if you can, otherwise send the file) together with a short plain-language summary, and
+   iterate. When the user approves, run `./neoapps preview <App> --save` to record the version (`history/vN/`).
+   **Generate:** `./neoapps new <App> --schema workspace/<App>/schema.sql --ui workspace/<App>/ui.config.json` (App = PascalCase identifier, e.g. `TodoApp`).
    Add `--deploy` to build and run it in Docker, and `--template dnd` for the drag-and-drop designer UI.
    **AI:** if the app needs document Q&A, "ask your data", or AI-driven record creation, add an `ai` section to the
    ui.json (assistant instructions, `documentTables`, `tools`, `workflows`; see the guide) instead of modelling chat
    tables. It runs on the Claude API when the API process has `ANTHROPIC_API_KEY` set (never put the key in files).
-4. **Report back:** web URL, Swagger URL, admin username/password (printed by the command and kept in
+4. **When requirements change** (they will): add a changelog line to `requirements.md`, update the schema and UI config,
+   and run `./neoapps preview <App>`. It now opens with **What changed since the last version**: tables and columns added,
+   removed or changed, relations, role permissions, AI workflows and the menu, with changes highlighted in the diagram.
+   Confirm with the user, `--save`, then regenerate with `./neoapps new` (plus `--deploy` if it runs in Docker).
+   Regenerating rebuilds the database, so tell the user that test data is reset. UI-only changes (labels, options,
+   menu, list columns) can use `./neoapps ui <App> --set changes.json`, which keeps the data.
+5. **Report back:** web URL, Swagger URL, admin username/password (printed by the command and kept in
    `workspace/<App>/project.json`), and where the code is (`1_<ticks>/<App>/DotNet_Output/solution/<App>` and
    `.../ReactTs_Output3`).
 

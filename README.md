@@ -20,6 +20,12 @@ Tips for a good result:
 - **AI:** say if you want questions answered from documents, questions about your data, or AI that creates records from a document.
 - **Changes:** after it's built, just ask ("make status a dropdown", "let the front desk edit invoices"). Admins can also adjust screens in the app under **Admin → Customize UI**.
 
+**Not sure exactly what you need yet?** Say so. For example:
+
+> Use the GitHub repo **Neopric-Inc/NeoApps.AI-CodeGenerator**. I want an app to split shared expenses with roommates and friends, like Splitwise. Help me work out the requirements first and show me a preview before you build it.
+
+Claude asks a few short rounds of questions and keeps a plain-language requirements doc. Before generating anything it shows a **one-page preview of the plan**: a diagram of the data, every screen's list and form, who can do what, the AI features, and any issues. Change your mind as often as you like. Each new preview starts with **what changed since the last version**, and new or changed items are highlighted. When you're happy, Claude builds it. Developers can run the same step with `./neoapps preview <App>`.
+
 To run the app on your own computer instead of in Claude's sandbox, use one of the options below. You'll need Docker Desktop.
 
 ## Other ways to use it
@@ -50,6 +56,7 @@ Then either restart Claude Desktop and ask *"Build me a todo app and run it loca
 
 ```bash
 ./neoapps new TodoApp --schema samples/todo-app.sql --deploy   # generate + run in Docker
+./neoapps preview MyApp --schema my.sql --ui my.ui.json      # visual plan + checks before generating
 ./neoapps help                                                 # all commands
 ```
 

@@ -10,7 +10,7 @@ namespace NeoApps.Mcp;
 /// </summary>
 public static class Cli
 {
-    private static readonly string[] Commands = ["new", "frontend", "ui", "deploy", "status", "logs", "stop", "list", "doctor", "guidelines", "infra", "help", "--help", "-h"];
+    private static readonly string[] Commands = ["new", "preview", "frontend", "ui", "deploy", "status", "logs", "stop", "list", "doctor", "guidelines", "infra", "help", "--help", "-h"];
     private static readonly JsonSerializerOptions Pretty = new() { WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
 
     public static bool IsCommand(string arg) => Commands.Contains(arg, StringComparer.OrdinalIgnoreCase);
@@ -44,6 +44,12 @@ public static class Cli
                     if (ok) Print(await tools.AppStatus(Name(), ct));
                     return ok ? 0 : 1;
                 }
+                case "preview":
+                    Print(Requirements.Preview(store, Name(),
+                        sqlSchema: Opt("--schema") is { } sf ? await File.ReadAllTextAsync(sf) : null,
+                        uiConfig: Opt("--ui") is { } uf ? await File.ReadAllTextAsync(uf) : null,
+                        saveVersion: Flag("--save"), copyTo: Opt("--out")));
+                    return 0;
                 case "frontend":
                     return await RunJob(jobs, tools.GenerateFrontend(Name(), Opt("--template") ?? "app", ct)) ? 0 : 1;
                 case "ui":
@@ -102,6 +108,10 @@ public static class Cli
 
           new <App> --schema <file.sql> [--ui ui.config.json] [--template app|dnd] [--no-frontend] [--keep-db] [--deploy] [--consumer]
                                   generate database + .NET 10 API + React UI, optionally run it in Docker
+          preview <App> [--schema f.sql] [--ui f.json] [--save] [--out file.html]
+                                  plan before generating: writes workspace/<App>/preview.html (data model diagram,
+                                  screens, roles, AI, issues, and what changed since the last saved version).
+                                  --save records the plan as the next version in workspace/<App>/history/
           frontend <App> [--template app|dnd]   regenerate the UI
           ui <App> [--set changes.json [--replace]]   show the UI config, or merge changes into it and regenerate the UI
           deploy <App> [--consumer]             build and run the app in Docker
