@@ -1,0 +1,62 @@
+{
+  "appName": "Research Site OS",
+  "tagline": "Studies, regulatory documents and startup in one place",
+  "theme": { "primary": "#1f5fbf", "secondary": "#0ca678" },
+  "menu": [
+    { "group": "Studies", "items": ["studies", "sponsors", "trial_opportunities"] },
+    { "group": "Startup", "items": ["visits", "assessments", "visit_assessments", "source_documents", "automation_runs"] },
+    { "group": "Documents", "items": ["documents", "connectors"] },
+    { "group": "Ask", "items": ["chat_threads", "chat_messages", "message_citations"] },
+    { "group": "Team", "items": ["site_staff", "study_assignments"] }
+  ],
+  "dashboard": {
+    "cards": [
+      { "table": "studies", "label": "Studies" },
+      { "table": "documents", "label": "Documents" },
+      { "table": "source_documents", "label": "Source documents" },
+      { "table": "trial_opportunities", "label": "Opportunities" }
+    ],
+    "recentTable": "documents"
+  },
+  "roles": {
+    "Coordinator": { "*": "r", "documents": "cru", "visits": "cru", "visit_assessments": "cru", "source_documents": "cru", "chat_threads": "cru", "chat_messages": "cru" },
+    "Viewer": { "*": "r" }
+  },
+  "tables": {
+    "studies": {
+      "icon": "science",
+      "description": "Trials the site is running or evaluating",
+      "displayField": "protocol_number",
+      "listColumns": ["protocol_number", "title", "sponsor_id", "phase", "status", "current_enrollment", "target_enrollment"],
+      "formFields": ["sponsor_id", "protocol_number", "title", "nct_number", "phase", "therapeutic_area", "status", "start_date", "target_enrollment", "current_enrollment", "budget_amount"],
+      "children": ["visits", "documents", "study_assignments", "chat_threads"],
+      "fields": {
+        "nct_number": { "label": "NCT #", "placeholder": "NCT01234567", "help": "ClinicalTrials.gov identifier" },
+        "phase": { "widget": "select", "options": ["Phase 1", "Phase 2", "Phase 3", "Phase 4"] },
+        "status": { "widget": "select", "options": ["startup", "enrolling", "follow-up", "closed"],
+                    "colors": { "startup": "warning", "enrolling": "success", "follow-up": "info", "closed": "default" } },
+        "budget_amount": { "label": "Budget" }
+      }
+    },
+    "documents": {
+      "displayField": "title",
+      "listColumns": ["title", "document_type", "study_id", "version", "status", "effective_date"],
+      "fields": {
+        "document_type": { "label": "Type", "widget": "select", "options": ["protocol", "icf", "sop", "budget", "roster", "training_log", "other"] },
+        "status": { "widget": "select", "options": ["draft", "current", "superseded"], "colors": { "current": "success", "draft": "warning", "superseded": "default" } },
+        "file_url": { "label": "File" }
+      }
+    },
+    "visits": { "displayField": "visit_name", "defaultSort": "visit_sequence|ASC", "children": ["visit_assessments", "source_documents"] },
+    "assessments": { "fields": { "category": { "widget": "select", "options": ["safety", "efficacy", "pk", "other"] } } },
+    "visit_assessments": { "label": "Schedule of Assessments", "singular": "Scheduled assessment" },
+    "source_documents": { "fields": { "status": { "widget": "select", "options": ["draft", "in_review", "approved"], "colors": { "approved": "success", "draft": "warning" } } } },
+    "automation_runs": { "label": "Automations", "fields": { "status": { "widget": "select", "options": ["queued", "running", "completed", "failed"], "colors": { "completed": "success", "failed": "error", "running": "info" } } } },
+    "chat_threads": { "label": "Questions", "singular": "Question", "children": ["chat_messages"] },
+    "chat_messages": { "label": "Answers", "displayField": "content", "fields": { "sender": { "widget": "select", "options": ["user", "agent"] }, "found_in_sources": { "label": "Answered from sources" } } },
+    "message_citations": { "label": "Citations" },
+    "site_staff": { "label": "Site Staff", "singular": "Staff member", "displayField": "full_name", "fields": { "fte": { "label": "FTE" } } },
+    "trial_opportunities": { "label": "Opportunities", "fields": { "status": { "widget": "select", "options": ["new", "evaluating", "pursuing", "declined"] }, "fit_score": { "label": "Fit score" } } },
+    "connectors": { "fields": { "connector_type": { "label": "Type", "widget": "select", "options": ["google_drive", "gmail", "ctms", "clinicaltrials_gov"] }, "status": { "widget": "select", "options": ["connected", "paused", "error"], "colors": { "connected": "success", "error": "error" } } } }
+  }
+}

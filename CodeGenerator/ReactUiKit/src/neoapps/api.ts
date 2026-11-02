@@ -1,0 +1,89 @@
+// Thin client for the generated .NET API (responses are { code, message, document }).
+const TOKEN_KEY = "neoapps.token";
+
+export const apiBase = (): string => {
+  const base = process.env.REACT_APP_API_BASE_URL || "http://localhost:5000/v1/api/";
+  return base.endsWith("/") ? base : base + "/";
+};
+
+export const getToken = (): string | null => {
+  try {
+    return localStorage.getItem(TOKEN_KEY);
+  } catch {
+    return null;
+  }
+};
+
+export const setToken = (token: string | null) => {
+  try {
+    if (token) localStorage.setItem(TOKEN_KEY, token);
+    else localStorage.removeItem(TOKEN_KEY);
+  } catch {
+    /* storage unavailable */
+  }
+};
+
+export class ApiError extends Error {
+  status: number;
+  constructor(status: number, message: string) {
+    super(message);
+    this.status = status;
+  }
+}
+
+export async function api<T = any>(method: string, path: string, body?: any): Promise<T> {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  const token = getToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const res = await fetch(apiBase() + path, { method, headers, body: body === undefined ? undefined : JSON.stringify(body) });
+  const text = await res.text();
+  let json: any = null;
+  try {
+    json = text ? JSON.parse(text) : null;
+  } catch {
+    json = null;
+  }
+  if (res.status === 401 && path !== "Token") {
+    throw new ApiError(401, "You don't have permission for this action.");
+  }
+  if (res.status === 403) throw new ApiError(403, "Administrators only.");
+  if (!res.ok) {
+    const msg = (json && (json.message === "Exception" ? json.document : json.message)) || res.statusText || "Request failed";
+    throw new ApiError(res.status, typeof msg === "string" ? msg : JSON.stringify(msg));
+  }
+  return json as T;
+}
+
+export interface Page<T = Record<string, any>> {
+  records: T[];
+  total: number;
+}
+
+/** Lists records (page is 1-based). Missing data comes back as code 0 "No Record Found". */
+export async function listRecords(table: string, page = 1, pageSize = 25, orderBy?: string, search?: string): Promise<Page> {
+  const params = new URLSearchParams({ page: String(page), itemsPerPage: String(pageSize) });
+  if (orderBy) params.set("orderBy", orderBy);
+  let path = `${table}?${params}`;
+  if (search && search.trim()) {
+    params.set("searchKey", search.trim());
+    path = `${table}/search?${params}`;
+  }
+  const res = await api<any>("GET", path);
+  const doc = res && res.code === 1 ? res.document : null;
+  return { records: doc?.records || [], total: doc?.totalRecords || 0 };
+}
+
+export const getRecord = async (table: string, id: any) => {
+  const res = await api<any>("GET", `${table}/${encodeURIComponent(id)}`);
+  return res?.code === 1 ? res.document : null;
+};
+export const createRecord = (table: string, data: any) => api<any>("POST", table, data);
+export const updateRecord = (table: string, id: any, data: any) => api<any>("PUT", `${table}/${encodeURIComponent(id)}`, data);
+export const deleteRecord = (table: string, id: any) => api<any>("DELETE", `${table}/${encodeURIComponent(id)}`);
+
+export async function login(username: string, password: string): Promise<void> {
+  const res = await api<any>("POST", "Token", { username, password });
+  const token = res?.document?.accessToken;
+  if (!token) throw new ApiError(401, "Invalid username or password.");
+  setToken(token);
+}

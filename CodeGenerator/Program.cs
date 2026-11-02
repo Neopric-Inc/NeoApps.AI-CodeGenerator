@@ -1191,6 +1191,7 @@ WHERE
                     if (isRbac)
                     {
                         Console.WriteLine("Simple_Rbac script running for tables");
+                        string adminPasswordHash = BCrypt.Net.BCrypt.HashPassword(adminPassword, 11);
                         string createTableSql2 = @$"
 CREATE TABLE Roles (
   role_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -1206,7 +1207,7 @@ VALUES ('Administrator', 1);
 
 CREATE TABLE Users (
   user_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  username VARCHAR(50) NOT NULL,
+  username VARCHAR(50) NOT NULL UNIQUE,
   password_hash VARCHAR(255) NOT NULL,
   role_id INT NOT NULL,
   createdBy VARCHAR(255),
@@ -1218,7 +1219,7 @@ CREATE TABLE Users (
   
 );
 INSERT INTO Users (username, password_hash, role_id,isActive)
-VALUES ('{adminUsername}', '{adminPassword}', 1, 1);
+VALUES ('{adminUsername}', '{adminPasswordHash}', 1, 1);
 
 CREATE TABLE Entities (
   entity_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -1254,7 +1255,7 @@ CREATE TRIGGER prevent_admin_insert
 BEFORE INSERT ON Users
 FOR EACH ROW
 BEGIN
-  IF NEW.username = '{adminUsername}' AND NEW.password_hash = '{adminPassword}' THEN
+  IF NEW.username = '{adminUsername}' AND NEW.password_hash = '{adminPasswordHash}' THEN
     SIGNAL SQLSTATE '45000'
       SET MESSAGE_TEXT = 'Cannot insert the specified record';
   END IF;
@@ -1264,7 +1265,7 @@ CREATE TRIGGER prevent_admin_delete
 BEFORE DELETE ON Users
 FOR EACH ROW
 BEGIN
-  IF OLD.username = '{adminUsername}' AND OLD.password_hash = '{adminPassword}' THEN
+  IF OLD.username = '{adminUsername}' AND OLD.password_hash = '{adminPasswordHash}' THEN
     SIGNAL SQLSTATE '45000'
       SET MESSAGE_TEXT = 'Cannot delete the specified record';
   END IF;
@@ -1274,7 +1275,7 @@ CREATE TRIGGER prevent_admin_update
 BEFORE UPDATE ON Users
 FOR EACH ROW
 BEGIN
-  IF OLD.username = '{adminUsername}' AND OLD.password_hash = '{adminPassword}' THEN
+  IF OLD.username = '{adminUsername}' AND OLD.password_hash = '{adminPasswordHash}' THEN
     SIGNAL SQLSTATE '45000'
       SET MESSAGE_TEXT = 'Cannot update the specified record';
   END IF;
@@ -1306,54 +1307,14 @@ CROSS JOIN Entities e
 JOIN Users u ON u.role_id = r.role_id
 WHERE r.role_name = 'Administrator';
 
-CREATE TRIGGER prevent_permission_matrix_insert
-BEFORE INSERT ON PermissionMatrix
-FOR EACH ROW
-BEGIN
-  DECLARE user_role_id INT;
-  
-  SELECT role_id INTO user_role_id FROM Users WHERE user_id = NEW.user_id;
-  
-  IF user_role_id <> 1 THEN
-    SIGNAL SQLSTATE '45000'
-    SET MESSAGE_TEXT = 'Only administrators are allowed to add entries to PermissionMatrix';
-  END IF;
-END;
-
-CREATE TRIGGER prevent_permission_matrix_update
-BEFORE UPDATE ON PermissionMatrix
-FOR EACH ROW
-BEGIN
-  DECLARE user_role_id INT;
-  
-  SELECT role_id INTO user_role_id FROM Users WHERE user_id = NEW.user_id;
-  
-  IF user_role_id <> 1 THEN
-    SIGNAL SQLSTATE '45000'
-    SET MESSAGE_TEXT = 'Only administrators are allowed to update entries in PermissionMatrix';
-  END IF;
-END;
-
-CREATE TRIGGER prevent_permission_matrix_delete
-BEFORE DELETE ON PermissionMatrix
-FOR EACH ROW
-BEGIN
-  DECLARE user_role_id INT;
-  
-  SELECT role_id INTO user_role_id FROM Users WHERE user_id = OLD.user_id;
-  
-  IF user_role_id <> 1 THEN
-    SIGNAL SQLSTATE '45000'
-    SET MESSAGE_TEXT = 'Only administrators are allowed to delete entries from PermissionMatrix';
-  END IF;
-END;
-
-
+-- Permission changes are enforced in the API (AccessController and admin-only RBAC controllers). The previous
+-- triggers checked the role of the row's *subject*, which made non-admin roles impossible to configure.
 ";
                         using (MySqlCommand command = new MySqlCommand(createTableSql3, connection))
                         {
                             command.ExecuteNonQuery();
                         }
+                        UiKit.SeedRoles(connection, adminUsername, UiConfigPath);
                     }
                     MasterCredentialModel masterCredentialModel = new MasterCredentialModel()
                     {
@@ -2983,6 +2944,9 @@ APIResponse Update{tableName}Transactional({primaryKeyListParam},{tableName}Tran
         /// <summary>Admin login created for the generated app's Users table (backend runs only).</summary>
         public static string GeneratedAdminUsername, GeneratedAdminPassword;
 
+        /// <summary>Optional ui.config.json (labels, widgets, menu, theme, roles) for the schema-driven UI.</summary>
+        public static string UiConfigPath;
+
         static void EnsureDatabaseExists(string server, string port, string username, string password, string databaseName, bool reset)
         {
             if (string.IsNullOrWhiteSpace(databaseName))
@@ -3031,9 +2995,8 @@ APIResponse Update{tableName}Transactional({primaryKeyListParam},{tableName}Tran
                 .AddJsonFile("appsettings.Local.json", optional: true)
                 .AddEnvironmentVariables("NEOAPPS_")
                 .Build();
-
-
-          string project_id = keyValueDict["project_id"];
+            UiConfigPath = keyValueDict.GetValueOrDefault("uiConfig");
+            string project_id = keyValueDict["project_id"];
             string server = keyValueDict["server"];
             string uid = keyValueDict["uid"];
             string username = keyValueDict["username"];
@@ -4279,6 +4242,10 @@ CREATE TABLE IF NOT EXISTS `workflow_trigger_conditions` (
                     Functions p = new Functions(databaseName);
                     p.MakeAndCopyDirectory(src, des);
                     p.ProcessFile(src, des, server, uid, username, password, databaseName, script, statusOfGeneration, projectName, DBexists, port, backendTechnology, projectType);
+                    // Schema-driven UI: generic list/form/record pages, RBAC-aware menus, admin screens, configured by ui.config.json.
+                    UiKit.Install(Program.GeneratorRoot, des,
+                        $"server={server};port={port};username={username};password={password};database={databaseName};",
+                        projectName, Program.UiConfigPath);
                     var dirs = Directory.GetFiles(des, "*.*", SearchOption.AllDirectories);
                     foreach (string fileName in dirs)
                     {

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.IdentityModel.Tokens.Jwt;
@@ -40,6 +40,7 @@ namespace nkv.MicroService.API.Controllers
                 //Note: Implement your own logic to get username/passoward and validate
                 if (usersModel != null)
                 {
+                    usersModel.password_hash = null; // never echo credentials back to the client
                     string owner_name = permissionmatrixManager.GetPermissionmatrixOwnerIDByUserID(usersModel.user_id);
                     var tokenHandler = new JwtSecurityTokenHandler();
                     var key = Encoding.ASCII.GetBytes(_appSettings.Secret);

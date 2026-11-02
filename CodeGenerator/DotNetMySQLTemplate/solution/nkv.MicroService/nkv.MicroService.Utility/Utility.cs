@@ -10,37 +10,22 @@ namespace nkv.MicroService.Utility
 {
     public static class UtilityCommon
     {
+        /// <summary>
+        /// Parses "col|ASC,other|DESC". Column names are interpolated into SQL by the data layer, so only plain
+        /// identifiers and ASC/DESC are accepted; anything else is ignored (prevents SQL injection via orderBy).
+        /// </summary>
         public static List<OrderByModel> ConvertStringOrderToOrderModel(string orderBy)
         {
             List<OrderByModel> orderModelList = new List<OrderByModel>();
-            if (!string.IsNullOrEmpty(orderBy))
+            if (string.IsNullOrEmpty(orderBy)) return orderModelList;
+            foreach (var record in orderBy.Split(','))
             {
-                var orderStr = orderBy.Split(',');
-                foreach (var record in orderStr)
-                {
-                    if (!string.IsNullOrEmpty(record))
-                    {
-                        var oStr = record.Split('|');
-                        if (oStr.Length >= 2)
-                        {
-                            OrderByModel orderModel = new OrderByModel()
-                            {
-                                ColumnName = oStr[0],
-                                OrderDir = oStr[1]
-                            };
-                            orderModelList.Add(orderModel);
-                        }
-                        else if (oStr.Length == 1)
-                        {
-                            OrderByModel orderModel = new OrderByModel()
-                            {
-                                ColumnName = oStr[0],
-                                OrderDir = "DESC"
-                            };
-                            orderModelList.Add(orderModel);
-                        }
-                    }
-                }
+                var oStr = record.Split('|');
+                var column = oStr[0].Trim();
+                var dir = oStr.Length >= 2 ? oStr[1].Trim().ToUpperInvariant() : "DESC";
+                if (!System.Text.RegularExpressions.Regex.IsMatch(column, "^[A-Za-z_][A-Za-z0-9_]{0,63}$")) continue;
+                if (dir != "ASC" && dir != "DESC") dir = "DESC";
+                orderModelList.Add(new OrderByModel { ColumnName = column, OrderDir = dir });
             }
             return orderModelList;
         }

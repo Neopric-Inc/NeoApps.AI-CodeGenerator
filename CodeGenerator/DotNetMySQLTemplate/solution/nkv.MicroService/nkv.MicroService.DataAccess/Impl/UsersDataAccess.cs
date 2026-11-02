@@ -193,13 +193,15 @@ namespace nkv.MicroService.DataAccess.Impl
                 var connection = mySqlDatabaseConnector.GetConnection();
                 using (var cmd = connection.CreateCommand())
                 {
-                    cmd.CommandText = @"SELECT  t.* FROM users t  WHERE t.username= @username and t.password_hash=@password_hash";
+                    // Look the user up by name, then verify the BCrypt hash (plain-text legacy rows are still accepted).
+                    cmd.CommandText = @"SELECT  t.* FROM users t  WHERE t.username= @username AND t.isActive=1";
                     cmd.Parameters.AddWithValue("@username", username);
-                    cmd.Parameters.AddWithValue("@password_hash", password_hash);
 
                     using (var reader = cmd.ExecuteReader())
                         while (reader.Read())
                         {
+                            if (!PasswordHasher.Verify(password_hash, reader.GetValue<String>("password_hash")))
+                                continue;
                             return new UsersModel()
                             {
                                 user_id = reader.GetValue<Int32>("user_id"),
@@ -237,7 +239,7 @@ namespace nkv.MicroService.DataAccess.Impl
                     //cmd.Parameters.AddWithValue("@createdBy", model.createdBy);
                     cmd.Parameters.AddWithValue("@modifiedAt", model.createdAt);
                     cmd.Parameters.AddWithValue("@modifiedBy", model.modifiedBy);
-                    cmd.Parameters.AddWithValue("@password_hash", model.password_hash);
+                    cmd.Parameters.AddWithValue("@password_hash", PasswordHasher.EnsureHashed(model.password_hash));
                     cmd.Parameters.AddWithValue("@role_id", model.role_id);
                     cmd.Parameters.AddWithValue("@user_id", model.user_id);
                     cmd.Parameters.AddWithValue("@username", model.username);
@@ -270,7 +272,7 @@ namespace nkv.MicroService.DataAccess.Impl
                     cmd.Parameters.AddWithValue("@createdBy", model.createdBy);
                     cmd.Parameters.AddWithValue("@modifiedAt", model.createdAt);
                     cmd.Parameters.AddWithValue("@modifiedBy", model.modifiedBy);
-                    cmd.Parameters.AddWithValue("@password_hash", model.password_hash);
+                    cmd.Parameters.AddWithValue("@password_hash", PasswordHasher.EnsureHashed(model.password_hash));
                     cmd.Parameters.AddWithValue("@role_id", model.role_id);
                     cmd.Parameters.AddWithValue("@user_id", model.user_id);
                     cmd.Parameters.AddWithValue("@username", model.username);
