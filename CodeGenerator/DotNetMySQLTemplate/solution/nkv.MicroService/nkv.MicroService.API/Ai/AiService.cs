@@ -166,7 +166,7 @@ namespace nkv.MicroService.API.Ai
                     existing = new Source
                     {
                         Id = "S" + (registry.Count + 1), FileId = row.fileId, FileName = row.name, Page = row.page, Table = row.table, RecordId = row.record,
-                        RecordLabel = _data.RecordLabel(c, row.table, row.record), Text = row.text,
+                        RecordLabel = _data.RecordLabel(c, u, row.table, row.record), Text = row.text,
                     };
                     registry[existing.Id] = existing;
                 }
@@ -355,7 +355,7 @@ namespace nkv.MicroService.API.Ai
                                                          ORDER BY message_id DESC LIMIT 10) x ORDER BY message_id", ("@id", convId))))
                 messages.Add(new JsonObject { ["role"] = m!["role"]!.GetValue<string>(), ["content"] = m["content"]!.GetValue<string>() });
             var contextNote = contextTable != null && contextRecord != null
-                ? $"\n\n(The user is looking at {contextTable} record {contextRecord}: \"{_data.RecordLabel(c, contextTable, contextRecord)}\". Prefer documents attached to it when relevant.)"
+                ? $"\n\n(The user is looking at {contextTable} record {contextRecord}: \"{_data.RecordLabel(c, u, contextTable, contextRecord)}\". Prefer documents attached to it when relevant.)"
                 : "";
             messages.Add(new JsonObject { ["role"] = "user", ["content"] = question + contextNote });
 
@@ -457,6 +457,13 @@ How to answer:
             ((cfg["workflows"] as JsonArray) ?? new JsonArray()).OfType<JsonObject>().FirstOrDefault(w => w["id"]?.GetValue<string>() == id)
             ?? throw new AiException($"Unknown workflow '{id}'.");
 
+        /// <summary>The workflow's target tables, as named in information_schema (unknown names are dropped).</summary>
+        private List<string> Targets(MySqlConnection c, JsonObject wf)
+        {
+            var wanted = (wf["targets"] as JsonArray ?? new JsonArray()).Select(t => t!.GetValue<string>().ToLowerInvariant()).ToHashSet();
+            return _data.AppTables(c).Where(wanted.Contains).ToList();
+        }
+
         /// <summary>Asks the model to propose records for the workflow's target tables. Nothing is saved.</summary>
         public async Task<JsonObject> PreviewWorkflow(AiUser u, string workflowId, string recordId, string note, CancellationToken ct)
         {
@@ -465,7 +472,7 @@ How to answer:
             var wf = Workflow(cfg, workflowId);
             using var c = _data.Open();
             var perms = _data.Permissions(c, u);
-            var targets = (wf["targets"] as JsonArray ?? new JsonArray()).Select(t => t!.GetValue<string>().ToLowerInvariant()).ToList();
+            var targets = Targets(c, wf);
             var denied = targets.Where(t => !perms.TryGetValue(t, out var p) || !p.Create).ToList();
             if (denied.Count > 0) throw new AiException($"You need create permission on: {string.Join(", ", denied)}.");
 
@@ -553,8 +560,9 @@ When done, call propose_records exactly once with all rows.";
             var output = new JsonArray();
             foreach (var r in records.OfType<JsonObject>())
             {
-                var table = r["table"]?.GetValue<string>()?.ToLowerInvariant();
-                if (table == null || !cols.ContainsKey(table)) { warnings.Add($"Skipped a row for unknown table '{table}'."); continue; }
+                var requested = r["table"]?.GetValue<string>()?.ToLowerInvariant();
+                var table = targets.FirstOrDefault(t => t == requested);
+                if (table == null) { warnings.Add($"Skipped a row for table '{requested}', which isn't a target of this workflow."); continue; }
                 var values = new JsonObject();
                 foreach (var (k, v) in r["values"] as JsonObject ?? new JsonObject())
                 {
@@ -563,7 +571,7 @@ When done, call propose_records exactly once with all rows.";
                     values[col.Name] = v?.DeepClone();
                 }
                 foreach (var (k, v) in inherit)
-                    if (cols[table].Any(x => x.Name == k)) values[k] = JsonValue.Create(v.ToString());
+                    if (cols[table].FirstOrDefault(x => x.Name == k) is { } ic) values[ic.Name] = JsonValue.Create(v.ToString());
                 var refId = r["ref"]?.GetValue<string>() ?? Guid.NewGuid().ToString("N")[..6];
                 refs.Add(refId);
                 output.Add(new JsonObject { ["ref"] = refId, ["table"] = table, ["values"] = values });
@@ -582,8 +590,9 @@ When done, call propose_records exactly once with all rows.";
             var wf = Workflow(cfg, workflowId);
             using var c = _data.Open();
             var perms = _data.Permissions(c, u);
-            var targets = (wf["targets"] as JsonArray ?? new JsonArray()).Select(t => t!.GetValue<string>().ToLowerInvariant()).ToList();
+            var targets = Targets(c, wf);
             var cleaned = ValidateProposal(c, targets, records ?? new JsonArray(), new Dictionary<string, object>(), out _).OfType<JsonObject>().ToList();
+            if (cleaned.Count == 0) throw new AiException("Nothing to create: none of the rows belong to this workflow's tables.");
             foreach (var t in cleaned.Select(r => r["table"]!.GetValue<string>()).Distinct())
                 if (!perms.TryGetValue(t, out var p) || !p.Create) throw new AiException($"You need create permission on {t}.");
 

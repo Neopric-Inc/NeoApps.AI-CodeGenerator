@@ -145,10 +145,12 @@ namespace nkv.MicroService.API.Ai
 
         private string CheckTable(MySqlConnection c, AiUser u, string table)
         {
-            table = (table ?? "").Trim().ToLowerInvariant();
-            if (!Ident.IsMatch(table) || !AppTables(c).Contains(table)) throw new AiException($"Unknown table '{table}'. Call list_tables.");
-            if (!Permissions(c, u).TryGetValue(table, out var p) || !p.Read) throw new AiException($"You don't have read access to '{table}'.");
-            return table;
+            var requested = (table ?? "").Trim().ToLowerInvariant();
+            // The name used in SQL is the one from information_schema, never the caller's string.
+            var known = Ident.IsMatch(requested) ? AppTables(c).FirstOrDefault(t => t == requested) : null;
+            if (known == null) throw new AiException($"Unknown table '{requested}'. Call list_tables.");
+            if (!Permissions(c, u).TryGetValue(known, out var p) || !p.Read) throw new AiException($"You don't have read access to '{known}'.");
+            return known;
         }
 
         private static string CheckColumn(List<ColumnInfo> cols, string col)
@@ -243,17 +245,24 @@ namespace nkv.MicroService.API.Ai
             return arr;
         }
 
-        /// <summary>A short label for a record (its name/title-like column), used in citations.</summary>
-        public string RecordLabel(MySqlConnection c, string table, string recordId)
+        /// <summary>
+        /// A short label for a record (its name/title-like column), used in citations and context notes. Only for app
+        /// tables the user may read, and only the tenant's own active rows; otherwise a generic "table #id".
+        /// </summary>
+        public string RecordLabel(MySqlConnection c, AiUser u, string table, string recordId)
         {
+            var requested = (table ?? "").Trim().ToLowerInvariant();
             try
             {
+                table = AppTables(c).FirstOrDefault(t => t == requested);
+                if (table == null || !Permissions(c, u).TryGetValue(table, out var perm) || !perm.Read) return $"{requested} #{recordId}";
                 var cols = Columns(c, table);
                 var pk = cols.FirstOrDefault(x => x.IsPk)?.Name;
                 var label = new[] { "title", "name", "full_name", "protocol_number", "visit_name" }.Select(n => cols.FirstOrDefault(x => x.Name == n)?.Name).FirstOrDefault(n => n != null)
                     ?? cols.FirstOrDefault(x => x.DataType == "varchar" && !Audit.Contains(x.Name))?.Name;
                 if (pk == null || label == null) return $"{table} #{recordId}";
-                return Cmd(c, $"SELECT `{label}` FROM `{table}` WHERE `{pk}`=@id", ("@id", recordId)).ExecuteScalar()?.ToString() ?? $"{table} #{recordId}";
+                return Cmd(c, $"SELECT `{label}` FROM `{table}` WHERE `{pk}`=@id AND createdBy=@o AND isActive=1", ("@id", recordId), ("@o", u.Tenant))
+                    .ExecuteScalar()?.ToString() ?? $"{table} #{recordId}";
             }
             catch { return $"{table} #{recordId}"; }
         }
