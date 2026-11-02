@@ -1,5 +1,4 @@
-﻿using nkv.MicroService.Manager.Impl;
-using System.Configuration;
+using nkv.MicroService.Manager.Impl;
 using System.Collections.Generic;
 
 namespace nkv.MicroService.Manager.RabitMQAPI.API

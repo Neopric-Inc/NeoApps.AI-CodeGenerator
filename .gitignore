@@ -1,2 +1,30 @@
-1_638719310182018432
-node_modules
+# .NET build output
+bin/
+obj/
+*.user
+*.suo
+.vs/
+*.bak
+
+# Node
+node_modules/
+dist/
+build/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+
+# Local secrets
+.env
+.env.local
+appsettings.Local.json
+
+# Generator runtime output (generated apps land next to CodeGenerator/)
+/[0-9]*_[0-9]*/
+/workspace/
+CodeGenerator/SQLScript.sql
+CodeGenerator/apiflowjson.txt
+CodeGenerator/script1.sh
+CodeGenerator/output.txt

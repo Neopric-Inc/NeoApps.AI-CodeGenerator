@@ -1,4 +1,4 @@
-﻿using MySql.Data.MySqlClient;
+using MySqlConnector;
 using {projectName}.DataAccess.Interface;
 using {projectName}.Model;
 using {projectName}.Utility;

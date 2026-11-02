@@ -1,25 +1,16 @@
-# stage1 as builder
-FROM node:alpine as builder
-
-WORKDIR /nextjs-ui
-
-# copy the package.json to install dependencies
+# syntax=docker/dockerfile:1
+# Build the React app (API URL is baked in from .env at build time)
+FROM node:22-alpine AS build
+WORKDIR /app
 COPY package.json package-lock.json ./
-
-# Install the dependencies and make the folder
-RUN npm install --force 
-
+ENV CYPRESS_INSTALL_BINARY=0
+RUN npm install --force --no-audit --no-fund
 COPY . .
-
-# Build the project and copy the files
+ENV NODE_OPTIONS="--max-old-space-size=4096" GENERATE_SOURCEMAP=false CI=false
 RUN npm run build
 
-
+# Serve the static build
 FROM nginx:alpine
-
-EXPOSE 80
-#!/bin/sh
-
 COPY ./default.conf /etc/nginx/conf.d/default.conf
-# Copy from the stahg 1
-COPY --from=builder /nextjs-ui/build /usr/share/nginx/html
+COPY --from=build /app/build /usr/share/nginx/html
+EXPOSE 80

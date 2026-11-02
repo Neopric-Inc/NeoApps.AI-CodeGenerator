@@ -1,0 +1,16 @@
+{
+  "projectName": "TaskTracker",
+  "databaseName": "task_tracker_db",
+  "script": "../GeneratedApps/v1.0.0.0/All-In-One-Trackers/Decision_Matrix/Decision_Matrix_Script.sql",
+  "DBexists": "No",
+  "resetDatabase": "Yes",
+  "server": "127.0.0.1",
+  "port": "3307",
+  "username": "root",
+  "password": "neoapps",
+  "Backend_technology": "dotnet",
+  "Technology_Frontend": null,
+  "rabbitMQConn": "amqp://neoapps:neoapps@localhost:5672/",
+  "redisConn": "localhost:6379",
+  "swgurl": "http://localhost:5100"
+}

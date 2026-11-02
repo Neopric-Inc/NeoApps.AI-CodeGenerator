@@ -1,4 +1,4 @@
-﻿using nkv.MicroService.DataAccess.Interface;
+using nkv.MicroService.DataAccess.Interface;
 using nkv.MicroService.Model;
 using RabbitMQ.Client.Events;
 using RabbitMQ.Client;
@@ -9,7 +9,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
-using MySql.Data.MySqlClient;
+using MySqlConnector;
 using nkv.MicroService.Utility;
 using System.Collections;
 using Microsoft.Extensions.Configuration;

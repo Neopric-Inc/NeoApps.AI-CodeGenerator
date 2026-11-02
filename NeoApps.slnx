@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/generator/">
+    <Project Path="CodeGenerator/NoCodeAppGenerator.csproj" />
+  </Folder>
+  <Folder Name="/mcp/">
+    <Project Path="src/NeoApps.Mcp/NeoApps.Mcp.csproj" />
+  </Folder>
+</Solution>

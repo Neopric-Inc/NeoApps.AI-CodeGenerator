@@ -1,23 +1,19 @@
-﻿using HelloWorld;
-using Microsoft.AspNetCore.Hosting.Server;
-using Microsoft.AspNetCore.Mvc.ModelBinding;
+using HelloWorld;
 using Microsoft.Extensions.Logging;
-using MySql.Data.MySqlClient;
+using MySqlConnector;
+using NoCodeAppGenerator.Infrastructure;
 using Newtonsoft.Json;
 using NoCodeAppGenerator;
 using NoCodeAppGenerator.ParameterModel;
-using Org.BouncyCastle.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.IO;
 using System.Linq;
-using BCrypt;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
-using ThirdParty.Json.LitJson;
 using static System.Net.Mime.MediaTypeNames;
 
 namespace ReactJsProjectDemo
@@ -123,7 +119,7 @@ namespace ReactJsProjectDemo
             try
             {
                 List<string> PK = GetPrimaryKey(connectionString, tbl);
-                string query = "SELECT column_name FROM information_schema.columns WHERE table_name = '" + tbl + "' AND DATA_TYPE = 'varchar' AND IS_NULLABLE = 'NO' LIMIT 1";
+                string query = "SELECT column_name FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = '" + tbl + "' AND DATA_TYPE = 'varchar' AND IS_NULLABLE = 'NO' LIMIT 1";
                 //using (MySqlConnection connection = new MySqlConnection(connectionString))
                 //{
                 //    connection.Open();
@@ -144,7 +140,7 @@ namespace ReactJsProjectDemo
                 //}
                 if (ans.Count > 0)
                     return ans;
-                query = "SELECT column_name FROM information_schema.columns WHERE table_name = '" + tbl + "' AND column_key != 'PRI' LIMIT 1";
+                query = "SELECT column_name FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = '" + tbl + "' AND column_key != 'PRI' LIMIT 1";
                 //using (MySqlConnection connection = new MySqlConnection(connectionString))
                 //{
                 //    connection.Open();
@@ -370,7 +366,7 @@ CREATE TABLE IF NOT EXISTS `workflow_trigger_conditions` (
                 //using (MySqlConnection conn = new MySqlConnection(connectionString))
                 //{
                 //    conn.Open();
-                DataTable tables = connection.GetSchema("Tables");
+                DataTable tables = SchemaReader.GetTables(connection);
                 foreach (DataRow row in tables.Rows)
                 {
                     ans.Add(row["TABLE_NAME"].ToString());
@@ -11073,7 +11069,8 @@ useEffect(() => {{
                         {
                             foreach (string tbl in tables)
                             {
-                                if (tbl.ToLower() == "s3bucket" || tbl.ToLower() == "s3bucket_folders")
+                                // table.tsx is needed for every app table (component.txt imports it); system tables are skipped below.
+                                if (true)
                                 {
                                     string tbl1 = tbl.ToLower();
                                     if (tbl1 == "messagequeue" || tbl1 == "dnd_ui_versions" || tbl1 == "workflows" || tbl1 == "project_dnd_ui_versions" || tbl1 == "workflow" || tbl1 == "workflow_builds" || tbl1 == "workflows_projects" || tbl1 == "workflow_runs" || tbl1 == "workflow_deployments" || tbl1 == "workflow_triggers" || tbl1 == "workflow_trigger_conditions" || tbl1 == "roles" || tbl1 == "users" || tbl1 == "entities" || tbl1 == "permissionmatrix")
@@ -11708,19 +11705,19 @@ isValid ={!!touched.{col} && !errors.{col}}
                                                         temp = FK[j - 3];
                                                 }
                                             }
-                                            PrimaryKeyConversion += $"values.{cols[i]} = config[{temp}_isHidden] ? {dataType}(config[{temp}_defaultValue]) : {dataType}(values.{temp});\n";
+                                            PrimaryKeyConversion += $"values.{cols[i]} = config[\"{temp}_isHidden\"] ? {dataType}(config[\"{temp}_defaultValue\"]) : {dataType}(values.{temp});\n";
                                             //PrimaryKeyConversion += "values." + cols[i] + " = " + "config[" + temp +"_isHidden] ? "+ dataType + "(config[" + temp + "_defaultValue]) : " + dataType + "(values." + temp + ")\n";
                                             //PrimaryKeyConversion += "values." + cols[i] + " = " + dataType + "(values." + temp + ")\n";
                                         }
                                         else
-                                            PrimaryKeyConversion += $"values.{cols[i]} = config[{cols[i]}_isHidden] ? {dataType}(config[{cols[i]}_defaultValue]) : {dataType}(values.{cols[i]});\n";
+                                            PrimaryKeyConversion += $"values.{cols[i]} = config[\"{cols[i]}_isHidden\"] ? {dataType}(config[\"{cols[i]}_defaultValue\"]) : {dataType}(values.{cols[i]});\n";
                                         //PrimaryKeyConversion += "values." + cols[i] + " = " + "config[" + cols[i] + "_isHidden] ? " + dataType + "(config[" + cols[i] + "_defaultValue]) : " + dataType + "(values." + cols[i] + ")\n";
                                         //PrimaryKeyConversion += "values." + cols[i] + " = " + dataType + "(values." + cols[i] + ")\n";
                                     }
                                     else
                                     {
                                         //values.modifiedAt = config["modifiedAt_isHidden"] ? config["modifiedAt_defaultValue"] : values.modifiedAt;
-                                        PrimaryKeyConversion += $"values.{cols[i]} = config[{cols[i]}_isHidden] ? config[{cols[i]}_defaultValue] : values.{cols[i]};\n";
+                                        PrimaryKeyConversion += $"values.{cols[i]} = config[\"{cols[i]}_isHidden\"] ? config[\"{cols[i]}_defaultValue\"] : values.{cols[i]};\n";
                                     }
                                 }
                                 text = text.Replace("{PrimaryKeyConversion}", PrimaryKeyConversion);

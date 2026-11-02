@@ -151,7 +151,7 @@ namespace HelloWorld
                     // pass Table Name , Project Name & ArrayList in Argument & create actual Model 
 
                 }
-                catch (MySql.Data.MySqlClient.MySqlException ex)
+                catch (MySqlConnector.MySqlException ex)
                 {
                     Console.WriteLine("Error in createModelbyPassingDB: " + ex.ToString());
                     NoCodeAppGenerator.Program.errors_list.Add("Error in createModelbyPassingDB: " + ex.Message);

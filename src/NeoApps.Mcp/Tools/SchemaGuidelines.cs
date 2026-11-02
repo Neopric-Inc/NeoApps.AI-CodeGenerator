@@ -1,0 +1,55 @@
+namespace NeoApps.Mcp.Tools;
+
+internal static class SchemaGuidelines
+{
+    public const string Text = """
+        NeoApps generates a .NET 10 REST API (one controller per table) and a React admin UI from a MySQL schema.
+        Write ONE MySQL 8 script that follows these rules:
+
+        1. Tables only: CREATE TABLE statements (plus optional INSERT seed rows). No CREATE DATABASE / USE,
+           no DELIMITER blocks, no stored procedures.
+        2. Every table has a single-column INT AUTO_INCREMENT PRIMARY KEY named <singular>_id
+           (e.g. task_id in table tasks).
+        3. Every table ends with these audit columns, exactly as written:
+             createdBy VARCHAR(255) NOT NULL,
+             modifiedBy VARCHAR(255) NOT NULL,
+             createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+             modifiedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+             isActive TINYINT(1) NOT NULL DEFAULT '1'
+        4. Use lowercase snake_case table and column names. Do NOT create tables named Roles, Users, Entities or
+           PermissionMatrix: the generator adds those for login and role-based access. For app-level people
+           use another name (e.g. app_users, members) and reference them with foreign keys.
+        5. Declare relations with FOREIGN KEY (...) REFERENCES parent(parent_id). Create parent tables before
+           the tables that reference them. No trailing comma before the closing parenthesis.
+        6. Prefer simple types: INT, DECIMAL(12,2), VARCHAR(n), TEXT, DATE, DATETIME, TINYINT(1).
+           Model enums as VARCHAR(50).
+        7. Keep it focused: 3-15 tables covering the app's core entities.
+
+        Example:
+          CREATE TABLE categories (
+            category_id INT AUTO_INCREMENT PRIMARY KEY,
+            name VARCHAR(100) NOT NULL,
+            createdBy VARCHAR(255) NOT NULL,
+            modifiedBy VARCHAR(255) NOT NULL,
+            createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            modifiedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            isActive TINYINT(1) NOT NULL DEFAULT '1'
+          );
+          CREATE TABLE tasks (
+            task_id INT AUTO_INCREMENT PRIMARY KEY,
+            category_id INT,
+            title VARCHAR(255) NOT NULL,
+            status VARCHAR(50) NOT NULL DEFAULT 'todo',
+            due_date DATE,
+            createdBy VARCHAR(255) NOT NULL,
+            modifiedBy VARCHAR(255) NOT NULL,
+            createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            modifiedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            isActive TINYINT(1) NOT NULL DEFAULT '1',
+            FOREIGN KEY (category_id) REFERENCES categories(category_id)
+          );
+
+        Typical flow: neoapps_check_environment -> neoapps_create_app (schema) -> neoapps_deploy_app
+        -> open the web URL and log in with the admin credentials it returns.
+        """;
+}

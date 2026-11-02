@@ -2,307 +2,207 @@
     <img src="https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator/blob/main/logo.png" alt="NeoApps.AI Logo" width="500">
 </p>
 
-# NeoApps.AI- Code Generator
+# NeoApps.AI Code Generator
 
-# Project Setup and App Generation Guide
+Turn a MySQL schema into a working app: a **.NET 10 Web API** (CRUD, relational and reporting endpoints, JWT auth, role-based permissions, Swagger) plus a **React admin UI**, then run it locally in Docker.
 
-## Demo
+Use it in one of two ways:
 
-<details>
-<summary><kbd>Watch the demo - Manual Setup!</kbd></summary>
+- **From Claude Desktop (recommended):** describe the app in chat. Claude writes the schema, generates the code and deploys it on your machine through the bundled MCP server.
+- **From the command line:** run the generator with a JSON config.
 
-[![Watch the video](https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator/blob/main/neoapps_ai_thumbnail.png)](https://www.youtube.com/watch?v=i2SOFnlYknU)
-
-</details>
-
-<details>
-<summary><kbd>Watch the demo - Simplified Version -Streamlit App!</kbd></summary>
-
-[![Watch the video](https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator/blob/main/neoapps_ai_thumbnail.png)](https://youtu.be/F5bmjPtciLw)
-
-</details>
+▶️ Demo: [manual setup](https://www.youtube.com/watch?v=i2SOFnlYknU) · [tutorial](tutorials.md)
 
 ## Prerequisites
 
-Before running the project, ensure you have the following installed:
+| Tool | Notes |
+|---|---|
+| [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) | macOS: `brew install --cask dotnet-sdk` |
+| [Docker Desktop](https://www.docker.com/products/docker-desktop/) | Runs MySQL, Redis, RabbitMQ and the generated apps |
+| Claude Desktop | Only needed for the MCP workflow |
 
-1. **Visual Studio** or **Visual Studio Code**
-2. **.NET SDK**
-3. **Docker**
-4. **XAMPP**
-5. **Redis, RabbitMQ, and MinIO (S3)**
-6. **Node**
-7. **Python 3.x installed and pip3 or pip (Python package installer).**
+You don't need XAMPP, Python, Node, or a local MySQL/Redis/RabbitMQ install. The shared services run from [`deploy/docker-compose.infra.yml`](deploy/docker-compose.infra.yml).
 
-# Simplified GUI Version with Streamlit App
+## Quick start
 
-1. **Pull the repository** and check the prerequisites.
-2. **Set up the Claude project** according to the instructions.
-3. **Generate the requirements** for your project.
-4. **Save the database file** as `app.sql`.
-5. **Drop the database file** into the `htdocs` folder of XAMPP. Ensure that **XAMPP** is running and **Docker** is up and running.
-6. Navigate to the `CodeGenerator` folder and **run `pip install -r requirements.txt` and then **run `./codegenerator_script.sh`**.
-7. The **Streamlit app** will open.
-8. **Review the inputs**: You can change the project name or leave it as is. Experiment with other settings once you're comfortable.
-9. **Hit submit** and scroll down to see the results.
-10. Go to the newly generated folder and **execute the command `dotnet run`**.
-11. After execution, **copy the API URL**.
-12. **Terminate the Streamlit app** with `Ctrl+C`.
-13. **Re-run the app** using `./codegenerator_script.sh`.
-14. When the app reopens, **click on Frontend** and update the API URL you copied (replace `localhost` and the port number in the URL as needed, e.g., `https://localhost:5001/v1/api/`).
-15. **Submit and experiment** further if needed by following the instructions at the bottom of the page.
-16. A new project will be generated in the same folder named `ReactTsOutput1`.
-17. **Open the newly generated React project**.
-18. **Install the necessary Node packages**.
-19. **Run the app**.
-20. This will open the **login window**.
-21. Go to the database and **copy the username and password** (note: the password is not hashed for development purposes, but you can apply your own hashing algorithm).
-22. **Login to the app** and design your pages.
-23. Click **Update UI** to save your changes, **Release UI** to finalize it, and **Preview UI** to see a preview.
-24. Once satisfied, **disable the DnD (drag and drop designer)** by updating the `.env` file.
-25. **Re-run the project** using `npm run dev`, and it will open the newly designed app directly.
-26. **Congratulations!** You’ve created your first app without writing any code, but still built a custom-developed application.
-27. **Deploy the app** on a Docker container or **contact us on Discord** if you need help with deployment.
+```bash
+git clone https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator.git && cd NeoApps.AI-CodeGenerator
+./scripts/setup.sh                    # checks .NET 10 + Docker, builds the MCP server, registers it with Claude Desktop
+```
 
+Then either restart Claude Desktop and ask *"Build me a todo app and run it locally"*, or use the CLI:
 
-# Manual Setup --------------------------
+```bash
+./neoapps new TodoApp --schema samples/todo-app.sql --deploy   # generate + run in Docker
+./neoapps help                                                 # all commands
+```
 
-### Docker Setup for Redis, RabbitMQ, and MinIO (S3)
+No Docker (e.g. a Claude Code cloud session)? Run `sudo ./scripts/sandbox-deps.sh`, then
+`export NEOAPPS_SKIP_INFRA=true NEOAPPS_MYSQL_PORT=3306`, then run `./neoapps new ...` without `--deploy`. See [CLAUDE.md](CLAUDE.md).
 
-Use the following Docker commands to set up Redis, RabbitMQ, and MinIO (S3):
+## Option 1: Claude Desktop (MCP)
 
-- **MinIO**
-  #### MacOS/ Linux
-  ```bash
-  docker run -d --name minio -p 9000:9000 --env-file .env \
-  -e MINIO_ROOT_USER=${MINIO_ROOT_USER} \
-  -e MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD} \
-  -v minio-data:/data minio/minio:latest server /data
-  ```
-  #### Windows
-  ```bash
-  docker run -d --name minio -p 9000:9000 --env-file .env -e MINIO_ROOT_USER=$env:MINIO_ROOT_USER -e MINIO_ROOT_PASSWORD=$env:MINIO_ROOT_PASSWORD -v ${PWD}\minio-data:/data minio/minio:latest server /data
+`./scripts/setup.sh` performs steps 1 and 2 for you. To do them by hand:
 
-  ```
-- **Redis**
-  #### MacOS/ Linux
-  ```bash
-  docker run -d --name redis -p 6379:6379 --env-file .env \
-  -v redis-data:/data redis:latest \
-  redis-server --requirepass "$(grep REDIS_PASSWORD .env | cut -d '=' -f2)" --appendonly yes
+### 1. Build the MCP server
 
-  ```
-  #### Windows
+```bash
+git clone https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator.git
+cd NeoApps.AI-CodeGenerator
+dotnet publish src/NeoApps.Mcp -c Release -o ~/.neoapps-mcp
+```
 
-  ```bash
-    docker run -d  --name redis -p 6379:6379 --env-file .env `-v redis-data:/data redis:latest ` redis-server --requirepass $(Get-Content .env | Select-String 'REDIS_PASSWORD' | ForEach-Object { ($_ -split '=')[1].Trim() }) --appendonly yes
+### 2. Register it with Claude Desktop
 
-
-  ```
-
-- **RabbitMQ**
-  #### MacOS/ Linux
-  ```bash
-  docker run -d --name rabbitmq -p 5672:5672 -p 15672:15672 --env-file .env \
-  -v rabbitmq-data:/var/lib/rabbitmq rabbitmq:management
-  ```
-  #### Windows
-   ```bash
-  docker run -d --name rabbitmq -p 5672:5672 -p 15672:15672 --env-file .env ` -v rabbitmq-data:/var/lib/rabbitmq rabbitmq:management      
-  ```
-### Configuration
-
-Add the following configurations to `appsettings.json` for MinIO (S3), Redis, and RabbitMQ:
+Open **Claude Desktop → Settings → Developer → Edit Config** (`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS) and add the following. Replace `/Users/you/...` with your clone path:
 
 ```json
 {
-  "MinIO": {
-    "AccessKey": "${MINIO_ROOT_USER}",
-    "SecretKey": "${MINIO_ROOT_PASSWORD}",
-    "Endpoint": "http://localhost:9000"
-  },
-  "Redis": {
-    "Connection": "localhost:6379,password=${REDIS_PASSWORD}"
-  },
-  "RabbitMQ": {
-    "Connection": "amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@localhost:5672/"
+  "mcpServers": {
+    "neoapps": {
+      "command": "/usr/local/share/dotnet/dotnet",
+      "args": ["/Users/you/.neoapps-mcp/neoapps-mcp.dll"],
+      "env": {
+        "NEOAPPS_HOME": "/Users/you/repos/NeoApps.AI-CodeGenerator",
+        "DOTNET_ROOT": "/usr/local/share/dotnet",
+        "PATH": "/usr/local/share/dotnet:/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin"
+      }
+    }
   }
 }
 ```
 
-## Steps to Generate the Project
+Apps launched from the Dock don't inherit your shell `PATH`. That's why `PATH` is set here: the server runs `dotnet` and `docker` as child processes. On Windows, use `"command": "dotnet"` and Windows paths.
 
-### 1. Database Schema Design
+Restart Claude Desktop. **neoapps** should now appear in the tools menu.
 
-Ensure your database schema follows the guidelines provided by NeoApps.AI. You can find the guidelines [here](https://docs.neoapps.ai/User%20Guide/Project%20Creation/databaseguidelines).
+### 3. Ask Claude
 
-### 2. Save the Script
+> Build me a task tracker with projects, tasks and comments, and run it locally.
 
-Save your database script in `.sql` format. Example scripts are available on the guidelines page.
+Claude will:
+1. read `neoapps_schema_guidelines` and write the schema,
+2. call `neoapps_create_app`. This starts MySQL/Redis/RabbitMQ in Docker and generates the API and UI,
+3. call `neoapps_deploy_app`. This builds the images and starts the app,
+4. reply with the web URL, the Swagger URL, and the admin login.
 
-### 3. Upload Script to XAMPP
+### MCP tools
 
-Upload your script to XAMPP by placing it in the `htdocs` directory. This will allow it to be accessible via the XAMPP server.
+| Tool | What it does |
+|---|---|
+| `neoapps_schema_guidelines` | Schema rules and an example schema |
+| `neoapps_check_environment` | Checks for the .NET SDK, Docker, and the shared containers |
+| `neoapps_create_app` | Schema → database + .NET 10 API + React UI (`frontendTemplate`: `app` or `dnd`) |
+| `neoapps_generate_frontend` | Regenerates the UI (`app` admin UI or `dnd` drag-and-drop designer) |
+| `neoapps_deploy_app` | Builds and runs the app's containers (`includeConsumer` adds the workflow worker) |
+| `neoapps_app_status` / `neoapps_app_logs` / `neoapps_stop_app` | Inspect or stop a running app |
+| `neoapps_list_apps` / `neoapps_list_sample_schemas` | List your apps / the sample schemas in `GeneratedApps/` |
+| `neoapps_start_infrastructure` / `neoapps_stop_infrastructure` | Start or stop the shared MySQL/Redis/RabbitMQ |
+| `neoapps_job_status` | Polls long-running jobs (generation, Docker builds) |
 
-### 4. Setup MySQL Database
+Generation and deployment run as background jobs. A tool call waits about 40 seconds, then returns a job id that Claude polls with `neoapps_job_status`.
 
-Set up your MySQL database with the following parameters:
+### Where things go
 
-- **Database Name**: Your chosen database name
-- **Username**: `root` (or your configured username)
-- **Password**: (leave empty if not set)
-- **Port**: `3306`
+| Path | Contents |
+|---|---|
+| `workspace/<App>/` | `project.json` (ports, paths, login), `schema.sql`, generator configs, `docker-compose.yml` |
+| `1_<timestamp>/<App>/DotNet_Output/solution/<App>/` | Generated .NET solution (open `<App>.sln`) |
+| `1_<timestamp>/<App>/ReactTs_Output3/` (`ReactTs_Output1` for `dnd`) | Generated React app |
 
-### 5. Update Launch Settings
+Each app gets its own ports: API from 5100 (`http://localhost:5100/swagger`), web UI from 3100.
 
-Update `launchSettings.json` with the following parameters for backend generation:
+### Configuration (environment variables)
 
-```json
-"PARAMETER": "{project_id:1,server:localhost,uid:1,username:root,password:,databaseName:splitthebill,script:http://localhost/split_app_script.sql,statusOfGeneration:null,projectName:DemoApplication,DBexists:No,port:3306,rabbitMQConn:amqp://user:password@localhost:5672/,redisConn:localhost:6379,password=yourredispassword,apiflowurl:,fronttemplateurl:,Technology_Frontend:,Backend_technology:dotnet,buttonClicked:generate,projectType:,swgurl:,noderedurl:null}"
+| Variable | Default | Purpose |
+|---|---|---|
+| `NEOAPPS_HOME` | auto-detected | Repository root |
+| `NEOAPPS_MYSQL_HOST` / `_PORT` / `_USER` / `_PASSWORD` | `127.0.0.1` / `3307` / `root` / `neoapps` | MySQL used while generating |
+| `NEOAPPS_SKIP_INFRA` | `false` | `true` = don't start the Docker infra (bring your own MySQL/Redis/RabbitMQ) |
+| `NEOAPPS_RABBITMQ_URL` / `NEOAPPS_REDIS` | `amqp://neoapps:neoapps@localhost:5672/` / `localhost:6379` | Written into the generated `appsettings.json` for `dotnet run` |
+| `NEOAPPS_DOCKER_*` | `mysql`, `rabbitmq`, `redis` | Hostnames apps use inside the `neoapps` Docker network |
+| `NEOAPPS_FIRST_API_PORT` / `NEOAPPS_FIRST_WEB_PORT` | `5100` / `3100` | Port ranges for new apps |
+
+## Option 2: Command line
+
+```bash
+# 1. Shared services (MySQL on localhost:3307, Redis 6379, RabbitMQ 5672 / UI 15672)
+docker compose -f deploy/docker-compose.infra.yml up -d --wait
+
+# 2. Backend: database + .NET 10 API
+cd CodeGenerator
+dotnet run -- --config ../samples/generator.backend.json
+
+# 3. Frontend, pointed at the API URL
+dotnet run -- --config ../samples/generator.frontend.json
 ```
 
-Update `launchSettings.json` with the following parameters for frontend generation:
+The last output line is machine-readable:
 
-```json
-"PARAMETER": "{project_id:1,server:localhost,uid:1,username:root,password:,databaseName:splitthebill,script:http://localhost/split_app_script.sql,statusOfGeneration:,projectName:DemoApplication,DBexists:Yes,port:3306,rabbitMQConn:amqp://user:passord@localhost:5672/,redisConn:localhost:6379,password=yourredispassword,apiflowurl:,fronttemplateurl:,Technology_Frontend:reactts,Backend_technology:,buttonClicked:generate,projectType:dnd,swgurl:,noderedurl:}"
+```text
+NEOAPPS_RESULT {"is_successful":1,"output_path":".../1_<ticks>/TaskTracker","link":".../zip/...zip","admin_username":"...","admin_password":"...","error_log":[]}
+```
+
+Run the generated API:
+
+```bash
+cd ../1_*/TaskTracker/DotNet_Output/solution/TaskTracker/TaskTracker.API
+dotnet run            # Swagger: https://localhost:5001/swagger
+```
+
+### Generator config keys
+
+| Key | Example | Notes |
+|---|---|---|
+| `projectName` | `TaskTracker` | Becomes the C# namespace |
+| `databaseName` | `task_tracker_db` | Created if missing |
+| `script` | `schema.sql` | Local path (relative to the config file), `file://` or `http(s)://` |
+| `DBexists` | `No` | `No` runs `script`; `Yes` uses the existing database |
+| `resetDatabase` | `Yes` | Drop and recreate the database first |
+| `server` / `port` / `username` / `password` | `127.0.0.1` / `3307` / `root` / `neoapps` | MySQL connection |
+| `Backend_technology` | `dotnet` | Set to generate the API |
+| `Technology_Frontend` | `reactts` | Set to generate the UI |
+| `projectType` | `null` / `dnd` | Admin UI or drag-and-drop designer |
+| `rabbitMQConn` | `amqp://...` (backend) / `http://localhost:5100/v1/api/` (frontend) | For a frontend run, this key carries the **API base URL** |
+| `redisConn` | `localhost:6379` | Redis for the generated API |
+| `swgurl`, `noderedurl`, `apiflowurl`, `fronttemplateurl` | | Optional integrations |
+
+The legacy `PARAMETER` environment variable (`{key:value,...}`) is still accepted.
+
+Optional settings: set `NEOAPPS_SKIP_BUILD=true` to skip the compile check of the generated solution. `DigitalOceanSpacesConfig` in `appsettings.json` (or `NEOAPPS_DigitalOceanSpacesConfig__*` env vars) uploads the zip to S3-compatible storage. Upload is off unless real keys are set.
+
+## Writing a schema
+
+Run `neoapps_schema_guidelines`, or follow these rules:
+
+- Every table has an `INT AUTO_INCREMENT PRIMARY KEY` plus the audit columns `createdBy`, `modifiedBy`, `createdAt`, `modifiedAt`, `isActive`.
+- Use lowercase snake_case names and declare relations with `FOREIGN KEY`. Table order doesn't matter.
+- Don't create `Roles`, `Users`, `Entities` or `PermissionMatrix`: the generator adds them for login and RBAC.
+- Records are owner-scoped: the API returns rows whose `createdBy` matches the logged-in user.
+
+Examples live in [`GeneratedApps/`](GeneratedApps). Some older samples define their own `users` table and need it renamed (e.g. `app_users`).
+
+## Repository layout
 
 ```
-  # **Configuration Parameters**
+CodeGenerator/            generator (.NET 10 console app)
+  DotNetMySQLTemplate/    backend templates (generated solution targets net10.0)
+  ReactTsTemplate1..4/    frontend templates (1 = drag-and-drop, 3 = admin UI)
+  Infrastructure/         config loading, schema reader, SQL script runner
+src/NeoApps.Mcp/          MCP server for Claude Desktop
+deploy/                   docker-compose for shared local services
+samples/                  example generator configs
+GeneratedApps/            example schemas
+NeoApps.slnx              solution (generator + MCP server)
+```
 
-  Below is a list of configuration parameters used in the project setup, along with their explanations:
+## Troubleshooting
 
-  ##### `project_id`
-  - **Description:** The unique identifier for the project. You can use any number.
-- **Example:** `1`
+- **The neoapps tools don't show up in Claude Desktop:** check `~/Library/Logs/Claude/mcp-server-neoapps.log`, and make sure `command` and `NEOAPPS_HOME` are absolute paths.
+- **"Docker is not running":** start Docker Desktop, then run `neoapps_check_environment`.
+- **Port 3307/5672/6379 is already in use:** stop the other service, or change the ports in `deploy/docker-compose.infra.yml` and `NEOAPPS_MYSQL_PORT`.
+- **MySQL table names:** the bundled MySQL runs with `lower_case_table_names=1`, matching the Windows/macOS MySQL the templates were written against. If you bring your own MySQL on Linux, configure it the same way.
 
-### `server`
-- **Description:** The server where the database is hosted. This will be the database server (MySQL). Do not use a production database server here.
-- **Example:** `localhost`
+## Contributing
 
-### `uid`
-- **Description:** The unique identifier for the user. Don't change this one.
-- **Example:** `1`
-
-### `username`
-- **Description:** The database username. Make sure it's an admin user.
-- **Example:** `root`
-
-### `password`
-- **Description:** The password for the database user.
-- **Example:** `""` (empty string)
-
-### `databaseName`
-- **Description:** The name of the database to be used for the project.
-- **Example:** `splitthebill`
-
-### `script`
-- **Description:** The URL or path to the SQL script used to initialize the database. This file is typically hosted on a web server in the XAMPP `htdocs` directory.
-- **Example:** `http://localhost/split_app_script.sql`
-
-### `statusOfGeneration`
-- **Description:** The status of the project generation process. Ignore this, but don't change it.
-- **Example:** `""` (empty string, to be updated during the process)
-
-### `projectName`
-- **Description:** The name of the project. Use the project name without numbers or special characters to ensure smooth operation.
-- **Example:** `ContentPlannerTest`
-
-### `DBexists`
-- **Description:** Indicates whether the database already exists. For backend generation, this will be `NO`, and it will recreate the database tables. For frontend generation, it will be `YES`.
-- **Example:** `"Yes"`
-
-### `port`
-- **Description:** The port number on which the database server is listening.
-- **Example:** `3306`
-
-### `rabbitMQConn`
-- **Description:** The connection URL for RabbitMQ, used when generating the backend and as an API connection URL while generating the frontend.
-- **Example:** `https://localhost:5001/v1/api/`
-
-### `redisConn`
-- **Description:** The connection string for Redis, typically used for caching.
-- **Example:** `localhost:6379`
-
-### `password` *(for Redis)*
-- **Description:** The password for Redis connection.
-- **Example:** `12345`
-
-### `apiflowurl`
-- **Description:** The URL for the API flow. This will be explained in future documentation and videos.
-- **Example:** `""` (empty, to be defined based on your setup)
-
-### `fronttemplateurl`
-- **Description:** The URL for the frontend template, used for project scaffolding. Future roadmap.
-- **Example:** `""` (empty, to be defined based on your setup)
-
-### `Technology_Frontend`
-- **Description:** The technology stack used for frontend development. Don't change this for now.
-- **Example:** `reactts` (React with TypeScript)
-
-### `Backend_technology`
-- **Description:** The technology stack used for backend development. Don't change this for now. It will be different for the backend.
-- **Example:** `""` (empty, to be specified based on your project)
-
-### `buttonClicked`
-- **Description:** Indicates the action taken by the user, such as generating the project. Don't change this for now. This will be used to control generate, build, and deploy actions.
-- **Example:** `"generate"`
-
-### `projectType`
-- **Description:** The type of project being generated, e.g., drag-and-drop (DND). No need to change anything here.
-- **Example:** `"dnd"`
-
-### `swgurl`
-- **Description:** The URL for Swagger, used for API documentation.
-- **Example:** `""` (empty, to be filled after project setup). No need to change anything here for now.
-
-### `noderedurl`
-- **Description:** The URL for Node-RED, a flow-based development tool. No need to change anything here for now.
-- **Example:** `""` (empty, to be filled based on setup)
-
-
-### 6. Generate Backend
-
-Once you generate the project, the generated code will be available in the `bin/debug` folder.
-
-### 7. Save the Generated Code
-
-Copy the generated code folder and place it into your repository or preferred directory.
-
-### 8. Run the Project
-
-Open the project in Visual Studio or Visual Studio Code and run it. If you encounter any errors, check your database schema for issues.
-
-### 9. Generate Frontend
-
-Generate the frontend code and ensure both the frontend and backend projects are configured correctly. Copy them into your repository or preferred directory.
-
-### 10. Regenerate Project
-
-If you need to regenerate the project or make changes to the database schema, drop the existing database tables and rerun the project.
-
-### 11. Run the .NET API
-
-After copying the projects, run the .NET API as needed.
-
----
-
-Follow these steps, and you should be able to run the project and generate the apps without any issues.
-
-
-
-
-## Documentation
-
-Setup and Installation Guide
-For a detailed guide on setting up the project, generating the API, and hosting it locally, please refer to the Setup and Installation Guide.
-
-- **[Tutorials](https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator/blob/main/README-Setup-Guide.md):** Hands-on tutorials to help you setup project , generate code , build code and host locally.
-
-This guide includes step-by-step instructions and a video tutorial to help you through the entire process.
-
-To help you get started and make the most of NeoApps.ai, we have prepared comprehensive documentation:
-
-- **[Tutorials](https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator/blob/main/tutorials.md):** Hands-on tutorials to help you build and deploy your first app.
-
-
-
+See [CONTRIBUTING.md](CONTRIBUTING.md) and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).

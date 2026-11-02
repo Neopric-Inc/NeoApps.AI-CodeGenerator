@@ -1,0 +1,70 @@
+# Shared local infrastructure for NeoApps-generated apps.
+# Started automatically by the MCP server (neoapps_start_infrastructure / neoapps_deploy_app),
+# or by hand:  docker compose -f deploy/docker-compose.infra.yml -p neoapps-infra up -d --wait
+#
+# Host ports: MySQL 3307 (avoids clashing with a local MySQL/XAMPP on 3306), Redis 6379,
+# RabbitMQ 5672 + management UI http://localhost:15672 (neoapps / neoapps).
+# Local development credentials only. Do not expose these ports publicly.
+name: neoapps-infra
+
+services:
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD: neoapps
+      MYSQL_ROOT_HOST: "%"
+    # lower_case_table_names=1: the generator was built against Windows/macOS MySQL, where table names are
+    # case-insensitive (e.g. RBAC creates `Users` but queries `users`). Only applied when the volume is first created.
+    command: ["--log-bin-trust-function-creators=1", "--lower-case-table-names=1"]
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-pneoapps"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  rabbitmq:
+    image: rabbitmq:4-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: neoapps
+      RABBITMQ_DEFAULT_PASS: neoapps
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 20
+      start_period: 20s
+    restart: unless-stopped
+
+volumes:
+  mysql-data:
+  redis-data:
+  rabbitmq-data:
+
+networks:
+  default:
+    name: neoapps

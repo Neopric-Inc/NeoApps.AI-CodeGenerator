@@ -1,7 +1,6 @@
-﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json.Linq;
 using nkv.MicroService.Utility;
-using Renci.SshNet;
 using System;
 using System.Collections.Generic;
 using System.Linq;

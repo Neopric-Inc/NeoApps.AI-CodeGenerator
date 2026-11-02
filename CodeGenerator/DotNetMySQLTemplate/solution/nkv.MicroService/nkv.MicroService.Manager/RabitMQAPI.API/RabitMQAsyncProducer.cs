@@ -8,13 +8,11 @@ using RabbitMQ.Client;
 
 using RabbitMQ.Client.Events;
 
-using Renci.SshNet.Messages;
 
 using System;
 
 using System.Text;
 
-using System.Configuration;
 
 using System.Collections.Generic;
 

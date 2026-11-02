@@ -1,4 +1,4 @@
-﻿using MySql.Data.MySqlClient;
+using MySqlConnector;
 using System;
 using nkv.MicroService.Utility;
 using System.Collections.Generic;

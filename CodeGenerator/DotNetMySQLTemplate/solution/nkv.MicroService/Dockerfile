@@ -1,22 +1,12 @@
-FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build-env
+# syntax=docker/dockerfile:1
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /src
+COPY . .
+RUN dotnet publish "{projectName}.API/{projectName}.API.csproj" -c Release -o /app/publish
+
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
-#../Dotnet_output/solution/{projectName}
-# Copy entire solution and dependencies
-COPY ./ /app
-
-# Restore dependencies
-RUN dotnet restore
-
-# Build the solution
-RUN dotnet build -c Release
-
-# Publish the application
-RUN dotnet publish -c Release -o out
-
-# Build runtime image
-FROM mcr.microsoft.com/dotnet/aspnet:6.0
-WORKDIR /app
-COPY --from=build-env /app/out .
-EXPOSE 80
-# Set the entry point for the console app
+COPY --from=build /app/publish .
+ENV ASPNETCORE_HTTP_PORTS=8080
+EXPOSE 8080
 ENTRYPOINT ["dotnet", "{projectName}.API.dll"]
