@@ -7,6 +7,7 @@ import {
 import MenuIcon from "@mui/icons-material/Menu";
 import { useApp } from "./AppContext";
 import { Icon } from "./icons";
+import { extensions } from "../custom";
 
 const WIDTH = 248;
 
@@ -43,6 +44,7 @@ export const Shell: React.FC = () => {
       <Box sx={{ overflowY: "auto", flex: 1, py: 1 }}>
         <List dense disablePadding>
           <NavItem to="/" icon="dashboard" label="Dashboard" onClick={close} />
+          {me && (extensions.nav || []).filter((n) => !n.visible || n.visible(me)).map((n) => <NavItem key={n.to} to={n.to} icon={n.icon} label={n.label} onClick={close} />)}
           {ai?.enabled && <NavItem to="/assistant" icon="auto_awesome" label={ai.assistantName || "Assistant"} onClick={close} />}
         </List>
         {menu.map((g) => (

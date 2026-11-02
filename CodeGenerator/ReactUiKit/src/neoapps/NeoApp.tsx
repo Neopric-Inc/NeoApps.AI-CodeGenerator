@@ -12,6 +12,7 @@ import { Login } from "./Login";
 import { RecordPage } from "./RecordPage";
 import { ResourcePage } from "./ResourcePage";
 import { Shell } from "./Shell";
+import { extensions } from "../custom";
 
 const Themed: React.FC = ({ children }) => {
   const { config } = useApp();
@@ -45,6 +46,7 @@ const Routed: React.FC = () => {
           <Route path="/" element={<Dashboard />} />
           <Route path="/dashboard" element={<Navigate to="/" replace />} />
           <Route path="/assistant" element={<Assistant />} />
+          {(extensions.routes || []).map((r) => <Route key={r.path} path={r.path} element={r.element} />)}
           <Route path="/r/:table" element={<ResourcePage />} />
           <Route path="/r/:table/:id" element={<RecordPage />} />
           <Route path="/admin/members" element={<AdminOnly element={<Members />} />} />

@@ -38,6 +38,9 @@ Work in the app's planning folder `workspace/<App>/` (git-ignored): `requirement
    iterate. When the user approves, run `./neoapps preview <App> --save` to record the version (`history/vN/`).
    **Generate:** `./neoapps new <App> --schema workspace/<App>/schema.sql --ui workspace/<App>/ui.config.json` (App = PascalCase identifier, e.g. `TodoApp`).
    Add `--deploy` to build and run it in Docker, and `--template dnd` for the drag-and-drop designer UI.
+   **Custom screens:** if the user needs something the schema-driven UI can't do (a personal summary page, a calculation,
+   a one-click action), write it in `workspace/<App>/custom/index.tsx` (exports `extensions`: `routes`, `nav`,
+   `dashboardTop`, `recordActions`; example `samples/splitshare/custom`). It is copied into the app on every generate.
    **AI:** if the app needs document Q&A, "ask your data", or AI-driven record creation, add an `ai` section to the
    ui.json (assistant instructions, `documentTables`, `tools`, `workflows`; see the guide) instead of modelling chat
    tables. It runs on the Claude API when the API process has `ANTHROPIC_API_KEY` set (never put the key in files).
@@ -92,7 +95,8 @@ Rows are owner-scoped (`createdBy` = the logged-in user), so seed rows inserted 
   (always scoped to `DATABASE()`), `MySqlScript` (statement splitter), `ProcessRunner`.
 - `CodeGenerator/ReactUiKit/`: the schema-driven admin UI copied into every admin frontend (`src/neoapps/*`).
   `Infrastructure/UiKit.cs` installs it and writes `public/schema.json` (from the DB) and `public/ui.config.json`,
-  and seeds roles. The old per-table components are still generated but no longer routed.
+  and seeds roles. The old per-table components are still generated but no longer routed. `src/custom/` is the
+  extension point for app-specific screens (empty by default; replaced by `workspace/<App>/custom/` when present).
 - RBAC: `AccessController` (template API) serves `/v1/api/Access/me`, members, roles, the permission grid and the
   saved UI config. Role templates are `permissionmatrix` rows with `user_id IS NULL`, and members get copies.
   Passwords use BCrypt (`Utility/PasswordHasher.cs`).

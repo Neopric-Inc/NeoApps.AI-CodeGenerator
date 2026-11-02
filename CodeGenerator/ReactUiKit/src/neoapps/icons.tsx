@@ -1,3 +1,4 @@
+import AccountBalanceWalletOutlined from "@mui/icons-material/AccountBalanceWalletOutlined";
 import React from "react";
 import TableChartOutlined from "@mui/icons-material/TableChartOutlined";
 import PeopleOutline from "@mui/icons-material/PeopleOutline";
@@ -56,6 +57,7 @@ export const ICONS: Record<string, React.ComponentType<any>> = {
   cart: ShoppingCartOutlined,
   school: SchoolOutlined,
   home: HomeOutlined,
+  wallet: AccountBalanceWalletOutlined,
 };
 
 export const Icon: React.FC<{ name?: string; fontSize?: "small" | "medium" | "large" | "inherit" }> = ({ name, fontSize = "small" }) => {

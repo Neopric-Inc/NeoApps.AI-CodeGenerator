@@ -33,6 +33,14 @@ const STATUS_COLORS: Record<string, any> = {
   failed: "error", closed: "default", cancelled: "error", rejected: "error", expired: "error", disconnected: "error", superseded: "default",
 };
 
+export function formatMoney(value: any, code?: string): string {
+  try { return Number(value).toLocaleString(undefined, { style: "currency", currency: code || "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  catch { return `${code || ""} ${Number(value).toFixed(2)}`; }
+}
+export function currencySymbol(code?: string): string {
+  try { return (0).toLocaleString(undefined, { style: "currency", currency: code || "USD" }).replace(/[\d.,\s]/g, "") || "$"; } catch { return "$"; }
+}
+
 export function renderValue(field: ResolvedField | undefined, value: any, refLabel?: string): React.ReactNode {
   if (value === null || value === undefined || value === "") return <span style={{ color: "#9aa3af" }}>—</span>;
   if (!field) return String(value);
@@ -52,7 +60,7 @@ export function renderValue(field: ResolvedField | undefined, value: any, refLab
       return d ? d.toLocaleString([], { dateStyle: "medium", timeStyle: "short" } as any) : String(value);
     }
     case "currency":
-      return Number(value).toLocaleString(undefined, { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+      return formatMoney(value, field.currencyCode);
     case "percent":
       return `${value}%`;
     case "number":
