@@ -72,6 +72,10 @@ public sealed class DockerService(NeoAppsSettings settings, ProjectStore store)
         sb.AppendLine($"      ConnectionStrings__RabitMQ: {Quote(settings.DockerRabbitMqUrl)}");
         sb.AppendLine($"      ConnectionStrings__Redis: {Quote(settings.DockerRedis)}");
         sb.AppendLine("      ASPNETCORE_ENVIRONMENT: Development");
+        // AI assistant: the key comes from the environment of whoever runs the deploy; never written to disk.
+        sb.AppendLine("      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}");
+        sb.AppendLine("    volumes:");
+        sb.AppendLine("      - app_data:/app/App_Data");
         sb.AppendLine("    ports:");
         sb.AppendLine($"      - \"{p.ApiPort}:8080\"");
         sb.AppendLine("    restart: unless-stopped");
@@ -96,6 +100,8 @@ public sealed class DockerService(NeoAppsSettings settings, ProjectStore store)
             sb.AppendLine("    depends_on: [api]");
             sb.AppendLine("    restart: unless-stopped");
         }
+        sb.AppendLine("volumes:");
+        sb.AppendLine("  app_data:");
         sb.AppendLine("networks:");
         sb.AppendLine("  default:");
         sb.AppendLine($"    name: {settings.DockerNetwork}");

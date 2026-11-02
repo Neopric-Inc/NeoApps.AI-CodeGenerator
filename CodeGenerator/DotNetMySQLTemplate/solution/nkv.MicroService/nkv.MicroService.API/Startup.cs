@@ -107,6 +107,12 @@ namespace nkv.MicroService.API
             services.AddTransient<ICurrentUserService, CurrentUserService>();
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
             services.AddSingleton<IChannelManager, ChannelManager>();
+            // AI assistant (Claude API). Enabled when ANTHROPIC_API_KEY is set.
+            services.AddSingleton<nkv.MicroService.API.Ai.AiSettings>();
+            services.AddSingleton<nkv.MicroService.API.Ai.AiData>();
+            services.AddHttpClient<nkv.MicroService.API.Ai.ClaudeClient>(h => h.Timeout = System.TimeSpan.FromMinutes(5));
+            services.AddHttpClient("clinicaltrials");
+            services.AddScoped<nkv.MicroService.API.Ai.AiService>();
             #region Dependency
             
             #endregion

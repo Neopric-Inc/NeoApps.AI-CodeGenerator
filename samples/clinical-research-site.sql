@@ -1,6 +1,7 @@
 -- Clinical research site operations, modelled on https://www.useintake.ai/
 -- Studies, regulatory documents, schedule of assessments -> source documents, connectors,
--- cross-document Q&A with citations, workflow runs and ClinicalTrials.gov opportunities.
+-- workflow runs and ClinicalTrials.gov opportunities. Q&A with citations, SoA extraction and the trial finder
+-- come from the built-in AI assistant (see the "ai" section of clinical-research-site.ui.json).
 
 CREATE TABLE sponsors (
   sponsor_id INT AUTO_INCREMENT PRIMARY KEY,
@@ -147,6 +148,7 @@ CREATE TABLE source_documents (
   document_id INT,
   title VARCHAR(255) NOT NULL,
   status VARCHAR(30) NOT NULL DEFAULT 'draft',
+  content TEXT,
   generated_at DATETIME,
   createdBy VARCHAR(255) NOT NULL,
   modifiedBy VARCHAR(255) NOT NULL,
@@ -154,47 +156,6 @@ CREATE TABLE source_documents (
   modifiedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   isActive TINYINT(1) NOT NULL DEFAULT '1',
   FOREIGN KEY (visit_id) REFERENCES visits(visit_id),
-  FOREIGN KEY (document_id) REFERENCES documents(document_id)
-);
-
-CREATE TABLE chat_threads (
-  chat_thread_id INT AUTO_INCREMENT PRIMARY KEY,
-  study_id INT,
-  title VARCHAR(255) NOT NULL,
-  createdBy VARCHAR(255) NOT NULL,
-  modifiedBy VARCHAR(255) NOT NULL,
-  createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  modifiedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  isActive TINYINT(1) NOT NULL DEFAULT '1',
-  FOREIGN KEY (study_id) REFERENCES studies(study_id)
-);
-
-CREATE TABLE chat_messages (
-  chat_message_id INT AUTO_INCREMENT PRIMARY KEY,
-  chat_thread_id INT NOT NULL,
-  sender VARCHAR(20) NOT NULL DEFAULT 'user',
-  content TEXT NOT NULL,
-  found_in_sources TINYINT(1) NOT NULL DEFAULT '1',
-  createdBy VARCHAR(255) NOT NULL,
-  modifiedBy VARCHAR(255) NOT NULL,
-  createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  modifiedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  isActive TINYINT(1) NOT NULL DEFAULT '1',
-  FOREIGN KEY (chat_thread_id) REFERENCES chat_threads(chat_thread_id)
-);
-
-CREATE TABLE message_citations (
-  message_citation_id INT AUTO_INCREMENT PRIMARY KEY,
-  chat_message_id INT NOT NULL,
-  document_id INT NOT NULL,
-  page_reference VARCHAR(50),
-  excerpt TEXT,
-  createdBy VARCHAR(255) NOT NULL,
-  modifiedBy VARCHAR(255) NOT NULL,
-  createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  modifiedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  isActive TINYINT(1) NOT NULL DEFAULT '1',
-  FOREIGN KEY (chat_message_id) REFERENCES chat_messages(chat_message_id),
   FOREIGN KEY (document_id) REFERENCES documents(document_id)
 );
 
@@ -225,6 +186,7 @@ CREATE TABLE trial_opportunities (
   condition_name VARCHAR(150),
   found_via VARCHAR(50) NOT NULL DEFAULT 'clinicaltrials.gov',
   fit_score INT,
+  rationale TEXT,
   status VARCHAR(30) NOT NULL DEFAULT 'new',
   createdBy VARCHAR(255) NOT NULL,
   modifiedBy VARCHAR(255) NOT NULL,

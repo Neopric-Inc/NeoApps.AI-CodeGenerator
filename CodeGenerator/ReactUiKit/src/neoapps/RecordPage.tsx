@@ -13,6 +13,9 @@ import { RecordForm } from "./RecordForm";
 import { useDelete } from "./ResourcePage";
 import { ResolvedTable } from "./types";
 import { useReferences } from "./useReferences";
+import AutoAwesome from "@mui/icons-material/AutoAwesome";
+import { FilesPanel } from "./ai/FilesPanel";
+import { WorkflowButtons } from "./ai/Workflows";
 
 /** Related records of one child table, filtered client-side by the FK pointing at the parent. */
 const ChildList: React.FC<{ child: ResolvedTable; fk: string; parentId: any }> = ({ child, fk, parentId }) => {
@@ -52,7 +55,7 @@ const ChildList: React.FC<{ child: ResolvedTable; fk: string; parentId: any }> =
 
 export const RecordPage: React.FC = () => {
   const { table: name = "", id = "" } = useParams();
-  const { tables, can } = useApp();
+  const { tables, can, ai } = useApp();
   const navigate = useNavigate();
   const table = tables[name];
   const [record, setRecord] = useState<Record<string, any> | null>(null);
@@ -60,6 +63,7 @@ export const RecordPage: React.FC = () => {
   const [error, setError] = useState<string>();
   const [editing, setEditing] = useState(false);
   const [tab, setTab] = useState(0);
+  const [bump, setBump] = useState(0);
   const { labelFor } = useReferences(table);
 
   const load = useCallback(async () => {
@@ -96,6 +100,8 @@ export const RecordPage: React.FC = () => {
       </Breadcrumbs>
       <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2.5, flexWrap: "wrap" }}>
         <Typography variant="h5" fontWeight={700} sx={{ flex: 1 }}>{String(record[table.displayField] ?? `${table.singular} #${id}`)}</Typography>
+        {ai?.enabled && <WorkflowButtons workflows={ai.workflows.filter((w) => w.table === name)} recordId={id} record={record} onApplied={() => setBump((b) => b + 1)} />}
+        {ai?.enabled && <Button variant="outlined" startIcon={<AutoAwesome />} onClick={() => navigate(`/assistant?table=${name}&id=${encodeURIComponent(id)}`)}>Ask AI</Button>}
         {can(name, "update") && <Button variant="outlined" startIcon={<EditOutlined />} onClick={() => setEditing(true)}>Edit</Button>}
         {can(name, "delete") && <Button color="error" startIcon={<DeleteOutline />} onClick={() => del.ask(record)}>Delete</Button>}
       </Box>
@@ -116,13 +122,14 @@ export const RecordPage: React.FC = () => {
           Created {renderValue(table.fields.createdAt, record.createdAt)} by {record.createdBy || "—"} · Updated {renderValue(table.fields.modifiedAt, record.modifiedAt)}
         </Typography>
       </Paper>
+      {ai?.enabled && ai.documentTables.includes(name) && <FilesPanel table={name} recordId={id} />}
       {children.length > 0 && (
         <Paper variant="outlined" sx={{ borderRadius: 2, overflow: "hidden" }}>
           <Tabs value={Math.min(tab, children.length - 1)} onChange={(_, v) => setTab(v)} variant="scrollable" sx={{ borderBottom: 1, borderColor: "divider", px: 1 }}>
             {children.map((c) => <Tab key={c.child.name} label={c.child.label} />)}
           </Tabs>
           {children[Math.min(tab, children.length - 1)] && (
-            <ChildList key={children[Math.min(tab, children.length - 1)].child.name} {...children[Math.min(tab, children.length - 1)]} parentId={record[table.primaryKey]} />
+            <ChildList key={children[Math.min(tab, children.length - 1)].child.name + bump} {...children[Math.min(tab, children.length - 1)]} parentId={record[table.primaryKey]} />
           )}
         </Paper>
       )}

@@ -107,6 +107,12 @@ namespace {projectName}.API
             services.AddTransient<ICurrentUserService, CurrentUserService>();
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
             services.AddSingleton<IChannelManager, ChannelManager>();
+            // AI assistant (Claude API). Enabled when ANTHROPIC_API_KEY is set.
+            services.AddSingleton<{projectName}.API.Ai.AiSettings>();
+            services.AddSingleton<{projectName}.API.Ai.AiData>();
+            services.AddHttpClient<{projectName}.API.Ai.ClaudeClient>(h => h.Timeout = System.TimeSpan.FromMinutes(5));
+            services.AddHttpClient("clinicaltrials");
+            services.AddScoped<{projectName}.API.Ai.AiService>();
             #region Dependency
             {serviceDependency}
             #endregion

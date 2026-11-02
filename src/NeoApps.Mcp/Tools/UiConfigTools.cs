@@ -105,5 +105,29 @@ internal static class UiConfigTools
                receipt, inventory, folder, dashboard, settings, security, palette, check, hospital, calendar, star,
                cart, school, home.
         Audit columns (createdBy, modifiedBy, createdAt, modifiedAt, isActive) and primary keys stay out of forms automatically.
+
+        AI assistant (Claude). Optional "ai" section; active when the API runs with ANTHROPIC_API_KEY set:
+          "ai": {
+            "enabled": true,
+            "model": "claude-sonnet-5-5",
+            "assistantName": "Site Assistant",
+            "instructions": "Who the users are and how to answer (domain rules, tone, what not to do).",
+            "documentTables": ["documents"],          // record pages of these tables get a Files panel; uploads are indexed
+            "tools": ["documents", "records", "clinicaltrials_gov"],   // what the assistant may use
+            "suggestions": ["Which studies are enrolling?"],           // starter questions on the Assistant page
+            "workflows": [
+              { "id": "soa_to_source", "label": "Build visit schedule",
+                "table": "documents", "when": { "document_type": "protocol" },   // button on matching records; omit "table" for a global workflow
+                "targets": ["visits", "assessments", "visit_assessments"],     // tables it may create rows in (user needs create permission)
+                "inherit": { "study_id": "study_id" },                          // target column <- source record column
+                "tools": ["records"],                                           // extra tools while running (optional)
+                "description": "Shown in the dialog.",
+                "instructions": "Step-by-step: what to read and which rows to create. New rows link with '@<ref>'." }
+            ]
+          }
+        The assistant answers from uploaded files (with [S1] citations to file and page) and from the app's records,
+        always limited to what the signed-in user may read. Workflows show a preview that the user reviews (and can
+        untick rows) before anything is created. "records" = query/aggregate tables; "clinicaltrials_gov" = live
+        ClinicalTrials.gov search. Model enum-like target columns as VARCHAR and describe valid values in "instructions".
         """;
 }

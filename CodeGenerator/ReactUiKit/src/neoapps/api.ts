@@ -25,9 +25,11 @@ export const setToken = (token: string | null) => {
 
 export class ApiError extends Error {
   status: number;
-  constructor(status: number, message: string) {
+  fieldErrors?: Record<string, string[]>;
+  constructor(status: number, message: string, fieldErrors?: Record<string, string[]>) {
     super(message);
     this.status = status;
+    this.fieldErrors = fieldErrors;
   }
 }
 
@@ -47,6 +49,11 @@ export async function api<T = any>(method: string, path: string, body?: any): Pr
     throw new ApiError(401, "You don't have permission for this action.");
   }
   if (res.status === 403) throw new ApiError(403, "Administrators only.");
+  if (res.status === 400 && json && json.errors && typeof json.errors === "object") {
+    // ASP.NET model validation: {"errors": {"field": ["The field is required."]}}
+    const names = Object.keys(json.errors).join(", ");
+    throw new ApiError(400, `Please check: ${names}`, json.errors);
+  }
   if (!res.ok) {
     const msg = (json && (json.message === "Exception" ? json.document : json.message)) || res.statusText || "Request failed";
     throw new ApiError(res.status, typeof msg === "string" ? msg : JSON.stringify(msg));
@@ -80,6 +87,12 @@ export const getRecord = async (table: string, id: any) => {
 export const createRecord = (table: string, data: any) => api<any>("POST", table, data);
 export const updateRecord = (table: string, id: any, data: any) => api<any>("PUT", `${table}/${encodeURIComponent(id)}`, data);
 export const deleteRecord = (table: string, id: any) => api<any>("DELETE", `${table}/${encodeURIComponent(id)}`);
+
+/** Number of active rows in `table` where `column` equals `value` (generated /filter endpoint, condition 5 = Equals). */
+export async function countWhere(table: string, column: string, value: any): Promise<number> {
+  const res = await api<any>("POST", `${table}/filter?page=1&itemsPerPage=1`, [{ columnName: column, columnCondition: 5, columnValue: String(value) }]).catch(() => null);
+  return res && res.code === 1 ? res.document?.totalRecords || 0 : 0;
+}
 
 export async function login(username: string, password: string): Promise<void> {
   const res = await api<any>("POST", "Token", { username, password });

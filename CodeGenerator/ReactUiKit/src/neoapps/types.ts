@@ -9,6 +9,7 @@ export interface ColumnSchema {
   columnType: string; // full type, e.g. tinyint(1), enum('a','b'), varchar(255)
   nullable: boolean;
   hasDefault: boolean;
+  defaultValue?: string | null; // raw MySQL column default, e.g. 'pharma', 0, CURRENT_TIMESTAMP
   maxLength?: number | null;
   isPrimaryKey: boolean;
   isAutoIncrement: boolean;
@@ -78,6 +79,8 @@ export interface UiConfig {
   tables?: Record<string, TableConfig>;
   /** Roles seeded when the database is created: {"Viewer": {"*": "r"}} (c/r/u/d). Read by the generator only. */
   roles?: Record<string, Record<string, string>>;
+  /** AI assistant settings, read by the API (instructions, tools, workflows) and the UI. */
+  ai?: Record<string, any>;
 }
 
 // Fully-resolved view of a table (schema + defaults + config) used by the pages.
