@@ -16,9 +16,11 @@ internal static class SchemaGuidelines
              createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
              modifiedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
              isActive TINYINT(1) NOT NULL DEFAULT '1'
-        4. Use lowercase snake_case table and column names. Do NOT create tables named Roles, Users, Entities or
-           PermissionMatrix: the generator adds those for login and role-based access. For app-level people
-           use another name (e.g. app_users, members) and reference them with foreign keys.
+        4. Use lowercase snake_case table and column names. Do NOT reuse a table name the generator creates itself:
+           roles, users, entities, permissionmatrix (login and role-based access), messagequeue, s3bucket,
+           s3bucket_folders, dnd_ui_versions, project_dnd_ui_versions, workflow, workflows, workflows_projects,
+           workflow_builds, workflow_runs, workflow_deployments, workflow_triggers, workflow_trigger_conditions.
+           For app-level people use e.g. app_users or members; for automations use e.g. automation_runs.
         5. Declare relations with FOREIGN KEY (...) REFERENCES parent(parent_id). Create parent tables before
            the tables that reference them. No trailing comma before the closing parenthesis.
         6. Prefer simple types: INT, DECIMAL(12,2), VARCHAR(n), TEXT, DATE, DATETIME, TINYINT(1).

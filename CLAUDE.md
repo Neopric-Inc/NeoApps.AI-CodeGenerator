@@ -12,7 +12,10 @@ This repo turns a MySQL schema into an app: a .NET 10 Web API plus a React admin
      `createdBy, modifiedBy VARCHAR(255) NOT NULL`, `createdAt, modifiedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP`,
      `isActive TINYINT(1) NOT NULL DEFAULT '1'`
    - lowercase snake_case names, `FOREIGN KEY ... REFERENCES`, 3-15 tables
-   - **never** create `Roles`, `Users`, `Entities`, `PermissionMatrix`: the generator adds them (use e.g. `members`)
+   - **never** reuse a built-in table name: `roles`, `users`, `entities`, `permissionmatrix`, `messagequeue`,
+     `s3bucket`, `s3bucket_folders`, `dnd_ui_versions`, `project_dnd_ui_versions`, `workflow`, `workflows`,
+     `workflows_projects`, `workflow_builds`, `workflow_runs`, `workflow_deployments`, `workflow_triggers`,
+     `workflow_trigger_conditions` (use e.g. `members`, `automation_runs`)
    - plain `CREATE TABLE` / `INSERT` only: no `CREATE DATABASE`, `USE`, `DELIMITER`, procedures
    Save it as `workspace/<App>.sql` (git-ignored), or under `samples/` if it should be committed.
 3. **Generate:** `./neoapps new <App> --schema workspace/<App>.sql` (App = PascalCase identifier, e.g. `TodoApp`).
