@@ -11,7 +11,7 @@
     <AssemblyName>neoapps-mcp</AssemblyName>
     <!-- Also installable as a global tool: dotnet pack && dotnet tool install -g neoapps-mcp -->
     <PackAsTool>true</PackAsTool>
-    <ToolCommandName>neoapps-mcp</ToolCommandName>
+    <ToolCommandName>neoapps</ToolCommandName>
     <PackageId>NeoApps.Mcp</PackageId>
     <Description>MCP server that lets Claude Desktop generate NeoApps.AI apps and run them locally with Docker.</Description>
   </PropertyGroup>

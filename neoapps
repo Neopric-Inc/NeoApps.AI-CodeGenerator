@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# NeoApps CLI wrapper: ./neoapps new TodoApp --schema todo.sql --deploy   (./neoapps help for all commands)
+set -euo pipefail
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+export NEOAPPS_HOME="${NEOAPPS_HOME:-$ROOT}"
+DLL="$ROOT/src/NeoApps.Mcp/bin/Release/net10.0/neoapps-mcp.dll"
+if [[ ! -f "$DLL" || -n "$(find "$ROOT/src/NeoApps.Mcp" -name '*.cs' -newer "$DLL" -print -quit)" ]]; then
+  dotnet build "$ROOT/src/NeoApps.Mcp" -c Release -nologo -v:q >&2
+fi
+exec dotnet "$DLL" "${@:-help}"

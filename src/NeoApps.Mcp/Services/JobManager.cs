@@ -20,8 +20,12 @@ public sealed class Job
     public string? Error { get; internal set; }
     internal Task Completion { get; set; } = Task.CompletedTask;
 
+    /// <summary>Optional live echo (used by the CLI to stream progress).</summary>
+    public Action<string>? Echo { get; init; }
+
     public void Log(string line)
     {
+        Echo?.Invoke(line);
         lock (_log)
         {
             _log.AppendLine(line);
@@ -58,11 +62,14 @@ public sealed class Job
 /// </summary>
 public sealed class JobManager(NeoAppsSettings settings)
 {
+    /// <summary>When set, every job streams its log lines here (CLI mode).</summary>
+    public Action<string>? Echo { get; set; }
+
     private readonly ConcurrentDictionary<string, Job> _jobs = new();
 
     public Job Start(string kind, string project, Func<Job, CancellationToken, Task<object?>> work)
     {
-        var job = new Job { Id = $"{kind}-{Guid.NewGuid().ToString("N")[..8]}", Kind = kind, Project = project };
+        var job = new Job { Id = $"{kind}-{Guid.NewGuid().ToString("N")[..8]}", Kind = kind, Project = project, Echo = Echo };
         _jobs[job.Id] = job;
         job.Completion = Task.Run(async () =>
         {

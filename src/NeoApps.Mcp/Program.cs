@@ -3,6 +3,10 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using NeoApps.Mcp.Services;
 
+// CLI mode: `neoapps new TodoApp --schema todo.sql --deploy` etc. No arguments = MCP server on stdio.
+if (args.Length > 0 && NeoApps.Mcp.Cli.IsCommand(args[0]))
+    return await NeoApps.Mcp.Cli.RunAsync(args);
+
 var builder = Host.CreateApplicationBuilder(args);
 
 // stdout is the MCP channel: every log line must go to stderr.
@@ -22,3 +26,4 @@ builder.Services
     .WithToolsFromAssembly();
 
 await builder.Build().RunAsync();
+return 0;

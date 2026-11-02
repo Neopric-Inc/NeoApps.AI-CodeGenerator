@@ -23,7 +23,26 @@ Use it in one of two ways:
 
 You don't need XAMPP, Python, Node, or a local MySQL/Redis/RabbitMQ install. The shared services run from [`deploy/docker-compose.infra.yml`](deploy/docker-compose.infra.yml).
 
+## Quick start
+
+```bash
+git clone https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator.git && cd NeoApps.AI-CodeGenerator
+./scripts/setup.sh                    # checks .NET 10 + Docker, builds the MCP server, registers it with Claude Desktop
+```
+
+Then either restart Claude Desktop and ask *"Build me a todo app and run it locally"*, or use the CLI:
+
+```bash
+./neoapps new TodoApp --schema samples/todo-app.sql --deploy   # generate + run in Docker
+./neoapps help                                                 # all commands
+```
+
+No Docker (e.g. a Claude Code cloud session)? Run `sudo ./scripts/sandbox-deps.sh`, then
+`export NEOAPPS_SKIP_INFRA=true NEOAPPS_MYSQL_PORT=3306`, then run `./neoapps new ...` without `--deploy`. See [CLAUDE.md](CLAUDE.md).
+
 ## Option 1: Claude Desktop (MCP)
+
+`./scripts/setup.sh` performs steps 1 and 2 for you. To do them by hand:
 
 ### 1. Build the MCP server
 
