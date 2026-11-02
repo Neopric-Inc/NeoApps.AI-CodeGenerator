@@ -6,9 +6,25 @@
 
 Turn a MySQL schema into a working app: a **.NET 10 Web API** (CRUD, relational and reporting endpoints, JWT auth, role-based permissions, Swagger) plus a **React admin UI**, then run it locally in Docker.
 
-Use it in one of two ways:
+## Build an app by asking Claude (easiest)
 
-- **From Claude Desktop (recommended):** describe the app in chat. Claude writes the schema, generates the code and deploys it on your machine through the bundled MCP server.
+Nothing to install. Open a new chat in [Claude](https://claude.ai) or a [Claude Code](https://claude.ai/code) session, name this repo in your first message, and describe the app in plain words:
+
+> Use the GitHub repo **Neopric-Inc/NeoApps.AI-CodeGenerator** to build me an app for a dental clinic: patients, appointments, dentists, treatments and invoices. The front desk books appointments, dentists edit treatments, and the owner sees everything. Add an assistant that answers questions from our uploaded clinic policies.
+
+Claude attaches the repo and follows its [instructions](CLAUDE.md). It designs the database, screens and roles (plus the AI assistant if you ask for one), generates and builds the app, tests it, and replies with the web address and admin login.
+
+Tips for a good result:
+- **What it tracks:** name the main things and how they relate (a patient has many appointments…).
+- **Who does what:** say who uses it and what each kind of user may do; these become roles and permissions.
+- **AI:** say if you want questions answered from documents, questions about your data, or AI that creates records from a document.
+- **Changes:** after it's built, just ask ("make status a dropdown", "let the front desk edit invoices"). Admins can also adjust screens in the app under **Admin → Customize UI**.
+
+To run the app on your own computer instead of in Claude's sandbox, use one of the options below. You'll need Docker Desktop.
+
+## Other ways to use it
+
+- **From Claude Desktop:** describe the app in chat. Claude writes the schema, generates the code and deploys it on your machine through the bundled MCP server.
 - **From the command line:** run the generator with a JSON config.
 
 ▶️ Demo: [manual setup](https://www.youtube.com/watch?v=i2SOFnlYknU) · [tutorial](tutorials.md)
