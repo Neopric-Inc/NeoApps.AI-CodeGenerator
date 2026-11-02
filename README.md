@@ -208,6 +208,14 @@ and **Admin > Members / Roles / Customize UI**.
   - MCP: `neoapps_ui_config_guide`, `neoapps_get_ui_config`, `neoapps_update_ui_config`, or just ask Claude: "make status a dropdown with these options", "group the menu by …"
   - In the app: **Admin > Customize UI** edits and previews it live. The saved copy applies to everyone in that workspace and overrides the file.
   - Example: [`samples/clinical-research-site.ui.json`](samples/clinical-research-site.ui.json)
+  - Dashboard cards show a row count by default, or a total: `{ "table": "expenses", "label": "Total spent", "sum": "amount", "where": { "status": "open" }, "format": "currency", "currencyCode": "INR" }`. Currency fields take `"currencyCode"` (default USD).
+- **Custom screens.** When the schema-driven UI isn't enough (a personal "my balances" page, a calculator, a one-click
+  action), put React code in `workspace/<App>/custom/index.tsx` next to the app's `ui.config.json`. The generator copies
+  that folder into the frontend's `src/custom/` on every `new` / `ui` run, so it survives regeneration. Export
+  `extensions` with any of `routes` (extra pages), `nav` (sidebar items), `dashboardTop` (panel above the cards) and
+  `recordActions` (buttons on record pages); see `CodeGenerator/ReactUiKit/src/neoapps/extensions.ts`. Example:
+  [`samples/splitshare/`](samples/splitshare), a shared-expenses app with a My balances page, settle-up suggestions,
+  a "Split now" button and admin "Create login".
 - **RBAC**
   - Roles grant view/create/edit/delete per table. Declare them in `ui.config.json` (`"roles": {"Coordinator": {"*": "r", "documents": "cru"}}`, defaulting to Member + Viewer), or manage them in **Admin > Roles**.
   - **Admin > Members** adds users and assigns roles. The API enforces every permission, and the UI hides menus and buttons you can't use.

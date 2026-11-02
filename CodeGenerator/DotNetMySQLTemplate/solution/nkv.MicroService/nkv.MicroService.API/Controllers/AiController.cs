@@ -56,9 +56,13 @@ namespace nkv.MicroService.API.Controllers
 
         // ------------------------------------------------------------------ files
 
+        /// <summary>Multipart body for file uploads (a model class keeps Swagger generation working with IFormFile).</summary>
+        public class UploadForm { public IFormFile file { get; set; } public string table { get; set; } public string recordId { get; set; } }
+
         [HttpPost, Route(Route + "/files"), RequestSizeLimit(50_000_000)]
-        public Task<ActionResult> Upload([FromForm] IFormFile file, [FromForm] string table, [FromForm] string recordId) => Run(() =>
+        public Task<ActionResult> UploadFile([FromForm] UploadForm form) => Run(() =>
         {
+            var file = form.file; var table = form.table; var recordId = form.recordId;
             if (file == null || file.Length == 0) throw new AiException("Choose a file to upload.");
             using var s = file.OpenReadStream();
             return _ai.Upload(Me(), table?.ToLowerInvariant(), recordId, file.FileName, file.ContentType, s);

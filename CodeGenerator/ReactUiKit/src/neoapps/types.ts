@@ -44,6 +44,7 @@ export interface FieldConfig {
   help?: string;
   placeholder?: string;
   defaultValue?: any;
+  currencyCode?: string; // ISO code for currency widgets (default USD)
 }
 
 export interface TableConfig {
@@ -68,6 +69,12 @@ export interface MenuGroup {
 export interface DashboardCard {
   table: string;
   label?: string;
+  /** Show the sum of this column instead of a row count. */
+  sum?: string;
+  /** Only count/sum rows where column equals value. */
+  where?: Record<string, any>;
+  format?: "currency" | "number";
+  currencyCode?: string;
 }
 
 export interface UiConfig {

@@ -30,6 +30,13 @@ public static class UiKit
     public static void Install(string generatorRoot, string frontendDir, string connectionString, string appName, string uiConfigPath)
     {
         CopyDirectory(Path.Combine(generatorRoot, "ReactUiKit", "src"), Path.Combine(frontendDir, "src"));
+        // App-specific screens: <dir of ui.config>/custom replaces the kit's empty src/custom extension point.
+        var customDir = string.IsNullOrEmpty(uiConfigPath) ? null : Path.Combine(Path.GetDirectoryName(Path.GetFullPath(uiConfigPath))!, "custom");
+        if (customDir != null && Directory.Exists(customDir))
+        {
+            CopyDirectory(customDir, Path.Combine(frontendDir, "src", "custom"));
+            Console.WriteLine($"Custom screens installed from {customDir}.");
+        }
 
         var publicDir = Path.Combine(frontendDir, "public");
         Directory.CreateDirectory(publicDir);

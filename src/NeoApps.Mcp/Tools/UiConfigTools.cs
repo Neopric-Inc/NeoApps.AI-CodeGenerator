@@ -71,7 +71,10 @@ internal static class UiConfigTools
             { "group": "Studies", "items": ["studies", "visits", "assessments"] },
             { "group": "Documents", "items": ["documents", "source_documents"] }
           ],
-          "dashboard": { "cards": [ { "table": "studies", "label": "Active studies" } ], "recentTable": "documents" },
+          "dashboard": { "cards": [ { "table": "studies", "label": "Active studies" },          // row count
+                                    { "table": "studies", "label": "Total budget", "sum": "budget_amount",  // or a total,
+                                      "where": { "status": "enrolling" }, "format": "currency", "currencyCode": "USD" } ], // optionally filtered
+                         "recentTable": "documents" },
           "roles": {                                  // seeded when the database is created (c=create r=read u=update d=delete)
             "Coordinator": { "*": "r", "documents": "cru", "visits": "cru" },
             "Viewer": { "*": "r" }
@@ -89,7 +92,7 @@ internal static class UiConfigTools
               "fields": {
                 "status": { "widget": "select", "options": ["startup", "enrolling", "closed"],
                             "colors": { "enrolling": "success", "closed": "default" } },
-                "budget_amount": { "label": "Budget", "widget": "currency" },
+                "budget_amount": { "label": "Budget", "widget": "currency", "currencyCode": "USD" },
                 "nct_number": { "label": "NCT #", "help": "ClinicalTrials.gov identifier", "placeholder": "NCT01234567" },
                 "notes": { "hidden": true },          // hidden everywhere; "hideInForm": true hides only in the form
                 "current_enrollment": { "readOnly": true, "defaultValue": 0 }
@@ -105,6 +108,14 @@ internal static class UiConfigTools
                receipt, inventory, folder, dashboard, settings, security, palette, check, hospital, calendar, star,
                cart, school, home.
         Audit columns (createdBy, modifiedBy, createdAt, modifiedAt, isActive) and primary keys stay out of forms automatically.
+        Select fields render as coloured chips in lists, record pages and the dropdown itself.
+
+        Custom screens (when config isn't enough): put React code in workspace/<App>/custom/index.tsx next to ui.config.json.
+        It is copied to the frontend's src/custom/ on every generate and must export
+          export const extensions: Extensions = { routes: [{ path, element }], nav: [{ to, icon, label }],
+                                                 dashboardTop: Component, recordActions: Component<{ table, record, onChanged }> };
+        (types in src/neoapps/extensions.ts; use api/listRecords/createRecord/updateRecord from ../neoapps/api and useApp()
+        for me/can()). Example: samples/splitshare/custom.
 
         AI assistant (Claude). Optional "ai" section; active when the API runs with ANTHROPIC_API_KEY set:
           "ai": {

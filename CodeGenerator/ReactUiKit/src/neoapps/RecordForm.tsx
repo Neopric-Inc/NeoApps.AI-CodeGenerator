@@ -4,7 +4,7 @@ import {
   FormControlLabel, InputAdornment, MenuItem, TextField,
 } from "@mui/material";
 import { createRecord, updateRecord } from "./api";
-import { toApiDate, toDateInput, toDateTimeInput } from "./format";
+import { currencySymbol, renderValue, toApiDate, toDateInput, toDateTimeInput } from "./format";
 import { ResolvedField, ResolvedTable } from "./types";
 import { invalidateReferences, useReferences } from "./useReferences";
 
@@ -136,16 +136,16 @@ export const RecordForm: React.FC<Props> = ({ table, record, defaults, open, onC
       case "percent":
         return <TextField {...common} type="number" InputProps={f.widget === "percent" ? { endAdornment: <InputAdornment position="end">%</InputAdornment> } : undefined} />;
       case "currency":
-        return <TextField {...common} type="number" InputProps={{ startAdornment: <InputAdornment position="start">$</InputAdornment> }} />;
+        return <TextField {...common} type="number" InputProps={{ startAdornment: <InputAdornment position="start">{currencySymbol(f.currencyCode)}</InputAdornment> }} />;
       case "email":
         return <TextField {...common} type="email" />;
       case "color":
         return <TextField {...common} type="color" InputLabelProps={{ shrink: true }} />;
       case "select":
         return (
-          <TextField {...common} select>
+          <TextField {...common} select SelectProps={{ renderValue: (v: any) => (v === "" || v == null ? "" : renderValue(f, v)) as any }}>
             {!f.required && <MenuItem value=""><em>None</em></MenuItem>}
-            {(f.options || []).map((o) => <MenuItem key={o} value={o}>{o}</MenuItem>)}
+            {(f.options || []).map((o) => <MenuItem key={o} value={o}>{renderValue(f, o)}</MenuItem>)}
           </TextField>
         );
       case "reference": {

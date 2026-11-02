@@ -1,0 +1,517 @@
+{
+  "appName": "SplitShare",
+  "tagline": "Shared expenses, splits and settle-ups for every group",
+  "theme": {
+    "primary": "#1aa37a",
+    "secondary": "#5b5bd6"
+  },
+  "menu": [
+    {
+      "group": "Spending",
+      "items": [
+        "expenses",
+        "expense_splits",
+        "expense_comments"
+      ]
+    },
+    {
+      "group": "Settle up",
+      "items": [
+        "settlements"
+      ]
+    },
+    {
+      "group": "People",
+      "items": [
+        "expense_groups",
+        "members",
+        "group_members"
+      ]
+    }
+  ],
+  "dashboard": {
+    "cards": [
+      {
+        "table": "expenses",
+        "label": "Total expenses",
+        "sum": "amount",
+        "format": "currency"
+      },
+      {
+        "table": "expense_splits",
+        "label": "Unsettled amounts",
+        "sum": "owed_amount",
+        "where": {
+          "status": "unsettled"
+        },
+        "format": "currency"
+      },
+      {
+        "table": "settlements",
+        "label": "Settled so far",
+        "sum": "amount",
+        "format": "currency",
+        "where": {
+          "status": "completed"
+        }
+      },
+      {
+        "table": "expense_groups",
+        "label": "Groups"
+      }
+    ],
+    "recentTable": "expenses"
+  },
+  "roles": {
+    "Member": {
+      "*": "r",
+      "expense_groups": "cru",
+      "members": "cru",
+      "group_members": "cru",
+      "expenses": "cru",
+      "expense_splits": "cru",
+      "settlements": "cru",
+      "expense_comments": "cru"
+    },
+    "Viewer": {
+      "*": "r"
+    }
+  },
+  "tables": {
+    "expense_groups": {
+      "label": "Groups",
+      "singular": "Group",
+      "icon": "people",
+      "description": "Roommates, trips, couples and other groups that share costs",
+      "displayField": "name",
+      "listColumns": [
+        "name",
+        "group_type",
+        "default_currency",
+        "description"
+      ],
+      "formFields": [
+        "name",
+        "group_type",
+        "default_currency",
+        "description"
+      ],
+      "children": [
+        "group_members",
+        "expenses",
+        "settlements"
+      ],
+      "fields": {
+        "group_type": {
+          "label": "Type",
+          "widget": "select",
+          "options": [
+            "home",
+            "trip",
+            "couple",
+            "other"
+          ],
+          "colors": {
+            "home": "primary",
+            "trip": "info",
+            "couple": "secondary",
+            "other": "default"
+          }
+        },
+        "default_currency": {
+          "label": "Default currency",
+          "widget": "select",
+          "options": [
+            "INR",
+            "USD",
+            "EUR",
+            "GBP",
+            "CAD",
+            "AUD",
+            "SGD",
+            "AED"
+          ]
+        },
+        "description": {
+          "widget": "textarea"
+        }
+      }
+    },
+    "members": {
+      "label": "Members",
+      "singular": "Member",
+      "icon": "people",
+      "description": "People who share expenses; one person can be in many groups",
+      "displayField": "full_name",
+      "listColumns": [
+        "full_name",
+        "email",
+        "phone",
+        "login_username"
+      ],
+      "children": [
+        "group_members",
+        "expense_splits"
+      ],
+      "fields": {
+        "full_name": {
+          "label": "Name"
+        },
+        "email": {
+          "widget": "email"
+        },
+        "phone": {
+          "placeholder": "+91 98765 43210"
+        },
+        "login_username": {
+          "label": "App login",
+          "help": "The username this person signs in with; links their login to their balances. Use 'Create login' on the member page to set it up."
+        }
+      },
+      "formFields": [
+        "full_name",
+        "email",
+        "phone",
+        "login_username"
+      ]
+    },
+    "group_members": {
+      "label": "Group Members",
+      "singular": "Group member",
+      "icon": "link",
+      "description": "Who is in which group and when they joined",
+      "listColumns": [
+        "expense_group_id",
+        "member_id",
+        "joined_on"
+      ],
+      "fields": {
+        "expense_group_id": {
+          "label": "Group"
+        },
+        "member_id": {
+          "label": "Member"
+        },
+        "joined_on": {
+          "label": "Joined on",
+          "widget": "date"
+        }
+      }
+    },
+    "expenses": {
+      "label": "Expenses",
+      "singular": "Expense",
+      "icon": "receipt",
+      "description": "Everything someone paid for on behalf of a group",
+      "displayField": "description",
+      "defaultSort": "expense_date|DESC",
+      "listColumns": [
+        "expense_date",
+        "description",
+        "expense_group_id",
+        "category",
+        "amount",
+        "paid_by_member_id",
+        "split_type",
+        "split_status"
+      ],
+      "formFields": [
+        "expense_group_id",
+        "description",
+        "amount",
+        "currency",
+        "expense_date",
+        "category",
+        "paid_by_member_id",
+        "split_type",
+        "split_status",
+        "notes"
+      ],
+      "children": [
+        "expense_splits",
+        "expense_comments"
+      ],
+      "fields": {
+        "expense_group_id": {
+          "label": "Group"
+        },
+        "amount": {
+          "widget": "currency",
+          "currencyCode": "INR"
+        },
+        "currency": {
+          "widget": "select",
+          "options": [
+            "INR",
+            "USD",
+            "EUR",
+            "GBP",
+            "CAD",
+            "AUD",
+            "SGD",
+            "AED"
+          ],
+          "defaultValue": "INR"
+        },
+        "expense_date": {
+          "label": "Date",
+          "widget": "date"
+        },
+        "category": {
+          "widget": "select",
+          "options": [
+            "food",
+            "rent",
+            "travel",
+            "utilities",
+            "entertainment",
+            "other"
+          ],
+          "colors": {
+            "food": "warning",
+            "rent": "primary",
+            "travel": "info",
+            "utilities": "secondary",
+            "entertainment": "success",
+            "other": "default"
+          }
+        },
+        "paid_by_member_id": {
+          "label": "Paid by"
+        },
+        "split_type": {
+          "label": "Split type",
+          "widget": "select",
+          "options": [
+            "equal",
+            "exact",
+            "percentage",
+            "shares"
+          ],
+          "colors": {
+            "equal": "success",
+            "exact": "info",
+            "percentage": "secondary",
+            "shares": "warning"
+          },
+          "help": "For exact / percentage / shares, write each person's part in Notes, e.g. 'Asha 60%, Ravi 40%'"
+        },
+        "split_status": {
+          "label": "Split status",
+          "widget": "select",
+          "options": [
+            "not_split",
+            "split",
+            "settled"
+          ],
+          "colors": {
+            "not_split": "warning",
+            "split": "info",
+            "settled": "success"
+          },
+          "defaultValue": "not_split"
+        },
+        "notes": {
+          "widget": "textarea",
+          "placeholder": "e.g. Asha 2 shares, Ravi 1 share"
+        }
+      }
+    },
+    "expense_splits": {
+      "label": "Expense Splits",
+      "singular": "Split",
+      "icon": "assignment",
+      "description": "How much each member owes for each expense",
+      "listColumns": [
+        "expense_id",
+        "member_id",
+        "share_value",
+        "owed_amount",
+        "status"
+      ],
+      "formFields": [
+        "expense_id",
+        "member_id",
+        "share_value",
+        "owed_amount",
+        "status"
+      ],
+      "fields": {
+        "expense_id": {
+          "label": "Expense"
+        },
+        "member_id": {
+          "label": "Member"
+        },
+        "share_value": {
+          "label": "Share (%, shares or exact)",
+          "help": "The input used for the split: percent, number of shares, or exact amount"
+        },
+        "owed_amount": {
+          "label": "Owes",
+          "widget": "currency",
+          "currencyCode": "INR"
+        },
+        "status": {
+          "widget": "select",
+          "options": [
+            "unsettled",
+            "settled"
+          ],
+          "colors": {
+            "unsettled": "error",
+            "settled": "success"
+          },
+          "defaultValue": "unsettled"
+        }
+      }
+    },
+    "settlements": {
+      "label": "Settlements",
+      "singular": "Settlement",
+      "icon": "check",
+      "description": "One member paying another back",
+      "defaultSort": "settlement_date|DESC",
+      "listColumns": [
+        "settlement_date",
+        "expense_group_id",
+        "from_member_id",
+        "to_member_id",
+        "amount",
+        "method",
+        "status"
+      ],
+      "formFields": [
+        "expense_group_id",
+        "from_member_id",
+        "to_member_id",
+        "amount",
+        "currency",
+        "settlement_date",
+        "method",
+        "status",
+        "notes"
+      ],
+      "fields": {
+        "expense_group_id": {
+          "label": "Group"
+        },
+        "from_member_id": {
+          "label": "Paid by (from)"
+        },
+        "to_member_id": {
+          "label": "Paid to"
+        },
+        "amount": {
+          "widget": "currency",
+          "currencyCode": "INR"
+        },
+        "currency": {
+          "widget": "select",
+          "options": [
+            "INR",
+            "USD",
+            "EUR",
+            "GBP",
+            "CAD",
+            "AUD",
+            "SGD",
+            "AED"
+          ],
+          "defaultValue": "INR"
+        },
+        "settlement_date": {
+          "label": "Date",
+          "widget": "date"
+        },
+        "method": {
+          "widget": "select",
+          "options": [
+            "cash",
+            "bank_transfer",
+            "upi",
+            "other"
+          ],
+          "colors": {
+            "cash": "success",
+            "bank_transfer": "primary",
+            "upi": "secondary",
+            "other": "default"
+          }
+        },
+        "status": {
+          "widget": "select",
+          "options": [
+            "pending",
+            "completed"
+          ],
+          "colors": {
+            "pending": "warning",
+            "completed": "success"
+          },
+          "defaultValue": "completed"
+        },
+        "notes": {
+          "widget": "textarea"
+        }
+      }
+    },
+    "expense_comments": {
+      "label": "Comments",
+      "singular": "Comment",
+      "icon": "chat",
+      "listColumns": [
+        "expense_id",
+        "member_id",
+        "comment_text",
+        "createdAt"
+      ],
+      "fields": {
+        "expense_id": {
+          "label": "Expense"
+        },
+        "member_id": {
+          "label": "By"
+        },
+        "comment_text": {
+          "label": "Comment",
+          "widget": "textarea"
+        }
+      }
+    }
+  },
+  "ai": {
+    "enabled": true,
+    "model": "claude-sonnet-5-5",
+    "assistantName": "Split Assistant",
+    "instructions": "You help friends, roommates and travel groups track shared expenses. Data model: expense_groups (groups), members, group_members (membership), expenses (paid_by_member_id paid the full amount), expense_splits (owed_amount = each member's share of an expense; the payer's own share is also a row), settlements (from_member_id paid to_member_id back).\nBalances: within a group, a member's net balance = (sum of expenses.amount they paid) - (sum of their expense_splits.owed_amount for that group's expenses) + (settlements they sent) - (settlements they received). Positive = others owe them; negative = they owe. Only count rows with isActive = 1. Settlements with status 'pending' are not yet paid.\nWho owes whom: report the net balances, then pairwise debts. Simplest way to settle up: use a greedy minimum-transfers approach (repeatedly match the largest debtor with the largest creditor) and list each payment as 'X pays Y <amount>'.\n'I' / 'me' means the member whose login_username equals the signed-in username (fall back to a matching email); if none matches, ask which member they are. Show money with its currency (default INR, e.g. \u20b91,250.00), round to 2 decimals, and state the period you used for 'this month' (calendar month of today's date). Show your working briefly in a small table when helpful. Never invent expenses.",
+    "documentTables": [],
+    "tools": [
+      "records"
+    ],
+    "suggestions": [
+      "Who owes whom in Roommates?",
+      "How much did Asha spend on food this month?",
+      "What's the simplest way to settle up in the Goa trip group?",
+      "Which expenses haven't been split yet?"
+    ],
+    "workflows": [
+      {
+        "id": "split_expense",
+        "label": "Split among group members",
+        "table": "expenses",
+        "description": "Reads this expense, its group's members and its split type, and proposes one split row per member with the amount they owe.",
+        "targets": [
+          "expense_splits"
+        ],
+        "tools": [
+          "records"
+        ],
+        "inherit": {
+          "expense_id": "expense_id"
+        },
+        "instructions": "1. Read this expense (amount, expense_group_id, paid_by_member_id, split_type, notes) and the active group_members rows for its expense_group_id (look up members.full_name for each). Also read existing active expense_splits for this expense_id; if any exist, do not create duplicates for those members.\n2. Work out each member's owed_amount so the splits sum exactly to the expense amount (round to 2 decimals and put any rounding remainder on the payer):\n - equal: amount / number of group members.\n - percentage: the percentages written in notes per member name (e.g. 'Asha 60%, Ravi 40%'); share_value = the percent. Members not named get 0 and are skipped.\n - shares: shares per member name from notes (e.g. 'Asha 2, Ravi 1'); owed = amount * shares / total shares; share_value = shares. Members not named default to 1 share only if notes give no shares at all.\n - exact: exact amounts per member from notes; share_value = that amount. If they don't add up to the total, put the difference on the payer and mention it.\n For equal, share_value is left empty.\n3. Create one expense_splits row per member with a non-zero share: member_id, share_value, owed_amount, status 'unsettled' \u2014 except the payer's own row, whose status is 'settled' (they already paid their part).\n4. If split_type is not equal and notes don't let you allocate, fall back to equal and say so in your summary."
+      }
+    ]
+  }
+}
