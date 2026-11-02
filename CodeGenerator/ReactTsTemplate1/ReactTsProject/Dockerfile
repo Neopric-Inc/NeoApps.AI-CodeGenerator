@@ -3,6 +3,7 @@
 FROM node:22-alpine AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
+ENV CYPRESS_INSTALL_BINARY=0
 RUN npm install --force --no-audit --no-fund
 COPY . .
 ENV NODE_OPTIONS="--max-old-space-size=4096" GENERATE_SOURCEMAP=false CI=false

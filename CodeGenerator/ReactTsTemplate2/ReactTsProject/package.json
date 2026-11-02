@@ -38,6 +38,7 @@
     "bcrypt-ts": "^3.0.0",
     "bootstrap": "^4.5.3",
     "cdbreact": "^1.5.4",
+    "date-fns": "^2.30.0",
     "formik": "^2.2.9",
     "gapi-script": "^1.2.0",
     "i18next": "^20.2.2",

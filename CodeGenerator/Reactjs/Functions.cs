@@ -11069,7 +11069,8 @@ useEffect(() => {{
                         {
                             foreach (string tbl in tables)
                             {
-                                if (tbl.ToLower() == "s3bucket" || tbl.ToLower() == "s3bucket_folders")
+                                // table.tsx is needed for every app table (component.txt imports it); system tables are skipped below.
+                                if (true)
                                 {
                                     string tbl1 = tbl.ToLower();
                                     if (tbl1 == "messagequeue" || tbl1 == "dnd_ui_versions" || tbl1 == "workflows" || tbl1 == "project_dnd_ui_versions" || tbl1 == "workflow" || tbl1 == "workflow_builds" || tbl1 == "workflows_projects" || tbl1 == "workflow_runs" || tbl1 == "workflow_deployments" || tbl1 == "workflow_triggers" || tbl1 == "workflow_trigger_conditions" || tbl1 == "roles" || tbl1 == "users" || tbl1 == "entities" || tbl1 == "permissionmatrix")
@@ -11704,19 +11705,19 @@ isValid ={!!touched.{col} && !errors.{col}}
                                                         temp = FK[j - 3];
                                                 }
                                             }
-                                            PrimaryKeyConversion += $"values.{cols[i]} = config[{temp}_isHidden] ? {dataType}(config[{temp}_defaultValue]) : {dataType}(values.{temp});\n";
+                                            PrimaryKeyConversion += $"values.{cols[i]} = config[\"{temp}_isHidden\"] ? {dataType}(config[\"{temp}_defaultValue\"]) : {dataType}(values.{temp});\n";
                                             //PrimaryKeyConversion += "values." + cols[i] + " = " + "config[" + temp +"_isHidden] ? "+ dataType + "(config[" + temp + "_defaultValue]) : " + dataType + "(values." + temp + ")\n";
                                             //PrimaryKeyConversion += "values." + cols[i] + " = " + dataType + "(values." + temp + ")\n";
                                         }
                                         else
-                                            PrimaryKeyConversion += $"values.{cols[i]} = config[{cols[i]}_isHidden] ? {dataType}(config[{cols[i]}_defaultValue]) : {dataType}(values.{cols[i]});\n";
+                                            PrimaryKeyConversion += $"values.{cols[i]} = config[\"{cols[i]}_isHidden\"] ? {dataType}(config[\"{cols[i]}_defaultValue\"]) : {dataType}(values.{cols[i]});\n";
                                         //PrimaryKeyConversion += "values." + cols[i] + " = " + "config[" + cols[i] + "_isHidden] ? " + dataType + "(config[" + cols[i] + "_defaultValue]) : " + dataType + "(values." + cols[i] + ")\n";
                                         //PrimaryKeyConversion += "values." + cols[i] + " = " + dataType + "(values." + cols[i] + ")\n";
                                     }
                                     else
                                     {
                                         //values.modifiedAt = config["modifiedAt_isHidden"] ? config["modifiedAt_defaultValue"] : values.modifiedAt;
-                                        PrimaryKeyConversion += $"values.{cols[i]} = config[{cols[i]}_isHidden] ? config[{cols[i]}_defaultValue] : values.{cols[i]};\n";
+                                        PrimaryKeyConversion += $"values.{cols[i]} = config[\"{cols[i]}_isHidden\"] ? config[\"{cols[i]}_defaultValue\"] : values.{cols[i]};\n";
                                     }
                                 }
                                 text = text.Replace("{PrimaryKeyConversion}", PrimaryKeyConversion);
