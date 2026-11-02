@@ -15,7 +15,7 @@ public sealed record GeneratorResult(
 /// Drives CodeGenerator/NoCodeAppGenerator as a child process. It relies on static state and the working
 /// directory, so runs are isolated in their own process and serialised.
 /// </summary>
-public sealed class GeneratorRunner(NeoAppsSettings settings)
+public sealed class GeneratorRunner(NeoAppsSettings settings, ProjectStore store)
 {
     private const string ResultMarker = "NEOAPPS_RESULT ";
     private static readonly SemaphoreSlim Gate = new(1, 1);
@@ -92,5 +92,6 @@ public sealed class GeneratorRunner(NeoAppsSettings settings)
         ["fronttemplateurl"] = null,
         ["swgurl"] = $"http://localhost:{p.ApiPort}",
         ["noderedurl"] = null,
+        ["uiConfig"] = File.Exists(store.UiConfigFile(p.Name)) ? store.UiConfigFile(p.Name) : null,
     };
 }

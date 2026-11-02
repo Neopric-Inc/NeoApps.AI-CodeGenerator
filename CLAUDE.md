@@ -18,7 +18,11 @@ This repo turns a MySQL schema into an app: a .NET 10 Web API plus a React admin
      `workflow_trigger_conditions` (use e.g. `members`, `automation_runs`)
    - plain `CREATE TABLE` / `INSERT` only: no `CREATE DATABASE`, `USE`, `DELIMITER`, procedures
    Save it as `workspace/<App>.sql` (git-ignored), or under `samples/` if it should be committed.
-3. **Generate:** `./neoapps new <App> --schema workspace/<App>.sql` (App = PascalCase identifier, e.g. `TodoApp`).
+3. **Design the UI** (recommended): write `workspace/<App>.ui.json` following `neoapps_ui_config_guide`
+   (`src/NeoApps.Mcp/Tools/UiConfigTools.cs`). It sets menu groups, labels, select options and colours for
+   status/type columns, list columns, form order, dashboard cards, theme, and `roles` matching how the user described
+   who does what. Model enum-like columns as VARCHAR in the schema and give them options here.
+   **Generate:** `./neoapps new <App> --schema workspace/<App>.sql --ui workspace/<App>.ui.json` (App = PascalCase identifier, e.g. `TodoApp`).
    Add `--deploy` to build and run it in Docker, and `--template dnd` for the drag-and-drop designer UI.
 4. **Report back:** web URL, Swagger URL, admin username/password (printed by the command and kept in
    `workspace/<App>/project.json`), and where the code is (`1_<ticks>/<App>/DotNet_Output/solution/<App>` and
@@ -49,6 +53,7 @@ Rows are owner-scoped (`createdBy` = the logged-in user), so seed rows inserted 
 - `./neoapps new` exits 0 and `backendWarnings` / `frontendWarnings` are empty.
 - The generated solution builds: `dotnet build <App>.sln`. The UI builds: `npm run build`.
 - `/health` returns ok, login returns a token, and one create + list call succeeds.
+- `GET /v1/api/Access/me` returns the admin's permissions. Log into the UI and open a list page and a form.
 
 ## Working on the generator
 
@@ -58,6 +63,12 @@ Rows are owner-scoped (`createdBy` = the logged-in user), so seed rows inserted 
   `CodeGenerator/ReactTsTemplate{1..4}/` (1 = drag-and-drop, 3 = admin UI).
 - `CodeGenerator/Infrastructure/`: config loading (`--config` JSON or the legacy `PARAMETER` env var), `SchemaReader`
   (always scoped to `DATABASE()`), `MySqlScript` (statement splitter), `ProcessRunner`.
+- `CodeGenerator/ReactUiKit/`: the schema-driven admin UI copied into every admin frontend (`src/neoapps/*`).
+  `Infrastructure/UiKit.cs` installs it and writes `public/schema.json` (from the DB) and `public/ui.config.json`,
+  and seeds roles. The old per-table components are still generated but no longer routed.
+- RBAC: `AccessController` (template API) serves `/v1/api/Access/me`, members, roles, the permission grid and the
+  saved UI config. Role templates are `permissionmatrix` rows with `user_id IS NULL`, and members get copies.
+  Passwords use BCrypt (`Utility/PasswordHasher.cs`).
 - `src/NeoApps.Mcp/`: MCP server and CLI (`Cli.cs`). Both use the same services; the generator runs as a child process.
 - Build: `dotnet build NeoApps.slnx`. **Test any generator change by generating an app and building it**
   (`./neoapps new TestApp --schema samples/todo-app.sql`, then build the generated `.sln` and run `npm run build`).

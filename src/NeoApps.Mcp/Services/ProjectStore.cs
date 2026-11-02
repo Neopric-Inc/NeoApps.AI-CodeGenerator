@@ -31,6 +31,8 @@ public sealed partial class ProjectStore(NeoAppsSettings settings)
     private readonly Lock _gate = new();
 
     public string ProjectDir(string name) => Path.Combine(settings.WorkspaceDir, name);
+    /// <summary>The app's UI configuration (labels, widgets, menu, theme, roles); edited by people or Claude.</summary>
+    public string UiConfigFile(string name) => Path.Combine(ProjectDir(name), "ui.config.json");
     private string StateFile(string name) => Path.Combine(ProjectDir(name), "project.json");
 
     public static string ValidateName(string name)

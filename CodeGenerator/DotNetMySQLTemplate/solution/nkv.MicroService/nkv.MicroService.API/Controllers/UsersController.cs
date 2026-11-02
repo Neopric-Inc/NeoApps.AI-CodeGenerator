@@ -14,7 +14,7 @@ using System.Collections.Generic;
 
 namespace nkv.MicroService.API.Controllers
 {
-    [Authorize]
+    [Authorize(Roles = "1")] // Administrator only: RBAC data. Day-to-day management goes through AccessController.
     [ApiController]
     public class UsersController : ControllerBase
     {

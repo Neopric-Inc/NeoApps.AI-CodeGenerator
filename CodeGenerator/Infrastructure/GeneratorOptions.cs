@@ -50,9 +50,12 @@ public static partial class GeneratorOptions
             source = Path.GetFullPath(args[configIndex + 1]);
             values = FromJson(File.ReadAllText(source));
             // Relative script paths in a config file are relative to that file.
-            if (values.TryGetValue("script", out var script) && script is not null
-                && !Uri.TryCreate(script, UriKind.Absolute, out _) && !Path.IsPathRooted(script))
-                values["script"] = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(source)!, script));
+            foreach (var key in new[] { "script", "uiConfig" })
+            {
+                if (values.TryGetValue(key, out var path) && path is not null
+                    && !Uri.TryCreate(path, UriKind.Absolute, out _) && !Path.IsPathRooted(path))
+                    values[key] = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(source)!, path));
+            }
         }
         else
         {

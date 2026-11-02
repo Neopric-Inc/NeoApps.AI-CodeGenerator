@@ -98,6 +98,7 @@ Claude will:
 | `neoapps_app_status` / `neoapps_app_logs` / `neoapps_stop_app` | Inspect or stop a running app |
 | `neoapps_list_apps` / `neoapps_list_sample_schemas` | List your apps / the sample schemas in `GeneratedApps/` |
 | `neoapps_start_infrastructure` / `neoapps_stop_infrastructure` | Start or stop the shared MySQL/Redis/RabbitMQ |
+| `neoapps_ui_config_guide` / `neoapps_get_ui_config` / `neoapps_update_ui_config` | Design the UI and roles (see below) |
 | `neoapps_job_status` | Polls long-running jobs (generation, Docker builds) |
 
 Generation and deployment run as background jobs. A tool call waits about 40 seconds, then returns a job id that Claude polls with `neoapps_job_status`.
@@ -170,6 +171,23 @@ dotnet run            # Swagger: https://localhost:5001/swagger
 The legacy `PARAMETER` environment variable (`{key:value,...}`) is still accepted.
 
 Optional settings: set `NEOAPPS_SKIP_BUILD=true` to skip the compile check of the generated solution. `DigitalOceanSpacesConfig` in `appsettings.json` (or `NEOAPPS_DigitalOceanSpacesConfig__*` env vars) uploads the zip to S3-compatible storage. Upload is off unless real keys are set.
+
+## Designing the UI and access
+
+Every generated app gets a schema-driven admin UI: grouped menu, list pages with search and paging, forms with real
+widgets (selects, checkboxes, currency, dates, related-record pickers), record pages with related tabs, a dashboard,
+and **Admin > Members / Roles / Customize UI**.
+
+- **`ui.config.json`** sets labels, widgets, select options, status colours, list columns, form order, menu groups,
+  icons, dashboard cards, theme and **roles**. Without it, the UI infers all of this from the schema.
+  - CLI: `./neoapps new MyApp --schema my.sql --ui my.ui.json`, `./neoapps ui MyApp` (show), `./neoapps ui MyApp --set changes.json` (merge and regenerate)
+  - MCP: `neoapps_ui_config_guide`, `neoapps_get_ui_config`, `neoapps_update_ui_config`, or just ask Claude: "make status a dropdown with these options", "group the menu by …"
+  - In the app: **Admin > Customize UI** edits and previews it live. The saved copy applies to everyone in that workspace and overrides the file.
+  - Example: [`samples/clinical-research-site.ui.json`](samples/clinical-research-site.ui.json)
+- **RBAC**
+  - Roles grant view/create/edit/delete per table. Declare them in `ui.config.json` (`"roles": {"Coordinator": {"*": "r", "documents": "cru"}}`, defaulting to Member + Viewer), or manage them in **Admin > Roles**.
+  - **Admin > Members** adds users and assigns roles. The API enforces every permission, and the UI hides menus and buttons you can't use.
+  - Passwords are stored as BCrypt hashes.
 
 ## Writing a schema
 

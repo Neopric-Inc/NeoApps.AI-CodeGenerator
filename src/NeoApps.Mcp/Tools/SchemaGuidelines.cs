@@ -51,7 +51,10 @@ internal static class SchemaGuidelines
             FOREIGN KEY (category_id) REFERENCES categories(category_id)
           );
 
-        Typical flow: neoapps_check_environment -> neoapps_create_app (schema) -> neoapps_deploy_app
+        For status/type/category columns, keep them VARCHAR and list their options in the UI config instead (see
+        neoapps_ui_config_guide); pass that config as uiConfig to neoapps_create_app together with roles.
+
+        Typical flow: neoapps_check_environment -> neoapps_create_app (schema + uiConfig) -> neoapps_deploy_app
         -> open the web URL and log in with the admin credentials it returns.
         """;
 }

@@ -95,6 +95,7 @@ public sealed class NeoAppsTools(
         [Description("Also generate the React frontend.")] bool generateFrontend = true,
         [Description("Frontend template: 'app' (ready-made admin UI) or 'dnd' (drag-and-drop page designer).")] string frontendTemplate = "app",
         [Description("Drop and recreate the app's database if it already exists. Default true for a clean generation.")] bool resetDatabase = true,
+        [Description("Optional ui.config.json content (see neoapps_ui_config_guide): labels, widgets, menu, theme, dashboard, roles.")] string? uiConfig = null,
         CancellationToken ct = default)
     {
         name = ProjectStore.ValidateName(name);
@@ -109,6 +110,8 @@ public sealed class NeoAppsTools(
         var schemaFile = Path.Combine(store.ProjectDir(name), "schema.sql");
         Directory.CreateDirectory(store.ProjectDir(name));
         File.WriteAllText(schemaFile, sqlSchema ?? File.ReadAllText(sqlFilePath!));
+        if (!string.IsNullOrWhiteSpace(uiConfig))
+            File.WriteAllText(store.UiConfigFile(name), UiConfigTools.Normalize(uiConfig));
 
         var state = existing ?? new ProjectState { Name = name, DatabaseName = ProjectStore.ToDatabaseName(name), SchemaFile = schemaFile };
         state.SchemaFile = schemaFile;
@@ -170,6 +173,50 @@ public sealed class NeoAppsTools(
             await EnsureInfraAsync(job, jct);
             var r = await GenerateFrontendCoreAsync(state, template, job, jct);
             return new { app = state.Name, frontendPath = state.FrontendPath, warnings = r.Errors, apiBaseUrl = state.ApiBaseUrl };
+        }, ct);
+    }
+
+    // ---------------------------------------------------------------- UI configuration
+
+    [McpServerTool(Name = "neoapps_ui_config_guide", ReadOnly = true, Idempotent = true)]
+    [Description("Format of ui.config.json: how to set labels, field widgets (select/checkbox/currency/textarea/reference...), list columns, form order, menu groups, icons, dashboard cards, theme and RBAC roles.")]
+    public static string UiConfigGuide() => UiConfigTools.Guide;
+
+    [McpServerTool(Name = "neoapps_get_ui_config", ReadOnly = true, Idempotent = true)]
+    [Description("Returns an app's current ui.config.json plus a compact summary of its tables and columns, to plan UI changes.")]
+    public object GetUiConfig([Description("App name.")] string name)
+    {
+        var state = store.Require(name);
+        return new
+        {
+            app = state.Name,
+            uiConfigFile = store.UiConfigFile(state.Name),
+            uiConfig = UiConfigTools.Read(store.UiConfigFile(state.Name)),
+            tables = UiConfigTools.SchemaSummary(state.FrontendPath),
+            note = "Admins can also change the UI in the running app (Admin > Customize UI); that saved copy overrides this file.",
+        };
+    }
+
+    [McpServerTool(Name = "neoapps_update_ui_config")]
+    [Description("""
+        Changes an app's UI: deep-merges the given JSON into ui.config.json (null removes a key; replace=true overwrites the
+        whole file), then regenerates the frontend. Redeploy (neoapps_deploy_app) to see it in Docker. Long-running: returns a job.
+        Role changes in "roles" apply to newly created databases (neoapps_create_app); for a running app use Admin > Roles.
+        """)]
+    public Task<object> UpdateUiConfig(
+        [Description("App name.")] string name,
+        [Description("JSON object with the changes, e.g. {\"tables\":{\"studies\":{\"fields\":{\"status\":{\"widget\":\"select\",\"options\":[\"startup\",\"enrolling\"]}}}}}")] string changes,
+        [Description("Replace the whole config instead of merging.")] bool replace = false,
+        CancellationToken ct = default)
+    {
+        var state = store.Require(name);
+        var file = store.UiConfigFile(state.Name);
+        File.WriteAllText(file, UiConfigTools.Merge(replace ? null : UiConfigTools.Read(file), changes));
+        return jobs.StartAndWaitAsync("frontend", state.Name, async (job, jct) =>
+        {
+            await EnsureInfraAsync(job, jct);
+            var r = await GenerateFrontendCoreAsync(state, state.FrontendTemplate ?? "app", job, jct);
+            return new { app = state.Name, uiConfigFile = file, frontendPath = state.FrontendPath, warnings = r.Errors, next = "Rebuild/redeploy to see the change (neoapps_deploy_app)." };
         }, ct);
     }
 

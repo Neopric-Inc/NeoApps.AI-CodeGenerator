@@ -10,7 +10,7 @@ namespace NeoApps.Mcp;
 /// </summary>
 public static class Cli
 {
-    private static readonly string[] Commands = ["new", "frontend", "deploy", "status", "logs", "stop", "list", "doctor", "guidelines", "infra", "help", "--help", "-h"];
+    private static readonly string[] Commands = ["new", "frontend", "ui", "deploy", "status", "logs", "stop", "list", "doctor", "guidelines", "infra", "help", "--help", "-h"];
     private static readonly JsonSerializerOptions Pretty = new() { WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
 
     public static bool IsCommand(string arg) => Commands.Contains(arg, StringComparer.OrdinalIgnoreCase);
@@ -20,7 +20,7 @@ public static class Cli
         var settings = NeoAppsSettings.FromEnvironment();
         var store = new ProjectStore(settings);
         var jobs = new JobManager(settings) { Echo = line => Console.WriteLine("  " + line) };
-        var tools = new NeoAppsTools(settings, store, jobs, new GeneratorRunner(settings), new DockerService(settings, store));
+        var tools = new NeoAppsTools(settings, store, jobs, new GeneratorRunner(settings, store), new DockerService(settings, store));
         var ct = CancellationToken.None;
 
         string? Opt(string name) { var i = Array.IndexOf(args, name); return i >= 0 && i + 1 < args.Length ? args[i + 1] : null; }
@@ -34,7 +34,9 @@ public static class Cli
                 case "new":
                 {
                     var schema = Opt("--schema") ?? throw new ArgumentException("--schema <file.sql> is required.");
+                    var ui = Opt("--ui");
                     var ok = await RunJob(jobs, tools.CreateApp(Name(), sqlFilePath: Path.GetFullPath(schema),
+                        uiConfig: ui == null ? null : await File.ReadAllTextAsync(ui),
                         generateFrontend: !Flag("--no-frontend"), frontendTemplate: Opt("--template") ?? "app",
                         resetDatabase: !Flag("--keep-db"), ct: ct));
                     if (ok && Flag("--deploy"))
@@ -44,6 +46,11 @@ public static class Cli
                 }
                 case "frontend":
                     return await RunJob(jobs, tools.GenerateFrontend(Name(), Opt("--template") ?? "app", ct)) ? 0 : 1;
+                case "ui":
+                    if (Opt("--set") is { } file)
+                        return await RunJob(jobs, tools.UpdateUiConfig(Name(), await File.ReadAllTextAsync(file), replace: Flag("--replace"), ct: ct)) ? 0 : 1;
+                    Print(tools.GetUiConfig(Name()));
+                    return 0;
                 case "deploy":
                 {
                     var ok = await RunJob(jobs, tools.DeployApp(Name(), Flag("--consumer"), ct));
@@ -93,9 +100,10 @@ public static class Cli
 
         Usage: neoapps <command> [options]   (from the repo: dotnet run --project src/NeoApps.Mcp -- <command>)
 
-          new <App> --schema <file.sql> [--template app|dnd] [--no-frontend] [--keep-db] [--deploy] [--consumer]
+          new <App> --schema <file.sql> [--ui ui.config.json] [--template app|dnd] [--no-frontend] [--keep-db] [--deploy] [--consumer]
                                   generate database + .NET 10 API + React UI, optionally run it in Docker
           frontend <App> [--template app|dnd]   regenerate the UI
+          ui <App> [--set changes.json [--replace]]   show the UI config, or merge changes into it and regenerate the UI
           deploy <App> [--consumer]             build and run the app in Docker
           status <App> | logs <App> [--service api|web] [--tail N] | stop <App>
           list                                  apps created so far

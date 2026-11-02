@@ -14,15 +14,20 @@ command -v mysqld >/dev/null || { apt-get update -qq; apt-get install -y -qq mys
 command -v redis-server >/dev/null || apt-get install -y -qq redis-server >/dev/null
 command -v rabbitmq-server >/dev/null || apt-get install -y -qq rabbitmq-server >/dev/null
 
-# MySQL: case-insensitive table names (what the templates expect) — must be set at initialisation.
+# MySQL: case-insensitive table names (what the templates expect). The setting is fixed when the data directory
+# is initialised, so only initialise an empty data directory; never wipe an existing one.
 if ! mysqladmin ping -uroot -pneoapps --silent 2>/dev/null; then
-  pkill mysqld 2>/dev/null || true; sleep 2
-  if [[ "$(mysqld --verbose --help 2>/dev/null | awk '/^lower-case-table-names/{print $2}')" != "1" ]] || [[ ! -d /var/lib/mysql/mysql ]]; then
-    rm -rf /var/lib/mysql/* && mysqld --initialize-insecure --user=mysql --lower-case-table-names=1
+  if [[ ! -d /var/lib/mysql/mysql ]]; then
+    mysqld --initialize-insecure --user=mysql --lower-case-table-names=1
+    FRESH=1
   fi
   (mysqld_safe --user=mysql --lower-case-table-names=1 --log-bin-trust-function-creators=1 >/tmp/mysqld.log 2>&1 &)
-  for _ in $(seq 30); do mysqladmin ping -uroot --silent 2>/dev/null && break; sleep 1; done
-  mysql -uroot -e "ALTER USER 'root'@'localhost' IDENTIFIED BY 'neoapps'" 2>/dev/null || true
+  for _ in $(seq 30); do mysqladmin ping --silent 2>/dev/null && break; sleep 1; done
+  if [[ "${FRESH:-0}" == 1 ]]; then mysql -uroot -e "ALTER USER 'root'@'localhost' IDENTIFIED BY 'neoapps'"; fi
+  if [[ "$(mysql -uroot -pneoapps -N -e 'SELECT @@lower_case_table_names' 2>/dev/null)" != "1" ]]; then
+    echo "MySQL data directory was initialised with lower_case_table_names=0. Move /var/lib/mysql aside and rerun." >&2
+    exit 1
+  fi
 fi
 
 redis-cli ping >/dev/null 2>&1 || redis-server --daemonize yes >/dev/null
