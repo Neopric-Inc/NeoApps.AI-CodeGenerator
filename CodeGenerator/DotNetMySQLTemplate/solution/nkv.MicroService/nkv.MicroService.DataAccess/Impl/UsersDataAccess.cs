@@ -1,4 +1,4 @@
-using MySql.Data.MySqlClient;
+using MySqlConnector;
 using nkv.MicroService.DataAccess.Interface;
 using nkv.MicroService.Model;
 using nkv.MicroService.Utility;

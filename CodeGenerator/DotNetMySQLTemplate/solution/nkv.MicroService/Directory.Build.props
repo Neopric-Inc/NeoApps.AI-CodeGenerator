@@ -1,0 +1,12 @@
+<Project>
+  <!-- Shared settings for every project in the generated solution. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <!-- Generated code: don't drown real problems in style warnings. -->
+    <NoWarn>$(NoWarn);CS0168;CS0219;CS0162;CS0414;CS0649;CS0169;CS1998;CS8632;ASP0000;SYSLIB0014</NoWarn>
+  </PropertyGroup>
+</Project>

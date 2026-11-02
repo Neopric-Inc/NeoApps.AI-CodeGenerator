@@ -1,5 +1,5 @@
-﻿using nkv.MicroService.Utility;
-using MySql.Data.MySqlClient;
+using nkv.MicroService.Utility;
+using MySqlConnector;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Configuration.Json;
 using System;

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -20,10 +20,10 @@ namespace NoCodeAppGenerator
             }
             else
                 pt = (dirss[0] + "/" + projectName);
-            bool ext = Directory.Exists(pt);
-            if (ext)
+            // Only replace the backend output so a previously generated frontend survives a backend re-run.
+            if (Directory.Exists(pt + "/DotNet_Output"))
             {
-                Directory.Delete(pt, true);
+                Directory.Delete(pt + "/DotNet_Output", true);
             }
             Directory.CreateDirectory(pt);
             Directory.CreateDirectory(pt + "/zip");

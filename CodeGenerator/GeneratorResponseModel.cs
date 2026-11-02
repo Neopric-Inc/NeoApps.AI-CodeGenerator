@@ -1,27 +1,20 @@
-﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace NoCodeAppGenerator
 {
+    /// <summary>Result of a generator run. Printed as a single "NEOAPPS_RESULT {json}" line on stdout.</summary>
     public class GeneratorResponseModel
     {
-        [Range(int.MinValue, int.MaxValue)]
         public int project_id { get; set; }
-        [Required]
         public string classifier { get; set; }
-
-        [Required]
+        /// <summary>S3 pre-signed URL when storage is configured, otherwise the local zip path.</summary>
         public string link { get; set; }
-
+        /// <summary>Folder holding the generated project (DotNet_Output / ReactTs_Output*).</summary>
+        public string output_path { get; set; }
         public List<string> error_log { get; set; }
-        [Required]
         public int is_successful { get; set; }
-
-        
-
+        /// <summary>Login seeded into the generated app's Users table (plain text, local development only).</summary>
+        public string admin_username { get; set; }
+        public string admin_password { get; set; }
     }
 }

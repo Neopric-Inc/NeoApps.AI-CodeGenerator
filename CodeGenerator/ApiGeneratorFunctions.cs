@@ -1,15 +1,13 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Data;
-using System.Diagnostics.Eventing.Reader;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Amazon.S3.Model;
-using EnvDTE80;
 using HelloWorld;
-using MySql.Data.MySqlClient;
+using MySqlConnector;
+using NoCodeAppGenerator.Infrastructure;
 using NoCodeAppGenerator;
 namespace NoCodeAppGenerator
 {
@@ -289,7 +287,7 @@ namespace NoCodeAppGenerator
                 //conn.Open();
                 MySqlConnection connection = MySqlConnectionManager.Instance.GetConnection();
                 // Get the metadata for the "users" table
-                DataTable columns = connection.GetSchema("Columns", new[] { null, null, tbl });
+                DataTable columns = SchemaReader.GetColumns(connection, tbl);
                 Dictionary<string, string> dict = new Dictionary<string, string>
             {
                 { "int","Int32" },
@@ -317,7 +315,10 @@ namespace NoCodeAppGenerator
                 {"tinyblob","byte[]" },
                 {"mediumblob","byte[]" },
                 {"longblob","byte[]" },
-                {"set","String" }
+                {"set","String" },
+                {"tinytext","String" },
+                {"mediumtext","String" },
+                {"json","String" }
             };
                 // Loop through the columns and print their metadata
                 foreach (DataRow column in columns.Rows)
@@ -383,7 +384,7 @@ namespace NoCodeAppGenerator
                 //conn.Open();
                 MySqlConnection connection = MySqlConnectionManager.Instance.GetConnection();
                 // Get the metadata for the "users" table
-                DataTable columns = connection.GetSchema("Columns", new[] { null, null, tbl });
+                DataTable columns = SchemaReader.GetColumns(connection, tbl);
                 Dictionary<string, string> dict = new Dictionary<string, string>
             {
                 { "int","Int32" },
@@ -411,7 +412,10 @@ namespace NoCodeAppGenerator
                 {"tinyblob","byte[]" },
                 {"mediumblob","byte[]" },
                 {"longblob","byte[]" },
-                {"set","String" }
+                {"set","String" },
+                {"tinytext","String" },
+                {"mediumtext","String" },
+                {"json","String" }
             };
                 // Loop through the columns and print their metadata
                 foreach (DataRow column in columns.Rows)

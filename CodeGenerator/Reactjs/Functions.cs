@@ -1,23 +1,19 @@
-﻿using HelloWorld;
-using Microsoft.AspNetCore.Hosting.Server;
-using Microsoft.AspNetCore.Mvc.ModelBinding;
+using HelloWorld;
 using Microsoft.Extensions.Logging;
-using MySql.Data.MySqlClient;
+using MySqlConnector;
+using NoCodeAppGenerator.Infrastructure;
 using Newtonsoft.Json;
 using NoCodeAppGenerator;
 using NoCodeAppGenerator.ParameterModel;
-using Org.BouncyCastle.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.IO;
 using System.Linq;
-using BCrypt;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
-using ThirdParty.Json.LitJson;
 using static System.Net.Mime.MediaTypeNames;
 
 namespace ReactJsProjectDemo
@@ -123,7 +119,7 @@ namespace ReactJsProjectDemo
             try
             {
                 List<string> PK = GetPrimaryKey(connectionString, tbl);
-                string query = "SELECT column_name FROM information_schema.columns WHERE table_name = '" + tbl + "' AND DATA_TYPE = 'varchar' AND IS_NULLABLE = 'NO' LIMIT 1";
+                string query = "SELECT column_name FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = '" + tbl + "' AND DATA_TYPE = 'varchar' AND IS_NULLABLE = 'NO' LIMIT 1";
                 //using (MySqlConnection connection = new MySqlConnection(connectionString))
                 //{
                 //    connection.Open();
@@ -144,7 +140,7 @@ namespace ReactJsProjectDemo
                 //}
                 if (ans.Count > 0)
                     return ans;
-                query = "SELECT column_name FROM information_schema.columns WHERE table_name = '" + tbl + "' AND column_key != 'PRI' LIMIT 1";
+                query = "SELECT column_name FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = '" + tbl + "' AND column_key != 'PRI' LIMIT 1";
                 //using (MySqlConnection connection = new MySqlConnection(connectionString))
                 //{
                 //    connection.Open();
@@ -370,7 +366,7 @@ CREATE TABLE IF NOT EXISTS `workflow_trigger_conditions` (
                 //using (MySqlConnection conn = new MySqlConnection(connectionString))
                 //{
                 //    conn.Open();
-                DataTable tables = connection.GetSchema("Tables");
+                DataTable tables = SchemaReader.GetTables(connection);
                 foreach (DataRow row in tables.Rows)
                 {
                     ans.Add(row["TABLE_NAME"].ToString());

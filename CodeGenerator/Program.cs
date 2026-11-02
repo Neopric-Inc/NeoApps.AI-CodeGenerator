@@ -1,20 +1,12 @@
-using Amazon.Runtime.Internal.Transform;
 using Amazon.S3;
 using Amazon.S3.Model;
 using Amazon.S3.Transfer;
-using Docker.DotNet;
-using Docker.DotNet.Models;
 using HelloWorld;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using MySql.Data.MySqlClient;
-using MySqlX.XDevAPI.Common;
+using MySqlConnector;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using NoCodeAppGenerator.GeneratorManagers;
-using NoCodeAppGenerator.RabbitmqProducer;
-using Org.BouncyCastle.Crypto;
-using RabbitMQ.Client;
 using ReactJsProjectDemo;
 using System;
 using System.Collections.Generic;
@@ -29,9 +21,8 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Xml.Linq;
-using VSLangProj;
 using NoCodeAppGenerator.ParameterModel;
-using MySqlX.XDevAPI.Relational;
+using NoCodeAppGenerator.Infrastructure;
 using static System.Net.Mime.MediaTypeNames;
 using System.Globalization;
 
@@ -54,10 +45,13 @@ namespace NoCodeAppGenerator
             bucketName = _configuration["DigitalOceanSpacesConfig:BucketName"];
             endpoint = _configuration["DigitalOceanSpacesConfig:Endpoint"];
         }
-        //private static readonly string accessKey = "DO0089PZREULYLFACQZJ";
-        //private static readonly string secretKey = "8kJiHv7lv0mW5Py+9XnIMwzD3VRxcJdevO7F8tEu4Eo";
-        //private static readonly string bucketName = "nocodes3dev";
-        //private static readonly string endpoint = "https://nyc3.digitaloceanspaces.com";
+
+        /// <summary>Uploading is optional: skipped unless real credentials are configured (Storage:Enabled or non-placeholder keys).</summary>
+        public bool IsConfigured =>
+            !string.Equals(_configuration["DigitalOceanSpacesConfig:Enabled"], "false", StringComparison.OrdinalIgnoreCase)
+            && !string.IsNullOrWhiteSpace(accessKey) && accessKey != "youraccesskey"
+            && !string.IsNullOrWhiteSpace(secretKey) && secretKey != "yoursecretkey"
+            && !string.IsNullOrWhiteSpace(bucketName) && !string.IsNullOrWhiteSpace(endpoint);
 
         //shifting
         public List<string> uploadToS3(string userId, string projectId, string stackId, string codeId, string path)
@@ -356,7 +350,7 @@ namespace NoCodeAppGenerator
             try
             {
                 MySqlConnection connection = MySqlConnectionManager.Instance.GetConnection();
-                DataTable tables = connection.GetSchema("Tables");
+                DataTable tables = SchemaReader.GetTables(connection);
                 foreach (DataRow row in tables.Rows)
                 {
                     table.Add(row["TABLE_NAME"].ToString());
@@ -372,11 +366,8 @@ namespace NoCodeAppGenerator
         }
         List<obj> createModels(string projectName, string apiVersion, string databaseName, string filePath, string server, string uid, string password, string port)
         {
-            using (WebClient client = new WebClient())
-            {
-                client.DownloadFile(filePath, "C:/Users/govar/Downloads/SQLScipt.sql");
-            }
-            filePath = "C:/Users/govar/Downloads/SQLScipt.sql";
+            SourceFetcher.Fetch(filePath, "./SQLScript.sql");
+            filePath = "./SQLScript.sql";
             string connectionString = "server=" + server + ";uid=" + uid + ";port=" + port;
             createDBfromSQL myDB = new createDBfromSQL(databaseName, filePath, connectionString);
             try
@@ -1193,10 +1184,7 @@ WHERE
                 }
                 else
                 {
-                    using (WebClient client = new WebClient())
-                    {
-                        client.DownloadFile(script, "./SQLScript.sql");
-                    }
+                    SourceFetcher.Fetch(script, "./SQLScript.sql");
                     
                     //Kaival - Executing users table first. 
 
@@ -1463,6 +1451,9 @@ END;
                         map.Add("{SWAGGER_URL}", swgurl);
                         map.Add("{redisConnectionString}", redisConn);
                         map.Add("{SubBucketName}", projectName + "_" + DateTime.Now.Ticks);
+                        map.Add("{JWT_SECRET}", Convert.ToBase64String(System.Security.Cryptography.RandomNumberGenerator.GetBytes(48)));
+                        map.Add("{S3_ENDPOINT}", Environment.GetEnvironmentVariable("NEOAPPS_S3_ENDPOINT") ?? "http://localhost:9000");
+                        map.Add("{S3_SECRET_KEY}", Environment.GetEnvironmentVariable("NEOAPPS_S3_SECRET_KEY") ?? "");
                         string destination = path + $"../{fname}/{projectName}/DotNet_Output/solution/" + projectName + "/" + projectName + ".API/", text = File.ReadAllText(file);
                         ProcessSingleFile(ref text, map);
                         File.WriteAllText(@destination + "/appsettings.json", text);
@@ -2771,7 +2762,7 @@ APIResponse Update{tableName}Transactional({primaryKeyListParam},{tableName}Tran
 
                 //}
                 MySqlConnection connection = MySqlConnectionManager.Instance.GetConnection();
-                DataTable columns = connection.GetSchema("Columns", new[] { null, null, tbl });
+                DataTable columns = SchemaReader.GetColumns(connection, tbl);
                 foreach (DataRow column in columns.Rows)
                 {
                     dict.Add("Column_Name", column["COLUMN_NAME"].ToString());
@@ -2814,7 +2805,7 @@ APIResponse Update{tableName}Transactional({primaryKeyListParam},{tableName}Tran
             try
             {
                 MySqlConnection connection = MySqlConnectionManager.Instance.GetConnection();
-                DataTable columns = connection.GetSchema("Columns", new[] { null, null, tbl });
+                DataTable columns = SchemaReader.GetColumns(connection, tbl);
                 foreach (DataRow column in columns.Rows)
                 {
                     //if (commoncolumn.Contains(column["COLUMN_NAME"].ToString()))
@@ -2856,7 +2847,7 @@ APIResponse Update{tableName}Transactional({primaryKeyListParam},{tableName}Tran
                 //conn.Open();
                 MySqlConnection connection = MySqlConnectionManager.Instance.GetConnection();
                 // Get the metadata for the "users" table
-                DataTable columns = connection.GetSchema("Columns", new[] { null, null, tbl });
+                DataTable columns = SchemaReader.GetColumns(connection, tbl);
                 Dictionary<string, string> dict = new Dictionary<string, string>
             {
                 { "int","Int32" },
@@ -2884,7 +2875,10 @@ APIResponse Update{tableName}Transactional({primaryKeyListParam},{tableName}Tran
                 {"tinyblob","byte[]" },
                 {"mediumblob","byte[]" },
                 {"longblob","byte[]" },
-                {"set","String" }
+                {"set","String" },
+                {"tinytext","String" },
+                {"mediumtext","String" },
+                {"json","String" }
             };
                 // Loop through the columns and print their metadata
                 foreach (DataRow column in columns.Rows)
@@ -2955,33 +2949,89 @@ APIResponse Update{tableName}Transactional({primaryKeyListParam},{tableName}Tran
             string connectionString = $"server={server};uid={userid};username={root};password={password};database={databaseName};Convert Zero Datetime=true;Treat Tiny As Boolean=False";
             return connectionString;
         }
-        public static void Main(string[] args)
+        /// <summary>Directory containing the templates (DotNetMySQLTemplate, ReactTsTemplate*). Generated apps go to its parent.</summary>
+        public static string GeneratorRoot { get; private set; }
+
+        public const string ResultMarker = "NEOAPPS_RESULT ";
+
+        static void WriteResult(GeneratorResponseModel result)
         {
-            var services = new ServiceCollection();
-            var configuration = new ConfigurationBuilder()
-           .SetBasePath(Directory.GetCurrentDirectory())
-           .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-           .Build();
-     
-            string parameter = Environment.GetEnvironmentVariable("PARAMETER");
-            Console.WriteLine("parameter:" + parameter);
-            // Define a regular expression pattern to match key-value pairs
-            string pattern = @"\b(\w+)\s*:\s*(.*?)(?=,\w+\s*:|$)";
-            MatchCollection matches = Regex.Matches(parameter, pattern);
+            Console.Out.Flush();
+            Console.WriteLine(ResultMarker + JsonConvert.SerializeObject(result, Formatting.None));
+        }
 
-            // Create a dictionary to store the key-value pairs
-            var keyValueDict = new Dictionary<string, string>();
-            foreach (Match match in matches)
+        /// <summary>
+        /// The generator reads its templates relative to the working directory. Accept being launched from
+        /// the project folder, from bin/, or with NEOAPPS_GENERATOR_ROOT set.
+        /// </summary>
+        static string ResolveGeneratorRoot()
+        {
+            static bool IsRoot(string dir) => dir != null && Directory.Exists(Path.Combine(dir, "DotNetMySQLTemplate"));
+            var env = Environment.GetEnvironmentVariable("NEOAPPS_GENERATOR_ROOT");
+            if (IsRoot(env)) return Path.GetFullPath(env);
+            foreach (var start in new[] { Directory.GetCurrentDirectory(), AppContext.BaseDirectory })
             {
-                string key = match.Groups[1].Value;
-                string value = match.Groups[2].Value.Trim('\'', '\"');
-                if (value == "null" || value == "null}")
+                for (var dir = new DirectoryInfo(start); dir != null; dir = dir.Parent)
                 {
-                    value = null;
+                    if (IsRoot(dir.FullName)) return dir.FullName;
+                    if (IsRoot(Path.Combine(dir.FullName, "CodeGenerator"))) return Path.Combine(dir.FullName, "CodeGenerator");
                 }
-
-                keyValueDict[key] = value;
             }
+            return Directory.GetCurrentDirectory();
+        }
+
+        /// <summary>Admin login created for the generated app's Users table (backend runs only).</summary>
+        public static string GeneratedAdminUsername, GeneratedAdminPassword;
+
+        static void EnsureDatabaseExists(string server, string port, string username, string password, string databaseName, bool reset)
+        {
+            if (string.IsNullOrWhiteSpace(databaseName))
+                throw new ArgumentException("databaseName is required.");
+            var csb = new MySqlConnectionStringBuilder
+            {
+                Server = server,
+                Port = uint.TryParse(port, out var p) ? p : 3306,
+                UserID = username,
+                Password = password ?? "",
+            };
+            using var conn = new MySqlConnection(csb.ConnectionString);
+            conn.Open();
+            var quoted = $"`{databaseName.Replace("`", "``")}`";
+            if (reset)
+            {
+                Console.WriteLine($"Dropping database {quoted} (resetDatabase=Yes)");
+                using var drop = new MySqlCommand($"DROP DATABASE IF EXISTS {quoted}", conn);
+                drop.ExecuteNonQuery();
+            }
+            using var cmd = new MySqlCommand($"CREATE DATABASE IF NOT EXISTS {quoted}", conn);
+            cmd.ExecuteNonQuery();
+        }
+
+        public static int Main(string[] args)
+        {
+            GeneratorRoot = ResolveGeneratorRoot();
+            Directory.SetCurrentDirectory(GeneratorRoot);
+            Console.WriteLine("Generator root: " + GeneratorRoot);
+
+            Dictionary<string, string> keyValueDict;
+            string parameterSource;
+            try
+            {
+                keyValueDict = GeneratorOptions.Load(args, out parameterSource);
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine(ex.Message);
+                Console.Error.WriteLine("Usage: dotnet run -- --config generator.json   (see README)");
+                return 2;
+            }
+            var configuration = new ConfigurationBuilder()
+                .SetBasePath(GeneratorRoot)
+                .AddJsonFile("appsettings.json", optional: true)
+                .AddJsonFile("appsettings.Local.json", optional: true)
+                .AddEnvironmentVariables("NEOAPPS_")
+                .Build();
+
 
           string project_id = keyValueDict["project_id"];
             string server = keyValueDict["server"];
@@ -3030,50 +3080,16 @@ APIResponse Update{tableName}Transactional({primaryKeyListParam},{tableName}Tran
                 noderedurl = noderedurl.Replace("}", "");
             }
             // ... and so on
-            if (rabbitMQConn.Contains("amqp"))
+            // Legacy: "amqp://user***@host" placeholders get the password "password<user>" injected.
+            if (rabbitMQConn != null && rabbitMQConn.Contains("amqp") && rabbitMQConn.Contains("***"))
             {
-
-                // Find the starting index of the username
                 int start = rabbitMQConn.IndexOf("user") + "user".Length;
-
-                // Find the ending index of the username (before the ":")
                 int end = rabbitMQConn.IndexOf(":", start);
-
-                // Extract the username from the input string
-                string user = rabbitMQConn.Substring(start, end - start);
-
-                // Replace "user" with "password" in the input string
-                string modifiedString = "password" + user;
-
-                Console.WriteLine("Original String: " + rabbitMQConn);
-                Console.WriteLine("Username: " + username);
-                Console.WriteLine("Modified String: " + modifiedString);
-                string abc = rabbitMQConn.Replace("***", modifiedString);
-                rabbitMQConn = abc;
-                Console.WriteLine(rabbitMQConn);
+                if (start >= "user".Length && end > start)
+                    rabbitMQConn = rabbitMQConn.Replace("***", "password" + rabbitMQConn.Substring(start, end - start));
             }
 
-            Console.WriteLine("project_id: " + project_id);
-            Console.WriteLine("server: " + server);
-            Console.WriteLine("uid: " + uid);
-            Console.WriteLine("username: " + username);
-            Console.WriteLine("password: " + password);
-            Console.WriteLine("databaseName: " + databaseName);
-            Console.WriteLine("script: " + script);
-            Console.WriteLine("statusOfGeneration: " + statusOfGeneration);
-            Console.WriteLine("projectName: " + projectName);
-            Console.WriteLine("DBexists: " + DBexists);
-            Console.WriteLine("port: " + port);
-            Console.WriteLine("rabbitMQConn: " + rabbitMQConn);
-            Console.WriteLine("redisConn: " + redisConn);
-            Console.WriteLine("apiflowurl: " + apiflowurl);
-            Console.WriteLine("Technology_Frontend: " + Technology_Frontend);
-            Console.WriteLine("Backend_technology: " + Baackend_technology);
-            Console.WriteLine("buttonClicked: " + buttonClicked);
-            Console.WriteLine("projectType: " + projectType);
-            Console.WriteLine("swgurl: " + swgurl);
-            { }
-            Console.WriteLine("noderedurl: " + noderedurl);
+            Console.WriteLine("Parameters (" + parameterSource + "):" + Environment.NewLine + GeneratorOptions.Describe(keyValueDict));
             /* Console.WriteLine("transactionalapi: " + transactionalapi);*/
 
             /*List<TransactionalParameterModel> tp = JsonConvert.DeserializeObject<List<TransactionalParameterModel>>(transactionalapi);*/
@@ -3083,13 +3099,12 @@ APIResponse Update{tableName}Transactional({primaryKeyListParam},{tableName}Tran
                 try
                 {
                     string conn_string = "server=" + server + ";username=" + username + ";password=" + password + ";port=" + port + ";database=" + databaseName + ";TreatTinyAsBoolean=false;";
+                    EnsureDatabaseExists(server, port, username, password, databaseName,
+                        reset: string.Equals(keyValueDict.GetValueOrDefault("resetDatabase"), "Yes", StringComparison.OrdinalIgnoreCase));
                     MySqlConnectionManager.Initialize(conn_string);
                     if (apiflowurl != null)
                     {
-                        using (WebClient client = new WebClient())
-                        {
-                            client.DownloadFile(apiflowurl, "./apiflowjson.txt");
-                        }
+                        SourceFetcher.Fetch(apiflowurl, "./apiflowjson.txt");
                         string apiflowjson = File.ReadAllText("./apiflowjson.txt");
                         APIFlowJson apiflow = JsonConvert.DeserializeObject<APIFlowJson>(apiflowjson);
                         transactionalModel = apiflow.transactionalAPI;
@@ -3101,6 +3116,7 @@ APIResponse Update{tableName}Transactional({primaryKeyListParam},{tableName}Tran
                         if (projectType == "dnd")
                         {
                             ReactTsProject.ReactTs(server, uid, username, password, databaseName, script, statusOfGeneration, projectName, DBexists, port, rabbitMQConn, Technology_Frontend, Baackend_technology, projectType,front_template_url);
+                            Directory.SetCurrentDirectory(GeneratorRoot); // generation steps change the working directory
                             string[] drpath = Directory.GetDirectories(@"../", (uid + "_*"));
                             string fname = drpath[0].Split("/").Last();
                             var files = Directory.GetFiles($"../{fname}/{projectName}/ReactTs_Output1", "*.env*");
@@ -3130,12 +3146,14 @@ APIResponse Update{tableName}Transactional({primaryKeyListParam},{tableName}Tran
                         else if (projectType == "workflow")
                         {
                             string front_templateURL = "";
-                            var textt = File.ReadAllText("./ReactTsTemplate2/ReactTsProject/src/components/addWorkflow/index.tsx");
-                            textt = textt.Replace("{rabbitMqConn}", rabbitMQConn);
-                            File.WriteAllText("./ReactTsTemplate2/ReactTsProject/src/components/addWorkflow/index.tsx", textt);
                             ReactTsProject.ReactTs(server, uid, username, password, databaseName, script, statusOfGeneration, projectName, DBexists, port, rabbitMQConn, Technology_Frontend, Baackend_technology, projectType, front_templateURL);
+                            Directory.SetCurrentDirectory(GeneratorRoot); // generation steps change the working directory
                             string[] drpath = Directory.GetDirectories(@"../", (uid + "_*"));
                             string fname = drpath[0].Split("/").Last();
+                            // Fill the placeholder in the generated copy (previously the template itself was overwritten).
+                            var addWorkflow = $"../{fname}/{projectName}/ReactTs_Output2/src/components/addWorkflow/index.tsx";
+                            if (File.Exists(addWorkflow))
+                                File.WriteAllText(addWorkflow, File.ReadAllText(addWorkflow).Replace("{rabbitMqConn}", rabbitMQConn));
                             var files = Directory.GetFiles($"../{fname}/{projectName}/ReactTs_Output2", "*.env*");
                             foreach (string i in files)
                             {
@@ -3165,6 +3183,7 @@ APIResponse Update{tableName}Transactional({primaryKeyListParam},{tableName}Tran
                         {
                             string front_templateURL = "";
                             ReactTsProject.ReactTs(server, uid, username, password, databaseName, script, statusOfGeneration, projectName, DBexists, port, rabbitMQConn, Technology_Frontend, Baackend_technology, projectType, front_templateURL);
+                            Directory.SetCurrentDirectory(GeneratorRoot); // generation steps change the working directory
                             string[] drpath = Directory.GetDirectories(@"../", (uid + "_*"));
                             string fname = drpath[0].Split("/").Last();
                             try
@@ -3188,6 +3207,7 @@ APIResponse Update{tableName}Transactional({primaryKeyListParam},{tableName}Tran
                             string front_templateURL = "";
                             projectType = "frontend";
                             ReactTsProject.ReactTs(server, uid, username, password, databaseName, script, statusOfGeneration, projectName, DBexists, port, rabbitMQConn, Technology_Frontend, Baackend_technology, projectType, front_templateURL);
+                            Directory.SetCurrentDirectory(GeneratorRoot); // generation steps change the working directory
                             string[] drpath = Directory.GetDirectories(@"../", (uid + "_*"));
                             string fname = drpath[0].Split("/").Last();
                             var files = Directory.GetFiles($"../{fname}/{projectName}/ReactTs_Output3", "*.env*");
@@ -3217,254 +3237,56 @@ APIResponse Update{tableName}Transactional({primaryKeyListParam},{tableName}Tran
                     if (Baackend_technology != null && Baackend_technology.ToLower() == "dotnet")
                     {
                         projectType = "backend_and_consumer";
-                        var kubectlCommand = "tool install --global Swashbuckle.AspNetCore.Cli --version 6.5.0";
-                        var kubectlProcess = new Process
-                        {
-                            StartInfo = new ProcessStartInfo
-                            {
-                                FileName = "dotnet",
-                                Arguments = $"{kubectlCommand}",
-                                UseShellExecute = false,
-                                RedirectStandardOutput = true,
-                                RedirectStandardError = true,
-                            }
-                        };
-                        kubectlProcess.OutputDataReceived += (sender, e) => Console.WriteLine(e.Data);
-                        //kubectlProcess.ErrorDataReceived += (sender, e) => Console.WriteLine("Error!!"+e.Data);
-                        kubectlProcess.ErrorDataReceived += (sender, e) =>
-                        {
-                            if (e.Data != null)
-                            {
-                                Console.WriteLine("Error!!" + e.Data);
-                                errors_list.Add("Error!!" + e.Data);
-                            }
-                        };
-                        kubectlProcess.Start();
-                        kubectlProcess.WaitForExit();
-                        kubectlProcess.BeginOutputReadLine();
-                        kubectlProcess.BeginErrorReadLine();
                         string adminUsername = GenerateUsername();
                         string adminPassword = GeneratePassword();
+                        GeneratedAdminUsername = adminUsername;
+                        GeneratedAdminPassword = adminPassword;
                         DotNet_MySQL.DotNet_MySQL_Template(adminUsername, adminPassword,server, uid, username, password, databaseName, script, statusOfGeneration, projectName, DBexists, port, rabbitMQConn, Technology_Frontend, Baackend_technology, projectType, noderedurl, swgurl,project_id);
-                        string[] drpath = Directory.GetDirectories("/", (uid + "_*"));
+                        Directory.SetCurrentDirectory(GeneratorRoot); // generation steps change the working directory
+                        string[] drpath = Directory.GetDirectories(@"../", (uid + "_*"));
                         string fname = drpath[0].Split("/").Last();
-                        string[] upt = Directory.GetFiles($"/{fname}/{projectName}/zip/", "generatedBackend*.zip");
+                        string[] upt = Directory.GetFiles($"../{fname}/{projectName}/zip/", "generatedBackend*.zip");
+                        if (upt.Length == 0)
+                            throw new InvalidOperationException("Backend generation produced no zip. See errors above.");
                         upath = upt[0];
                         //Thread.Sleep(500000);
 
 
 
                     }
-                    IConfiguration configuration1 = new ConfigurationBuilder()
-               .AddJsonFile("appsettings.json")
-               .Build();
-
-                    // Pass the configuration to other classes as needed
-                    var getters = new Getters(configuration1);
                     string link = null;
-                    link = getters.uploadToS3(uid, "150".ToString(), "23".ToString(), "22441".ToString(), upath)[0];
+                    var getters = new Getters(configuration);
+                    if (getters.IsConfigured && !string.IsNullOrEmpty(upath))
+                        link = getters.uploadToS3(uid, project_id, "23", "22441", upath).FirstOrDefault();
 
-                    if (link != null && errors_list.Count == 0)
+                    WriteResult(new GeneratorResponseModel
                     {
-                        GeneratorResponseModel generatorResponseModel = new GeneratorResponseModel()
-                        {
-                            project_id = Convert.ToInt32(project_id),
-                            classifier = projectType,
-                            link = link,
-                            is_successful = 1
-                        };
-                       
-                    }
-                    else
-                    {
-                        GeneratorResponseModel generatorResponseModel = new GeneratorResponseModel()
-                        {
-                            project_id = Convert.ToInt32(project_id),
-                            classifier = projectType,
-                            link = "",
-                            error_log = errors_list,
-                            is_successful = 0
-                        };
-                       
-                    }
+                        project_id = int.TryParse(project_id, out var pid) ? pid : 0,
+                        classifier = projectType,
+                        link = link ?? (string.IsNullOrEmpty(upath) ? "" : Path.GetFullPath(upath)),
+                        output_path = string.IsNullOrEmpty(upath) ? null : Path.GetFullPath(Path.Combine(Path.GetDirectoryName(upath)!, "..")),
+                        error_log = errors_list,
+                        is_successful = errors_list.Count == 0 ? 1 : 0,
+                        admin_username = GeneratedAdminUsername,
+                        admin_password = GeneratedAdminPassword
+                    });
                 }
                 catch (Exception ex)
                 {
                     // If an exception occurs, catch it and add to the errors_list
                     errors_list.Add($"Error in generating process: {ex.Message}");
-                    GeneratorResponseModel generatorResponseModel = new GeneratorResponseModel()
+                    Console.Error.WriteLine(ex);
+                    WriteResult(new GeneratorResponseModel
                     {
-                        project_id = Convert.ToInt32(project_id),
+                        project_id = int.TryParse(project_id, out var pid) ? pid : 0,
                         classifier = projectType,
                         link = "",
                         error_log = errors_list,
                         is_successful = 0
-                    };
-                   
+                    });
                 }
 
             }
-            /*else if (buttonClicked.ToLower() == "redeploy")
-            {
-                if (Baackend_technology != null)
-                {
-                    //    var textt = File.ReadAllText("./deploy.yaml");
-                    //    textt = textt.Replace("{arg}", rabbitMqArg);
-                    //    textt = textt.Replace("{rabbitMqUserName}", rabbitMqUserName);
-                    //    textt = textt.Replace("{rabbitMqPassword}", rabbitMqPassword);
-                    //    textt = textt.Replace("{managementNodePort}", managementNodePort);
-                    //    textt = textt.Replace("{amqpNodePort}", amqpNodePort);
-                    //    File.WriteAllText("./deploy.yaml", textt);
-                    //var textt = File.ReadAllText("./deploy_consumer.yaml");
-                    //textt = textt.Replace("{arg}", rabbitMqArg);
-                    //textt = textt.Replace("{arg1}", imageName + "-consumer");
-                    //textt = textt.Replace("{arg2}", imageTag);
-                    //textt = textt.Replace("{arg3}", imagePullSecretName);
-                    //textt = textt.Replace("{projectName}", projectName);
-                    //File.WriteAllText("./deploy_consumer.yaml", textt);
-                    //    var kubectlCommand = "--kubeconfig config.yaml apply -f deploy.yaml";
-                    //    var kubectlProcess = new Process
-                    //    {
-                    //        StartInfo = new ProcessStartInfo
-                    //        {
-                    //            FileName = "/app/bin/kubectl",
-                    //            Arguments = $"{kubectlCommand}",
-                    //            UseShellExecute = false,
-                    //            RedirectStandardOutput = true,
-                    //            RedirectStandardError = true,
-                    //        }
-                    //    };
-                    //    kubectlProcess.OutputDataReceived += (sender, e) => Console.WriteLine(e.Data);
-                    //    //kubectlProcess.ErrorDataReceived += (sender, e) => Console.WriteLine("Error!!" + e.Data);
-                    //    kubectlProcess.ErrorDataReceived += (sender, e) =>
-                    //    {
-                    //        if (e.Data != null)
-                    //            Console.WriteLine("Error!!" + e.Data);
-                    //    };
-                    //    kubectlProcess.Start();
-                    //    kubectlProcess.WaitForExit();
-                    //    kubectlProcess.BeginOutputReadLine();
-                    //    kubectlProcess.BeginErrorReadLine();
-                    var kubectlCommand = $"--kubeconfig config.yaml rollout restart deployment/{rabbitMqArg}-consumer-deployment";
-                    Console.WriteLine(kubectlCommand);
-                    var kubectlProcess = new Process
-                    {
-                        StartInfo = new ProcessStartInfo
-                        {
-                            FileName = "/app/bin/kubectl",
-                            Arguments = $"{kubectlCommand}",
-                            UseShellExecute = false,
-                            RedirectStandardOutput = true,
-                            RedirectStandardError = true,
-                        }
-                    };
-                    kubectlProcess.OutputDataReceived += (sender, e) => Console.WriteLine(e.Data);
-                    //kubectlProcess.ErrorDataReceived += (sender, e) => Console.WriteLine("Error!!" + e.Data);
-                    kubectlProcess.ErrorDataReceived += (sender, e) =>
-                    {
-                        if (e.Data != null)
-                            Console.WriteLine("Error!!" + e.Data);
-                    };
-                    kubectlProcess.Start();
-                    kubectlProcess.WaitForExit();
-                    kubectlProcess.BeginOutputReadLine();
-                    kubectlProcess.BeginErrorReadLine();
-                }
-                var chartDirectory = "./";
-                var processStartInfo = new ProcessStartInfo
-                {
-                    FileName = "/app/bin/helm",
-                    Arguments = $"create {chartName}",
-                    UseShellExecute = false,
-                    RedirectStandardOutput = true,
-                    CreateNoWindow = true
-                };
-                var process = new Process
-                {
-                    StartInfo = processStartInfo
-                };
-                process.Start();
-                process.WaitForExit();
-                var exitCode = process.ExitCode;
-
-                if (exitCode == 0)
-                {
-                    Console.WriteLine($"Helm chart created at {chartDirectory}");
-                    Directory.Delete(@$"{chartName}/templates/tests", true);
-                    var files = Directory.GetFiles($@"{chartName}/templates");
-                    foreach (string file in files)
-                    {
-                        var name = file.Split("/").Last();
-                        if (name == "hpa.yaml" || name == "serviceaccount.yaml" || name == "NOTES.txt")
-                            File.Delete(file);
-                        else if (name == "deployment.yaml")
-                        {
-                            string[] text = File.ReadAllLines(file);
-                            string[] output = new string[39];
-                            for (int i = 0; i < 39; i++)
-                            {
-                                if (i == 26)
-                                    continue;
-                                output[i] = text[i];
-                            }
-                            File.WriteAllLines(file, output);
-                        }
-                        else if (name == "ingress.yaml")
-                        {
-                            string[] text = File.ReadAllLines(file);
-                            string[] output = new string[text.Length];
-                            for (int i = 0, j = 0; i < text.Length; i++)
-                            {
-                                if (i == 40)
-                                {
-                                    string temp = text[i];
-                                    temp = temp.Replace("host: {{ .host | quote }}", "http:");
-                                    output[j++] = temp;
-                                    continue;
-                                }
-                                if (i == 41)
-                                {
-                                    continue;
-                                }
-                                output[j++] = text[i];
-                            }
-                            File.WriteAllLines(file, output);
-                        }
-                    }
-                    try
-                    {
-                        var command = $"upgrade --kubeconfig config.yaml {chartName} {chartName} --set image.repository={imageName},image.tag={imageTag},service.port=80,imagePullSecrets[0].name={imagePullSecretName},serviceAccount.create=false,ingress.enabled=true,ingress.annotations.\"nginx\\.ingress\\.kubernetes\\.io/rewrite-target\"=\"{extraArg}/\\$2\",ingress.hosts[0].paths[0].path=\"{extraArg}(/|$)(.*)\",ingress.hosts[0].paths[0].pathType=Prefix,ingress.className=nginx";
-                        //command = "push registry.digitalocean.com/nocodedevprototype/backend:latest";
-                        Console.WriteLine(command);
-                        var installHelmChart = new Process
-                        {
-                            StartInfo = new ProcessStartInfo
-                            {
-                                FileName = "/app/bin/helm",
-                                Arguments = $"{command}",
-                                UseShellExecute = false,
-                                RedirectStandardOutput = true,
-                                RedirectStandardError = true,
-                            }
-                        };
-                        installHelmChart.OutputDataReceived += (sender, e) => Console.WriteLine(e.Data);
-                        //installHelmChart.ErrorDataReceived += (sender, e) => Console.WriteLine("Error!!" + e.Data);
-                        installHelmChart.ErrorDataReceived += (sender, e) =>
-                        {
-                            if (e.Data != null)
-                                Console.WriteLine(e.Data);
-                        };
-                        installHelmChart.Start();
-                        installHelmChart.WaitForExit();
-                        installHelmChart.BeginOutputReadLine();
-                        installHelmChart.BeginErrorReadLine();
-                    }
-                    catch (Exception e)
-                    {
-                        Console.WriteLine(e.Message);
-                    }
-                }
-            }*/
             else
             {
                 string[] drpath = Directory.GetDirectories(@"../", (uid + "_*"));
@@ -3494,6 +3316,7 @@ APIResponse Update{tableName}Transactional({primaryKeyListParam},{tableName}Tran
                     }
                 }
             }
+            return errors_list.Count == 0 ? 0 : 1;
         }
     }
     class DotNet_MySQL : Program
@@ -3549,7 +3372,7 @@ CREATE TABLE IF NOT EXISTS `s3bucket` (
   `isActive` tinyint(1) NOT NULL DEFAULT '1',
   PRIMARY KEY(`bucket_id`)
 );
-INSERT INTO `s3bucket` (`bucket_name`, `bucket_url`,`modifiedBy`, `createdBy`,`isActive`) VALUES ('nocodes3dev','DO0089PZREULYLFACQZJ','{adminUsername}','{adminUsername}','1');
+INSERT INTO `s3bucket` (`bucket_name`, `bucket_url`,`modifiedBy`, `createdBy`,`isActive`) VALUES ('files','http://localhost:9000','{adminUsername}','{adminUsername}','1');
 CREATE TABLE IF NOT EXISTS `s3bucket_folders` (
   `folder_id` int NOT NULL AUTO_INCREMENT,
   `folder_name` varchar(45) NOT NULL,
@@ -4000,72 +3823,6 @@ CREATE TABLE IF NOT EXISTS `workflow_trigger_conditions` (
                     string jsonFilePath = Path.ChangeExtension(filePath, ".json");
                     File.WriteAllText(jsonFilePath, JsonConvert.SerializeObject(json));
                 }
-                string text1 = File.ReadAllText("/app/script.sh");
-                if (backendTechnology == "DotNet")
-                    text1 = text1.Replace("{backendTechnologyFolder}", $"{fname}/{projectName}/DotNet_Output");
-                text1 = text1.Replace("{backendTechnology}", projectName);
-                string scriptPathh = Path.Combine("/app/script1.sh");
-                Console.WriteLine(scriptPathh);
-                File.WriteAllText("/app/script1.sh", text1);
-                // try
-                // {
-                //     // Set the working directory for the shell script
-                //     //string new_dir3 = Path.Combine(Directory.GetCurrentDirectory(), "project");
-                //     // Create a new process to execute the shell script
-                //     var process = new Process();
-
-                //     // Set the filename of the shell script
-                //     string scriptPath = Path.Combine(new_dir3, "script1.sh");
-                //     Console.WriteLine(scriptPath);
-                //     // Set the arguments to pass to the script
-                //     process.StartInfo.FileName = "/bin/bash";
-                //     process.StartInfo.Arguments = $"{scriptPath}";
-
-                //     // Set the working directory for the script
-                //     process.StartInfo.WorkingDirectory = Path.Combine(new_dir3);
-
-                //     // Set the output and error streams to be redirected
-                //     process.StartInfo.RedirectStandardOutput = true;
-                //     process.StartInfo.RedirectStandardError = true;
-
-                //     // Set the UseShellExecute property to false to use the redirected streams
-                //     process.StartInfo.UseShellExecute = false;
-                //     List<string> error = new List<string>();
-                //     // Set the event handlers for the output and error streams
-                //     process.OutputDataReceived += (sender, e) => { Console.WriteLine(e.Data); };
-                //     process.ErrorDataReceived += (sender, e) =>
-                //     {
-                //         error.Add(e.Data);
-                //         if(e.Data!=null)
-                //             Console.WriteLine("Error!!" + e.Data);
-                //     };
-                //     // Start the process
-                //     process.Start();
-                //     // Begin reading the output and error streams
-                //     process.BeginOutputReadLine();
-                //     process.BeginErrorReadLine();
-
-                //     // Wait for the process to complete
-                //     process.WaitForExit();
-                //     // Get the exit code of the process
-                //     int exitCode = process.ExitCode;
-                //     if (exitCode == 0)
-                //     {
-                //         Console.WriteLine("No Errors were found!");
-                //     }
-                //     else
-                //     {
-                //         foreach (string err in error)
-                //         {
-                //             Console.WriteLine(err);
-                //         }
-                //     }
-                // }
-                // catch (Exception ex)
-                // {
-                //     Console.WriteLine("An Error!! occurred while executing the shell script: " + ex.Message);
-                // }
-
                 var filess = Directory.GetFiles(
                     Path.Combine(new_dir4, $"../{fname}/{projectName}/DotNet_Output/solution/" + projectName + "/"),
                     "*.*", SearchOption.AllDirectories);
@@ -4078,78 +3835,18 @@ CREATE TABLE IF NOT EXISTS `workflow_trigger_conditions` (
                 Directory.SetCurrentDirectory(Directory.GetCurrentDirectory() + "/..");
                 Console.Write(Directory.GetCurrentDirectory() + "\n");
 
-                var restore = $"restore";
-                var startDockerProcess = new Process
+                // Validate the generated solution compiles (non-fatal: the zip is produced either way).
+                if (!string.Equals(Environment.GetEnvironmentVariable("NEOAPPS_SKIP_BUILD"), "true", StringComparison.OrdinalIgnoreCase))
                 {
-                    StartInfo = new ProcessStartInfo
-                    {
-                        FileName = "dotnet",
-                        Arguments = $"{restore}",
-                        UseShellExecute = false,
-                        RedirectStandardOutput = true,
-                        RedirectStandardError = true,
-                    }
-                };
-                startDockerProcess.OutputDataReceived += (sender, e) => Console.WriteLine(e.Data);
-                //startDockerProcess.ErrorDataReceived += (sender, e) => (e.Data != null)? Console.WriteLine("Error!!" + e.Data):"";
-                startDockerProcess.ErrorDataReceived += (sender, e) =>
-                {
-                    if (e.Data != null)
-                        Console.WriteLine("Error!!" + e.Data);
-                };
-                startDockerProcess.Start();
-                startDockerProcess.WaitForExit();
-                startDockerProcess.BeginOutputReadLine();
-                startDockerProcess.BeginErrorReadLine();
-                var build = $"build";
-                startDockerProcess = new Process
-                {
-                    StartInfo = new ProcessStartInfo
-                    {
-                        FileName = "dotnet",
-                        Arguments = $"{build}",
-                        UseShellExecute = false,
-                        RedirectStandardOutput = true,
-                        RedirectStandardError = true,
-                    }
-                };
-                //startDockerProcess.OutputDataReceived += (sender, e) => Console.WriteLine(e.Data);
-                //startDockerProcess.ErrorDataReceived += (sender, e) =>
-                //{
-                //    if (e.Data != null)
-                //        Console.WriteLine("Error!!" + e.Data);
-                //};
-                //// startDockerProcess.ErrorDataReceived += (sender, e) => Console.WriteLine("Error!!" + e.Data);
-                //startDockerProcess.Start();
-                //startDockerProcess.WaitForExit();
-                //startDockerProcess.BeginOutputReadLine();
-                //startDockerProcess.BeginErrorReadLine();
-                Console.WriteLine("Starting build process.");
-                startDockerProcess.Start();
-                Console.WriteLine("Started build process.");
-                string output = startDockerProcess.StandardOutput.ReadToEnd();
-                string error = startDockerProcess.StandardError.ReadToEnd();
-
-                Console.WriteLine("Output:");
-                Console.WriteLine(output);
-                if (!string.IsNullOrWhiteSpace(error))
-                {
-                    Console.WriteLine("Error!!");
-                    Console.WriteLine(error);
+                    var restoreResult = ProcessRunner.Run("dotnet", "restore", Directory.GetCurrentDirectory());
+                    var buildResult = restoreResult.ExitCode == 0
+                        ? ProcessRunner.Run("dotnet", "build --no-restore -nologo -clp:ErrorsOnly", Directory.GetCurrentDirectory())
+                        : restoreResult;
+                    if (buildResult.ExitCode != 0)
+                        Console.WriteLine("Warning: generated solution did not build cleanly:\n" + buildResult.Output);
                 }
-                Console.WriteLine("Waiting to exit the process...");
-                startDockerProcess.WaitForExit();
-                Console.WriteLine("Exited");
-                Console.WriteLine("Completed build process.");
-               // WorkflowGenerator.generateWorkflowCalled();
-                File.Delete($"./{projectName}.API/swagger.json");
-                string[] textttt = File.ReadAllLines($"./{projectName}.API/./{projectName}.API.csproj");
-                for (int i = 0; i < textttt.Length; i++)
-                {
-                    if (i == 36 || i == 37 || i == 38)
-                        textttt[i] = "";
-                }
-                File.WriteAllLines($"./{projectName}.API/./{projectName}.API.csproj", textttt);
+                if (File.Exists($"./{projectName}.API/swagger.json"))
+                    File.Delete($"./{projectName}.API/swagger.json");
                 string connectionString = connection_string;
                 //using (MySqlConnection connection = new MySqlConnection(connectionString))
                 //{
@@ -4443,10 +4140,7 @@ CREATE TABLE IF NOT EXISTS `workflow_trigger_conditions` (
                     if (front_template_url != null)
                     {
                         Console.WriteLine("downloading frontend template file");
-                        using (WebClient client = new WebClient())
-                        {
-                            client.DownloadFile(front_template_url, "./fronttemplatejson.txt");
-                        }
+                        SourceFetcher.Fetch(front_template_url, "./fronttemplatejson.txt");
                         front_template_json = File.ReadAllText("./fronttemplatejson.txt");
                         Console.WriteLine(front_template_json);
                     }
@@ -4574,11 +4268,7 @@ CREATE TABLE IF NOT EXISTS `workflow_trigger_conditions` (
                     }
                     else
                         pt = (dirss[0] + "/" + projectName);
-                    bool ext = Directory.Exists(pt);
-                    if (ext)
-                    {
-                        Directory.Delete(pt, true);
-                    }
+                    // Only the frontend output is replaced; deleting "pt" used to wipe the generated backend too.
                     Directory.CreateDirectory(pt);
                     Directory.CreateDirectory(pt + "/zip");
 

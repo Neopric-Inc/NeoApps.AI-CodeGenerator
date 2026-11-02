@@ -1,4 +1,4 @@
-﻿using nkv.MicroService.Utility;
+using nkv.MicroService.Utility;
 using Newtonsoft.Json;
 using RabbitMQ.Client;
 using System;
@@ -7,7 +7,6 @@ using nkv.MicroService.Manager.Impl;
 using System.Text;
 using Microsoft.Extensions.Configuration;
 using nkv.MicroService.Model;
-using Renci.SshNet.Messages;
 using System.Collections.Generic;
 
 namespace nkv.MicroService.Manager.RabitMQAPI.API

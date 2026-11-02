@@ -2,7 +2,6 @@ using System;
 using System.Collections;
 using System.IO;
 using NoCodeAppGenerator;
-using static Google.Protobuf.Reflection.FieldOptions.Types;
 
 namespace HelloWorld
 {

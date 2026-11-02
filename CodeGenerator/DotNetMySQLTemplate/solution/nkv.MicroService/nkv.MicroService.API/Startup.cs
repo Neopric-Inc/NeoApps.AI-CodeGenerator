@@ -1,16 +1,26 @@
-﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.IdentityModel.Tokens;
+using nkv.MicroService.Manager.RabitMQAPI.API;
+using nkv.MicroService.DataAccess.Impl;
+using nkv.MicroService.DataAccess.Interface;
+using nkv.MicroService.Manager.Impl;
+using nkv.MicroService.Manager.Interface;
 using nkv.MicroService.Utility;
-using System.Text;
-using Swashbuckle.AspNetCore.SwaggerUI;
-using Microsoft.OpenApi.Models;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.Hosting;
+using Microsoft.OpenApi;
+using RabbitMQ.Client;
+using System.Collections.Generic;
+using System;
+using nkv.MicroService.API.Attributes;
+using StackExchange.Redis;
 
 namespace nkv.MicroService.API
 {
@@ -26,7 +36,23 @@ namespace nkv.MicroService.API
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddCors(options =>
+            services.AddSwaggerGen(c =>
+                {
+                    c.SwaggerDoc("v1", new OpenApiInfo { Title = "nkv.MicroService", Version = "v1" });
+                    c.AddSecurityDefinition(name: "Bearer", securityScheme: new OpenApiSecurityScheme
+                    {
+                        Name = "Authorization",
+                        Description = "Enter the Bearer Authorization string as following: `Bearer Generated-JWT-Token`",
+                        In = ParameterLocation.Header,
+                        Type = SecuritySchemeType.ApiKey,
+                        Scheme = "Bearer"
+                    });
+                    c.AddSecurityRequirement(document => new OpenApiSecurityRequirement
+                    {
+                        [new OpenApiSecuritySchemeReference("Bearer", document)] = new List<string>()
+                    });
+                });
+             services.AddCors(options =>
             {
                 options.AddPolicy("AllowAllHeaders",
                    builder =>
@@ -36,6 +62,12 @@ namespace nkv.MicroService.API
                   .AllowAnyMethod();
                    });
             });
+            services.AddScoped<CheckPermissionAttribute>();
+            services.AddSingleton<IConnectionMultiplexer>(x =>
+            ConnectionMultiplexer.Connect(Configuration.GetConnectionString("Redis")));
+        services.AddScoped<IRabitMQProducer, RabitMQProducer>();
+            services.AddScoped<IRabitMQAsyncProducer, RabitMQAsyncProducer>();
+            services.AddControllers();
 
             var appSettingsSection = Configuration.GetSection("AppSettings");
             services.Configure<AppSettings>(appSettingsSection);
@@ -61,58 +93,50 @@ namespace nkv.MicroService.API
                 };
             });
 
-
-
             services.AddSingleton<IConfiguration>(Configuration);
             string connectionString = Configuration.GetConnectionString("MySQLDatabase");
-            services.AddMvc(option => option.EnableEndpointRouting = false).SetCompatibilityVersion(CompatibilityVersion.Version_3_0);
-            services.AddTransient(_ => new MySqlDatabase(connectionString));
-            services.AddTransient<ICategoryDataAccess, CategoryDataAccess>();
-            services.AddTransient<ICategoryManager, CategoryManager>();
-            //services.AddSwaggerDocument(c=>c.Title="nkv.Title");
-            services.AddSwaggerDocument(options =>
-            {
-                options.Title = "nkv.Title";
-                options.AddSecurity("Bearer", Enumerable.Empty<string>(), new OpenApiSecurityScheme
-                {
-                    Type = OpenApiSecuritySchemeType.ApiKey,
-                    Name = "Authorization",
-                    Description = "Enter the Bearer Authorization string as following: `Bearer Generated-JWT-Token`",
-                    In = OpenApiSecurityApiKeyLocation.Header,
-                    Scheme = "Bearer"
-                });
-                options.OperationProcessors.Add(new AspNetCoreOperationSecurityScopeProcessor("Bearer"));
-                options.DocumentProcessors.Add(new SecurityDefinitionAppender("Bearer", new OpenApiSecurityScheme
-                {
-                    Type = OpenApiSecuritySchemeType.ApiKey,
-                    Name = "Authorization",
-                    Description = "Enter the Bearer Authorization string as following: `Bearer Generated-JWT-Token`",
-                    In = OpenApiSecurityApiKeyLocation.Header,
-                    Scheme = "Bearer"
-                }));
-            });
+        string rabbitMqConnection = Configuration.GetConnectionString("RabitMQ");
+            ConnectionFactory factory = new ConnectionFactory();
+            factory.Uri = new Uri(rabbitMqConnection);
+            IConnection connection = factory.CreateConnection();
+            services.AddSingleton<IConnection>(connection);
+            //services.AddTransient(_ => new MySqlDatabase(connectionString));
+            services.AddTransient(_ => new MySqlDatabaseConnector(connectionString));
+        services.AddTransient(_ => new RabbitMqConnection(rabbitMqConnection));
+            //services.AddSwaggerDocument(c=>c.Title="nkv.MicroService");
+            
             services.AddTransient<ICurrentUserService, CurrentUserService>();
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+            services.AddSingleton<IChannelManager, ChannelManager>();
+            #region Dependency
+            
+            #endregion
+            
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            app.UseCors("AllowAllHeaders");
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
             }
-            else
-            {
-                app.UseHsts();
-            }
 
+            app.UseSwagger();
+            app.UseSwaggerUI(c =>
+            {
+                c.SwaggerEndpoint("/swagger/v1/swagger.json", "nkv.MicroService");
+            });
+
+            app.UseRouting();
+            app.UseCors("AllowAllHeaders");
             app.UseAuthentication();
-            app.UseOpenApi();
-            app.UseSwaggerUi3(c => c.DocumentTitle = "nkv.MicroService");
-            app.UseHttpsRedirection();
-            app.UseMvc();
+            app.UseAuthorization();
+            app.UseEndpoints(endpoints =>
+            {
+                endpoints.MapControllers();
+                endpoints.MapGet("/health", () => Results.Ok(new { status = "ok" }));
+            });
         }
     }
 }

@@ -1,12 +1,10 @@
 using System;
-using MySql;
-using MySql.Data;
 using System.Collections;
-using MySql.Data.MySqlClient;
+using MySqlConnector;
 using System.IO;
 using System.Text.RegularExpressions;
-using EnvDTE;
 using NoCodeAppGenerator;
+using NoCodeAppGenerator.Infrastructure;
 using System.Data;
 
 namespace HelloWorld
@@ -49,6 +47,8 @@ namespace HelloWorld
                     Console.WriteLine("Connection is :- " + connection.State.ToString() + Environment.NewLine);
 
                     // Executing actual script
+                    // Let scripts declare tables in any order (LLM-written schemas often reference a table before creating it).
+                    using (var fkOff = new MySqlCommand("SET FOREIGN_KEY_CHECKS=0", connection)) fkOff.ExecuteNonQuery();
                     MySqlScript script = new MySqlScript(connection, File.ReadAllText(filePath));
                     script.Delimiter = ";";
 
@@ -59,6 +59,7 @@ namespace HelloWorld
                     int count = script.Execute();
 
                     Console.WriteLine("Executed " + count + " statement(s).");
+                    using (var fkOn = new MySqlCommand("SET FOREIGN_KEY_CHECKS=1", connection)) fkOn.ExecuteNonQuery();
                 }
                 catch (Exception ex)
                 {
@@ -136,11 +137,6 @@ namespace HelloWorld
 
             }
             Console.WriteLine("-------------------------------------------");
-        }
-
-        void script_StatementExecuted(object sender, MySqlScriptEventArgs args)
-        {
-            Console.WriteLine("script_StatementExecuted");
         }
 
         void script_ScriptCompleted(object sender, EventArgs e)

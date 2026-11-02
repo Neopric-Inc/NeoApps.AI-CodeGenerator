@@ -1,0 +1,13 @@
+{
+  "projectName": "TaskTracker",
+  "databaseName": "task_tracker_db",
+  "DBexists": "Yes",
+  "server": "127.0.0.1",
+  "port": "3307",
+  "username": "root",
+  "password": "neoapps",
+  "Backend_technology": null,
+  "Technology_Frontend": "reactts",
+  "projectType": null,
+  "rabbitMQConn": "http://localhost:5100/v1/api/"
+}
