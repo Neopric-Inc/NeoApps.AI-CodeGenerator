@@ -283,6 +283,7 @@ CREATE TABLE daily_logs (
   visitors TEXT,
   deliveries TEXT,
   superintendent_contact_id INT,
+  equipment_notes TEXT,
   createdBy VARCHAR(255) NOT NULL,
   modifiedBy VARCHAR(255) NOT NULL,
   createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -307,6 +308,45 @@ CREATE TABLE daily_log_crews (
   isActive TINYINT(1) NOT NULL DEFAULT '1',
   FOREIGN KEY (daily_log_id) REFERENCES daily_logs(daily_log_id),
   FOREIGN KEY (company_id) REFERENCES companies(company_id)
+);
+
+CREATE TABLE equipment (
+  equipment_id INT AUTO_INCREMENT PRIMARY KEY,
+  project_id INT NOT NULL,
+  company_id INT,
+  equipment_number VARCHAR(30) NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  equipment_type VARCHAR(50) NOT NULL DEFAULT 'heavy',
+  ownership VARCHAR(20) NOT NULL DEFAULT 'rented',
+  daily_rate DECIMAL(14,2),
+  on_site_date DATE,
+  off_site_date DATE,
+  status VARCHAR(50) NOT NULL DEFAULT 'on_site',
+  notes TEXT,
+  createdBy VARCHAR(255) NOT NULL,
+  modifiedBy VARCHAR(255) NOT NULL,
+  createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  modifiedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  isActive TINYINT(1) NOT NULL DEFAULT '1',
+  FOREIGN KEY (project_id) REFERENCES projects(project_id),
+  FOREIGN KEY (company_id) REFERENCES companies(company_id)
+);
+
+CREATE TABLE equipment_logs (
+  equipment_log_id INT AUTO_INCREMENT PRIMARY KEY,
+  daily_log_id INT NOT NULL,
+  equipment_id INT NOT NULL,
+  hours_used DECIMAL(6,2) DEFAULT '0.00',
+  idle_hours DECIMAL(6,2) DEFAULT '0.00',
+  operator_name VARCHAR(255),
+  condition_notes VARCHAR(500),
+  createdBy VARCHAR(255) NOT NULL,
+  modifiedBy VARCHAR(255) NOT NULL,
+  createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  modifiedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  isActive TINYINT(1) NOT NULL DEFAULT '1',
+  FOREIGN KEY (daily_log_id) REFERENCES daily_logs(daily_log_id),
+  FOREIGN KEY (equipment_id) REFERENCES equipment(equipment_id)
 );
 
 CREATE TABLE time_entries (
@@ -410,12 +450,14 @@ CREATE TABLE inspections (
   inspector VARCHAR(255),
   result VARCHAR(50) NOT NULL DEFAULT 'scheduled',
   findings TEXT,
+  company_id INT,
   createdBy VARCHAR(255) NOT NULL,
   modifiedBy VARCHAR(255) NOT NULL,
   createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   modifiedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   isActive TINYINT(1) NOT NULL DEFAULT '1',
-  FOREIGN KEY (project_id) REFERENCES projects(project_id)
+  FOREIGN KEY (project_id) REFERENCES projects(project_id),
+  FOREIGN KEY (company_id) REFERENCES companies(company_id)
 );
 
 CREATE TABLE punch_items (
@@ -423,7 +465,7 @@ CREATE TABLE punch_items (
   project_id INT NOT NULL,
   company_id INT,
   location VARCHAR(255) NOT NULL,
-  description VARCHAR(1000) NOT NULL,
+  description VARCHAR(2000) NOT NULL,
   priority VARCHAR(20) DEFAULT 'normal',
   due_date DATE,
   status VARCHAR(50) NOT NULL DEFAULT 'open',
