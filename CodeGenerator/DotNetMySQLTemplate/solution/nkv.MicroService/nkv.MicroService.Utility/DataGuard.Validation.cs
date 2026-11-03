@@ -85,6 +85,7 @@ namespace nkv.MicroService.Utility
             foreach (var f in rules)
             {
                 if (changed != null && !f.Uses.Any(changed.Contains)) continue;
+                if (changed == null && IsNumbered(table, f.Column)) continue; // assigned after the insert
                 var v = row.GetValueOrDefault(f.Column);
                 var s = Str(v);
                 var empty = string.IsNullOrWhiteSpace(s);

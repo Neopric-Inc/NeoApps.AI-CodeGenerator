@@ -6138,6 +6138,20 @@
       }
     }
   },
+  "numbering": {
+    "cases": {
+      "column": "case_number",
+      "pattern": "EXP-{yyyy}-{seq:6}"
+    },
+    "customer_quotes": {
+      "column": "quote_number",
+      "pattern": "Q-{yyyy}-{seq:4}"
+    },
+    "customer_invoices": {
+      "column": "invoice_number",
+      "pattern": "INV-{yyyy}-{seq:5}"
+    }
+  },
   "immutable": {
     "audit_logs": [
       "*"

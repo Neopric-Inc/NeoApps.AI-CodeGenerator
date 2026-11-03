@@ -2745,7 +2745,9 @@ APIResponse Update{tableName}Transactional({primaryKeyListParam},{tableName}Tran
                     {
                         //if()
                         // :- add [Required] only if the column name is not createdBy,modifiedBy,createdAt,modifiedAt
-                        if (dict["Column_Name"] != "createdBy" && dict["Column_Name"] != "createdAt" && dict["Column_Name"] != "modifiedAt" && dict["Column_Name"] != "modifiedBy") 
+                        // numbered columns ("numbering" in ui.config.json) are assigned by the API, so clients leave them empty
+                        if (dict["Column_Name"] != "createdBy" && dict["Column_Name"] != "createdAt" && dict["Column_Name"] != "modifiedAt" && dict["Column_Name"] != "modifiedBy"
+                            && !NumberedColumns().Contains(tbl + "." + dict["Column_Name"])) 
                             text += "[Required]\n";
                     }
                         
@@ -2953,6 +2955,23 @@ APIResponse Update{tableName}Transactional({primaryKeyListParam},{tableName}Tran
 
         /// <summary>Optional ui.config.json (labels, widgets, menu, theme, roles) for the schema-driven UI.</summary>
         public static string UiConfigPath;
+        static HashSet<string> _numberedColumns;
+        /// <summary>"table.column" of every column with "numbering" in the UI config (case-insensitive).</summary>
+        internal static HashSet<string> NumberedColumns()
+        {
+            if (_numberedColumns != null) return _numberedColumns;
+            _numberedColumns = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            try
+            {
+                if (!string.IsNullOrEmpty(UiConfigPath) && File.Exists(UiConfigPath)
+                    && System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(UiConfigPath))?["numbering"] is System.Text.Json.Nodes.JsonObject all)
+                    foreach (var (table, node) in all)
+                        foreach (var o in node is System.Text.Json.Nodes.JsonArray a ? a.ToList() : new List<System.Text.Json.Nodes.JsonNode> { node })
+                            if (o?["column"] is System.Text.Json.Nodes.JsonValue c) _numberedColumns.Add(table + "." + c.GetValue<string>());
+            }
+            catch (Exception ex) { errors_list.Add("numbering: " + ex.Message); }
+            return _numberedColumns;
+        }
 
         static void EnsureDatabaseExists(string server, string port, string username, string password, string databaseName, bool reset)
         {

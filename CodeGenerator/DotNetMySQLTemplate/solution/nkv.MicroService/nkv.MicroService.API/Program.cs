@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using System.Reflection;
 using Microsoft.AspNetCore.Hosting;
@@ -26,6 +27,12 @@ namespace nkv.MicroService.API
             // forward in place. If a migration fails the API does not start and the previous version keeps running.
             if (config.GetValue("Migrations:RunOnStartup", true))
                 MigrationHost.Run(connectionString, typeof(Program).Assembly, "up");
+
+            // Permission checks and data access are synchronous (Redis/MySQL): start with enough pool threads that a burst of
+            // requests doesn't wait for the thread pool to grow (Redis timeouts). Api:MinThreads, default 64.
+            var minThreads = config.GetValue("Api:MinThreads", 64);
+            System.Threading.ThreadPool.GetMinThreads(out var workers, out var io);
+            System.Threading.ThreadPool.SetMinThreads(Math.Max(workers, minThreads), Math.Max(io, minThreads));
 
             host.Run();
             return 0;

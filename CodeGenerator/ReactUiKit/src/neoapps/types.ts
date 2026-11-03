@@ -90,6 +90,8 @@ export interface UiConfig {
   ai?: Record<string, any>;
   /** Field rules enforced by the API (DataGuard) and checked in forms before saving: {"table": {"column": {"format": "email"}}}. */
   validations?: Record<string, Record<string, FieldRule>>;
+  /** Numbers assigned by the API on insert: {"customer_invoices": {"column": "invoice_number", "pattern": "INV-{yyyy}-{seq:5}"}}. */
+  numbering?: Record<string, { column: string; pattern?: string; reset?: string } | { column: string; pattern?: string; reset?: string }[]>;
 }
 
 export interface FieldRule {
