@@ -35,6 +35,7 @@ namespace HelloWorld
                 {
                     while (reader.Read())
                     {
+                        if (string.Equals(reader.GetString(0), "versioninfo", StringComparison.OrdinalIgnoreCase)) continue; // migration history
                         tableLists.Add(reader.GetString(0));
                         data += reader.GetString(0) + Environment.NewLine;
                     }

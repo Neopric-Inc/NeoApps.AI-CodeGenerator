@@ -20,12 +20,23 @@ public static class AppPreview
     public sealed record Result(string Html, List<string> Warnings, List<string> Changes, int Tables, int Relations);
 
     private static readonly string[] Audit = ["createdBy", "modifiedBy", "createdAt", "modifiedAt", "isActive"];
-    private static readonly HashSet<string> Reserved = new(StringComparer.OrdinalIgnoreCase)
+    internal static readonly HashSet<string> Reserved = new(StringComparer.OrdinalIgnoreCase)
     {
         "roles", "users", "entities", "permissionmatrix", "messagequeue", "s3bucket", "s3bucket_folders", "dnd_ui_versions",
         "project_dnd_ui_versions", "workflow", "workflows", "workflows_projects", "workflow_builds", "workflow_runs",
         "workflow_deployments", "workflow_triggers", "workflow_trigger_conditions",
-        "ai_files", "ai_chunks", "ai_conversations", "ai_messages", "ai_runs",
+        "ai_files", "ai_chunks", "ai_conversations", "ai_messages", "ai_runs", "versioninfo",
+    };
+    // Column names become C# property names in the generated API, unescaped.
+    private static readonly HashSet<string> CSharpWords = new(StringComparer.Ordinal)
+    {
+        "abstract", "as", "base", "bool", "break", "byte", "case", "catch", "char", "checked", "class", "const", "continue",
+        "decimal", "default", "delegate", "do", "double", "else", "enum", "event", "explicit", "extern", "false", "finally",
+        "fixed", "float", "for", "foreach", "goto", "if", "implicit", "in", "int", "interface", "internal", "is", "lock", "long",
+        "namespace", "new", "null", "object", "operator", "out", "override", "params", "private", "protected", "public",
+        "readonly", "ref", "return", "sbyte", "sealed", "short", "sizeof", "stackalloc", "static", "string", "struct", "switch",
+        "this", "throw", "true", "try", "typeof", "uint", "ulong", "unchecked", "unsafe", "ushort", "using", "virtual", "void",
+        "volatile", "while",
     };
     private static readonly HashSet<string> SqlWords = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -110,6 +121,7 @@ public static class AppPreview
             var missing = Audit.Where(a => !t.Columns.Any(c => c.Name == a)).ToList();
             if (missing.Count > 0) w.Add($"{t.Name}: missing audit columns {string.Join(", ", missing)}.");
             foreach (var c in t.Columns.Where(c => SqlWords.Contains(c.Name))) w.Add($"{t.Name}.{c.Name}: '{c.Name}' is an SQL keyword; rename it.");
+            foreach (var c in t.Columns.Where(c => CSharpWords.Contains(c.Name))) w.Add($"{t.Name}.{c.Name}: '{c.Name}' is a C# keyword and breaks the generated API; rename it (e.g. {c.Name}_name).");
             foreach (var fk in t.ForeignKeys)
             {
                 if (!names.Contains(fk.RefTable)) w.Add($"{t.Name}.{fk.Column} references unknown table '{fk.RefTable}'.");

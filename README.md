@@ -116,6 +116,8 @@ Claude will:
 | `neoapps_schema_guidelines` | Schema rules and an example schema |
 | `neoapps_check_environment` | Checks for the .NET SDK, Docker, and the shared containers |
 | `neoapps_create_app` | Schema → database + .NET 10 API + React UI (`frontendTemplate`: `app` or `dnd`) |
+| `neoapps_evolve_app` | Applies a requirements change to a running app, keeping its data (migration + regenerate, see below) |
+| `neoapps_migrate_app` | Migration status / apply / baseline / roll back |
 | `neoapps_generate_frontend` | Regenerates the UI (`app` admin UI or `dnd` drag-and-drop designer) |
 | `neoapps_deploy_app` | Builds and runs the app's containers (`includeConsumer` adds the workflow worker) |
 | `neoapps_app_status` / `neoapps_app_logs` / `neoapps_stop_app` | Inspect or stop a running app |
@@ -131,6 +133,7 @@ Generation and deployment run as background jobs. A tool call waits about 40 sec
 | Path | Contents |
 |---|---|
 | `workspace/<App>/` | `project.json` (ports, paths, login), `schema.sql`, generator configs, `docker-compose.yml` |
+| `workspace/<App>/migrations/` | Versioned C# migrations (copied into `<App>.API/Migrations/` on every generate); `backups/` holds the dump taken before each one |
 | `1_<timestamp>/<App>/DotNet_Output/solution/<App>/` | Generated .NET solution (open `<App>.sln`) |
 | `1_<timestamp>/<App>/ReactTs_Output3/` (`ReactTs_Output1` for `dnd`) | Generated React app |
 
@@ -216,8 +219,9 @@ and **Admin > Members / Roles / Customize UI**.
   `recordActions` (buttons on record pages); see `CodeGenerator/ReactUiKit/src/neoapps/extensions.ts`. Example:
   [`samples/splitshare/`](samples/splitshare), a shared-expenses app with a My balances page, settle-up suggestions,
   a "Split now" button and admin "Create login".
-- **Larger apps.** [`samples/constructos/`](samples/constructos) is a 39-table general-contractor app (preconstruction,
-  field, financials, closeout) with six roles and nine AI workflows.
+- **Larger apps.** [`samples/constructos/`](samples/constructos) is a 41-table general-contractor app (preconstruction,
+  field, financials, closeout) with seven roles and nine AI workflows, plus a v1 → v2 upgrade you can replay with
+  `neoapps evolve`.
 - **RBAC**
   - Roles grant view/create/edit/delete per table. Declare them in `ui.config.json` (`"roles": {"Coordinator": {"*": "r", "documents": "cru"}}`, defaulting to Member + Viewer), or manage them in **Admin > Roles**.
   - **Admin > Members** adds users and assigns roles. The API enforces every permission, and the UI hides menus and buttons you can't use.
@@ -237,6 +241,50 @@ container and keeps uploads in a Docker volume. See the `ai` section of
 [`samples/clinical-research-site.ui.json`](samples/clinical-research-site.ui.json): protocol Q&A, a Schedule of
 Assessments → visits, assessments and source worksheets workflow, and a ClinicalTrials.gov trial finder.
 
+## Changing a running app (migrations)
+
+Requirements change after an app has data in it. `evolve` applies the change without recreating the database:
+
+```bash
+# edit workspace/<App>/schema.sql and ui.config.json (or pass new files), then:
+./neoapps evolve ConstructOS --name "add equipment tracking" --plan    # show the plan and the migration code
+./neoapps evolve ConstructOS --name "add equipment tracking"           # apply it
+./neoapps migrate ConstructOS                                          # status: applied / pending
+```
+
+What `evolve` does:
+
+1. Compares the **live database** with the new `schema.sql` and writes the difference as a versioned
+   [FluentMigrator](https://fluentmigrator.github.io/) class with `Up()` and `Down()` in
+   `workspace/<App>/migrations/M<timestamp>_<Name>.cs`. You can review and edit it, or write migrations by hand
+   (data fixes, backfills); `evolve` applies pending hand-written ones first.
+2. Backs up the database (`mysqldump` into `workspace/<App>/backups/`), then applies the migration. MySQL can't roll
+   back DDL, so a failed migration is moved to `migrations/failed/` and the backup path is reported.
+3. Keeps access and UI in step: new tables are added to `entities`, granted to administrators, to each role's template
+   from `ui.config.json` `roles`, and to every existing member of those roles; roles that are new in the requirements are
+   created (existing roles keep the permissions admins set in the app); new screens are added to menus saved from
+   **Admin > Customize UI**.
+4. Regenerates the API and UI on the kept data, checks that the API builds, and saves the plan as the next version
+   (`history/vN`). Restart a locally running API afterwards: its files were rewritten.
+
+Every generated API applies pending migrations **on startup** before serving traffic (one instance at a time, using a
+MySQL lock), so deploying the new version moves staging and production databases forward in place, with their data.
+If a migration fails, the API doesn't start and the previous version keeps running. Turn it off with
+`Migrations__RunOnStartup=false`, and run `dotnet <App>.API.dll --migrate` (or `--migrations-status`,
+`--migrate-down=<version>`) from your deploy pipeline instead.
+
+Rules that keep it safe:
+
+- **Additive by default.** Dropping tables or columns is skipped unless you pass `--allow-destructive`.
+- **Renames need a hint**, since a diff can't tell a rename from a drop plus an add:
+  `--renames renames.json` (or `workspace/<App>/migrate.json`) with `{"old_table": "new_table", "table.old_column": "new_column"}`.
+- **Primary key changes** aren't automated; write that migration by hand.
+- `neoapps new` still builds a database from scratch. If the app already has migrations, it records them as applied
+  (baseline), because the full `schema.sql` already contains their changes.
+
+Example: [`samples/constructos/`](samples/constructos) v2 adds equipment tracking (two tables, a new role, new columns
+and relations) with `migrations/M20261103005208_AddEquipmentTracking.cs`.
+
 ## Writing a schema
 
 Run `neoapps_schema_guidelines`, or follow these rules:
@@ -255,11 +303,12 @@ CodeGenerator/            generator (.NET 10 console app)
   DotNetMySQLTemplate/    backend templates (generated solution targets net10.0)
   ReactTsTemplate1..4/    frontend templates (1 = drag-and-drop, 3 = admin UI)
   Infrastructure/         config loading, schema reader, SQL script runner
-src/NeoApps.Mcp/          MCP server for Claude Desktop
+src/NeoApps.Mcp/          MCP server and CLI for Claude Desktop
+src/NeoApps.Migrator/     runs an app's migrations (used by evolve/migrate; the generated API runs the same classes)
 deploy/                   docker-compose for shared local services
 samples/                  example generator configs
 GeneratedApps/            example schemas
-NeoApps.slnx              solution (generator + MCP server)
+NeoApps.slnx              solution (generator + MCP server + migrator)
 ```
 
 ## Troubleshooting

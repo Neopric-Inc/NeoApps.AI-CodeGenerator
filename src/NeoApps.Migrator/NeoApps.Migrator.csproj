@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Applies an app's migrations without its API: used by `neoapps evolve` / `neoapps migrate` (and after `neoapps new`
+    to baseline them). Build with -p:MigrationsDir=<workspace/App/migrations>; the migration classes and the shared
+    support file from the API template are compiled in, so it runs exactly what the generated API runs on startup.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <AssemblyName>neoapps-migrator</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentMigrator.Runner.MySql" Version="8.0.1" />
+    <PackageReference Include="MySqlConnector" Version="2.6.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\CodeGenerator\DotNetMySQLTemplate\solution\nkv.MicroService\nkv.MicroService.API\Migrations\MigrationSupport.cs" Link="MigrationSupport.cs" />
+    <Compile Remove="obj\**;bin\**" />
+    <Compile Include="$(MigrationsDir)\*.cs" Condition="'$(MigrationsDir)' != ''" />
+  </ItemGroup>
+
+</Project>

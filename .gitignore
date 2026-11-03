@@ -28,3 +28,6 @@ CodeGenerator/SQLScript.sql
 CodeGenerator/apiflowjson.txt
 CodeGenerator/script1.sh
 CodeGenerator/output.txt
+
+# Redis snapshot when redis-server runs from the repo (sandbox)
+dump.rdb
