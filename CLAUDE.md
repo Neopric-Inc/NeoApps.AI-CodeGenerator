@@ -37,7 +37,8 @@ Work in the app's planning folder `workspace/<App>/` (git-ignored): `requirement
    (publish it as an artifact if you can, otherwise send the file) together with a short plain-language summary, and
    iterate. When the user approves, run `./neoapps preview <App> --save` to record the version (`history/vN/`).
    **Generate:** `./neoapps new <App> --schema workspace/<App>/schema.sql --ui workspace/<App>/ui.config.json` (App = PascalCase identifier, e.g. `TodoApp`).
-   Add `--deploy` to build and run it in Docker, and `--template dnd` for the drag-and-drop designer UI.
+   Add `--deploy` to build and run it in Docker, and `--template dnd` for the drag-and-drop designer UI (it generates
+   components per table: very large schemas, e.g. 100+ tables, exceed the CRA type checker's memory; use the admin UI for those).
    **Custom screens:** if the user needs something the schema-driven UI can't do (a personal summary page, a calculation,
    a one-click action), write it in `workspace/<App>/custom/index.tsx` (exports `extensions`: `routes`, `nav`,
    `dashboardTop`, `recordActions`; example `samples/splitshare/custom`). It is copied into the app on every generate.
