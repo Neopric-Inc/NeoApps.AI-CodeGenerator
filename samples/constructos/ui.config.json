@@ -1,0 +1,2151 @@
+{
+  "appName": "ConstructOS",
+  "tagline": "Bid, build, bill and close out, in one place",
+  "theme": {
+    "primary": "#d97706",
+    "secondary": "#1e293b"
+  },
+  "menu": [
+    {
+      "group": "Projects",
+      "items": [
+        "projects",
+        "project_team",
+        "documents"
+      ]
+    },
+    {
+      "group": "Preconstruction",
+      "items": [
+        "trade_packages",
+        "spec_sections",
+        "scope_items",
+        "bid_invitations",
+        "bids",
+        "bid_line_items",
+        "scope_gaps"
+      ]
+    },
+    {
+      "group": "Field",
+      "items": [
+        "schedule_activities",
+        "daily_logs",
+        "daily_log_crews",
+        "rfis",
+        "submittals",
+        "submittal_reviews",
+        "inspections",
+        "punch_items",
+        "safety_incidents",
+        "meetings",
+        "action_items",
+        "time_entries"
+      ]
+    },
+    {
+      "group": "Financials",
+      "items": [
+        "budget_lines",
+        "subcontracts",
+        "subcontract_items",
+        "purchase_orders",
+        "change_events",
+        "change_orders",
+        "change_order_lines",
+        "pay_applications",
+        "pay_app_lines",
+        "lien_waivers",
+        "invoices"
+      ]
+    },
+    {
+      "group": "Closeout",
+      "items": [
+        "closeout_items",
+        "warranties",
+        "warranty_claims"
+      ]
+    },
+    {
+      "group": "Directory",
+      "items": [
+        "companies",
+        "contacts",
+        "cost_codes"
+      ]
+    }
+  ],
+  "dashboard": {
+    "cards": [
+      {
+        "table": "projects",
+        "label": "Projects"
+      },
+      {
+        "table": "trade_packages",
+        "label": "Bid packages"
+      },
+      {
+        "table": "rfis",
+        "label": "RFIs"
+      },
+      {
+        "table": "change_events",
+        "label": "Change events"
+      },
+      {
+        "table": "pay_applications",
+        "label": "Pay apps"
+      },
+      {
+        "table": "punch_items",
+        "label": "Punch items"
+      }
+    ],
+    "recentTable": "rfis"
+  },
+  "roles": {
+    "Estimator": {
+      "*": "r",
+      "trade_packages": "cru",
+      "spec_sections": "cru",
+      "scope_items": "cru",
+      "bid_invitations": "cru",
+      "bids": "cru",
+      "bid_line_items": "cru",
+      "scope_gaps": "cru",
+      "companies": "cru",
+      "contacts": "cru",
+      "documents": "cru",
+      "projects": "cru",
+      "budget_lines": "cru"
+    },
+    "Project Manager": {
+      "*": "r",
+      "trade_packages": "cru",
+      "spec_sections": "cru",
+      "scope_items": "cru",
+      "bid_invitations": "cru",
+      "bids": "cru",
+      "bid_line_items": "cru",
+      "scope_gaps": "cru",
+      "schedule_activities": "cru",
+      "daily_logs": "cru",
+      "daily_log_crews": "cru",
+      "rfis": "cru",
+      "submittals": "cru",
+      "submittal_reviews": "cru",
+      "inspections": "cru",
+      "punch_items": "cru",
+      "safety_incidents": "cru",
+      "meetings": "cru",
+      "action_items": "cru",
+      "time_entries": "cru",
+      "budget_lines": "cru",
+      "subcontracts": "cru",
+      "subcontract_items": "cru",
+      "purchase_orders": "cru",
+      "change_events": "cru",
+      "change_orders": "cru",
+      "change_order_lines": "cru",
+      "pay_applications": "cru",
+      "pay_app_lines": "cru",
+      "lien_waivers": "cru",
+      "invoices": "cru",
+      "closeout_items": "cru",
+      "warranties": "cru",
+      "warranty_claims": "cru",
+      "documents": "cru",
+      "project_team": "cru",
+      "companies": "cru",
+      "contacts": "cru"
+    },
+    "Superintendent": {
+      "*": "r",
+      "schedule_activities": "cru",
+      "daily_logs": "cru",
+      "daily_log_crews": "cru",
+      "time_entries": "cru",
+      "rfis": "cru",
+      "inspections": "cru",
+      "punch_items": "cru",
+      "safety_incidents": "cru",
+      "meetings": "cru",
+      "action_items": "cru",
+      "documents": "cru",
+      "change_events": "cru"
+    },
+    "Accounting": {
+      "*": "r",
+      "budget_lines": "cru",
+      "subcontracts": "cru",
+      "subcontract_items": "cru",
+      "purchase_orders": "cru",
+      "change_events": "cru",
+      "change_orders": "cru",
+      "change_order_lines": "cru",
+      "pay_applications": "cru",
+      "pay_app_lines": "cru",
+      "lien_waivers": "cru",
+      "invoices": "cru",
+      "cost_codes": "cru",
+      "companies": "cru",
+      "contacts": "cru",
+      "documents": "cru",
+      "time_entries": "ru"
+    },
+    "Subcontractor": {
+      "projects": "r",
+      "trade_packages": "r",
+      "scope_items": "r",
+      "spec_sections": "r",
+      "bid_invitations": "r",
+      "bids": "cru",
+      "bid_line_items": "cru",
+      "rfis": "cr",
+      "submittals": "cr",
+      "punch_items": "ru",
+      "schedule_activities": "r",
+      "pay_applications": "cr",
+      "pay_app_lines": "cr",
+      "lien_waivers": "cr",
+      "documents": "cr",
+      "closeout_items": "ru",
+      "warranty_claims": "ru"
+    },
+    "Owner Rep": {
+      "*": "r"
+    }
+  },
+  "tables": {
+    "projects": {
+      "icon": "apartment",
+      "displayField": "name",
+      "description": "Every job, from bid to closeout",
+      "listColumns": [
+        "project_number",
+        "name",
+        "owner_company_id",
+        "phase",
+        "contract_value",
+        "start_date",
+        "substantial_completion"
+      ],
+      "formFields": [
+        "project_number",
+        "name",
+        "owner_company_id",
+        "architect_company_id",
+        "address",
+        "project_type",
+        "delivery_method",
+        "phase",
+        "contract_value",
+        "retainage_pct",
+        "bid_due_date",
+        "start_date",
+        "substantial_completion",
+        "final_completion",
+        "description"
+      ],
+      "children": [
+        "project_team",
+        "documents",
+        "trade_packages",
+        "schedule_activities",
+        "daily_logs",
+        "rfis",
+        "submittals",
+        "budget_lines",
+        "subcontracts",
+        "change_events",
+        "change_orders",
+        "pay_applications",
+        "punch_items",
+        "closeout_items"
+      ],
+      "fields": {
+        "project_number": {
+          "label": "Job #"
+        },
+        "owner_company_id": {
+          "label": "Owner"
+        },
+        "architect_company_id": {
+          "label": "Architect"
+        },
+        "project_type": {
+          "widget": "select",
+          "options": [
+            "commercial",
+            "multifamily",
+            "healthcare",
+            "education",
+            "industrial",
+            "retail",
+            "civil",
+            "tenant_improvement"
+          ]
+        },
+        "delivery_method": {
+          "widget": "select",
+          "options": [
+            "hard_bid",
+            "negotiated",
+            "design_build",
+            "cm_at_risk",
+            "gmp"
+          ]
+        },
+        "phase": {
+          "widget": "select",
+          "options": [
+            "preconstruction",
+            "bidding",
+            "construction",
+            "closeout",
+            "warranty",
+            "lost"
+          ],
+          "colors": {
+            "preconstruction": "info",
+            "bidding": "warning",
+            "construction": "primary",
+            "closeout": "secondary",
+            "warranty": "success",
+            "lost": "default"
+          },
+          "defaultValue": "preconstruction"
+        },
+        "contract_value": {
+          "widget": "currency"
+        },
+        "retainage_pct": {
+          "label": "Retainage %"
+        },
+        "description": {
+          "widget": "textarea"
+        }
+      }
+    },
+    "project_team": {
+      "label": "Project Team",
+      "singular": "Team member",
+      "icon": "groups",
+      "listColumns": [
+        "project_id",
+        "contact_id",
+        "project_role",
+        "is_primary"
+      ],
+      "fields": {
+        "project_role": {
+          "widget": "select",
+          "options": [
+            "project_executive",
+            "project_manager",
+            "superintendent",
+            "project_engineer",
+            "estimator",
+            "accountant",
+            "owner_rep",
+            "architect"
+          ]
+        },
+        "is_primary": {
+          "defaultValue": 0
+        }
+      }
+    },
+    "companies": {
+      "icon": "business",
+      "displayField": "name",
+      "description": "Subcontractors, suppliers, owners and design firms",
+      "listColumns": [
+        "name",
+        "company_type",
+        "trades",
+        "prequal_status",
+        "insurance_expiry",
+        "phone"
+      ],
+      "children": [
+        "contacts",
+        "bids",
+        "subcontracts",
+        "invoices"
+      ],
+      "fields": {
+        "company_type": {
+          "widget": "select",
+          "options": [
+            "subcontractor",
+            "supplier",
+            "owner",
+            "architect",
+            "engineer",
+            "consultant",
+            "agency"
+          ],
+          "defaultValue": "subcontractor"
+        },
+        "prequal_status": {
+          "widget": "select",
+          "options": [
+            "pending",
+            "approved",
+            "conditional",
+            "rejected",
+            "expired"
+          ],
+          "colors": {
+            "approved": "success",
+            "conditional": "warning",
+            "rejected": "error",
+            "expired": "error",
+            "pending": "default"
+          },
+          "label": "Prequal"
+        },
+        "bonding_capacity": {
+          "widget": "currency"
+        },
+        "is_dbe": {
+          "widget": "checkbox",
+          "label": "DBE / MBE",
+          "defaultValue": 0
+        },
+        "notes": {
+          "widget": "textarea"
+        },
+        "trades": {
+          "placeholder": "Concrete, Masonry"
+        }
+      }
+    },
+    "contacts": {
+      "icon": "person",
+      "displayField": "full_name",
+      "listColumns": [
+        "full_name",
+        "company_id",
+        "title",
+        "trade",
+        "email",
+        "phone"
+      ],
+      "fields": {
+        "hourly_rate": {
+          "widget": "currency",
+          "label": "Hourly rate"
+        }
+      }
+    },
+    "cost_codes": {
+      "label": "Cost Codes",
+      "singular": "Cost code",
+      "icon": "tag",
+      "displayField": "code",
+      "defaultSort": "code|ASC",
+      "listColumns": [
+        "code",
+        "title",
+        "csi_division",
+        "cost_type"
+      ],
+      "fields": {
+        "cost_type": {
+          "widget": "select",
+          "options": [
+            "labor",
+            "material",
+            "equipment",
+            "subcontract",
+            "general_conditions",
+            "other"
+          ]
+        },
+        "csi_division": {
+          "label": "CSI division"
+        }
+      }
+    },
+    "documents": {
+      "icon": "folder",
+      "displayField": "title",
+      "description": "Drawings, specs, bids, contracts, photos. Upload files on the record page.",
+      "listColumns": [
+        "title",
+        "project_id",
+        "document_type",
+        "discipline",
+        "revision",
+        "issued_date"
+      ],
+      "fields": {
+        "document_type": {
+          "widget": "select",
+          "options": [
+            "drawings",
+            "specifications",
+            "addendum",
+            "bid",
+            "contract",
+            "submittal",
+            "pay_app",
+            "meeting_notes",
+            "photos",
+            "warranty",
+            "om_manual",
+            "as_built",
+            "other"
+          ],
+          "colors": {
+            "specifications": "info",
+            "drawings": "primary",
+            "bid": "warning"
+          },
+          "label": "Type",
+          "defaultValue": "drawings"
+        },
+        "discipline": {
+          "widget": "select",
+          "options": [
+            "architectural",
+            "structural",
+            "civil",
+            "mechanical",
+            "electrical",
+            "plumbing",
+            "fire_protection",
+            "landscape",
+            "general"
+          ]
+        },
+        "company_id": {
+          "label": "From company"
+        },
+        "description": {
+          "widget": "textarea"
+        }
+      }
+    },
+    "spec_sections": {
+      "label": "Spec Sections",
+      "singular": "Spec section",
+      "icon": "menu_book",
+      "displayField": "section_number",
+      "defaultSort": "section_number|ASC",
+      "listColumns": [
+        "section_number",
+        "title",
+        "project_id",
+        "csi_division",
+        "page_ref"
+      ],
+      "children": [
+        "scope_items",
+        "submittals",
+        "rfis"
+      ],
+      "fields": {
+        "section_number": {
+          "label": "Section",
+          "placeholder": "09 21 16"
+        },
+        "summary": {
+          "widget": "textarea"
+        },
+        "submittals_required": {
+          "widget": "textarea",
+          "label": "Submittals required"
+        }
+      }
+    },
+    "trade_packages": {
+      "label": "Bid Packages",
+      "singular": "Bid package",
+      "icon": "inventory_2",
+      "displayField": "name",
+      "description": "Scopes you send out to subs for pricing",
+      "listColumns": [
+        "package_number",
+        "name",
+        "project_id",
+        "budget_amount",
+        "bid_due_date",
+        "status",
+        "awarded_company_id"
+      ],
+      "children": [
+        "scope_items",
+        "bid_invitations",
+        "bids",
+        "subcontracts"
+      ],
+      "fields": {
+        "package_number": {
+          "label": "Pkg #"
+        },
+        "budget_amount": {
+          "widget": "currency",
+          "label": "Budget"
+        },
+        "awarded_company_id": {
+          "label": "Awarded to"
+        },
+        "status": {
+          "widget": "select",
+          "options": [
+            "scoping",
+            "out_to_bid",
+            "leveling",
+            "awarded",
+            "cancelled"
+          ],
+          "colors": {
+            "scoping": "default",
+            "out_to_bid": "info",
+            "leveling": "warning",
+            "awarded": "success",
+            "cancelled": "error"
+          },
+          "defaultValue": "scoping"
+        },
+        "scope_narrative": {
+          "widget": "textarea",
+          "label": "Scope narrative"
+        },
+        "spec_sections_covered": {
+          "label": "Spec sections"
+        }
+      }
+    },
+    "scope_items": {
+      "label": "Scope Items",
+      "singular": "Scope item",
+      "icon": "checklist",
+      "displayField": "description",
+      "defaultSort": "item_no|ASC",
+      "listColumns": [
+        "trade_package_id",
+        "item_no",
+        "description",
+        "scope_category",
+        "quantity",
+        "unit",
+        "source_ref"
+      ],
+      "fields": {
+        "scope_category": {
+          "widget": "select",
+          "options": [
+            "included",
+            "excluded",
+            "by_others",
+            "alternate",
+            "allowance",
+            "unit_price"
+          ],
+          "colors": {
+            "included": "success",
+            "excluded": "error",
+            "by_others": "default",
+            "alternate": "info"
+          },
+          "label": "Category"
+        },
+        "source_ref": {
+          "label": "Source",
+          "placeholder": "Spec 03 30 00 §2.1 / A-201"
+        }
+      }
+    },
+    "bid_invitations": {
+      "label": "Invitations",
+      "singular": "Invitation",
+      "icon": "outgoing_mail",
+      "listColumns": [
+        "trade_package_id",
+        "company_id",
+        "contact_id",
+        "invited_date",
+        "response"
+      ],
+      "fields": {
+        "response": {
+          "widget": "select",
+          "options": [
+            "invited",
+            "viewed",
+            "will_bid",
+            "declined",
+            "submitted",
+            "no_response"
+          ],
+          "colors": {
+            "will_bid": "info",
+            "submitted": "success",
+            "declined": "error",
+            "no_response": "warning"
+          },
+          "defaultValue": "invited"
+        }
+      }
+    },
+    "bids": {
+      "icon": "request_quote",
+      "displayField": "company_id",
+      "description": "Sub proposals. Attach the PDF, then run Extract bid.",
+      "listColumns": [
+        "trade_package_id",
+        "company_id",
+        "base_amount",
+        "leveled_amount",
+        "schedule_days",
+        "status",
+        "is_low_bid"
+      ],
+      "children": [
+        "bid_line_items",
+        "scope_gaps"
+      ],
+      "fields": {
+        "base_amount": {
+          "widget": "currency",
+          "label": "Base bid"
+        },
+        "alternates_amount": {
+          "widget": "currency",
+          "label": "Alternates"
+        },
+        "leveled_amount": {
+          "widget": "currency",
+          "label": "Leveled"
+        },
+        "exclusions": {
+          "widget": "textarea"
+        },
+        "qualifications": {
+          "widget": "textarea"
+        },
+        "is_low_bid": {
+          "widget": "checkbox",
+          "label": "Low bid",
+          "defaultValue": 0
+        },
+        "status": {
+          "widget": "select",
+          "options": [
+            "received",
+            "leveling",
+            "shortlisted",
+            "awarded",
+            "rejected"
+          ],
+          "colors": {
+            "awarded": "success",
+            "shortlisted": "info",
+            "rejected": "error",
+            "leveling": "warning"
+          },
+          "defaultValue": "received"
+        }
+      }
+    },
+    "bid_line_items": {
+      "label": "Bid Line Items",
+      "singular": "Bid line",
+      "icon": "list",
+      "listColumns": [
+        "bid_id",
+        "description",
+        "quantity",
+        "unit",
+        "unit_price",
+        "amount",
+        "inclusion"
+      ],
+      "fields": {
+        "unit_price": {
+          "widget": "currency"
+        },
+        "amount": {
+          "widget": "currency"
+        },
+        "inclusion": {
+          "widget": "select",
+          "options": [
+            "included",
+            "excluded",
+            "alternate",
+            "allowance",
+            "clarification"
+          ],
+          "colors": {
+            "included": "success",
+            "excluded": "error"
+          },
+          "defaultValue": "included"
+        }
+      }
+    },
+    "scope_gaps": {
+      "label": "Scope Gaps",
+      "singular": "Scope gap",
+      "icon": "rule",
+      "displayField": "description",
+      "description": "What a bid is missing versus the scope sheet",
+      "listColumns": [
+        "bid_id",
+        "gap_type",
+        "description",
+        "plug_amount",
+        "resolution"
+      ],
+      "fields": {
+        "gap_type": {
+          "widget": "select",
+          "options": [
+            "missing",
+            "excluded",
+            "qualified",
+            "quantity_short",
+            "price_outlier"
+          ],
+          "colors": {
+            "missing": "error",
+            "excluded": "error",
+            "qualified": "warning",
+            "quantity_short": "warning",
+            "price_outlier": "info"
+          }
+        },
+        "plug_amount": {
+          "widget": "currency",
+          "label": "Plug $"
+        },
+        "notes": {
+          "widget": "textarea"
+        },
+        "resolution": {
+          "widget": "select",
+          "options": [
+            "open",
+            "confirmed_included",
+            "plugged",
+            "sub_revised",
+            "accepted"
+          ],
+          "colors": {
+            "open": "warning",
+            "sub_revised": "success",
+            "confirmed_included": "success"
+          },
+          "defaultValue": "open"
+        }
+      }
+    },
+    "schedule_activities": {
+      "label": "Schedule",
+      "singular": "Activity",
+      "icon": "calendar_month",
+      "displayField": "name",
+      "defaultSort": "planned_start|ASC",
+      "listColumns": [
+        "activity_code",
+        "name",
+        "project_id",
+        "planned_start",
+        "planned_finish",
+        "percent_complete",
+        "is_critical",
+        "status"
+      ],
+      "fields": {
+        "is_critical": {
+          "widget": "checkbox",
+          "label": "Critical path",
+          "defaultValue": 0
+        },
+        "percent_complete": {
+          "label": "% complete"
+        },
+        "status": {
+          "widget": "select",
+          "options": [
+            "not_started",
+            "in_progress",
+            "complete",
+            "delayed"
+          ],
+          "colors": {
+            "in_progress": "info",
+            "complete": "success",
+            "delayed": "error"
+          },
+          "defaultValue": "not_started"
+        }
+      }
+    },
+    "daily_logs": {
+      "label": "Daily Logs",
+      "singular": "Daily log",
+      "icon": "today",
+      "displayField": "log_date",
+      "defaultSort": "log_date|DESC",
+      "listColumns": [
+        "log_date",
+        "project_id",
+        "weather",
+        "temp_high",
+        "superintendent_contact_id"
+      ],
+      "children": [
+        "daily_log_crews"
+      ],
+      "fields": {
+        "work_performed": {
+          "widget": "textarea",
+          "label": "Work performed",
+          "help": "Paste the super's notes, then run Process daily log"
+        },
+        "delays": {
+          "widget": "textarea"
+        },
+        "visitors": {
+          "widget": "textarea"
+        },
+        "deliveries": {
+          "widget": "textarea"
+        },
+        "superintendent_contact_id": {
+          "label": "Superintendent"
+        }
+      }
+    },
+    "daily_log_crews": {
+      "label": "Manpower",
+      "singular": "Crew entry",
+      "icon": "engineering",
+      "listColumns": [
+        "daily_log_id",
+        "company_id",
+        "workers",
+        "hours",
+        "work_area"
+      ],
+      "fields": {
+        "activity_notes": {
+          "widget": "textarea"
+        },
+        "workers": {
+          "defaultValue": 0
+        }
+      }
+    },
+    "time_entries": {
+      "label": "Timesheets",
+      "singular": "Time entry",
+      "icon": "schedule",
+      "defaultSort": "work_date|DESC",
+      "listColumns": [
+        "work_date",
+        "contact_id",
+        "project_id",
+        "cost_code_id",
+        "regular_hours",
+        "overtime_hours",
+        "approval"
+      ],
+      "fields": {
+        "approval": {
+          "widget": "select",
+          "options": [
+            "submitted",
+            "approved",
+            "rejected"
+          ],
+          "colors": {
+            "approved": "success",
+            "rejected": "error",
+            "submitted": "warning"
+          },
+          "defaultValue": "submitted"
+        }
+      }
+    },
+    "rfis": {
+      "label": "RFIs",
+      "singular": "RFI",
+      "icon": "help_center",
+      "displayField": "rfi_number",
+      "defaultSort": "createdAt|DESC",
+      "listColumns": [
+        "rfi_number",
+        "subject",
+        "project_id",
+        "assigned_company_id",
+        "date_due",
+        "cost_impact",
+        "status"
+      ],
+      "formFields": [
+        "project_id",
+        "rfi_number",
+        "subject",
+        "question",
+        "suggested_answer",
+        "drawing_ref",
+        "spec_section_id",
+        "submitted_by_company_id",
+        "assigned_company_id",
+        "date_sent",
+        "date_due",
+        "date_answered",
+        "official_answer",
+        "cost_impact",
+        "schedule_impact",
+        "status"
+      ],
+      "children": [
+        "change_events"
+      ],
+      "fields": {
+        "question": {
+          "widget": "textarea"
+        },
+        "suggested_answer": {
+          "widget": "textarea"
+        },
+        "official_answer": {
+          "widget": "textarea"
+        },
+        "assigned_company_id": {
+          "label": "Ball in court"
+        },
+        "submitted_by_company_id": {
+          "label": "Raised by"
+        },
+        "cost_impact": {
+          "widget": "select",
+          "options": [
+            "unknown",
+            "none",
+            "yes"
+          ],
+          "colors": {
+            "yes": "error",
+            "none": "success"
+          }
+        },
+        "schedule_impact": {
+          "widget": "select",
+          "options": [
+            "unknown",
+            "none",
+            "yes"
+          ],
+          "colors": {
+            "yes": "error",
+            "none": "success"
+          }
+        },
+        "status": {
+          "widget": "select",
+          "options": [
+            "draft",
+            "open",
+            "answered",
+            "closed",
+            "void"
+          ],
+          "colors": {
+            "draft": "default",
+            "open": "warning",
+            "answered": "info",
+            "closed": "success"
+          },
+          "defaultValue": "draft"
+        }
+      }
+    },
+    "submittals": {
+      "icon": "fact_check",
+      "displayField": "submittal_number",
+      "listColumns": [
+        "submittal_number",
+        "title",
+        "project_id",
+        "spec_section_id",
+        "company_id",
+        "date_due",
+        "status"
+      ],
+      "children": [
+        "submittal_reviews"
+      ],
+      "fields": {
+        "submittal_type": {
+          "widget": "select",
+          "options": [
+            "product_data",
+            "shop_drawings",
+            "samples",
+            "mockup",
+            "certificates",
+            "calculations",
+            "closeout"
+          ]
+        },
+        "review_notes": {
+          "widget": "textarea"
+        },
+        "status": {
+          "widget": "select",
+          "options": [
+            "pending",
+            "with_architect",
+            "approved",
+            "approved_as_noted",
+            "revise_resubmit",
+            "rejected"
+          ],
+          "colors": {
+            "approved": "success",
+            "approved_as_noted": "success",
+            "revise_resubmit": "warning",
+            "rejected": "error",
+            "with_architect": "info"
+          },
+          "defaultValue": "pending"
+        }
+      }
+    },
+    "submittal_reviews": {
+      "label": "Submittal Reviews",
+      "singular": "Review item",
+      "icon": "grading",
+      "listColumns": [
+        "submittal_id",
+        "spec_requirement",
+        "submitted_value",
+        "compliance",
+        "page_ref"
+      ],
+      "fields": {
+        "compliance": {
+          "widget": "select",
+          "options": [
+            "complies",
+            "deviates",
+            "missing",
+            "unclear"
+          ],
+          "colors": {
+            "complies": "success",
+            "deviates": "error",
+            "missing": "error",
+            "unclear": "warning"
+          },
+          "defaultValue": "unclear"
+        },
+        "comment": {
+          "widget": "textarea"
+        }
+      }
+    },
+    "inspections": {
+      "icon": "verified",
+      "listColumns": [
+        "project_id",
+        "inspection_type",
+        "agency",
+        "area",
+        "scheduled_date",
+        "result"
+      ],
+      "fields": {
+        "result": {
+          "widget": "select",
+          "options": [
+            "scheduled",
+            "passed",
+            "failed",
+            "partial",
+            "cancelled"
+          ],
+          "colors": {
+            "passed": "success",
+            "failed": "error",
+            "partial": "warning"
+          },
+          "defaultValue": "scheduled"
+        },
+        "findings": {
+          "widget": "textarea"
+        }
+      }
+    },
+    "punch_items": {
+      "label": "Punch List",
+      "singular": "Punch item",
+      "icon": "playlist_add_check",
+      "listColumns": [
+        "project_id",
+        "location",
+        "description",
+        "company_id",
+        "priority",
+        "due_date",
+        "status"
+      ],
+      "fields": {
+        "company_id": {
+          "label": "Responsible"
+        },
+        "priority": {
+          "widget": "select",
+          "options": [
+            "low",
+            "normal",
+            "high"
+          ],
+          "colors": {
+            "high": "error"
+          }
+        },
+        "status": {
+          "widget": "select",
+          "options": [
+            "open",
+            "ready_for_review",
+            "closed"
+          ],
+          "colors": {
+            "open": "warning",
+            "ready_for_review": "info",
+            "closed": "success"
+          },
+          "defaultValue": "open"
+        }
+      }
+    },
+    "safety_incidents": {
+      "label": "Safety",
+      "singular": "Incident",
+      "icon": "health_and_safety",
+      "defaultSort": "incident_date|DESC",
+      "listColumns": [
+        "incident_date",
+        "project_id",
+        "incident_type",
+        "severity",
+        "company_id",
+        "is_osha_recordable",
+        "status"
+      ],
+      "fields": {
+        "incident_type": {
+          "widget": "select",
+          "options": [
+            "near_miss",
+            "first_aid",
+            "injury",
+            "property_damage",
+            "observation",
+            "violation"
+          ]
+        },
+        "severity": {
+          "widget": "select",
+          "options": [
+            "minor",
+            "moderate",
+            "serious",
+            "critical"
+          ],
+          "colors": {
+            "serious": "error",
+            "critical": "error",
+            "moderate": "warning"
+          },
+          "defaultValue": "minor"
+        },
+        "is_osha_recordable": {
+          "widget": "checkbox",
+          "label": "OSHA recordable",
+          "defaultValue": 0
+        },
+        "description": {
+          "widget": "textarea"
+        },
+        "root_cause": {
+          "widget": "textarea"
+        },
+        "corrective_action": {
+          "widget": "textarea"
+        },
+        "status": {
+          "widget": "select",
+          "options": [
+            "open",
+            "investigating",
+            "closed"
+          ],
+          "colors": {
+            "open": "warning",
+            "closed": "success"
+          },
+          "defaultValue": "open"
+        }
+      }
+    },
+    "meetings": {
+      "icon": "groups_3",
+      "displayField": "meeting_date",
+      "defaultSort": "meeting_date|DESC",
+      "listColumns": [
+        "meeting_date",
+        "project_id",
+        "meeting_type",
+        "location"
+      ],
+      "children": [
+        "action_items"
+      ],
+      "fields": {
+        "meeting_type": {
+          "widget": "select",
+          "options": [
+            "oac",
+            "subcontractor",
+            "preconstruction",
+            "safety",
+            "coordination",
+            "closeout"
+          ],
+          "label": "Type"
+        },
+        "attendees": {
+          "widget": "textarea"
+        },
+        "minutes": {
+          "widget": "textarea",
+          "label": "Minutes / notes",
+          "help": "Paste notes, then run Extract action items"
+        }
+      }
+    },
+    "action_items": {
+      "label": "Action Items",
+      "singular": "Action item",
+      "icon": "task_alt",
+      "listColumns": [
+        "meeting_id",
+        "description",
+        "company_id",
+        "due_date",
+        "status"
+      ],
+      "fields": {
+        "company_id": {
+          "label": "Owner"
+        },
+        "status": {
+          "widget": "select",
+          "options": [
+            "open",
+            "done",
+            "dropped"
+          ],
+          "colors": {
+            "open": "warning",
+            "done": "success"
+          },
+          "defaultValue": "open"
+        }
+      }
+    },
+    "budget_lines": {
+      "label": "Budget",
+      "singular": "Budget line",
+      "icon": "account_balance",
+      "displayField": "description",
+      "listColumns": [
+        "project_id",
+        "cost_code_id",
+        "original_budget",
+        "approved_changes",
+        "committed_cost",
+        "actual_cost",
+        "forecast_to_complete"
+      ],
+      "fields": {
+        "original_budget": {
+          "widget": "currency",
+          "label": "Original"
+        },
+        "approved_changes": {
+          "widget": "currency",
+          "label": "Approved changes"
+        },
+        "committed_cost": {
+          "widget": "currency",
+          "label": "Committed"
+        },
+        "actual_cost": {
+          "widget": "currency",
+          "label": "Actual"
+        },
+        "forecast_to_complete": {
+          "widget": "currency",
+          "label": "Forecast to complete"
+        }
+      }
+    },
+    "subcontracts": {
+      "icon": "handshake",
+      "displayField": "contract_number",
+      "listColumns": [
+        "contract_number",
+        "company_id",
+        "project_id",
+        "original_amount",
+        "approved_cos",
+        "status",
+        "insurance_verified"
+      ],
+      "children": [
+        "subcontract_items",
+        "change_orders",
+        "pay_applications"
+      ],
+      "fields": {
+        "contract_number": {
+          "label": "Contract #"
+        },
+        "original_amount": {
+          "widget": "currency",
+          "label": "Original"
+        },
+        "approved_cos": {
+          "widget": "currency",
+          "label": "Approved COs"
+        },
+        "retainage_pct": {
+          "label": "Retainage %"
+        },
+        "insurance_verified": {
+          "widget": "checkbox",
+          "label": "COI verified",
+          "defaultValue": 0
+        },
+        "scope_of_work": {
+          "widget": "textarea"
+        },
+        "status": {
+          "widget": "select",
+          "options": [
+            "draft",
+            "out_for_signature",
+            "executed",
+            "complete",
+            "terminated"
+          ],
+          "colors": {
+            "executed": "success",
+            "out_for_signature": "info",
+            "terminated": "error"
+          },
+          "defaultValue": "draft"
+        }
+      }
+    },
+    "subcontract_items": {
+      "label": "Schedule of Values",
+      "singular": "SOV line",
+      "icon": "format_list_numbered",
+      "listColumns": [
+        "subcontract_id",
+        "cost_code_id",
+        "description",
+        "scheduled_value"
+      ],
+      "fields": {
+        "scheduled_value": {
+          "widget": "currency"
+        }
+      }
+    },
+    "purchase_orders": {
+      "label": "Purchase Orders",
+      "singular": "Purchase order",
+      "icon": "shopping_cart",
+      "displayField": "po_number",
+      "listColumns": [
+        "po_number",
+        "company_id",
+        "project_id",
+        "cost_code_id",
+        "amount",
+        "delivery_date",
+        "status"
+      ],
+      "fields": {
+        "po_number": {
+          "label": "PO #"
+        },
+        "amount": {
+          "widget": "currency"
+        },
+        "status": {
+          "widget": "select",
+          "options": [
+            "draft",
+            "issued",
+            "partially_received",
+            "received",
+            "closed"
+          ],
+          "colors": {
+            "issued": "info",
+            "received": "success"
+          },
+          "defaultValue": "draft"
+        }
+      }
+    },
+    "change_events": {
+      "label": "Change Events",
+      "singular": "Change event",
+      "icon": "bolt",
+      "displayField": "title",
+      "description": "Potential changes before they become change orders",
+      "listColumns": [
+        "event_number",
+        "title",
+        "project_id",
+        "origin",
+        "estimated_cost",
+        "estimated_days",
+        "status"
+      ],
+      "children": [
+        "change_orders"
+      ],
+      "fields": {
+        "origin": {
+          "widget": "select",
+          "options": [
+            "owner_request",
+            "design_error",
+            "unforeseen_condition",
+            "rfi",
+            "code_requirement",
+            "value_engineering",
+            "allowance"
+          ]
+        },
+        "estimated_cost": {
+          "widget": "currency",
+          "label": "Est. cost"
+        },
+        "description": {
+          "widget": "textarea"
+        },
+        "status": {
+          "widget": "select",
+          "options": [
+            "open",
+            "pricing",
+            "submitted",
+            "approved",
+            "rejected",
+            "void"
+          ],
+          "colors": {
+            "approved": "success",
+            "rejected": "error",
+            "pricing": "info",
+            "submitted": "warning"
+          },
+          "defaultValue": "open"
+        }
+      }
+    },
+    "change_orders": {
+      "label": "Change Orders",
+      "singular": "Change order",
+      "icon": "swap_horiz",
+      "displayField": "co_number",
+      "listColumns": [
+        "co_number",
+        "title",
+        "project_id",
+        "co_type",
+        "amount",
+        "days_added",
+        "status"
+      ],
+      "children": [
+        "change_order_lines"
+      ],
+      "fields": {
+        "co_number": {
+          "label": "CO #"
+        },
+        "co_type": {
+          "widget": "select",
+          "options": [
+            "prime",
+            "subcontract"
+          ],
+          "label": "Type",
+          "defaultValue": "prime"
+        },
+        "amount": {
+          "widget": "currency"
+        },
+        "justification": {
+          "widget": "textarea"
+        },
+        "status": {
+          "widget": "select",
+          "options": [
+            "draft",
+            "submitted",
+            "approved",
+            "rejected",
+            "void"
+          ],
+          "colors": {
+            "approved": "success",
+            "rejected": "error",
+            "submitted": "info"
+          },
+          "defaultValue": "draft"
+        }
+      }
+    },
+    "change_order_lines": {
+      "label": "CO Lines",
+      "singular": "CO line",
+      "icon": "list_alt",
+      "listColumns": [
+        "change_order_id",
+        "cost_code_id",
+        "description",
+        "cost_type",
+        "quantity",
+        "unit",
+        "unit_cost",
+        "markup_pct",
+        "amount"
+      ],
+      "fields": {
+        "cost_type": {
+          "widget": "select",
+          "options": [
+            "labor",
+            "material",
+            "equipment",
+            "subcontract",
+            "general_conditions",
+            "fee"
+          ]
+        },
+        "unit_cost": {
+          "widget": "currency"
+        },
+        "amount": {
+          "widget": "currency"
+        },
+        "markup_pct": {
+          "label": "Markup %"
+        }
+      }
+    },
+    "pay_applications": {
+      "label": "Pay Apps",
+      "singular": "Pay app",
+      "icon": "receipt_long",
+      "displayField": "app_number",
+      "description": "Sub requisitions in, owner requisitions out. Attach the G702/G703, then run Check pay app.",
+      "listColumns": [
+        "project_id",
+        "subcontract_id",
+        "app_number",
+        "period_to",
+        "work_completed",
+        "retainage_held",
+        "amount_due",
+        "status"
+      ],
+      "children": [
+        "pay_app_lines",
+        "lien_waivers"
+      ],
+      "fields": {
+        "app_number": {
+          "label": "App #"
+        },
+        "pay_direction": {
+          "widget": "select",
+          "options": [
+            "sub_to_gc",
+            "gc_to_owner"
+          ],
+          "label": "Direction",
+          "defaultValue": "sub_to_gc"
+        },
+        "scheduled_value": {
+          "widget": "currency"
+        },
+        "work_completed": {
+          "widget": "currency",
+          "label": "Completed to date"
+        },
+        "stored_materials": {
+          "widget": "currency"
+        },
+        "retainage_held": {
+          "widget": "currency",
+          "label": "Retainage"
+        },
+        "amount_due": {
+          "widget": "currency",
+          "label": "Amount due"
+        },
+        "review_notes": {
+          "widget": "textarea"
+        },
+        "status": {
+          "widget": "select",
+          "options": [
+            "received",
+            "under_review",
+            "revise",
+            "approved",
+            "paid"
+          ],
+          "colors": {
+            "approved": "success",
+            "paid": "success",
+            "revise": "error",
+            "under_review": "warning"
+          },
+          "defaultValue": "received"
+        }
+      }
+    },
+    "pay_app_lines": {
+      "label": "Pay App Lines",
+      "singular": "Pay app line",
+      "icon": "table_rows",
+      "listColumns": [
+        "pay_application_id",
+        "description",
+        "scheduled_value",
+        "previous_completed",
+        "this_period",
+        "percent_complete",
+        "flag"
+      ],
+      "fields": {
+        "scheduled_value": {
+          "widget": "currency"
+        },
+        "previous_completed": {
+          "widget": "currency",
+          "label": "Previous"
+        },
+        "this_period": {
+          "widget": "currency",
+          "label": "This period"
+        },
+        "stored_materials": {
+          "widget": "currency"
+        },
+        "percent_complete": {
+          "label": "% complete"
+        },
+        "flag": {
+          "label": "⚠ Flag"
+        }
+      }
+    },
+    "lien_waivers": {
+      "label": "Lien Waivers",
+      "singular": "Lien waiver",
+      "icon": "gavel",
+      "listColumns": [
+        "company_id",
+        "pay_application_id",
+        "waiver_type",
+        "through_date",
+        "amount",
+        "status"
+      ],
+      "fields": {
+        "waiver_type": {
+          "widget": "select",
+          "options": [
+            "conditional_progress",
+            "unconditional_progress",
+            "conditional_final",
+            "unconditional_final"
+          ]
+        },
+        "amount": {
+          "widget": "currency"
+        },
+        "status": {
+          "widget": "select",
+          "options": [
+            "requested",
+            "received",
+            "rejected"
+          ],
+          "colors": {
+            "received": "success",
+            "requested": "warning",
+            "rejected": "error"
+          },
+          "defaultValue": "requested"
+        }
+      }
+    },
+    "invoices": {
+      "icon": "request_page",
+      "displayField": "invoice_number",
+      "listColumns": [
+        "invoice_number",
+        "company_id",
+        "project_id",
+        "cost_code_id",
+        "invoice_date",
+        "amount",
+        "status"
+      ],
+      "fields": {
+        "amount": {
+          "widget": "currency"
+        },
+        "status": {
+          "widget": "select",
+          "options": [
+            "received",
+            "coded",
+            "approved",
+            "paid",
+            "disputed"
+          ],
+          "colors": {
+            "paid": "success",
+            "approved": "info",
+            "disputed": "error"
+          },
+          "defaultValue": "received"
+        }
+      }
+    },
+    "closeout_items": {
+      "label": "Closeout Log",
+      "singular": "Closeout item",
+      "icon": "inventory",
+      "listColumns": [
+        "project_id",
+        "item_type",
+        "description",
+        "company_id",
+        "spec_section_id",
+        "due_date",
+        "status"
+      ],
+      "fields": {
+        "item_type": {
+          "widget": "select",
+          "options": [
+            "om_manual",
+            "warranty",
+            "as_built",
+            "attic_stock",
+            "training",
+            "certificate",
+            "final_inspection",
+            "keys",
+            "other"
+          ],
+          "label": "Type"
+        },
+        "status": {
+          "widget": "select",
+          "options": [
+            "required",
+            "requested",
+            "received",
+            "approved",
+            "turned_over"
+          ],
+          "colors": {
+            "required": "default",
+            "requested": "warning",
+            "received": "info",
+            "approved": "success",
+            "turned_over": "success"
+          },
+          "defaultValue": "required"
+        }
+      }
+    },
+    "warranties": {
+      "icon": "workspace_premium",
+      "displayField": "system_name",
+      "listColumns": [
+        "system_name",
+        "project_id",
+        "company_id",
+        "manufacturer",
+        "start_date",
+        "end_date"
+      ],
+      "children": [
+        "warranty_claims"
+      ],
+      "fields": {
+        "coverage": {
+          "widget": "textarea"
+        }
+      }
+    },
+    "warranty_claims": {
+      "label": "Warranty Claims",
+      "singular": "Warranty claim",
+      "icon": "report_problem",
+      "listColumns": [
+        "warranty_id",
+        "reported_date",
+        "issue",
+        "status"
+      ],
+      "fields": {
+        "issue": {
+          "widget": "textarea"
+        },
+        "resolution": {
+          "widget": "textarea"
+        },
+        "status": {
+          "widget": "select",
+          "options": [
+            "reported",
+            "dispatched",
+            "resolved",
+            "denied"
+          ],
+          "colors": {
+            "resolved": "success",
+            "denied": "error",
+            "reported": "warning"
+          },
+          "defaultValue": "reported"
+        }
+      }
+    }
+  },
+  "ai": {
+    "enabled": true,
+    "model": "claude-sonnet-5-5",
+    "assistantName": "Site Brain",
+    "instructions": "You work for a commercial general contractor. Users are estimators, project managers, superintendents, project accountants, subcontractors and owner reps. Drawings, specifications (CSI MasterFormat), bids, submittals, pay applications (AIA G702/G703), meeting notes and contracts are uploaded as files. Quote specs, drawings and contracts exactly and cite file + page. Use CSI section numbers (e.g. 09 21 16) and construction vocabulary. When numbers are involved (bids, budgets, pay apps, change orders) compute from the records rather than estimating, show the math briefly, and flag over-billing, scope gaps, missing lien waivers, expired insurance and late RFIs/submittals. Never invent quantities, prices, code sections or spec language; say what is missing instead. You are not a licensed engineer or attorney: flag structural, life-safety and legal questions for the design team or counsel.",
+    "documentTables": [
+      "documents",
+      "bids",
+      "submittals",
+      "pay_applications",
+      "change_events",
+      "daily_logs",
+      "meetings"
+    ],
+    "tools": [
+      "documents",
+      "records"
+    ],
+    "suggestions": [
+      "Which bid packages are still missing bids, and who hasn't responded?",
+      "What does spec section 07 92 00 require for sealant submittals?",
+      "Show budget vs committed vs forecast by cost code for my active job",
+      "Which RFIs and submittals are overdue, and whose court are they in?",
+      "Which subs have expired insurance or missing lien waivers?"
+    ],
+    "workflows": [
+      {
+        "id": "spec_to_scope",
+        "label": "Build bid packages from specs",
+        "table": "documents",
+        "when": {
+          "document_type": "specifications"
+        },
+        "description": "Reads the project manual and creates spec sections, trade bid packages with scope sheets, and the closeout log.",
+        "targets": [
+          "spec_sections",
+          "trade_packages",
+          "scope_items",
+          "closeout_items"
+        ],
+        "tools": [
+          "documents",
+          "records"
+        ],
+        "inherit": {
+          "project_id": "project_id",
+          "document_id": "document_id"
+        },
+        "instructions": "Read the attached specification book (project manual).\n1. Create one spec_sections row per section in Divisions 02-33 (document_id is filled from this record): section_number as printed (e.g. '09 21 16'), title, csi_division (2 digits), summary (2-3 sentences of the work), submittals_required (list from Part 1 Submittals), page_ref.\n2. Group sections into trade_packages the way a GC buys out work (e.g. Concrete, Masonry, Structural Steel, Roofing, Doors/Frames/Hardware, Drywall & ACT, Painting, Plumbing, HVAC, Electrical, Earthwork). package_number BP-01.., name, spec_sections_covered (comma list), status 'scoping', scope_narrative (one paragraph). Use the records tool to set cost_code_id to the matching cost_codes row when one exists.\n3. For each package create scope_items (trade_package_id='@<package ref>', spec_section_id='@<section ref>'): item_no 1..n, description of a discrete inclusion a sub must price, scope_category ('included', 'excluded', 'by_others', 'alternate', 'allowance', 'unit_price'), quantity/unit only when the spec states them, source_ref = section + paragraph. Explicitly capture commonly-missed items: mockups, testing, warranties, cleanup, hoisting, layout, firestopping, sealants at own work.\n4. For each closeout requirement in Part 1 (warranties, O&M data, attic stock, training, as-builts, certificates) create a closeout_items row (spec_section_id='@<section ref>', item_type, description, status 'required').\nUse only what the specifications say."
+      },
+      {
+        "id": "extract_bid",
+        "label": "Extract bid & find gaps",
+        "table": "bids",
+        "description": "Reads the attached sub proposal, itemizes it, and compares it with the package scope sheet to list gaps and exclusions.",
+        "targets": [
+          "bid_line_items",
+          "scope_gaps"
+        ],
+        "tools": [
+          "documents",
+          "records"
+        ],
+        "inherit": {
+          "bid_id": "bid_id"
+        },
+        "instructions": "1. Read the bid PDF attached to this bid record.\n2. Create bid_line_items for every priced line, alternate, allowance, unit price and listed exclusion/clarification: description, quantity, unit, unit_price, amount, inclusion ('included', 'excluded', 'alternate', 'allowance', 'clarification'). Set scope_item_id to the matching scope_items row of this bid's trade package (records tool) when it clearly corresponds.\n3. Compare against every scope_items row of this bid's trade_package with scope_category 'included'. For each one the bid does not clearly cover, excludes, qualifies, or prices with a quantity below the scope quantity, create a scope_gaps row: scope_item_id, gap_type ('missing', 'excluded', 'qualified', 'quantity_short', 'price_outlier'), description (what and why, cite the bid page), plug_amount only if it can be computed from another bid's line for the same scope item (say which in notes), resolution 'open'.\nDo not invent prices."
+      },
+      {
+        "id": "level_bids",
+        "label": "Level all bids",
+        "table": "trade_packages",
+        "description": "Compares every bid on this package line by line and records gaps and price outliers so bids can be leveled.",
+        "targets": [
+          "scope_gaps"
+        ],
+        "tools": [
+          "records"
+        ],
+        "instructions": "Using the records tool, read this trade package's scope_items, its bids and every bid_line_items row.\n1. For each bid and each included scope item that bid does not cover (no matching line, or an 'excluded' line), create scope_gaps (bid_id = that bid's id, scope_item_id, gap_type 'missing' or 'excluded') with plug_amount = the median amount other bids carry for that scope item when at least one other bid covers it.\n2. For lines priced more than 40% above or below the median of the other bids for the same scope item, create gap_type 'price_outlier' with the comparison in description.\n3. Skip gaps that already exist (same bid_id + scope_item_id + gap_type). In the last gap's notes, summarize each bidder's leveled total = base_amount + sum of open plug_amounts."
+      },
+      {
+        "id": "review_submittal",
+        "label": "Review submittal against spec",
+        "table": "submittals",
+        "description": "Checks the attached product data or shop drawings against the governing spec section and lists every requirement with compliance.",
+        "targets": [
+          "submittal_reviews"
+        ],
+        "tools": [
+          "documents",
+          "records"
+        ],
+        "inherit": {
+          "submittal_id": "submittal_id"
+        },
+        "instructions": "Read the submittal file attached to this record, and the governing spec section (this submittal's spec_section_id; search the uploaded specifications for that section number).\nCreate one submittal_reviews row per concrete Part 2 Products / Part 1 Submittals requirement: spec_requirement (quoted or tightly paraphrased, with paragraph), submitted_value (what the submittal shows, cite page), compliance ('complies', 'deviates', 'missing', 'unclear'), comment (what the reviewer should do), page_ref.\nInclude manufacturer/basis-of-design, performance values, finishes/colors, warranty terms and required certifications. Never mark 'complies' without evidence in the submittal."
+      },
+      {
+        "id": "rfis_from_drawings",
+        "label": "Find conflicts & draft RFIs",
+        "table": "documents",
+        "when": {
+          "document_type": "drawings"
+        },
+        "description": "Reviews the drawing set (and specs on file) for conflicts, missing dimensions or unclear details and drafts RFIs.",
+        "targets": [
+          "rfis"
+        ],
+        "tools": [
+          "documents",
+          "records"
+        ],
+        "inherit": {
+          "project_id": "project_id"
+        },
+        "instructions": "Review the attached drawings, plus the project's specifications if uploaded. Look for: conflicts between sheets or between drawings and specs, missing dimensions/elevations, undefined details or callouts that point to non-existent sheets, MEP/structural clashes visible on plans, products specified differently in two places.\nFor each real issue create an rfis row: rfi_number 'DRAFT-01'.., subject, question (clear, one issue, cites sheet/detail numbers), suggested_answer (the GC's proposed resolution if obvious), drawing_ref, spec_section_id when a spec section applies (records tool), cost_impact/schedule_impact 'unknown', status 'draft'. Use the records tool to skip issues already covered by existing RFIs. Max 15."
+      },
+      {
+        "id": "check_pay_app",
+        "label": "Check pay app",
+        "table": "pay_applications",
+        "description": "Reads the attached G702/G703, records each SOV line, and flags over-billing against the subcontract, schedule progress and retainage terms.",
+        "targets": [
+          "pay_app_lines",
+          "lien_waivers"
+        ],
+        "tools": [
+          "documents",
+          "records"
+        ],
+        "inherit": {
+          "pay_application_id": "pay_application_id"
+        },
+        "instructions": "1. Read the attached pay application (AIA G702/G703 or equivalent).\n2. Create a pay_app_lines row per continuation-sheet line: description, scheduled_value, previous_completed, this_period, stored_materials, percent_complete; subcontract_item_id = the matching subcontract_items row of this pay app's subcontract (records tool).\n3. Set flag (short text) on a line when: scheduled_value differs from the subcontract SOV; percent_complete exceeds 100; percent_complete is well ahead of the related schedule_activities percent_complete; stored materials lack backup; math on the line does not add up. Leave flag empty when fine.\n4. If no lien_waivers row exists yet for this pay application, create one (company_id = the subcontract's company, waiver_type 'conditional_progress', through_date = period_to, amount = amount due, status 'requested')."
+      },
+      {
+        "id": "price_change",
+        "label": "Price change event",
+        "table": "change_events",
+        "description": "Builds a draft change order with cost lines from the change event, the RFI behind it and any attached quotes.",
+        "targets": [
+          "change_orders",
+          "change_order_lines"
+        ],
+        "tools": [
+          "documents",
+          "records"
+        ],
+        "inherit": {
+          "project_id": "project_id",
+          "change_event_id": "change_event_id"
+        },
+        "instructions": "Read this change event, its RFI (if any), and attached files (sub quotes, sketches).\n1. Create one change_orders row: co_number 'PCO-<event_number>', co_type 'prime', title, status 'draft', days_added if the quotes state time, justification (contract basis: owner request, unforeseen condition, design change; cite the RFI/quote), amount = sum of lines.\n2. Create change_order_lines (change_order_id='@<co ref>'): one per quoted cost with cost_code_id (records tool), cost_type, quantity, unit, unit_cost, amount, markup_pct 0. Then add a general_conditions line if time is added and a 'fee' line using the project's typical markup only if it is stated in the contract documents on file; otherwise leave fee out and say so in justification.\nOnly use costs from attached quotes or existing records."
+      },
+      {
+        "id": "process_daily_log",
+        "label": "Process daily log",
+        "table": "daily_logs",
+        "description": "Turns the superintendent's notes into manpower entries, punch items and safety incidents.",
+        "targets": [
+          "daily_log_crews",
+          "punch_items",
+          "safety_incidents"
+        ],
+        "tools": [
+          "records",
+          "documents"
+        ],
+        "inherit": {
+          "daily_log_id": "daily_log_id"
+        },
+        "instructions": "Read this daily log's work_performed, delays, visitors and deliveries text (and any attached notes/photos).\n1. For each company/trade on site create daily_log_crews: company_id = the matching companies row (records tool; skip if none matches), workers, hours if stated, work_area, activity_notes.\n2. For each deficiency or incomplete work called out create punch_items: project_id = this log's project_id, location, description, company_id responsible when clear, priority, status 'open'.\n3. For each injury, near miss, damage or safety violation mentioned create safety_incidents: project_id = this log's project_id, incident_date = log_date, incident_type, severity, description, status 'open'.\nUse only what the notes say."
+      },
+      {
+        "id": "meeting_actions",
+        "label": "Extract action items",
+        "table": "meetings",
+        "description": "Pulls owners, tasks and due dates out of the meeting minutes.",
+        "targets": [
+          "action_items"
+        ],
+        "tools": [
+          "records",
+          "documents"
+        ],
+        "inherit": {
+          "meeting_id": "meeting_id"
+        },
+        "instructions": "Read this meeting's minutes (and any attached notes). Create one action_items row per commitment: description (verb first), company_id of the responsible party (match companies by name via records), due_date when stated (resolve relative dates against meeting_date), status 'open'."
+      }
+    ]
+  }
+}
