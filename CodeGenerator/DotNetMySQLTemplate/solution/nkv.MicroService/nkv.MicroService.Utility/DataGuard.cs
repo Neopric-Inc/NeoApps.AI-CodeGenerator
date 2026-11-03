@@ -271,6 +271,7 @@ namespace nkv.MicroService.Utility
         public static MySqlCommand Apply(MySqlCommand cmd)
         {
             if (!Ready || cmd == null || _applied.TryGetValue(cmd, out _)) return cmd;
+            ApiHardening.ClampLimit(cmd); // no request can read more than Api:MaxPageSize rows at once
             var caller = Current;
             if (caller == null) return cmd;
             if (caller.Unassigned && TouchesData(cmd.CommandText))

@@ -447,9 +447,7 @@ namespace {projectName}.DataAccess.Impl
                         }
                     }
                     
-                    Console.WriteLine("==================================================");
-                    Console.WriteLine("SQL Command : " + cmd.CommandText);
-                    Console.WriteLine("==================================================");
+                    ApiHardening.Sql("SQL Command : " + cmd.CommandText);
 
                     using (var reader = DataGuard.Apply(cmd).ExecuteReader())
                         while (reader.Read())
@@ -526,17 +524,13 @@ namespace {projectName}.DataAccess.Impl
                         }
                     }
                     
-                    Console.WriteLine("==================================================");
-                    Console.WriteLine("SQL Command : " + cmd.CommandText);
-                    Console.WriteLine("==================================================");
+                    ApiHardening.Sql("SQL Command : " + cmd.CommandText);
 
 
                     using (var reader = DataGuard.Apply(cmd).ExecuteReader())
                         while (reader.Read())
                         {
-                            Console.WriteLine("==================================================");
-                            Console.WriteLine("reader.GetInt32('TotalRecord') : " + reader.GetInt32("TotalRecord"));
-                            Console.WriteLine("==================================================");
+                            ApiHardening.Sql("reader.GetInt32('TotalRecord') : " + reader.GetInt32("TotalRecord"));
 
                             return reader.GetInt32("TotalRecord");
                         }

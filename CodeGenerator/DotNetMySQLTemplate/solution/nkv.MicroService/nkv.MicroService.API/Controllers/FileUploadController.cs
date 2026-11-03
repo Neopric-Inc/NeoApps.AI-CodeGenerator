@@ -73,7 +73,7 @@ namespace nkv.MicroService.API.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new APIResponse(ResponseCode.ERROR, "Exception", ex.Message));
+                return ApiHardening.Error(this, ex);
             }
         }
         [HttpPost]
@@ -113,7 +113,7 @@ namespace nkv.MicroService.API.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new APIResponse(ResponseCode.ERROR, "Exception", ex.Message));
+                return ApiHardening.Error(this, ex);
             }
         }
     }

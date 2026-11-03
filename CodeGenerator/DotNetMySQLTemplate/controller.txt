@@ -47,7 +47,7 @@ namespace {projectName}.API.Controllers
             return Ok(Manager.Get{tableName}ByCreatedBy(ownername,page, itemsPerPage,orderModelList));
 			}catch(DataGuardException gx){ return StatusCode(gx.StatusCode, new APIResponse(ResponseCode.ERROR, gx.Message, gx.Message)); }catch(Exception ex)
             {
-                return StatusCode(500, new APIResponse(ResponseCode.ERROR, "Exception", ex.Message));
+                return ApiHardening.Error(this, ex);
             }
         }
         [CheckPermission("{tableName}", "Get")]
@@ -77,7 +77,7 @@ namespace {projectName}.API.Controllers
             return Ok(Manager.Search{tableName}ByCreatedBy(ownername,searchKey, page, itemsPerPage,orderModelList));
 			}catch(DataGuardException gx){ return StatusCode(gx.StatusCode, new APIResponse(ResponseCode.ERROR, gx.Message, gx.Message)); }catch(Exception ex)
             {
-                return StatusCode(500, new APIResponse(ResponseCode.ERROR, "Exception", ex.Message));
+                return ApiHardening.Error(this, ex);
             }
         }
         [CheckPermission("{tableName}", "Get")]
@@ -96,7 +96,7 @@ namespace {projectName}.API.Controllers
             return Ok(Manager.Get{tableName}ByIDByCreatedBy(ownername,{primaryKeyListParam}));
 			}catch(DataGuardException gx){ return StatusCode(gx.StatusCode, new APIResponse(ResponseCode.ERROR, gx.Message, gx.Message)); }catch(Exception ex)
             {
-                return StatusCode(500, new APIResponse(ResponseCode.ERROR, "Exception", ex.Message));
+                return ApiHardening.Error(this, ex);
             }
         }
 
@@ -124,7 +124,7 @@ namespace {projectName}.API.Controllers
                 return Ok(Manager.Add{tableName}WithToken(model,token));
 			}catch(DataGuardException gx){ return StatusCode(gx.StatusCode, new APIResponse(ResponseCode.ERROR, gx.Message, gx.Message)); }catch(Exception ex)
             {
-                return StatusCode(500, new APIResponse(ResponseCode.ERROR, "Exception", ex.Message));
+                return ApiHardening.Error(this, ex);
             }
         }
         [CheckPermission("{tableName}", "Put")]
@@ -153,7 +153,7 @@ namespace {projectName}.API.Controllers
             return Ok(Manager.Update{tableName}WithToken({primaryKeyListParam}, model,token));
 			}catch(DataGuardException gx){ return StatusCode(gx.StatusCode, new APIResponse(ResponseCode.ERROR, gx.Message, gx.Message)); }catch(Exception ex)
             {
-                return StatusCode(500, new APIResponse(ResponseCode.ERROR, "Exception", ex.Message));
+                return ApiHardening.Error(this, ex);
             }
         }
         [CheckPermission("{tableName}", "Delete")]
@@ -181,7 +181,7 @@ namespace {projectName}.API.Controllers
            return Ok(Manager.Delete{tableName}WithToken({primaryKeyListParam},token));
 		   }catch(DataGuardException gx){ return StatusCode(gx.StatusCode, new APIResponse(ResponseCode.ERROR, gx.Message, gx.Message)); }catch(Exception ex)
             {
-                return StatusCode(500, new APIResponse(ResponseCode.ERROR, "Exception", ex.Message));
+                return ApiHardening.Error(this, ex);
             }
         }
         [CheckPermission("{tableName}", "Delete")]
@@ -213,7 +213,7 @@ namespace {projectName}.API.Controllers
                 return Ok(Manager.DeleteMultiple{tableName}WithToken(deleteParam, andOr.ToUpper(),token));
             }catch(DataGuardException gx){ return StatusCode(gx.StatusCode, new APIResponse(ResponseCode.ERROR, gx.Message, gx.Message)); }catch(Exception ex)
             {
-                return StatusCode(500, new APIResponse(ResponseCode.ERROR, "Exception", ex.Message));
+                return ApiHardening.Error(this, ex);
             }
         }
         [CheckPermission("{tableName}", "Post")]
@@ -251,7 +251,7 @@ namespace {projectName}.API.Controllers
                 return Ok(Manager.Filter{tableName}(ownername,filterColumnList, andOr, page, itemsPerPage, orderModelList));
             }catch(DataGuardException gx){ return StatusCode(gx.StatusCode, new APIResponse(ResponseCode.ERROR, gx.Message, gx.Message)); }catch(Exception ex)
             {
-                return StatusCode(500, new APIResponse(ResponseCode.ERROR, "Exception", ex.Message));
+                return ApiHardening.Error(this, ex);
             }
         }
     }

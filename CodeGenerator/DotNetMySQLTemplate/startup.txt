@@ -19,6 +19,7 @@ using Microsoft.OpenApi;
 using RabbitMQ.Client;
 using System.Collections.Generic;
 using System;
+using System.Linq;
 using {projectName}.API.Attributes;
 using StackExchange.Redis;
 
@@ -54,12 +55,15 @@ namespace {projectName}.API
                 });
              services.AddCors(options =>
             {
+                // Cors:AllowedOrigins (comma separated, written by neoapps for the generated UI); any origin only in Development
+                var origins = ApiHardening.AllowedOrigins(Configuration);
                 options.AddPolicy("AllowAllHeaders",
                    builder =>
                    {
-                       builder.AllowAnyOrigin()
-                  .AllowAnyHeader()
-                  .AllowAnyMethod();
+                       builder.AllowAnyHeader().AllowAnyMethod().WithExposedHeaders("X-Correlation-Id");
+                       if (origins.Length > 0) builder.WithOrigins(origins);
+                       else if (ApiHardening.IsDevelopment) builder.AllowAnyOrigin();
+                       else builder.SetIsOriginAllowed(_ => false);
                    });
             });
             services.AddSingleton<IConnectionMultiplexer>(x =>
@@ -127,11 +131,16 @@ namespace {projectName}.API
                 app.UseDeveloperExceptionPage();
             }
 
-            app.UseSwagger();
-            app.UseSwaggerUI(c =>
+            ApiHardening.Configure(Configuration);
+            app.Use((ctx, next) => ApiHardening.Middleware(ctx, () => next()));
+            if (env.IsDevelopment() || Configuration.GetValue("Swagger:Enabled", false))
             {
-                c.SwaggerEndpoint("/swagger/v1/swagger.json", "{projectName}");
-            });
+                app.UseSwagger();
+                app.UseSwaggerUI(c =>
+                {
+                    c.SwaggerEndpoint("/swagger/v1/swagger.json", "{projectName}");
+                });
+            }
 
             // Data rules (tenancy, lifecycle, audit/outbox, read-only data) enforced on every generated query: see Utility/DataGuard*.cs
             {projectName}.Utility.DataGuard.Init(app.ApplicationServices.GetService<IHttpContextAccessor>(),
@@ -156,6 +165,20 @@ namespace {projectName}.API
             {
                 endpoints.MapControllers();
                 endpoints.MapGet("/health", () => Results.Ok(new { status = "ok" }));
+                // readiness: the API can reach its database, cache and message broker
+                endpoints.MapGet("/health/ready", async (IConnectionMultiplexer redis) =>
+                {
+                    var checks = new Dictionary<string, string>();
+                    try { using var c = new MySqlConnector.MySqlConnection(Configuration.GetConnectionString("MySQLDatabase")); await c.OpenAsync(); using var q = new MySqlConnector.MySqlCommand("SELECT 1", c); await q.ExecuteScalarAsync(); checks["mysql"] = "ok"; }
+                    catch { checks["mysql"] = "unreachable"; }
+                    try { await redis.GetDatabase().PingAsync(); checks["redis"] = "ok"; } catch { checks["redis"] = "unreachable"; }
+                    var rabbit = Configuration.GetConnectionString("RabitMQ");
+                    if (!string.IsNullOrEmpty(rabbit))
+                        try { using var conn = new ConnectionFactory { Uri = new Uri(rabbit), RequestedConnectionTimeout = TimeSpan.FromSeconds(3) }.CreateConnection(); checks["rabbitmq"] = "ok"; }
+                        catch { checks["rabbitmq"] = "unreachable"; }
+                    var ok = checks.Values.All(v => v == "ok");
+                    return Results.Json(new { status = ok ? "ready" : "degraded", checks }, statusCode: ok ? 200 : 503);
+                });
             });
         }
     }

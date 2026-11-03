@@ -80,7 +80,7 @@ namespace nkv.MicroService.API.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new APIResponse(ResponseCode.ERROR, ex.Message));
+                return ApiHardening.Error(this, ex);
             }
         }
     }

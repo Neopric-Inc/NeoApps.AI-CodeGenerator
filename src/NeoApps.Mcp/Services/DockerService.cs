@@ -71,7 +71,10 @@ public sealed class DockerService(NeoAppsSettings settings, ProjectStore store)
         sb.AppendLine($"      ConnectionStrings__MySQLDatabase: {Quote(mysql)}");
         sb.AppendLine($"      ConnectionStrings__RabitMQ: {Quote(settings.DockerRabbitMqUrl)}");
         sb.AppendLine($"      ConnectionStrings__Redis: {Quote(settings.DockerRedis)}");
-        sb.AppendLine("      ASPNETCORE_ENVIRONMENT: Development");
+        // Production: no developer error pages; only the generated UI's origin may call the API. Swagger stays on for local use.
+        sb.AppendLine("      ASPNETCORE_ENVIRONMENT: Production");
+        sb.AppendLine($"      Cors__AllowedOrigins: {Quote($"http://localhost:{p.WebPort},http://127.0.0.1:{p.WebPort}")}");
+        sb.AppendLine("      Swagger__Enabled: \"true\"");
         // AI assistant: the key comes from the environment of whoever runs the deploy; never written to disk.
         sb.AppendLine("      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}");
         sb.AppendLine("    volumes:");
@@ -88,6 +91,9 @@ public sealed class DockerService(NeoAppsSettings settings, ProjectStore store)
             sb.AppendLine("    environment:");
             sb.AppendLine($"      ConnectionStrings__MySQLDatabase: {Quote(mysql)}");
             sb.AppendLine($"      ConnectionStrings__RabitMQ: {Quote(settings.DockerRabbitMqUrl)}");
+            // the consumer calls the API as the app admin; credentials come from the project, not from appsettings
+            sb.AppendLine($"      AppSettings__DefaultTokenUsername: {Quote(p.AdminUsername ?? "")}");
+            sb.AppendLine($"      AppSettings__DefaultTokenPassword: {Quote(p.AdminPassword ?? "")}");
             sb.AppendLine("    restart: unless-stopped");
         }
         if (p.FrontendPath is not null && Directory.Exists(p.FrontendPath))
