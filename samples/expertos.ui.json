@@ -5553,6 +5553,17 @@
               },
               "message": "an approved deliverable is required"
             }
+          ],
+          "forbids": [
+            {
+              "table": "approvals",
+              "link": "case_id",
+              "where": {
+                "approval_type": "final_deliverable",
+                "status": "rejected"
+              },
+              "message": "a final-deliverable approval was rejected"
+            }
           ]
         },
         {
@@ -5741,6 +5752,7 @@
         "approved",
         "rejected"
       ],
+      "adminBypass": "platform",
       "transitions": [
         {
           "from": "pending",
@@ -5757,6 +5769,14 @@
           ],
           "actors": [
             "human"
+          ],
+          "distinctFrom": [
+            {
+              "column": "requested_by_id",
+              "table": "tenant_users",
+              "userColumn": "login_username",
+              "message": "you requested this approval, so someone else must decide it"
+            }
           ]
         }
       ]
@@ -5980,6 +6000,7 @@
       "initial": [
         "draft"
       ],
+      "adminBypass": false,
       "frozen": [
         "void",
         "refunded"
