@@ -42,7 +42,7 @@ namespace nkv.MicroService.API.Controllers
             try { return Ok(await action()); }
             catch (AiException ex) { return BadRequest(new { message = ex.Message }); }
             catch (OperationCanceledException) { return StatusCode(499); }
-            catch (DataGuardException gx) { return StatusCode(gx.StatusCode, new { message = gx.Message }); }
+            catch (DataGuardException gx) { return StatusCode(gx.StatusCode, gx.Body); }
             catch (Exception ex)
             {
                 _log.LogError(ex, "AI request failed");

@@ -46,7 +46,7 @@ Work in the app's planning folder `workspace/<App>/` (git-ignored): `requirement
    ui.json (assistant instructions, `documentTables`, `tools`, `workflows`; see the guide) instead of modelling chat
    tables. It runs on the Claude API when the API process has `ANTHROPIC_API_KEY` set (never put the key in files).
    **Data rules:** for multi-tenant apps, customer portals (customers see only their own rows), status workflows, approvals,
-   audit trails, domain events, SLAs or plan limits, add the `tenancy`, `rowScopes`, `lifecycles`, `immutable`, `audit`, `outbox`, `jobs` and `limits` sections to ui.config.json (see the guide)
+   audit trails, domain events, SLAs, plan limits or field validation (formats, ranges, date order, totals), add the `tenancy`, `rowScopes`, `lifecycles`, `validations`, `immutable`, `audit`, `outbox`, `jobs` and `limits` sections to ui.config.json (see the guide)
    instead of hand-writing checks: the generated API enforces them on every query (`Utility/DataGuard*.cs`). After deploying,
    run `./neoapps test <App>` and report the result (tenant isolation per table, row scopes, append-only tables, lifecycle steps).
 4. **When requirements change** (they will): add a changelog line to `requirements.md`, update the schema and UI config,
@@ -137,6 +137,6 @@ added to every app table automatically and stamped by DataGuard on every write, 
   `1_*/` or `workspace/` (both are git-ignored).
 - MySQL must run with `lower_case_table_names=1`: generated SQL mixes the casing of table names.
 - Data rules live in the template's `Utility/DataGuard.cs` (tenancy, SQL choke point: every generated command runs through
-  `DataGuard.Apply`/`DataGuard.NonQuery`), `DataGuard.Scopes.cs` (row scopes), `DataGuard.Rules.cs` (lifecycles, immutability, audit, outbox, limits, SLA) and
+  `DataGuard.Apply`/`DataGuard.NonQuery`), `DataGuard.Scopes.cs` (row scopes), `DataGuard.Rules.cs` (lifecycles, immutability, audit, outbox, limits, SLA), `DataGuard.Validation.cs` (field validations) and
   `GuardJobs*.cs` (outbox publisher, deadline job). Any new data-access code must execute through them.
 - Never commit credentials. Generated apps get a random JWT secret, and S3 keys come from env vars.

@@ -12,7 +12,7 @@ the app's schema.sql and ui.config.json, then checks against the running API:
 
 Exit code 0 when everything passes. Writes workspace/<App>/guard-test-report.json.
 """
-import json, os, random, re, sys, urllib.error, urllib.request
+import json, os, random, re, sys, urllib.error, urllib.request, uuid
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 APP = sys.argv[1] if len(sys.argv) > 1 else sys.exit("usage: guard-tests.py <App>")
@@ -62,6 +62,8 @@ for k in ("audit", "outbox"):
 OPTIONS = {t: {c: f["options"] for c, f in (spec.get("fields") or {}).items() if isinstance(f, dict) and f.get("options")}
            for t, spec in (CFG.get("tables") or {}).items()}
 
+VALID = CFG.get("validations") or {}
+
 # ------------------------------------------------------------------ http
 def call(m, path, body=None, tok=None):
     req = urllib.request.Request(API + path, method=m, data=json.dumps(body).encode() if body is not None else None,
@@ -87,6 +89,17 @@ def value(table, col, spec, unique):
     life = LIFE.get(table)
     if life and life.get("column", "status") == col and life.get("initial"): return life["initial"][0]
     if col in OPTIONS.get(table, {}): return OPTIONS[table][col][0]
+    rule = (VALID.get(table) or {}).get(col) or {}
+    fmt = rule.get("format")
+    if fmt == "email": return f"t{unique}{RUN}@example.com"
+    if fmt == "url": return f"https://example.com/t{unique}"
+    if fmt == "phone": return "+1 506 555 0100"
+    if fmt == "uuid": return str(uuid.uuid4())
+    if rule.get("pattern"):
+        for cand in ("USD", f"T-{unique}", f"T{unique}", f"t{unique}", f"INV-{unique}", "test", "1"):
+            if re.search(rule["pattern"], cand): return cand[:n]
+    if t in ("int", "bigint", "smallint", "mediumint", "decimal", "float", "double") and ("min" in rule or "max" in rule):
+        return max(rule.get("min", 1), min(rule.get("max", 1), 1))
     if t in ("int", "bigint", "smallint", "mediumint"): return 1
     if t in ("decimal", "float", "double"): return 1
     if t == "tinyint": return 0
@@ -115,6 +128,13 @@ class Factory:
                 body[col] = parent; continue
             if not spec["notnull"] and spec["type"] not in ("varchar", "char") and col != getattr(self, "scope_col", None): continue
             body[col] = value(table, col, spec, unique)
+        for col, rule in (VALID.get(table) or {}).items():   # rules beyond NOT NULL
+            if col not in info["cols"]: continue
+            if body.get(col) is None and (rule.get("required") or rule.get("requiredWhen")):
+                body[col] = value(table, col, info["cols"][col], unique)
+            if rule.get("equals"):
+                names = {k: float(body.get(k) or 0) for k in re.findall(r"[A-Za-z_]\w*", rule["equals"])}
+                body[col] = round(eval(rule["equals"], {"__builtins__": {}}, names), 4)
         return body
     def ensure(self, table):
         """Id of a row of `table` usable by this tenant (created once)."""

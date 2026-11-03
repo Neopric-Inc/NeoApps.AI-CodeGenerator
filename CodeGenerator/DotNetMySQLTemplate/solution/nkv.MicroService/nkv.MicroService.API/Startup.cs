@@ -143,7 +143,7 @@ namespace nkv.MicroService.API
                 {
                     if (ctx.Response.HasStarted) throw;
                     ctx.Response.StatusCode = gx.StatusCode;
-                    await ctx.Response.WriteAsJsonAsync(new { code = 0, message = gx.Message });
+                    await ctx.Response.WriteAsJsonAsync(gx.Body);
                 }
             });
             nkv.MicroService.Utility.GuardJobs.Start(app.ApplicationServices);

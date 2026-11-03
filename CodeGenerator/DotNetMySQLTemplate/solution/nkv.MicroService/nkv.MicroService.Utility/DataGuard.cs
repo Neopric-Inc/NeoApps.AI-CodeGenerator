@@ -15,7 +15,12 @@ namespace nkv.MicroService.Utility
     public class DataGuardException : Exception
     {
         public int StatusCode { get; }
+        /// <summary>Field-level messages (validations): column -> messages.</summary>
+        public Dictionary<string, string[]> Errors { get; init; }
         public DataGuardException(string message, int statusCode = 403) : base(message) { StatusCode = statusCode; }
+        /// <summary>The response body: {code, message, document} plus "errors" for field-level problems.</summary>
+        public object Body => Errors == null ? new { code = 0, message = Message, document = Message }
+                                             : new { code = 0, message = Message, document = Message, errors = Errors };
     }
 
     /// <summary>
