@@ -216,6 +216,8 @@ and **Admin > Members / Roles / Customize UI**.
   `recordActions` (buttons on record pages); see `CodeGenerator/ReactUiKit/src/neoapps/extensions.ts`. Example:
   [`samples/splitshare/`](samples/splitshare), a shared-expenses app with a My balances page, settle-up suggestions,
   a "Split now" button and admin "Create login".
+- **Larger apps.** [`samples/constructos/`](samples/constructos) is a 39-table general-contractor app (preconstruction,
+  field, financials, closeout) with six roles and nine AI workflows.
 - **RBAC**
   - Roles grant view/create/edit/delete per table. Declare them in `ui.config.json` (`"roles": {"Coordinator": {"*": "r", "documents": "cru"}}`, defaulting to Member + Viewer), or manage them in **Admin > Roles**.
   - **Admin > Members** adds users and assigns roles. The API enforces every permission, and the UI hides menus and buttons you can't use.
