@@ -46,7 +46,8 @@ namespace nkv.MicroService.API.Controllers
             catch (Exception ex)
             {
                 _log.LogError(ex, "AI request failed");
-                return StatusCode(500, new { message = "The assistant ran into an error: " + ex.Message });
+                var (status, message) = ApiHardening.MapError(ex, HttpContext.TraceIdentifier);
+                return StatusCode(status, new { message = status == 500 ? "The assistant ran into an error. Reference: " + HttpContext.TraceIdentifier : message });
             }
         }
 

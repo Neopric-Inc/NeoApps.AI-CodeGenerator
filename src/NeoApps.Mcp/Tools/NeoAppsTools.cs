@@ -447,6 +447,21 @@ public sealed class NeoAppsTools(
 
     // ---------------------------------------------------------------- helpers
 
+    /// <summary>The generated API only accepts browser calls from its own UI (Cors:AllowedOrigins), not from any website.</summary>
+    private static void AllowUiOrigin(ProjectState state, Job job)
+    {
+        var file = Path.Combine(state.BackendPath!, $"{state.Name}.API", "appsettings.json");
+        if (!File.Exists(file)) return;
+        try
+        {
+            var json = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(file))!.AsObject();
+            if (json["Cors"] is not System.Text.Json.Nodes.JsonObject cors) json["Cors"] = cors = new System.Text.Json.Nodes.JsonObject();
+            cors["AllowedOrigins"] = $"http://localhost:{state.WebPort},http://127.0.0.1:{state.WebPort}";
+            File.WriteAllText(file, json.ToJsonString(new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
+        }
+        catch (Exception ex) { job.Log("Could not set Cors:AllowedOrigins: " + ex.Message); }
+    }
+
     private async Task<GeneratorResult> GenerateBackendCoreAsync(ProjectState state, bool databaseExists, bool resetDatabase, Job job, CancellationToken ct)
     {
         var p = generator.BaseParameters(state);
@@ -465,6 +480,7 @@ public sealed class NeoAppsTools(
         state.AdminUsername = backend.AdminUsername ?? state.AdminUsername;
         state.AdminPassword = backend.AdminPassword ?? state.AdminPassword;
         store.Save(state);
+        AllowUiOrigin(state, job);
         var n = migrations.CopyIntoApi(state);
         if (n > 0) job.Log($"Copied {n} migration(s) into {state.Name}.API/Migrations.");
 

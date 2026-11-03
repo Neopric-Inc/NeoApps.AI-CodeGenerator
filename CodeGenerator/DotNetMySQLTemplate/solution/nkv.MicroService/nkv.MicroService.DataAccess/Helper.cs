@@ -70,7 +70,7 @@ namespace nkv.MicroService.DataAccess
                 }
                 orderStr = orderStr.Trim(',');
                 newCommandText = yourRegex.Replace(newCommandText, orderStr);
-                Console.WriteLine("when NOT NULL newcommandText :" + newCommandText);
+                ApiHardening.Sql("order by: " + newCommandText);
 
                 // Console.WriteLine("newCommandText : ", newCommandText);
                 return newCommandText;
@@ -82,7 +82,7 @@ namespace nkv.MicroService.DataAccess
 
                 var newcommandText = commandText;
                 newcommandText = yourRegex.Replace(newcommandText, "");
-                Console.WriteLine("when NULL newcommandText :" + newcommandText);
+                ApiHardening.Sql(newcommandText);
 
                 return newcommandText;
             }

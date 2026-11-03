@@ -19,6 +19,7 @@ namespace nkv.MicroService.Consumer
         private IConfigurationRoot configuration = new ConfigurationBuilder()
             .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
             .AddJsonFile("appsettings.json")
+            .AddEnvironmentVariables() // AppSettings__DefaultTokenUsername / __DefaultTokenPassword: no credentials in files
             .Build();
         private async Task<HttpResponseMessage> GenerateToken()
         {
@@ -29,6 +30,8 @@ namespace nkv.MicroService.Consumer
                 httpClient.BaseAddress = new Uri(configuration.GetSection("ConnectionStrings")["TokenAPI"]);
 
                 // Create the request body as a JSON string
+                if (string.IsNullOrEmpty(configuration.GetSection("AppSettings")["DefaultTokenUsername"]))
+                    Console.Error.WriteLine("Consumer: set AppSettings__DefaultTokenUsername / AppSettings__DefaultTokenPassword (environment) to call the API.");
                 var requestBody = new AuthenticateModel
                 {
                     Username = configuration.GetSection("AppSettings")["DefaultTokenUsername"],

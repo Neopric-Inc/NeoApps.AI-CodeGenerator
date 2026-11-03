@@ -2,14 +2,18 @@
  "AppSettings": {
     "Secret": "{JWT_SECRET}",
     "TokenValidityDay": 7,
-    "DefaultTokenUsername": "admin",
-    "DefaultTokenPassword": "admin123"
+    "DefaultTokenUsername": "",
+    "DefaultTokenPassword": ""
   },
   "Logging": {
     "LogLevel": {
       "Default": "Warning"
-    }
+    },
+    "LogSql": false
   },
+  "Api": { "MaxPageSize": 1000 },
+  "Cors": { "AllowedOrigins": "" },
+  "Swagger": { "Enabled": false },
  "AWS": {
     "EndPoint": "{S3_ENDPOINT}",
     "SecretKey": "{S3_SECRET_KEY}",

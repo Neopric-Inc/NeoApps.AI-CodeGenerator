@@ -81,6 +81,12 @@ cd ../../../../ReactTs_Output3                            # .env already points 
 CYPRESS_INSTALL_BINARY=0 npm install --force && npm run build && npx serve -s build -l 3100
 ```
 
+Production settings of a generated API (`appsettings.json`, override with env vars such as `Cors__AllowedOrigins`):
+`Cors:AllowedOrigins` (set to the generated UI's origin; any origin only in Development), `Swagger:Enabled` (Swagger is on
+in Development only), `Api:MaxPageSize` (default 1000), `Logging:LogSql` (off). Unexpected errors return a generic message
+with a reference (the `X-Correlation-Id` header) and are logged server-side; `/health/ready` checks MySQL, Redis and RabbitMQ.
+`--deploy` runs the API in Production with the UI origin allowed and Swagger on for local use.
+
 Pass the key to the API from the environment, e.g. `set -a; . ~/secrets/anthropic.env; set +a` before `dotnet run`
 (`--deploy` forwards `ANTHROPIC_API_KEY` into the container). AI endpoints: `/v1/api/Ai/status`, `files`, `ask`,
 `conversations`, `workflows/{id}/preview|apply`.
