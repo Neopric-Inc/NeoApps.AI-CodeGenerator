@@ -32,6 +32,8 @@
         "schedule_activities",
         "daily_logs",
         "daily_log_crews",
+        "equipment",
+        "equipment_logs",
         "rfis",
         "submittals",
         "submittal_reviews",
@@ -101,6 +103,13 @@
       {
         "table": "punch_items",
         "label": "Punch items"
+      },
+      {
+        "table": "equipment",
+        "label": "Equipment on site",
+        "where": {
+          "status": "on_site"
+        }
       }
     ],
     "recentTable": "rfis"
@@ -133,6 +142,8 @@
       "schedule_activities": "cru",
       "daily_logs": "cru",
       "daily_log_crews": "cru",
+      "equipment": "cru",
+      "equipment_logs": "cru",
       "rfis": "cru",
       "submittals": "cru",
       "submittal_reviews": "cru",
@@ -166,6 +177,8 @@
       "schedule_activities": "cru",
       "daily_logs": "cru",
       "daily_log_crews": "cru",
+      "equipment": "cru",
+      "equipment_logs": "cru",
       "time_entries": "cru",
       "rfis": "cru",
       "inspections": "cru",
@@ -216,6 +229,13 @@
     },
     "Owner Rep": {
       "*": "r"
+    },
+    "Equipment Manager": {
+      "*": "r",
+      "equipment": "cru",
+      "equipment_logs": "cru",
+      "purchase_orders": "cr",
+      "invoices": "cr"
     }
   },
   "tables": {
@@ -255,6 +275,7 @@
         "trade_packages",
         "schedule_activities",
         "daily_logs",
+        "equipment",
         "rfis",
         "submittals",
         "budget_lines",
@@ -903,7 +924,8 @@
         "superintendent_contact_id"
       ],
       "children": [
-        "daily_log_crews"
+        "daily_log_crews",
+        "equipment_logs"
       ],
       "fields": {
         "work_performed": {
@@ -922,6 +944,11 @@
         },
         "superintendent_contact_id": {
           "label": "Superintendent"
+        },
+        "equipment_notes": {
+          "widget": "textarea",
+          "label": "Equipment notes",
+          "help": "Which machines ran, idle time, breakdowns"
         }
       }
     },
@@ -942,6 +969,123 @@
         },
         "workers": {
           "defaultValue": 0
+        }
+      }
+    },
+    "equipment": {
+      "icon": "construction",
+      "displayField": "name",
+      "description": "Owned and rented equipment on each job",
+      "listColumns": [
+        "equipment_number",
+        "name",
+        "project_id",
+        "equipment_type",
+        "ownership",
+        "daily_rate",
+        "on_site_date",
+        "status"
+      ],
+      "formFields": [
+        "project_id",
+        "equipment_number",
+        "name",
+        "equipment_type",
+        "ownership",
+        "company_id",
+        "daily_rate",
+        "on_site_date",
+        "off_site_date",
+        "status",
+        "notes"
+      ],
+      "children": [
+        "equipment_logs"
+      ],
+      "fields": {
+        "equipment_number": {
+          "label": "Unit #",
+          "placeholder": "EQ-014"
+        },
+        "company_id": {
+          "label": "Rental vendor"
+        },
+        "equipment_type": {
+          "widget": "select",
+          "options": [
+            "heavy",
+            "lift",
+            "crane",
+            "generator",
+            "light_tower",
+            "small_tools",
+            "vehicle",
+            "other"
+          ],
+          "label": "Type",
+          "defaultValue": "heavy"
+        },
+        "ownership": {
+          "widget": "select",
+          "options": [
+            "owned",
+            "rented",
+            "sub_provided"
+          ],
+          "colors": {
+            "rented": "warning",
+            "owned": "info"
+          },
+          "defaultValue": "rented"
+        },
+        "daily_rate": {
+          "widget": "currency",
+          "label": "Daily rate"
+        },
+        "notes": {
+          "widget": "textarea"
+        },
+        "status": {
+          "widget": "select",
+          "options": [
+            "ordered",
+            "on_site",
+            "down",
+            "off_rent"
+          ],
+          "colors": {
+            "on_site": "success",
+            "down": "error",
+            "ordered": "info",
+            "off_rent": "default"
+          },
+          "defaultValue": "on_site"
+        }
+      }
+    },
+    "equipment_logs": {
+      "label": "Equipment Usage",
+      "singular": "Usage entry",
+      "icon": "speed",
+      "listColumns": [
+        "daily_log_id",
+        "equipment_id",
+        "hours_used",
+        "idle_hours",
+        "operator_name"
+      ],
+      "fields": {
+        "hours_used": {
+          "label": "Hours used"
+        },
+        "idle_hours": {
+          "label": "Idle hours"
+        },
+        "operator_name": {
+          "label": "Operator"
+        },
+        "condition_notes": {
+          "label": "Condition"
         }
       }
     },
@@ -1164,9 +1308,13 @@
         "agency",
         "area",
         "scheduled_date",
+        "company_id",
         "result"
       ],
       "fields": {
+        "company_id": {
+          "label": "Responsible"
+        },
         "result": {
           "widget": "select",
           "options": [
@@ -2114,11 +2262,12 @@
         "id": "process_daily_log",
         "label": "Process daily log",
         "table": "daily_logs",
-        "description": "Turns the superintendent's notes into manpower entries, punch items and safety incidents.",
+        "description": "Turns the superintendent's notes into manpower entries, equipment usage, punch items and safety incidents.",
         "targets": [
           "daily_log_crews",
           "punch_items",
-          "safety_incidents"
+          "safety_incidents",
+          "equipment_logs"
         ],
         "tools": [
           "records",
@@ -2127,7 +2276,7 @@
         "inherit": {
           "daily_log_id": "daily_log_id"
         },
-        "instructions": "Read this daily log's work_performed, delays, visitors and deliveries text (and any attached notes/photos).\n1. For each company/trade on site create daily_log_crews: company_id = the matching companies row (records tool; skip if none matches), workers, hours if stated, work_area, activity_notes.\n2. For each deficiency or incomplete work called out create punch_items: project_id = this log's project_id, location, description, company_id responsible when clear, priority, status 'open'.\n3. For each injury, near miss, damage or safety violation mentioned create safety_incidents: project_id = this log's project_id, incident_date = log_date, incident_type, severity, description, status 'open'.\nUse only what the notes say."
+        "instructions": "Read this daily log's work_performed, delays, visitors and deliveries text (and any attached notes/photos).\n1. For each company/trade on site create daily_log_crews: company_id = the matching companies row (records tool; skip if none matches), workers, hours if stated, work_area, activity_notes.\n2. For each deficiency or incomplete work called out create punch_items: project_id = this log's project_id, location, description, company_id responsible when clear, priority, status 'open'.\n3. For each piece of equipment mentioned (in work_performed or equipment_notes) that matches an equipment row on this project (records tool, by unit # or name), create equipment_logs: equipment_id, hours_used and idle_hours when stated, operator_name, condition_notes (breakdowns, damage).\n4. For each injury, near miss, damage or safety violation mentioned create safety_incidents: project_id = this log's project_id, incident_date = log_date, incident_type, severity, description, status 'open'.\nUse only what the notes say."
       },
       {
         "id": "meeting_actions",

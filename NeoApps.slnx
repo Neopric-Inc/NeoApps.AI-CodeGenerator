@@ -4,5 +4,6 @@
   </Folder>
   <Folder Name="/mcp/">
     <Project Path="src/NeoApps.Mcp/NeoApps.Mcp.csproj" />
+    <Project Path="src/NeoApps.Migrator/NeoApps.Migrator.csproj" />
   </Folder>
 </Solution>

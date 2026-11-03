@@ -24,7 +24,7 @@ Work in the app's planning folder `workspace/<App>/` (git-ignored): `requirement
    - **never** reuse a built-in table name: `roles`, `users`, `entities`, `permissionmatrix`, `messagequeue`,
      `s3bucket`, `s3bucket_folders`, `dnd_ui_versions`, `project_dnd_ui_versions`, `workflow`, `workflows`,
      `workflows_projects`, `workflow_builds`, `workflow_runs`, `workflow_deployments`, `workflow_triggers`,
-     `workflow_trigger_conditions`, `ai_files`, `ai_chunks`, `ai_conversations`, `ai_messages`, `ai_runs` (use e.g. `members`, `automation_runs`)
+     `workflow_trigger_conditions`, `ai_files`, `ai_chunks`, `ai_conversations`, `ai_messages`, `ai_runs`, `versioninfo` (use e.g. `members`, `automation_runs`)
    - plain `CREATE TABLE` / `INSERT` only: no `CREATE DATABASE`, `USE`, `DELIMITER`, procedures
    Save it as `workspace/<App>/schema.sql` (copy it to `samples/` if it should be committed).
 3. **Design the UI** (recommended): write `workspace/<App>/ui.config.json` following `neoapps_ui_config_guide`
@@ -45,11 +45,16 @@ Work in the app's planning folder `workspace/<App>/` (git-ignored): `requirement
    ui.json (assistant instructions, `documentTables`, `tools`, `workflows`; see the guide) instead of modelling chat
    tables. It runs on the Claude API when the API process has `ANTHROPIC_API_KEY` set (never put the key in files).
 4. **When requirements change** (they will): add a changelog line to `requirements.md`, update the schema and UI config,
-   and run `./neoapps preview <App>`. It now opens with **What changed since the last version**: tables and columns added,
+   and run `./neoapps preview <App>`. It opens with **What changed since the last version**: tables and columns added,
    removed or changed, relations, role permissions, AI workflows and the menu, with changes highlighted in the diagram.
-   Confirm with the user, `--save`, then regenerate with `./neoapps new` (plus `--deploy` if it runs in Docker).
-   Regenerating rebuilds the database, so tell the user that test data is reset. UI-only changes (labels, options,
-   menu, list columns) can use `./neoapps ui <App> --set changes.json`, which keeps the data.
+   Confirm with the user, then apply it **keeping the data**: `./neoapps evolve <App> --name "<change>" --plan` shows the
+   migration (show it to the user; mention anything under `skipped` or `warnings`), and `./neoapps evolve <App> --name "<change>"`
+   writes `workspace/<App>/migrations/M<ts>_<Name>.cs` (FluentMigrator, Up/Down), backs up, migrates, grants new tables to
+   existing roles, regenerates API + UI and saves the version (MCP: `neoapps_evolve_app`). Drops need `--allow-destructive`;
+   renames need a hint (`--renames file.json`: `{"old_table":"new_table","table.old_col":"new_col"}`). The generated API
+   applies pending migrations on startup, so a deploy moves other databases forward in place.
+   Only use `./neoapps new` again when the user wants a fresh database (it resets test data; existing migrations are
+   baselined). UI-only changes (labels, options, menu, list columns) can use `./neoapps ui <App> --set changes.json`.
 5. **Report back:** web URL, Swagger URL, admin username/password (printed by the command and kept in
    `workspace/<App>/project.json`), and where the code is (`1_<ticks>/<App>/DotNet_Output/solution/<App>` and
    `.../ReactTs_Output3`).
@@ -97,6 +102,12 @@ Rows are owner-scoped (`createdBy` = the logged-in user), so seed rows inserted 
   `Infrastructure/UiKit.cs` installs it and writes `public/schema.json` (from the DB) and `public/ui.config.json`,
   and seeds roles. The old per-table components are still generated but no longer routed. `src/custom/` is the
   extension point for app-specific screens (empty by default; replaced by `workspace/<App>/custom/` when present).
+- Migrations: `src/NeoApps.Mcp/Services/SchemaMigrations.cs` diffs `information_schema` against the parsed schema.sql
+  (`AppPreview.Parse`) and renders the FluentMigrator class; `MigrationRunner.cs` builds `src/NeoApps.Migrator` with the
+  app's migrations compiled in. Helpers used by generated migrations (`GrantNewTable`, `EnsureRole`, `AddToSavedMenu`,
+  `WithAuditColumns`...) and the startup runner live in the template's `<App>.API/Migrations/MigrationSupport.cs`
+  (namespace `NeoApps.Migrations`, shared with the migrator). `versioninfo` is FluentMigrator's history table and is
+  excluded from code generation.
 - RBAC: `AccessController` (template API) serves `/v1/api/Access/me`, members, roles, the permission grid and the
   saved UI config. Role templates are `permissionmatrix` rows with `user_id IS NULL`, and members get copies.
   Passwords use BCrypt (`Utility/PasswordHasher.cs`).

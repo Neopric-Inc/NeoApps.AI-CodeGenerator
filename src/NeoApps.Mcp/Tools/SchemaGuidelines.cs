@@ -20,11 +20,13 @@ internal static class SchemaGuidelines
            roles, users, entities, permissionmatrix (login and role-based access), messagequeue, s3bucket,
            s3bucket_folders, dnd_ui_versions, project_dnd_ui_versions, workflow, workflows, workflows_projects,
            workflow_builds, workflow_runs, workflow_deployments, workflow_triggers, workflow_trigger_conditions,
-           ai_files, ai_chunks, ai_conversations, ai_messages, ai_runs (AI assistant).
+           ai_files, ai_chunks, ai_conversations, ai_messages, ai_runs (AI assistant), versioninfo (migrations).
            Don't model chat threads/messages/citations or file text yourself: the built-in assistant provides them.
            For app-level people use e.g. app_users or members; for automations use e.g. automation_runs.
         5. Declare relations with FOREIGN KEY (...) REFERENCES parent(parent_id). Create parent tables before
            the tables that reference them. No trailing comma before the closing parenthesis.
+        5b. Column names become C# properties: avoid SQL and C# keywords (order, key, condition, operator, default,
+           event, object, string, class...). Use e.g. operator_name, sort_order.
         6. Prefer simple types: INT, DECIMAL(12,2), VARCHAR(n), TEXT, DATE, DATETIME, TINYINT(1).
            Model enums as VARCHAR(50).
         7. Keep it focused: 3-15 tables covering the app's core entities.

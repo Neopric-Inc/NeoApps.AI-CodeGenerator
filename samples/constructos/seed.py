@@ -1,4 +1,4 @@
-"""Demo data for ConstructOS: python3 seed.py <admin-username> <admin-password> [api-base]
+"""Demo data for ConstructOS (v1 or v2): python3 seed.py <admin-username> <admin-password> [api-base]
 (default http://localhost:5100/v1/api/). Loads a demo job across all modules, adds one login per role
 (password Test#12345) and checks that each role is allowed / denied as configured."""
 import json, sys, urllib.request, urllib.error
@@ -92,6 +92,14 @@ mk("pay_app_lines", pay_application_id=pa, subcontract_item_id=sov, description=
    this_period=118000, percent_complete=48.7, flag="48.7% billed vs 35% schedule progress")
 mk("lien_waivers", pay_application_id=pa, company_id=subs["Fundy Interiors"], waiver_type="conditional_progress", amount=118400, status="requested")
 mk("invoices", project_id=p, company_id=subs["Tidewater Mechanical"], cost_code_id=cc["23-000"], invoice_number="TM-5521", amount=21600, status="received")
+
+# Equipment (v2: only when the app has the equipment tables)
+if call("GET", "Equipment?pageNo=1&pageSize=1", tok=T)[0] == 200:
+    eq1 = mk("equipment", project_id=p, company_id=subs["Tidewater Mechanical"], equipment_number="EQ-014", name="Genie S-65 boom lift",
+             equipment_type="lift", ownership="rented", daily_rate=425, on_site_date="2026-10-20", status="on_site")
+    mk("equipment", project_id=p, equipment_number="EQ-002", name="CAT 308 mini excavator", equipment_type="heavy",
+       ownership="owned", daily_rate=610, on_site_date="2026-04-06", status="down", notes="Hydraulic leak, mechanic Thursday")
+    mk("equipment_logs", daily_log_id=dl, equipment_id=eq1, hours_used=6.5, idle_hours=1.5, operator_name="J. Cormier")
 
 # Closeout
 mk("closeout_items", project_id=p, spec_section_id=ss, item_type="attic_stock", description="2% gypsum board attic stock", status="required")

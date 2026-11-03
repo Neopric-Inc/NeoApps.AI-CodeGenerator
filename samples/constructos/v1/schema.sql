@@ -1,0 +1,779 @@
+CREATE TABLE companies (
+  company_id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  company_type VARCHAR(50) NOT NULL DEFAULT 'subcontractor',
+  trades VARCHAR(500),
+  phone VARCHAR(50),
+  email VARCHAR(255),
+  address VARCHAR(500),
+  license_number VARCHAR(100),
+  insurance_expiry DATE,
+  prequal_status VARCHAR(50) DEFAULT 'pending',
+  bonding_capacity DECIMAL(14,2),
+  is_dbe TINYINT(1) NOT NULL DEFAULT '0',
+  notes TEXT,
+  createdBy VARCHAR(255) NOT NULL,
+  modifiedBy VARCHAR(255) NOT NULL,
+  createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  modifiedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  isActive TINYINT(1) NOT NULL DEFAULT '1'
+);
+
+CREATE TABLE contacts (
+  contact_id INT AUTO_INCREMENT PRIMARY KEY,
+  company_id INT,
+  full_name VARCHAR(255) NOT NULL,
+  title VARCHAR(100),
+  email VARCHAR(255),
+  phone VARCHAR(50),
+  trade VARCHAR(100),
+  hourly_rate DECIMAL(14,2),
+  createdBy VARCHAR(255) NOT NULL,
+  modifiedBy VARCHAR(255) NOT NULL,
+  createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  modifiedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  isActive TINYINT(1) NOT NULL DEFAULT '1',
+  FOREIGN KEY (company_id) REFERENCES companies(company_id)
+);
+
+CREATE TABLE projects (
+  project_id INT AUTO_INCREMENT PRIMARY KEY,
+  project_number VARCHAR(50) NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  owner_company_id INT,
+  architect_company_id INT,
+  address VARCHAR(500),
+  project_type VARCHAR(50),
+  delivery_method VARCHAR(50),
+  phase VARCHAR(50) NOT NULL DEFAULT 'preconstruction',
+  contract_value DECIMAL(14,2),
+  bid_due_date DATE,
+  start_date DATE,
+  substantial_completion DATE,
+  final_completion DATE,
+  retainage_pct DECIMAL(5,2) DEFAULT '10.00',
+  description TEXT,
+  createdBy VARCHAR(255) NOT NULL,
+  modifiedBy VARCHAR(255) NOT NULL,
+  createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  modifiedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  isActive TINYINT(1) NOT NULL DEFAULT '1',
+  FOREIGN KEY (owner_company_id) REFERENCES companies(company_id),
+  FOREIGN KEY (architect_company_id) REFERENCES companies(company_id)
+);
+
+CREATE TABLE project_team (
+  project_team_id INT AUTO_INCREMENT PRIMARY KEY,
+  project_id INT NOT NULL,
+  contact_id INT NOT NULL,
+  project_role VARCHAR(50) NOT NULL,
+  is_primary TINYINT(1) NOT NULL DEFAULT '0',
+  createdBy VARCHAR(255) NOT NULL,
+  modifiedBy VARCHAR(255) NOT NULL,
+  createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  modifiedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  isActive TINYINT(1) NOT NULL DEFAULT '1',
+  FOREIGN KEY (project_id) REFERENCES projects(project_id),
+  FOREIGN KEY (contact_id) REFERENCES contacts(contact_id)
+);
+
+CREATE TABLE cost_codes (
+  cost_code_id INT AUTO_INCREMENT PRIMARY KEY,
+  code VARCHAR(20) NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  csi_division VARCHAR(10),
+  cost_type VARCHAR(50) DEFAULT 'subcontract',
+  createdBy VARCHAR(255) NOT NULL,
+  modifiedBy VARCHAR(255) NOT NULL,
+  createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  modifiedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  isActive TINYINT(1) NOT NULL DEFAULT '1'
+);
+
+CREATE TABLE documents (
+  document_id INT AUTO_INCREMENT PRIMARY KEY,
+  project_id INT,
+  company_id INT,
+  title VARCHAR(255) NOT NULL,
+  document_type VARCHAR(50) NOT NULL DEFAULT 'drawings',
+  discipline VARCHAR(50),
+  revision VARCHAR(20),
+  issued_date DATE,
+  description TEXT,
+  createdBy VARCHAR(255) NOT NULL,
+  modifiedBy VARCHAR(255) NOT NULL,
+  createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  modifiedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  isActive TINYINT(1) NOT NULL DEFAULT '1',
+  FOREIGN KEY (project_id) REFERENCES projects(project_id),
+  FOREIGN KEY (company_id) REFERENCES companies(company_id)
+);
+
+CREATE TABLE spec_sections (
+  spec_section_id INT AUTO_INCREMENT PRIMARY KEY,
+  project_id INT NOT NULL,
+  document_id INT,
+  section_number VARCHAR(20) NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  csi_division VARCHAR(10),
+  summary TEXT,
+  submittals_required TEXT,
+  page_ref VARCHAR(50),
+  createdBy VARCHAR(255) NOT NULL,
+  modifiedBy VARCHAR(255) NOT NULL,
+  createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  modifiedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  isActive TINYINT(1) NOT NULL DEFAULT '1',
+  FOREIGN KEY (project_id) REFERENCES projects(project_id),
+  FOREIGN KEY (document_id) REFERENCES documents(document_id)
+);
+
+CREATE TABLE trade_packages (
+  trade_package_id INT AUTO_INCREMENT PRIMARY KEY,
+  project_id INT NOT NULL,
+  cost_code_id INT,
+  package_number VARCHAR(20) NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  spec_sections_covered VARCHAR(500),
+  budget_amount DECIMAL(14,2),
+  bid_due_date DATE,
+  status VARCHAR(50) NOT NULL DEFAULT 'scoping',
+  awarded_company_id INT,
+  scope_narrative TEXT,
+  createdBy VARCHAR(255) NOT NULL,
+  modifiedBy VARCHAR(255) NOT NULL,
+  createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  modifiedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  isActive TINYINT(1) NOT NULL DEFAULT '1',
+  FOREIGN KEY (project_id) REFERENCES projects(project_id),
+  FOREIGN KEY (cost_code_id) REFERENCES cost_codes(cost_code_id),
+  FOREIGN KEY (awarded_company_id) REFERENCES companies(company_id)
+);
+
+CREATE TABLE scope_items (
+  scope_item_id INT AUTO_INCREMENT PRIMARY KEY,
+  trade_package_id INT NOT NULL,
+  spec_section_id INT,
+  item_no INT,
+  description VARCHAR(1000) NOT NULL,
+  scope_category VARCHAR(50) DEFAULT 'included',
+  quantity DECIMAL(14,2),
+  unit VARCHAR(20),
+  source_ref VARCHAR(100),
+  createdBy VARCHAR(255) NOT NULL,
+  modifiedBy VARCHAR(255) NOT NULL,
+  createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  modifiedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  isActive TINYINT(1) NOT NULL DEFAULT '1',
+  FOREIGN KEY (trade_package_id) REFERENCES trade_packages(trade_package_id),
+  FOREIGN KEY (spec_section_id) REFERENCES spec_sections(spec_section_id)
+);
+
+CREATE TABLE bid_invitations (
+  bid_invitation_id INT AUTO_INCREMENT PRIMARY KEY,
+  trade_package_id INT NOT NULL,
+  company_id INT NOT NULL,
+  contact_id INT,
+  invited_date DATE,
+  response VARCHAR(50) NOT NULL DEFAULT 'invited',
+  notes TEXT,
+  createdBy VARCHAR(255) NOT NULL,
+  modifiedBy VARCHAR(255) NOT NULL,
+  createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  modifiedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  isActive TINYINT(1) NOT NULL DEFAULT '1',
+  FOREIGN KEY (trade_package_id) REFERENCES trade_packages(trade_package_id),
+  FOREIGN KEY (company_id) REFERENCES companies(company_id),
+  FOREIGN KEY (contact_id) REFERENCES contacts(contact_id)
+);
+
+CREATE TABLE bids (
+  bid_id INT AUTO_INCREMENT PRIMARY KEY,
+  trade_package_id INT NOT NULL,
+  company_id INT NOT NULL,
+  document_id INT,
+  received_date DATE,
+  base_amount DECIMAL(14,2),
+  alternates_amount DECIMAL(14,2),
+  leveled_amount DECIMAL(14,2),
+  schedule_days INT,
+  exclusions TEXT,
+  qualifications TEXT,
+  status VARCHAR(50) NOT NULL DEFAULT 'received',
+  is_low_bid TINYINT(1) NOT NULL DEFAULT '0',
+  createdBy VARCHAR(255) NOT NULL,
+  modifiedBy VARCHAR(255) NOT NULL,
+  createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  modifiedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  isActive TINYINT(1) NOT NULL DEFAULT '1',
+  FOREIGN KEY (trade_package_id) REFERENCES trade_packages(trade_package_id),
+  FOREIGN KEY (company_id) REFERENCES companies(company_id),
+  FOREIGN KEY (document_id) REFERENCES documents(document_id)
+);
+
+CREATE TABLE bid_line_items (
+  bid_line_item_id INT AUTO_INCREMENT PRIMARY KEY,
+  bid_id INT NOT NULL,
+  scope_item_id INT,
+  description VARCHAR(1000) NOT NULL,
+  quantity DECIMAL(14,2),
+  unit VARCHAR(20),
+  unit_price DECIMAL(14,2),
+  amount DECIMAL(14,2),
+  inclusion VARCHAR(50) NOT NULL DEFAULT 'included',
+  createdBy VARCHAR(255) NOT NULL,
+  modifiedBy VARCHAR(255) NOT NULL,
+  createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  modifiedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  isActive TINYINT(1) NOT NULL DEFAULT '1',
+  FOREIGN KEY (bid_id) REFERENCES bids(bid_id),
+  FOREIGN KEY (scope_item_id) REFERENCES scope_items(scope_item_id)
+);
+
+CREATE TABLE scope_gaps (
+  scope_gap_id INT AUTO_INCREMENT PRIMARY KEY,
+  bid_id INT NOT NULL,
+  scope_item_id INT,
+  gap_type VARCHAR(50) NOT NULL,
+  description VARCHAR(1000) NOT NULL,
+  plug_amount DECIMAL(14,2),
+  resolution VARCHAR(50) NOT NULL DEFAULT 'open',
+  notes TEXT,
+  createdBy VARCHAR(255) NOT NULL,
+  modifiedBy VARCHAR(255) NOT NULL,
+  createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  modifiedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  isActive TINYINT(1) NOT NULL DEFAULT '1',
+  FOREIGN KEY (bid_id) REFERENCES bids(bid_id),
+  FOREIGN KEY (scope_item_id) REFERENCES scope_items(scope_item_id)
+);
+
+CREATE TABLE schedule_activities (
+  schedule_activity_id INT AUTO_INCREMENT PRIMARY KEY,
+  project_id INT NOT NULL,
+  trade_package_id INT,
+  activity_code VARCHAR(30),
+  name VARCHAR(255) NOT NULL,
+  area VARCHAR(100),
+  planned_start DATE,
+  planned_finish DATE,
+  actual_start DATE,
+  actual_finish DATE,
+  percent_complete DECIMAL(5,2) DEFAULT '0.00',
+  is_critical TINYINT(1) NOT NULL DEFAULT '0',
+  status VARCHAR(50) NOT NULL DEFAULT 'not_started',
+  createdBy VARCHAR(255) NOT NULL,
+  modifiedBy VARCHAR(255) NOT NULL,
+  createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  modifiedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  isActive TINYINT(1) NOT NULL DEFAULT '1',
+  FOREIGN KEY (project_id) REFERENCES projects(project_id),
+  FOREIGN KEY (trade_package_id) REFERENCES trade_packages(trade_package_id)
+);
+
+CREATE TABLE daily_logs (
+  daily_log_id INT AUTO_INCREMENT PRIMARY KEY,
+  project_id INT NOT NULL,
+  log_date DATE NOT NULL,
+  weather VARCHAR(100),
+  temp_high INT,
+  temp_low INT,
+  work_performed TEXT,
+  delays TEXT,
+  visitors TEXT,
+  deliveries TEXT,
+  superintendent_contact_id INT,
+  createdBy VARCHAR(255) NOT NULL,
+  modifiedBy VARCHAR(255) NOT NULL,
+  createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  modifiedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  isActive TINYINT(1) NOT NULL DEFAULT '1',
+  FOREIGN KEY (project_id) REFERENCES projects(project_id),
+  FOREIGN KEY (superintendent_contact_id) REFERENCES contacts(contact_id)
+);
+
+CREATE TABLE daily_log_crews (
+  daily_log_crew_id INT AUTO_INCREMENT PRIMARY KEY,
+  daily_log_id INT NOT NULL,
+  company_id INT NOT NULL,
+  workers INT NOT NULL DEFAULT '0',
+  hours DECIMAL(8,2),
+  work_area VARCHAR(255),
+  activity_notes TEXT,
+  createdBy VARCHAR(255) NOT NULL,
+  modifiedBy VARCHAR(255) NOT NULL,
+  createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  modifiedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  isActive TINYINT(1) NOT NULL DEFAULT '1',
+  FOREIGN KEY (daily_log_id) REFERENCES daily_logs(daily_log_id),
+  FOREIGN KEY (company_id) REFERENCES companies(company_id)
+);
+
+CREATE TABLE time_entries (
+  time_entry_id INT AUTO_INCREMENT PRIMARY KEY,
+  project_id INT NOT NULL,
+  contact_id INT NOT NULL,
+  cost_code_id INT,
+  work_date DATE NOT NULL,
+  regular_hours DECIMAL(6,2) DEFAULT '0.00',
+  overtime_hours DECIMAL(6,2) DEFAULT '0.00',
+  notes VARCHAR(500),
+  approval VARCHAR(50) NOT NULL DEFAULT 'submitted',
+  createdBy VARCHAR(255) NOT NULL,
+  modifiedBy VARCHAR(255) NOT NULL,
+  createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  modifiedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  isActive TINYINT(1) NOT NULL DEFAULT '1',
+  FOREIGN KEY (project_id) REFERENCES projects(project_id),
+  FOREIGN KEY (contact_id) REFERENCES contacts(contact_id),
+  FOREIGN KEY (cost_code_id) REFERENCES cost_codes(cost_code_id)
+);
+
+CREATE TABLE rfis (
+  rfi_id INT AUTO_INCREMENT PRIMARY KEY,
+  project_id INT NOT NULL,
+  rfi_number VARCHAR(20) NOT NULL,
+  subject VARCHAR(255) NOT NULL,
+  question TEXT NOT NULL,
+  suggested_answer TEXT,
+  official_answer TEXT,
+  drawing_ref VARCHAR(255),
+  spec_section_id INT,
+  submitted_by_company_id INT,
+  assigned_company_id INT,
+  date_sent DATE,
+  date_due DATE,
+  date_answered DATE,
+  cost_impact VARCHAR(20) DEFAULT 'unknown',
+  schedule_impact VARCHAR(20) DEFAULT 'unknown',
+  status VARCHAR(50) NOT NULL DEFAULT 'draft',
+  createdBy VARCHAR(255) NOT NULL,
+  modifiedBy VARCHAR(255) NOT NULL,
+  createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  modifiedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  isActive TINYINT(1) NOT NULL DEFAULT '1',
+  FOREIGN KEY (project_id) REFERENCES projects(project_id),
+  FOREIGN KEY (spec_section_id) REFERENCES spec_sections(spec_section_id),
+  FOREIGN KEY (submitted_by_company_id) REFERENCES companies(company_id),
+  FOREIGN KEY (assigned_company_id) REFERENCES companies(company_id)
+);
+
+CREATE TABLE submittals (
+  submittal_id INT AUTO_INCREMENT PRIMARY KEY,
+  project_id INT NOT NULL,
+  spec_section_id INT,
+  company_id INT,
+  document_id INT,
+  submittal_number VARCHAR(30) NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  submittal_type VARCHAR(50),
+  date_received DATE,
+  date_to_architect DATE,
+  date_due DATE,
+  date_returned DATE,
+  review_notes TEXT,
+  status VARCHAR(50) NOT NULL DEFAULT 'pending',
+  createdBy VARCHAR(255) NOT NULL,
+  modifiedBy VARCHAR(255) NOT NULL,
+  createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  modifiedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  isActive TINYINT(1) NOT NULL DEFAULT '1',
+  FOREIGN KEY (project_id) REFERENCES projects(project_id),
+  FOREIGN KEY (spec_section_id) REFERENCES spec_sections(spec_section_id),
+  FOREIGN KEY (company_id) REFERENCES companies(company_id),
+  FOREIGN KEY (document_id) REFERENCES documents(document_id)
+);
+
+CREATE TABLE submittal_reviews (
+  submittal_review_id INT AUTO_INCREMENT PRIMARY KEY,
+  submittal_id INT NOT NULL,
+  spec_requirement VARCHAR(1000) NOT NULL,
+  submitted_value VARCHAR(1000),
+  compliance VARCHAR(50) NOT NULL DEFAULT 'unclear',
+  comment TEXT,
+  page_ref VARCHAR(50),
+  createdBy VARCHAR(255) NOT NULL,
+  modifiedBy VARCHAR(255) NOT NULL,
+  createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  modifiedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  isActive TINYINT(1) NOT NULL DEFAULT '1',
+  FOREIGN KEY (submittal_id) REFERENCES submittals(submittal_id)
+);
+
+CREATE TABLE inspections (
+  inspection_id INT AUTO_INCREMENT PRIMARY KEY,
+  project_id INT NOT NULL,
+  inspection_type VARCHAR(100) NOT NULL,
+  agency VARCHAR(255),
+  area VARCHAR(255),
+  scheduled_date DATE,
+  inspector VARCHAR(255),
+  result VARCHAR(50) NOT NULL DEFAULT 'scheduled',
+  findings TEXT,
+  createdBy VARCHAR(255) NOT NULL,
+  modifiedBy VARCHAR(255) NOT NULL,
+  createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  modifiedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  isActive TINYINT(1) NOT NULL DEFAULT '1',
+  FOREIGN KEY (project_id) REFERENCES projects(project_id)
+);
+
+CREATE TABLE punch_items (
+  punch_item_id INT AUTO_INCREMENT PRIMARY KEY,
+  project_id INT NOT NULL,
+  company_id INT,
+  location VARCHAR(255) NOT NULL,
+  description VARCHAR(1000) NOT NULL,
+  priority VARCHAR(20) DEFAULT 'normal',
+  due_date DATE,
+  status VARCHAR(50) NOT NULL DEFAULT 'open',
+  closed_date DATE,
+  createdBy VARCHAR(255) NOT NULL,
+  modifiedBy VARCHAR(255) NOT NULL,
+  createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  modifiedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  isActive TINYINT(1) NOT NULL DEFAULT '1',
+  FOREIGN KEY (project_id) REFERENCES projects(project_id),
+  FOREIGN KEY (company_id) REFERENCES companies(company_id)
+);
+
+CREATE TABLE safety_incidents (
+  safety_incident_id INT AUTO_INCREMENT PRIMARY KEY,
+  project_id INT NOT NULL,
+  company_id INT,
+  incident_date DATE NOT NULL,
+  incident_type VARCHAR(50) NOT NULL,
+  severity VARCHAR(50) NOT NULL DEFAULT 'minor',
+  location VARCHAR(255),
+  description TEXT NOT NULL,
+  root_cause TEXT,
+  corrective_action TEXT,
+  is_osha_recordable TINYINT(1) NOT NULL DEFAULT '0',
+  status VARCHAR(50) NOT NULL DEFAULT 'open',
+  createdBy VARCHAR(255) NOT NULL,
+  modifiedBy VARCHAR(255) NOT NULL,
+  createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  modifiedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  isActive TINYINT(1) NOT NULL DEFAULT '1',
+  FOREIGN KEY (project_id) REFERENCES projects(project_id),
+  FOREIGN KEY (company_id) REFERENCES companies(company_id)
+);
+
+CREATE TABLE meetings (
+  meeting_id INT AUTO_INCREMENT PRIMARY KEY,
+  project_id INT NOT NULL,
+  meeting_type VARCHAR(50) NOT NULL,
+  meeting_date DATE NOT NULL,
+  location VARCHAR(255),
+  attendees TEXT,
+  minutes TEXT,
+  createdBy VARCHAR(255) NOT NULL,
+  modifiedBy VARCHAR(255) NOT NULL,
+  createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  modifiedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  isActive TINYINT(1) NOT NULL DEFAULT '1',
+  FOREIGN KEY (project_id) REFERENCES projects(project_id)
+);
+
+CREATE TABLE action_items (
+  action_item_id INT AUTO_INCREMENT PRIMARY KEY,
+  meeting_id INT NOT NULL,
+  company_id INT,
+  description VARCHAR(1000) NOT NULL,
+  due_date DATE,
+  status VARCHAR(50) NOT NULL DEFAULT 'open',
+  createdBy VARCHAR(255) NOT NULL,
+  modifiedBy VARCHAR(255) NOT NULL,
+  createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  modifiedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  isActive TINYINT(1) NOT NULL DEFAULT '1',
+  FOREIGN KEY (meeting_id) REFERENCES meetings(meeting_id),
+  FOREIGN KEY (company_id) REFERENCES companies(company_id)
+);
+
+CREATE TABLE budget_lines (
+  budget_line_id INT AUTO_INCREMENT PRIMARY KEY,
+  project_id INT NOT NULL,
+  cost_code_id INT NOT NULL,
+  description VARCHAR(255),
+  original_budget DECIMAL(14,2),
+  approved_changes DECIMAL(14,2) DEFAULT '0.00',
+  committed_cost DECIMAL(14,2) DEFAULT '0.00',
+  actual_cost DECIMAL(14,2) DEFAULT '0.00',
+  forecast_to_complete DECIMAL(14,2),
+  createdBy VARCHAR(255) NOT NULL,
+  modifiedBy VARCHAR(255) NOT NULL,
+  createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  modifiedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  isActive TINYINT(1) NOT NULL DEFAULT '1',
+  FOREIGN KEY (project_id) REFERENCES projects(project_id),
+  FOREIGN KEY (cost_code_id) REFERENCES cost_codes(cost_code_id)
+);
+
+CREATE TABLE subcontracts (
+  subcontract_id INT AUTO_INCREMENT PRIMARY KEY,
+  project_id INT NOT NULL,
+  trade_package_id INT,
+  company_id INT NOT NULL,
+  contract_number VARCHAR(30) NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  original_amount DECIMAL(14,2),
+  approved_cos DECIMAL(14,2) DEFAULT '0.00',
+  retainage_pct DECIMAL(5,2) DEFAULT '10.00',
+  executed_date DATE,
+  insurance_verified TINYINT(1) NOT NULL DEFAULT '0',
+  status VARCHAR(50) NOT NULL DEFAULT 'draft',
+  scope_of_work TEXT,
+  createdBy VARCHAR(255) NOT NULL,
+  modifiedBy VARCHAR(255) NOT NULL,
+  createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  modifiedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  isActive TINYINT(1) NOT NULL DEFAULT '1',
+  FOREIGN KEY (project_id) REFERENCES projects(project_id),
+  FOREIGN KEY (trade_package_id) REFERENCES trade_packages(trade_package_id),
+  FOREIGN KEY (company_id) REFERENCES companies(company_id)
+);
+
+CREATE TABLE subcontract_items (
+  subcontract_item_id INT AUTO_INCREMENT PRIMARY KEY,
+  subcontract_id INT NOT NULL,
+  cost_code_id INT,
+  description VARCHAR(500) NOT NULL,
+  scheduled_value DECIMAL(14,2),
+  createdBy VARCHAR(255) NOT NULL,
+  modifiedBy VARCHAR(255) NOT NULL,
+  createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  modifiedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  isActive TINYINT(1) NOT NULL DEFAULT '1',
+  FOREIGN KEY (subcontract_id) REFERENCES subcontracts(subcontract_id),
+  FOREIGN KEY (cost_code_id) REFERENCES cost_codes(cost_code_id)
+);
+
+CREATE TABLE purchase_orders (
+  purchase_order_id INT AUTO_INCREMENT PRIMARY KEY,
+  project_id INT NOT NULL,
+  company_id INT NOT NULL,
+  cost_code_id INT,
+  po_number VARCHAR(30) NOT NULL,
+  description VARCHAR(500),
+  amount DECIMAL(14,2),
+  issued_date DATE,
+  delivery_date DATE,
+  status VARCHAR(50) NOT NULL DEFAULT 'draft',
+  createdBy VARCHAR(255) NOT NULL,
+  modifiedBy VARCHAR(255) NOT NULL,
+  createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  modifiedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  isActive TINYINT(1) NOT NULL DEFAULT '1',
+  FOREIGN KEY (project_id) REFERENCES projects(project_id),
+  FOREIGN KEY (company_id) REFERENCES companies(company_id),
+  FOREIGN KEY (cost_code_id) REFERENCES cost_codes(cost_code_id)
+);
+
+CREATE TABLE change_events (
+  change_event_id INT AUTO_INCREMENT PRIMARY KEY,
+  project_id INT NOT NULL,
+  rfi_id INT,
+  event_number VARCHAR(20) NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  origin VARCHAR(50),
+  description TEXT,
+  estimated_cost DECIMAL(14,2),
+  estimated_days INT,
+  status VARCHAR(50) NOT NULL DEFAULT 'open',
+  createdBy VARCHAR(255) NOT NULL,
+  modifiedBy VARCHAR(255) NOT NULL,
+  createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  modifiedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  isActive TINYINT(1) NOT NULL DEFAULT '1',
+  FOREIGN KEY (project_id) REFERENCES projects(project_id),
+  FOREIGN KEY (rfi_id) REFERENCES rfis(rfi_id)
+);
+
+CREATE TABLE change_orders (
+  change_order_id INT AUTO_INCREMENT PRIMARY KEY,
+  project_id INT NOT NULL,
+  change_event_id INT,
+  subcontract_id INT,
+  co_number VARCHAR(20) NOT NULL,
+  co_type VARCHAR(50) NOT NULL DEFAULT 'prime',
+  title VARCHAR(255) NOT NULL,
+  amount DECIMAL(14,2),
+  days_added INT DEFAULT '0',
+  submitted_date DATE,
+  approved_date DATE,
+  status VARCHAR(50) NOT NULL DEFAULT 'draft',
+  justification TEXT,
+  createdBy VARCHAR(255) NOT NULL,
+  modifiedBy VARCHAR(255) NOT NULL,
+  createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  modifiedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  isActive TINYINT(1) NOT NULL DEFAULT '1',
+  FOREIGN KEY (project_id) REFERENCES projects(project_id),
+  FOREIGN KEY (change_event_id) REFERENCES change_events(change_event_id),
+  FOREIGN KEY (subcontract_id) REFERENCES subcontracts(subcontract_id)
+);
+
+CREATE TABLE change_order_lines (
+  change_order_line_id INT AUTO_INCREMENT PRIMARY KEY,
+  change_order_id INT NOT NULL,
+  cost_code_id INT,
+  description VARCHAR(500) NOT NULL,
+  cost_type VARCHAR(50),
+  quantity DECIMAL(14,2),
+  unit VARCHAR(20),
+  unit_cost DECIMAL(14,2),
+  markup_pct DECIMAL(5,2) DEFAULT '0.00',
+  amount DECIMAL(14,2),
+  createdBy VARCHAR(255) NOT NULL,
+  modifiedBy VARCHAR(255) NOT NULL,
+  createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  modifiedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  isActive TINYINT(1) NOT NULL DEFAULT '1',
+  FOREIGN KEY (change_order_id) REFERENCES change_orders(change_order_id),
+  FOREIGN KEY (cost_code_id) REFERENCES cost_codes(cost_code_id)
+);
+
+CREATE TABLE pay_applications (
+  pay_application_id INT AUTO_INCREMENT PRIMARY KEY,
+  project_id INT NOT NULL,
+  subcontract_id INT,
+  document_id INT,
+  app_number INT NOT NULL,
+  pay_direction VARCHAR(20) NOT NULL DEFAULT 'sub_to_gc',
+  period_to DATE,
+  scheduled_value DECIMAL(14,2),
+  work_completed DECIMAL(14,2),
+  stored_materials DECIMAL(14,2),
+  retainage_held DECIMAL(14,2),
+  amount_due DECIMAL(14,2),
+  status VARCHAR(50) NOT NULL DEFAULT 'received',
+  review_notes TEXT,
+  createdBy VARCHAR(255) NOT NULL,
+  modifiedBy VARCHAR(255) NOT NULL,
+  createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  modifiedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  isActive TINYINT(1) NOT NULL DEFAULT '1',
+  FOREIGN KEY (project_id) REFERENCES projects(project_id),
+  FOREIGN KEY (subcontract_id) REFERENCES subcontracts(subcontract_id),
+  FOREIGN KEY (document_id) REFERENCES documents(document_id)
+);
+
+CREATE TABLE pay_app_lines (
+  pay_app_line_id INT AUTO_INCREMENT PRIMARY KEY,
+  pay_application_id INT NOT NULL,
+  subcontract_item_id INT,
+  description VARCHAR(500) NOT NULL,
+  scheduled_value DECIMAL(14,2),
+  previous_completed DECIMAL(14,2),
+  this_period DECIMAL(14,2),
+  stored_materials DECIMAL(14,2),
+  percent_complete DECIMAL(5,2),
+  flag VARCHAR(255),
+  createdBy VARCHAR(255) NOT NULL,
+  modifiedBy VARCHAR(255) NOT NULL,
+  createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  modifiedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  isActive TINYINT(1) NOT NULL DEFAULT '1',
+  FOREIGN KEY (pay_application_id) REFERENCES pay_applications(pay_application_id),
+  FOREIGN KEY (subcontract_item_id) REFERENCES subcontract_items(subcontract_item_id)
+);
+
+CREATE TABLE lien_waivers (
+  lien_waiver_id INT AUTO_INCREMENT PRIMARY KEY,
+  pay_application_id INT,
+  company_id INT NOT NULL,
+  waiver_type VARCHAR(50) NOT NULL,
+  through_date DATE,
+  amount DECIMAL(14,2),
+  received_date DATE,
+  status VARCHAR(50) NOT NULL DEFAULT 'requested',
+  createdBy VARCHAR(255) NOT NULL,
+  modifiedBy VARCHAR(255) NOT NULL,
+  createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  modifiedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  isActive TINYINT(1) NOT NULL DEFAULT '1',
+  FOREIGN KEY (pay_application_id) REFERENCES pay_applications(pay_application_id),
+  FOREIGN KEY (company_id) REFERENCES companies(company_id)
+);
+
+CREATE TABLE invoices (
+  invoice_id INT AUTO_INCREMENT PRIMARY KEY,
+  project_id INT NOT NULL,
+  company_id INT NOT NULL,
+  purchase_order_id INT,
+  cost_code_id INT,
+  document_id INT,
+  invoice_number VARCHAR(50) NOT NULL,
+  invoice_date DATE,
+  due_date DATE,
+  amount DECIMAL(14,2),
+  status VARCHAR(50) NOT NULL DEFAULT 'received',
+  createdBy VARCHAR(255) NOT NULL,
+  modifiedBy VARCHAR(255) NOT NULL,
+  createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  modifiedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  isActive TINYINT(1) NOT NULL DEFAULT '1',
+  FOREIGN KEY (project_id) REFERENCES projects(project_id),
+  FOREIGN KEY (company_id) REFERENCES companies(company_id),
+  FOREIGN KEY (purchase_order_id) REFERENCES purchase_orders(purchase_order_id),
+  FOREIGN KEY (cost_code_id) REFERENCES cost_codes(cost_code_id),
+  FOREIGN KEY (document_id) REFERENCES documents(document_id)
+);
+
+CREATE TABLE closeout_items (
+  closeout_item_id INT AUTO_INCREMENT PRIMARY KEY,
+  project_id INT NOT NULL,
+  company_id INT,
+  spec_section_id INT,
+  item_type VARCHAR(50) NOT NULL,
+  description VARCHAR(500) NOT NULL,
+  due_date DATE,
+  received_date DATE,
+  status VARCHAR(50) NOT NULL DEFAULT 'required',
+  createdBy VARCHAR(255) NOT NULL,
+  modifiedBy VARCHAR(255) NOT NULL,
+  createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  modifiedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  isActive TINYINT(1) NOT NULL DEFAULT '1',
+  FOREIGN KEY (project_id) REFERENCES projects(project_id),
+  FOREIGN KEY (company_id) REFERENCES companies(company_id),
+  FOREIGN KEY (spec_section_id) REFERENCES spec_sections(spec_section_id)
+);
+
+CREATE TABLE warranties (
+  warranty_id INT AUTO_INCREMENT PRIMARY KEY,
+  project_id INT NOT NULL,
+  company_id INT,
+  document_id INT,
+  system_name VARCHAR(255) NOT NULL,
+  manufacturer VARCHAR(255),
+  start_date DATE,
+  duration_months INT,
+  end_date DATE,
+  coverage TEXT,
+  contact_info VARCHAR(500),
+  createdBy VARCHAR(255) NOT NULL,
+  modifiedBy VARCHAR(255) NOT NULL,
+  createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  modifiedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  isActive TINYINT(1) NOT NULL DEFAULT '1',
+  FOREIGN KEY (project_id) REFERENCES projects(project_id),
+  FOREIGN KEY (company_id) REFERENCES companies(company_id),
+  FOREIGN KEY (document_id) REFERENCES documents(document_id)
+);
+
+CREATE TABLE warranty_claims (
+  warranty_claim_id INT AUTO_INCREMENT PRIMARY KEY,
+  warranty_id INT NOT NULL,
+  reported_date DATE NOT NULL,
+  issue TEXT NOT NULL,
+  resolution TEXT,
+  status VARCHAR(50) NOT NULL DEFAULT 'reported',
+  createdBy VARCHAR(255) NOT NULL,
+  modifiedBy VARCHAR(255) NOT NULL,
+  createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  modifiedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  isActive TINYINT(1) NOT NULL DEFAULT '1',
+  FOREIGN KEY (warranty_id) REFERENCES warranties(warranty_id)
+);

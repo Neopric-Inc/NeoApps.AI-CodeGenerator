@@ -7,6 +7,7 @@
     <PackageReference Include="Swashbuckle.AspNetCore" Version="10.3.1" />
     <PackageReference Include="StackExchange.Redis" Version="2.13.23" />
     <PackageReference Include="PdfPig" Version="0.1.16" />
+    <PackageReference Include="FluentMigrator.Runner.MySql" Version="8.0.1" />
   </ItemGroup>
 
   <ItemGroup>

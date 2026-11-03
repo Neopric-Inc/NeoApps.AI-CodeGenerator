@@ -10,7 +10,7 @@ namespace NeoApps.Mcp;
 /// </summary>
 public static class Cli
 {
-    private static readonly string[] Commands = ["new", "preview", "frontend", "ui", "deploy", "status", "logs", "stop", "list", "doctor", "guidelines", "infra", "help", "--help", "-h"];
+    private static readonly string[] Commands = ["new", "evolve", "migrate", "preview", "frontend", "ui", "deploy", "status", "logs", "stop", "list", "doctor", "guidelines", "infra", "help", "--help", "-h"];
     private static readonly JsonSerializerOptions Pretty = new() { WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
 
     public static bool IsCommand(string arg) => Commands.Contains(arg, StringComparer.OrdinalIgnoreCase);
@@ -44,6 +44,21 @@ public static class Cli
                     if (ok) Print(await tools.AppStatus(Name(), ct));
                     return ok ? 0 : 1;
                 }
+                case "evolve":
+                {
+                    var ok = await RunJob(jobs, tools.EvolveApp(Name(),
+                        sqlFilePath: Opt("--schema") is { } es ? Path.GetFullPath(es) : null,
+                        uiConfig: Opt("--ui") is { } eu ? await File.ReadAllTextAsync(eu) : null,
+                        migrationName: Opt("--name") ?? "schema change",
+                        allowDestructive: Flag("--allow-destructive"),
+                        renames: Opt("--renames") is { } rf ? await File.ReadAllTextAsync(rf) : null,
+                        planOnly: Flag("--plan"), ct: ct));
+                    if (ok && !Flag("--plan") && Flag("--deploy"))
+                        ok = await RunJob(jobs, tools.DeployApp(Name(), Flag("--consumer"), ct));
+                    return ok ? 0 : 1;
+                }
+                case "migrate":
+                    return await RunJob(jobs, tools.MigrateApp(Name(), args.Length > 2 && !args[2].StartsWith('-') ? args[2] : "status", ct)) ? 0 : 1;
                 case "preview":
                     Print(Requirements.Preview(store, Name(),
                         sqlSchema: Opt("--schema") is { } sf ? await File.ReadAllTextAsync(sf) : null,
@@ -108,6 +123,11 @@ public static class Cli
 
           new <App> --schema <file.sql> [--ui ui.config.json] [--template app|dnd] [--no-frontend] [--keep-db] [--deploy] [--consumer]
                                   generate database + .NET 10 API + React UI, optionally run it in Docker
+          evolve <App> [--schema new.sql] [--ui ui.config.json] [--name "add equipment"] [--plan] [--allow-destructive] [--renames renames.json] [--deploy]
+                                  apply a requirements change to a running app, keeping its data: writes a C# migration
+                                  (workspace/<App>/migrations), backs up, migrates, regenerates API + UI. --plan only shows it
+          migrate <App> [status|up|baseline|down:<version>]
+                                  run the app's migrations against its database (default: status)
           preview <App> [--schema f.sql] [--ui f.json] [--save] [--out file.html]
                                   plan before generating: writes workspace/<App>/preview.html (data model diagram,
                                   screens, roles, AI, issues, and what changed since the last saved version).
