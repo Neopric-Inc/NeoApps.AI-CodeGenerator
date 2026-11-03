@@ -152,6 +152,16 @@ internal static class UiConfigTools
               administrators too. "adminBypass" (per lifecycle or per step): true (default), "platform" (only platform
               admins, never tenant-bound ones) or false (admins need a listed role). Frozen states lock the record. History rows, timestamps and SLA
               deadline rows are written automatically in the same transaction.
+          "validations": { "customer_invoices": {
+              "contact_email": { "format": "email" }, "website": { "format": "url" }, "phone": { "format": "phone" },
+              "invoice_number": { "pattern": "^INV-[0-9]{4,}$", "message": "Use INV- followed by digits" },
+              "quantity": { "min": 1, "max": 1000 }, "name": { "minLength": 2, "maxLength": 80 },
+              "due_date": { "gte": "issued_at" },                        // gt / gte / lt / lte / ne: another column
+              "total": { "equals": "subtotal + tax - discount_amount", "tolerance": 0.01 },
+              "po_number": { "requiredWhen": { "status": ["issued", "paid"] } }, "notes": { "required": true } } }
+              Field rules beyond NOT NULL and types, checked by the API on every create/update (400 with
+              {"errors": {"column": ["message"]}}, shown next to the field) and by the form before saving ("equals" only
+              by the API). "message" overrides the default text. On updates only rules touching a changed column run.
           "immutable": { "audit_logs": ["*"], "findings": ["ai_text", "confidence"] }   // "*" = append-only; else read-only columns
           "audit": { "table": "audit_logs", "platformTable": "platform_audit_logs", "exclude": [] }
               One row per create/update/delete (actor_type, actor_ref, action_code, entity_type, entity_ref, details JSON of

@@ -88,6 +88,23 @@ export interface UiConfig {
   roles?: Record<string, Record<string, string>>;
   /** AI assistant settings, read by the API (instructions, tools, workflows) and the UI. */
   ai?: Record<string, any>;
+  /** Field rules enforced by the API (DataGuard) and checked in forms before saving: {"table": {"column": {"format": "email"}}}. */
+  validations?: Record<string, Record<string, FieldRule>>;
+}
+
+export interface FieldRule {
+  format?: "email" | "url" | "phone" | "uuid";
+  pattern?: string;
+  message?: string;
+  min?: number;
+  max?: number;
+  minLength?: number;
+  maxLength?: number;
+  gt?: string; gte?: string; lt?: string; lte?: string; ne?: string;
+  equals?: string;
+  tolerance?: number;
+  required?: boolean;
+  requiredWhen?: Record<string, string | string[]>;
 }
 
 // Fully-resolved view of a table (schema + defaults + config) used by the pages.

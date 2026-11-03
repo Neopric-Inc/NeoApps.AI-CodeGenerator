@@ -45,7 +45,7 @@ namespace {projectName}.API.Controllers
 			List<OrderByModel> orderModelList = UtilityCommon.ConvertStringOrderToOrderModel(orderBy);
             string ownername = HttpContext.Items["OwnerName"] as string;
             return Ok(Manager.Get{tableName}ByCreatedBy(ownername,page, itemsPerPage,orderModelList));
-			}catch(DataGuardException gx){ return StatusCode(gx.StatusCode, new APIResponse(ResponseCode.ERROR, gx.Message, gx.Message)); }catch(Exception ex)
+			}catch(DataGuardException gx){ return StatusCode(gx.StatusCode, gx.Body); }catch(Exception ex)
             {
                 return ApiHardening.Error(this, ex);
             }
@@ -75,7 +75,7 @@ namespace {projectName}.API.Controllers
 			List<OrderByModel> orderModelList = UtilityCommon.ConvertStringOrderToOrderModel(orderBy);
             string ownername = HttpContext.Items["OwnerName"] as string;
             return Ok(Manager.Search{tableName}ByCreatedBy(ownername,searchKey, page, itemsPerPage,orderModelList));
-			}catch(DataGuardException gx){ return StatusCode(gx.StatusCode, new APIResponse(ResponseCode.ERROR, gx.Message, gx.Message)); }catch(Exception ex)
+			}catch(DataGuardException gx){ return StatusCode(gx.StatusCode, gx.Body); }catch(Exception ex)
             {
                 return ApiHardening.Error(this, ex);
             }
@@ -94,7 +94,7 @@ namespace {projectName}.API.Controllers
             }
             string ownername = HttpContext.Items["OwnerName"] as string;
             return Ok(Manager.Get{tableName}ByIDByCreatedBy(ownername,{primaryKeyListParam}));
-			}catch(DataGuardException gx){ return StatusCode(gx.StatusCode, new APIResponse(ResponseCode.ERROR, gx.Message, gx.Message)); }catch(Exception ex)
+			}catch(DataGuardException gx){ return StatusCode(gx.StatusCode, gx.Body); }catch(Exception ex)
             {
                 return ApiHardening.Error(this, ex);
             }
@@ -122,7 +122,7 @@ namespace {projectName}.API.Controllers
                 token = token.Replace("Bearer ", "");
 				{{createdByModifiedByReplacer}}
                 return Ok(Manager.Add{tableName}WithToken(model,token));
-			}catch(DataGuardException gx){ return StatusCode(gx.StatusCode, new APIResponse(ResponseCode.ERROR, gx.Message, gx.Message)); }catch(Exception ex)
+			}catch(DataGuardException gx){ return StatusCode(gx.StatusCode, gx.Body); }catch(Exception ex)
             {
                 return ApiHardening.Error(this, ex);
             }
@@ -151,7 +151,7 @@ namespace {projectName}.API.Controllers
                 return BadRequest(new APIResponse(ResponseCode.ERROR, "Validation failed", ValidationResult));
             }
             return Ok(Manager.Update{tableName}WithToken({primaryKeyListParam}, model,token));
-			}catch(DataGuardException gx){ return StatusCode(gx.StatusCode, new APIResponse(ResponseCode.ERROR, gx.Message, gx.Message)); }catch(Exception ex)
+			}catch(DataGuardException gx){ return StatusCode(gx.StatusCode, gx.Body); }catch(Exception ex)
             {
                 return ApiHardening.Error(this, ex);
             }
@@ -179,7 +179,7 @@ namespace {projectName}.API.Controllers
                 return BadRequest(new APIResponse(ResponseCode.ERROR, "Validation failed", ValidationResult));
             }
            return Ok(Manager.Delete{tableName}WithToken({primaryKeyListParam},token));
-		   }catch(DataGuardException gx){ return StatusCode(gx.StatusCode, new APIResponse(ResponseCode.ERROR, gx.Message, gx.Message)); }catch(Exception ex)
+		   }catch(DataGuardException gx){ return StatusCode(gx.StatusCode, gx.Body); }catch(Exception ex)
             {
                 return ApiHardening.Error(this, ex);
             }
@@ -211,7 +211,7 @@ namespace {projectName}.API.Controllers
                     return BadRequest(new APIResponse(ResponseCode.ERROR, "Validation failed", ValidationResult));
                 }
                 return Ok(Manager.DeleteMultiple{tableName}WithToken(deleteParam, andOr.ToUpper(),token));
-            }catch(DataGuardException gx){ return StatusCode(gx.StatusCode, new APIResponse(ResponseCode.ERROR, gx.Message, gx.Message)); }catch(Exception ex)
+            }catch(DataGuardException gx){ return StatusCode(gx.StatusCode, gx.Body); }catch(Exception ex)
             {
                 return ApiHardening.Error(this, ex);
             }
@@ -249,7 +249,7 @@ namespace {projectName}.API.Controllers
                 List<OrderByModel> orderModelList = UtilityCommon.ConvertStringOrderToOrderModel(orderBy);
                 string ownername = HttpContext.Items["OwnerName"] as string;
                 return Ok(Manager.Filter{tableName}(ownername,filterColumnList, andOr, page, itemsPerPage, orderModelList));
-            }catch(DataGuardException gx){ return StatusCode(gx.StatusCode, new APIResponse(ResponseCode.ERROR, gx.Message, gx.Message)); }catch(Exception ex)
+            }catch(DataGuardException gx){ return StatusCode(gx.StatusCode, gx.Body); }catch(Exception ex)
             {
                 return ApiHardening.Error(this, ex);
             }

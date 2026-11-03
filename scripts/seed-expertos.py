@@ -250,7 +250,7 @@ inv = add("customer_invoices", **T, customer_id=cust, case_id=case, customer_quo
 roles = {r["role_name"]: r["role_id"] for r in call("GET", "Access/roles", None, TOK)[1]["document"]}
 call("POST", "Access/members", {"username": "seedfinance", "password": "Seed!2026finance", "role_id": roles["Finance Officer"], "tenant_id": ten}, TOK)
 FIN = call("POST", "Token", {"username": "seedfinance", "password": "Seed!2026finance"})[1]["document"]["accessToken"]
-walk("customer_invoices", inv, "status", "issued", as_=FIN)
+upd("customer_invoices", inv, FIN, status="issued", issued_at="2026-11-03 09:00:00")
 add("customer_invoice_items", **T, customer_invoice_id=inv, description="Supplier Quote Analysis - EXP-2026-000001", quantity=1, unit_price=149, amount=149)
 add("notifications", **T, tenant_user_id=expert, notification_type="expert_assigned", channel="in_app", title="New case assigned: EXP-2026-000001", status="sent")
 add("saas_usage_records", **T, saas_subscription_id=sub, metric_code="ai_credits", quantity=12, is_billable=1)

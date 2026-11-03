@@ -5,7 +5,8 @@ import {
 } from "@mui/material";
 import { createRecord, updateRecord } from "./api";
 import { currencySymbol, renderValue, toApiDate, toDateInput, toDateTimeInput } from "./format";
-import { ResolvedField, ResolvedTable } from "./types";
+import { FieldRule, ResolvedField, ResolvedTable } from "./types";
+import { useApp } from "./AppContext";
 import { invalidateReferences, useReferences } from "./useReferences";
 
 interface Props {
@@ -34,7 +35,50 @@ function initialValue(f: ResolvedField, record?: Record<string, any> | null, def
   }
 }
 
+/** Client-side copy of the API's "validations" (the API stays the authority; "equals" is only checked there). */
+function ruleError(rule: FieldRule, name: string, row: Record<string, any>): string | undefined {
+  const v = row[name];
+  const empty = v === "" || v === null || v === undefined;
+  const label = name.replace(/_/g, " ");
+  const msg = (m: string) => rule.message || m;
+  if (empty) {
+    if (rule.required) return msg(`${label} is required`);
+    const when = rule.requiredWhen;
+    if (when && Object.entries(when).every(([k, want]) => ([] as string[]).concat(want).map(String).includes(String(row[k] ?? ""))))
+      return msg(`${label} is required here`);
+    return undefined;
+  }
+  const s = String(v);
+  if (rule.format === "email" && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s)) return msg("Enter a valid email address");
+  if (rule.format === "url" && !/^https?:\/\/\S+$/i.test(s)) return msg("Enter a valid web address (https://...)");
+  if (rule.format === "phone" && !/^\+?[0-9 ()./-]{6,20}$/.test(s)) return msg("Enter a valid phone number");
+  if (rule.pattern) { try { if (!new RegExp(rule.pattern).test(s)) return msg(`${label} has the wrong format`); } catch { /* checked by the API */ } }
+  if (rule.minLength !== undefined && s.length < rule.minLength) return msg(`At least ${rule.minLength} characters`);
+  if (rule.maxLength !== undefined && s.length > rule.maxLength) return msg(`At most ${rule.maxLength} characters`);
+  if (rule.min !== undefined && !(Number(s) >= rule.min)) return msg(`Must be at least ${rule.min}`);
+  if (rule.max !== undefined && !(Number(s) <= rule.max)) return msg(`Must be at most ${rule.max}`);
+  const cmp = (a: any, b: any) => {
+    const na = Number(a), nb = Number(b);
+    if (a !== "" && b !== "" && !isNaN(na) && !isNaN(nb)) return na - nb;
+    const da = Date.parse(a), db = Date.parse(b);
+    if (!isNaN(da) && !isNaN(db)) return da - db;
+    return String(a).localeCompare(String(b));
+  };
+  const ops: [keyof FieldRule, (c: number) => boolean, string][] = [
+    ["gt", (c) => c > 0, "after / greater than"], ["gte", (c) => c >= 0, "on or after / at least"],
+    ["lt", (c) => c < 0, "before / less than"], ["lte", (c) => c <= 0, "on or before / at most"], ["ne", (c) => c !== 0, "different from"],
+  ];
+  for (const [op, ok, word] of ops) {
+    const other = rule[op] as string | undefined;
+    if (other && row[other] !== "" && row[other] !== null && row[other] !== undefined && !ok(cmp(v, row[other])))
+      return msg(`Must be ${word} ${other.replace(/_/g, " ")}`);
+  }
+  return undefined;
+}
+
 export const RecordForm: React.FC<Props> = ({ table, record, defaults, open, onClose, onSaved }) => {
+  const { config } = useApp();
+  const rules = config?.validations?.[table.name] || {};
   const { refs } = useReferences(table);
   const fields = useMemo(() => table.formFields.map((n) => table.fields[n]), [table]);
   const [values, setValues] = useState<Record<string, any>>({});
@@ -65,6 +109,12 @@ export const RecordForm: React.FC<Props> = ({ table, record, defaults, open, onC
       else if (f.widget === "email" && v && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)) e[f.name] = "Enter a valid email";
       else if (["number", "currency", "percent"].includes(f.widget) && v !== "" && isNaN(Number(v))) e[f.name] = "Enter a number";
       else if (f.column.maxLength && typeof v === "string" && v.length > f.column.maxLength) e[f.name] = `Max ${f.column.maxLength} characters`;
+    }
+    const row = { ...(record || {}), ...values };
+    for (const [name, rule] of Object.entries(rules)) {
+      if (e[name] || !(name in values)) continue;
+      const problem = ruleError(rule, name, row);
+      if (problem) e[name] = problem;
     }
     setErrors(e);
     return Object.keys(e).length === 0;

@@ -177,6 +177,7 @@ namespace nkv.MicroService.Utility
                     }
                     _limits.Add(lim);
                 }
+            LoadValidations();
             if (Config["immutable"] is JsonObject im)
                 foreach (var (table, node) in im) _immutable[table] = Set(node);
             if (Config["audit"] is JsonObject au && au["enabled"]?.GetValue<bool>() != false)
@@ -233,6 +234,7 @@ namespace nkv.MicroService.Utility
 
         static partial void BeforeInsertImpl(MySqlCommand cmd, Caller caller, string table, Dictionary<string, object> values)
         {
+            Validate(table, values, null);
             foreach (var lim in _limits.Where(l => l.Table.Equals(table, StringComparison.OrdinalIgnoreCase)))
                 CheckLimit(cmd, caller, lim, values);
             if (_lifecycles.TryGetValue(table, out var lc) && values.TryGetValue(lc.Column, out var sv) && lc.Initial != null)
@@ -284,6 +286,12 @@ namespace nkv.MicroService.Utility
             var changes = values.Where(kv => !kv.Key.Equals("modifiedat", StringComparison.OrdinalIgnoreCase) && !kv.Key.Equals("modifiedby", StringComparison.OrdinalIgnoreCase)
                                              && current.ContainsKey(kv.Key) && !SameValue(kv.Value, current[kv.Key]))
                                 .ToDictionary(kv => kv.Key, kv => kv.Value, StringComparer.OrdinalIgnoreCase);
+            if (!isSoftDelete && changes.Count > 0)
+            {
+                var merged = new Dictionary<string, object>(current, StringComparer.OrdinalIgnoreCase);
+                foreach (var (k, v) in changes) merged[k] = v;
+                Validate(table, merged, changes.Keys);
+            }
             After(cmd, (c, _) =>
             {
                 var after = new Dictionary<string, object>(current, StringComparer.OrdinalIgnoreCase);

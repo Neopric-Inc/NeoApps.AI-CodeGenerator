@@ -6060,6 +6060,84 @@
       ]
     }
   },
+  "validations": {
+    "customers": {
+      "billing_email": {
+        "format": "email"
+      },
+      "customer_code": {
+        "pattern": "^[A-Z0-9-]{2,20}$",
+        "message": "Use 2-20 capitals, digits or dashes"
+      }
+    },
+    "tenant_users": {
+      "email": {
+        "format": "email"
+      },
+      "first_name": {
+        "minLength": 1,
+        "maxLength": 100
+      }
+    },
+    "saas_tenants": {
+      "primary_email": {
+        "format": "email"
+      }
+    },
+    "customer_quotes": {
+      "subtotal": {
+        "min": 0
+      },
+      "tax": {
+        "min": 0
+      },
+      "discount_amount": {
+        "min": 0,
+        "lte": "subtotal"
+      },
+      "total": {
+        "equals": "subtotal + tax - discount_amount",
+        "tolerance": 0.01
+      },
+      "currency": {
+        "pattern": "^[A-Z]{3}$",
+        "message": "Use a 3-letter currency code (USD)"
+      }
+    },
+    "customer_invoices": {
+      "subtotal": {
+        "min": 0
+      },
+      "tax": {
+        "min": 0
+      },
+      "discount_amount": {
+        "min": 0,
+        "lte": "subtotal"
+      },
+      "total": {
+        "equals": "subtotal + tax - discount_amount",
+        "tolerance": 0.01
+      },
+      "currency": {
+        "pattern": "^[A-Z]{3}$",
+        "message": "Use a 3-letter currency code (USD)"
+      },
+      "due_date": {
+        "gte": "issued_at"
+      },
+      "issued_at": {
+        "requiredWhen": {
+          "status": [
+            "issued",
+            "paid",
+            "partially_paid",
+            "overdue"
+          ]
+        }
+      }
+    }
+  },
   "immutable": {
     "audit_logs": [
       "*"
