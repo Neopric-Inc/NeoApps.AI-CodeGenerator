@@ -121,7 +121,7 @@ export const RecordPage: React.FC = () => {
           ))}
         </Box>
         <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 2.5 }}>
-          Created {renderValue(table.fields.createdAt, record.createdAt)} by {record.createdBy || "—"} · Updated {renderValue(table.fields.modifiedAt, record.modifiedAt)}
+          Created {renderValue(table.fields.createdAt, record.createdAt)} by {record.created_by_user || record.createdBy || "—"} · Updated {renderValue(table.fields.modifiedAt, record.modifiedAt)}{record.modified_by_user ? ` by ${record.modified_by_user}` : ""}
         </Typography>
       </Paper>
       {ai?.enabled && ai.documentTables.includes(name) && <FilesPanel table={name} recordId={id} />}

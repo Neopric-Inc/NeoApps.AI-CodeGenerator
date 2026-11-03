@@ -2,7 +2,7 @@ import {
   AppSchema, ColumnSchema, FieldConfig, MenuGroup, ResolvedField, ResolvedTable, TableConfig, TableSchema, UiConfig, Widget,
 } from "./types";
 
-export const AUDIT_FIELDS = ["createdBy", "modifiedBy", "createdAt", "modifiedAt", "isActive"];
+export const AUDIT_FIELDS = ["createdBy", "modifiedBy", "createdAt", "modifiedAt", "isActive", "created_by_user", "modified_by_user"];
 
 /** "trial_opportunities" -> "Trial Opportunities"; "nct_number" -> "NCT Number" */
 export function humanize(name: string): string {

@@ -16,6 +16,8 @@ internal static class SchemaGuidelines
              createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
              modifiedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
              isActive TINYINT(1) NOT NULL DEFAULT '1'
+           createdBy/modifiedBy hold the workspace owner. The generator adds created_by_user / modified_by_user (who
+           really created or changed the row) to every table itself: don't declare them.
         4. Use lowercase snake_case table and column names. Do NOT reuse a table name the generator creates itself:
            roles, users, entities, permissionmatrix (login and role-based access), messagequeue, s3bucket,
            s3bucket_folders, dnd_ui_versions, project_dnd_ui_versions, workflow, workflows, workflows_projects,

@@ -83,6 +83,7 @@ namespace nkv.MicroService.Utility
             c.Open();
             using (var cmd = new MySqlCommand(@"CREATE TABLE IF NOT EXISTS user_tenants (user_id INT NOT NULL PRIMARY KEY, tenant_id INT NULL,
                 createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP)", c)) cmd.ExecuteNonQuery();
+            AddUserColumns(c);
             LoadSchema(c);
             if (TenancyEnabled) UpgradeForTenancy(c);
             LoadScopes();
@@ -137,6 +138,73 @@ namespace nkv.MicroService.Utility
                 WHERE ut.user_id IS NULL AND u.role_id <> @admin AND u.isActive = 1", ("@admin", AdministratorRoleId));
             if (UnassignedMembers > 0)
                 Console.WriteLine($"DataGuard: WARNING {UnassignedMembers} member(s) have no tenant and can't access data until assigned (Admin > Members).");
+        }
+
+        // ------------------------------------------------------------------ who really did it
+        // createdBy/modifiedBy hold the workspace owner (rows are owner-scoped by it). created_by_user/modified_by_user record
+        // the person (or "<user> via AI", "system") who created / last changed the row. Added to every app table at startup,
+        // stamped on every write here and never taken from the client.
+        public const string CreatedByUser = "created_by_user", ModifiedByUser = "modified_by_user";
+
+        static void AddUserColumns(MySqlConnection c)
+        {
+            var missing = new List<(string table, string col)>();
+            using (var q = new MySqlCommand(@"SELECT t.table_name, x.col FROM information_schema.columns t
+                    JOIN (SELECT 'created_by_user' col UNION ALL SELECT 'modified_by_user') x
+                    WHERE t.table_schema = DATABASE() AND LOWER(t.column_name) = 'createdby'
+                      AND NOT EXISTS (SELECT 1 FROM information_schema.columns k WHERE k.table_schema = t.table_schema
+                                      AND k.table_name = t.table_name AND LOWER(k.column_name) = x.col)", c))
+            using (var r = q.ExecuteReader()) while (r.Read()) if (!BuiltIn.Contains(r.GetString(0))) missing.Add((r.GetString(0), r.GetString(1)));
+            foreach (var (table, col) in missing)
+                using (var a = new MySqlCommand($"ALTER TABLE `{SafeIdentifier(table)}` ADD COLUMN `{col}` VARCHAR(255) NULL", c)) a.ExecuteNonQuery();
+            if (missing.Count > 0) Console.WriteLine($"DataGuard: added {CreatedByUser}/{ModifiedByUser} to {missing.Select(m => m.table).Distinct().Count()} table(s).");
+        }
+
+        /// <summary>The person behind a write, as stored in created_by_user / modified_by_user.</summary>
+        public static string ActorName(Caller caller) =>
+            caller == null ? "system" : caller.IsSystem ? "system" : caller.IsAi ? $"{caller.User} via AI" : caller.User;
+
+        static bool HasCol(string table, string col) => Columns.TryGetValue(table, out var cs) && cs.Contains(col);
+
+        static void StampInsert(MySqlCommand cmd, Caller caller, string table, List<string> cols, List<string> exprs, Dictionary<string, object> values)
+        {
+            var actor = ActorName(caller);
+            var missing = false;
+            foreach (var col in new[] { CreatedByUser, ModifiedByUser })
+            {
+                if (!HasCol(table, col)) continue;
+                var i = cols.IndexOf(col);
+                if (i >= 0 && i < exprs.Count && exprs[i].Trim().StartsWith("@")) { Bind(cmd, exprs[i].Trim(), actor); values[col] = actor; }
+                else missing = true;
+            }
+            if (missing && PrimaryKeys.TryGetValue(table, out var pk))
+                After(cmd, (c, _) =>
+                {
+                    using var u = new MySqlCommand($"UPDATE `{table}` SET `{CreatedByUser}` = @__u, `{ModifiedByUser}` = @__u WHERE `{pk}` = @__id", c.Connection, c.Transaction);
+                    u.Parameters.AddWithValue("@__u", actor); u.Parameters.AddWithValue("@__id", c.LastInsertedId);
+                    u.ExecuteNonQuery();
+                });
+        }
+
+        /// <summary>created_by_user can't be changed; modified_by_user is set to the caller.</summary>
+        static void StampUpdate(MySqlCommand cmd, Caller caller, string table, int afterSet, Dictionary<string, object> values)
+        {
+            if (!HasCol(table, ModifiedByUser)) return;
+            var head = cmd.CommandText.Substring(0, afterSet);
+            var tail = Regex.Replace(cmd.CommandText.Substring(afterSet), $@"`?\b{CreatedByUser}\b`?\s*=\s*@\w+", $"`{CreatedByUser}` = `{CreatedByUser}`", RegexOptions.IgnoreCase);
+            cmd.CommandText = head + tail;
+            values.Remove(CreatedByUser); values.Remove(ModifiedByUser);
+            var actor = ActorName(caller);
+            var pm = Regex.Match(tail, $@"`?\b{ModifiedByUser}\b`?\s*=\s*(@\w+)", RegexOptions.IgnoreCase);
+            if (pm.Success) { Bind(cmd, pm.Groups[1].Value, actor); return; }
+            var id = KeyValue(cmd, table, values);
+            if (id == null || !PrimaryKeys.TryGetValue(table, out var pk)) return;
+            After(cmd, (c, _) =>
+            {
+                using var u = new MySqlCommand($"UPDATE `{table}` SET `{ModifiedByUser}` = @__u WHERE `{pk}` = @__id", c.Connection, c.Transaction);
+                u.Parameters.AddWithValue("@__u", actor); u.Parameters.AddWithValue("@__id", id);
+                u.ExecuteNonQuery();
+            });
         }
 
         public static void LoadSchema(MySqlConnection c)
@@ -353,6 +421,7 @@ namespace nkv.MicroService.Utility
                 foreach (Match pm in Regex.Matches(setPart, $@"`?\b{Regex.Escape(TenantColumn)}\b`?\s*=\s*(@\w+)", RegexOptions.IgnoreCase))
                     Bind(cmd, pm.Groups[1].Value, caller.Tenant.Value);
             var values = SetAssignments(setPart, cmd);
+            StampUpdate(cmd, caller, table, afterSet, values);
             GuardScopedWrite(cmd, caller, table, values, col =>
             {
                 var pm = Regex.Match(setPart, $@"`?\b{Regex.Escape(col)}\b`?\s*=\s*(@\w+)", RegexOptions.IgnoreCase);
@@ -398,6 +467,7 @@ namespace nkv.MicroService.Utility
             }
             if (caller.Tenant != null && TenantTables.Contains(table) && !cols.Contains(TenantColumn.ToLowerInvariant()))
                 throw new DataGuardException($"{table} rows must include {TenantColumn}");
+            StampInsert(cmd, caller, table, cols, exprs, values);
             GuardScopedWrite(cmd, caller, table, values, col =>
             {
                 var i = cols.IndexOf(col.ToLowerInvariant());
