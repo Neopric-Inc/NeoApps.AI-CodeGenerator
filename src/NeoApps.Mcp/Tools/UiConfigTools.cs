@@ -136,14 +136,21 @@ internal static class UiConfigTools
               "transitions": [ { "from": "draft", "to": "submitted", "roles": ["*"], "actors": ["human"] },
                                { "from": "qa", "to": "delivered", "roles": ["Manager"],
                                  "requires": [ { "table": "approvals", "link": "case_id", "where": { "status": "approved" },
-                                                 "message": "needs an approval" } ] } ],
+                                                 "message": "needs an approval" } ],
+                                 "forbids": [ { "table": "qa_items", "link": "case_id", "where": { "result": "failed" },
+                                                "message": "QA has failed items" } ],
+                                 "distinctFrom": ["requested_by"], "adminBypass": false } ],
               "history": { "table": "case_status_history", "link": "case_id", "from": "old_status", "to": "new_status", "actor": "changed_by_type" },
               "timestamps": { "delivered": "delivered_at" },
               "sla": { "table": "case_deadlines", "link": "case_id", "type": "deadline_type", "due": "due_at", "met": "met_at",
                        "hours": { "expert_review": 24 } } } }
               Only listed steps are allowed (409 otherwise), by the listed roles (Administrator: any listed step) and actors
               ("human" default; add "ai" to let AI workflows do it). "requires": related rows that must exist ("linkFrom":
-              column of this row to match instead of its id). Frozen states lock the record. History rows, timestamps and SLA
+              column of this row to match instead of its id); "forbids": related rows that must NOT exist. "distinctFrom":
+              separation of duties: columns holding the person who may not do this step (a users id or login name, or
+              { "column": "requested_by_id", "table": "members", "userColumn": "user_id" } for a member FK); applies to
+              administrators too. "adminBypass" (per lifecycle or per step): true (default), "platform" (only platform
+              admins, never tenant-bound ones) or false (admins need a listed role). Frozen states lock the record. History rows, timestamps and SLA
               deadline rows are written automatically in the same transaction.
           "immutable": { "audit_logs": ["*"], "findings": ["ai_text", "confidence"] }   // "*" = append-only; else read-only columns
           "audit": { "table": "audit_logs", "platformTable": "platform_audit_logs", "exclude": [] }

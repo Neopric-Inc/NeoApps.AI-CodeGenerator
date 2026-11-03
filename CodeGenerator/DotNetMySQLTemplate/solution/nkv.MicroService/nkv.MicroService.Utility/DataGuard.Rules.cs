@@ -13,7 +13,8 @@ namespace nkv.MicroService.Utility
 {
     /// <summary>
     /// Business rules from ui.config.json, enforced for every write that passes through DataGuard.NonQuery:
-    ///  "lifecycles": allowed status transitions per role/actor, required evidence before a transition, frozen states,
+    ///  "lifecycles": allowed status transitions per role/actor, required and forbidden evidence, separation of duties
+    ///                (distinctFrom), configurable admin bypass, frozen states,
     ///                status history rows and status timestamps.
     ///  "immutable":  append-only tables ("*") and read-only columns (AI output, etc.).
     ///  "audit":      one audit row per insert/update/delete, written in the same transaction.
@@ -31,6 +32,7 @@ namespace nkv.MicroService.Utility
             public Dictionary<string, string> Timestamps = new(StringComparer.OrdinalIgnoreCase);
             public string SlaTable, SlaLink, SlaType, SlaDue, SlaMet;
             public Dictionary<string, double> SlaHours = new(StringComparer.OrdinalIgnoreCase);
+            public string AdminBypass = "any";   // any | platform | none
         }
         sealed class Limit
         {
@@ -46,7 +48,11 @@ namespace nkv.MicroService.Utility
             public HashSet<string> Roles;      // role names, "*" = any role
             public HashSet<string> Actors;     // human / ai
             public List<Requirement> Requires = new();
+            public List<Requirement> Forbids = new();      // none of these may exist
+            public List<DistinctRule> DistinctFrom = new(); // the actor must not be the user in these columns
+            public string AdminBypass;                       // overrides the lifecycle's
         }
+        sealed class DistinctRule { public string Column, Table, Key, UserColumn = "user_id", Message; }
         sealed class Requirement
         {
             public string Table, Link, LinkFrom, Message;
@@ -73,6 +79,7 @@ namespace nkv.MicroService.Utility
                 {
                     ["column"] = kv.Value.Column,
                     ["transitions"] = kv.Value.Transitions.Count,
+                    ["adminBypass"] = kv.Value.AdminBypass,
                     ["frozen"] = new JsonArray(kv.Value.Frozen.Select(x => (JsonNode)x).ToArray()),
                 }))),
                 ["immutable"] = new JsonObject(_immutable.Select(kv => KeyValuePair.Create(kv.Key, (JsonNode)new JsonArray(kv.Value.Select(x => (JsonNode)x).ToArray())))),
@@ -90,6 +97,25 @@ namespace nkv.MicroService.Utility
             return s;
         }
 
+        static void ReadRequirements(JsonNode n, List<Requirement> into)
+        {
+            if (n is not JsonArray rq) return;
+            foreach (var r in rq.OfType<JsonObject>())
+            {
+                var req = new Requirement { Table = r["table"]!.GetValue<string>(), Link = r["link"]?.GetValue<string>(), LinkFrom = r["linkFrom"]?.GetValue<string>(), Message = r["message"]?.GetValue<string>() };
+                if (r["where"] is JsonObject w) foreach (var (k, v) in w) req.Where[k] = v?.ToString();
+                into.Add(req);
+            }
+        }
+
+        /// <summary>adminBypass: true/"any" (default), "platform" (only platform administrators, never tenant-bound ones), false/"none".</summary>
+        static string Bypass(JsonNode n)
+        {
+            if (n is JsonValue v && v.TryGetValue<bool>(out var b)) return b ? "any" : "none";
+            var s = n.ToString().ToLowerInvariant();
+            return s is "platform" or "none" ? s : "any";
+        }
+
         static partial void InitExtensionsImpl(MySqlConnection c)
         {
             _lifecycles.Clear(); _immutable.Clear(); _outboxRules.Clear();
@@ -102,15 +128,21 @@ namespace nkv.MicroService.Utility
                         foreach (var tn in ts.OfType<JsonObject>())
                         {
                             var t = new Transition { From = Set(tn["from"], "*"), To = Set(tn["to"]), Roles = Set(tn["roles"], "*"), Actors = Set(tn["actors"], "human") };
-                            if (tn["requires"] is JsonArray rq)
-                                foreach (var r in rq.OfType<JsonObject>())
+                            ReadRequirements(tn["requires"], t.Requires);
+                            ReadRequirements(tn["forbids"], t.Forbids);
+                            foreach (var d in tn["distinctFrom"] is JsonArray da ? da.ToList() : new List<JsonNode> { tn["distinctFrom"] })
+                            {
+                                if (d is JsonValue dv) t.DistinctFrom.Add(new DistinctRule { Column = dv.GetValue<string>() });
+                                else if (d is JsonObject dob) t.DistinctFrom.Add(new DistinctRule
                                 {
-                                    var req = new Requirement { Table = r["table"]!.GetValue<string>(), Link = r["link"]?.GetValue<string>(), LinkFrom = r["linkFrom"]?.GetValue<string>(), Message = r["message"]?.GetValue<string>() };
-                                    if (r["where"] is JsonObject w) foreach (var (k, v) in w) req.Where[k] = v?.ToString();
-                                    t.Requires.Add(req);
-                                }
+                                    Column = dob["column"]!.GetValue<string>(), Table = dob["table"]?.GetValue<string>(), Key = dob["key"]?.GetValue<string>(),
+                                    UserColumn = dob["userColumn"]?.GetValue<string>() ?? "user_id", Message = dob["message"]?.GetValue<string>(),
+                                });
+                            }
+                            if (tn["adminBypass"] != null) t.AdminBypass = Bypass(tn["adminBypass"]);
                             lc.Transitions.Add(t);
                         }
+                    if (o["adminBypass"] != null) lc.AdminBypass = Bypass(o["adminBypass"]);
                     if (o["history"] is JsonObject h)
                     {
                         lc.HistoryTable = h["table"]?.GetValue<string>(); lc.HistoryFk = h["link"]?.GetValue<string>();
@@ -279,7 +311,12 @@ namespace nkv.MicroService.Utility
         static void CheckTransition(MySqlCommand cmd, Caller caller, string table, Lifecycle lc, string from, string to, object id, Dictionary<string, object> current)
         {
             var role = RoleName(cmd.Connection, caller);
-            var isAdmin = caller.RoleId == 1;
+            bool Bypasses(Transition t)
+            {
+                if (caller.RoleId != 1) return false;
+                var mode = t.AdminBypass ?? lc.AdminBypass;
+                return mode == "any" || (mode == "platform" && caller.IsPlatform);
+            }
             var candidates = lc.Transitions.Where(t => (t.From.Contains("*") || t.From.Contains(from ?? "")) && t.To.Contains(to)).ToList();
             if (candidates.Count == 0)
                 throw new DataGuardException($"{table}: moving from '{from}' to '{to}' is not an allowed step.", 409);
@@ -287,17 +324,43 @@ namespace nkv.MicroService.Utility
             var byActor = candidates.Where(t => t.Actors.Contains(actor) || t.Actors.Contains("*")).ToList();
             if (byActor.Count == 0)
                 throw new DataGuardException($"{table}: '{from}' to '{to}' must be done by a person, not the AI.", 403);
-            var byRole = byActor.Where(t => isAdmin || t.Roles.Contains("*") || t.Roles.Contains(role ?? "")).ToList();
+            var byRole = byActor.Where(t => t.Roles.Contains("*") || t.Roles.Contains(role ?? "") || Bypasses(t)).ToList();
             if (byRole.Count == 0)
                 throw new DataGuardException($"{table}: your role ({role}) can't move a record from '{from}' to '{to}'.", 403);
             string firstFailure = null;
             foreach (var t in byRole)
             {
+                // separation of duties and negative requirements apply to everyone, administrators included
+                var same = t.DistinctFrom.FirstOrDefault(d => IsSamePerson(cmd, caller, d, current.GetValueOrDefault(d.Column)));
+                if (same != null)
+                {
+                    firstFailure ??= same.Message ?? $"the person in {same.Column} can't also do this step";
+                    continue;
+                }
                 var failed = t.Requires.FirstOrDefault(r => !RequirementMet(cmd, table, r, r.LinkFrom != null ? current.GetValueOrDefault(r.LinkFrom) : id));
-                if (failed == null) return;
-                firstFailure ??= failed.Message ?? $"needs a {failed.Table} record matching {JsonSerializer.Serialize(failed.Where)}";
+                if (failed != null) { firstFailure ??= failed.Message ?? $"needs a {failed.Table} record matching {JsonSerializer.Serialize(failed.Where)}"; continue; }
+                var present = t.Forbids.FirstOrDefault(r => RequirementMet(cmd, table, r, r.LinkFrom != null ? current.GetValueOrDefault(r.LinkFrom) : id));
+                if (present != null) { firstFailure ??= present.Message ?? $"there is a {present.Table} record matching {JsonSerializer.Serialize(present.Where)}"; continue; }
+                return;
             }
             throw new DataGuardException($"{table}: can't move to '{to}' yet: {firstFailure}.", 409);
+        }
+
+        /// <summary>
+        /// True when the caller is the person recorded in the column: a users id or login name directly, or (with Table/Key)
+        /// a row of Table whose UserColumn is the caller (e.g. members.user_id).
+        /// </summary>
+        static bool IsSamePerson(MySqlCommand cmd, Caller caller, DistinctRule d, object value)
+        {
+            var v = Str(value);
+            if (string.IsNullOrEmpty(v)) return false;
+            if (d.Table == null)
+                return v == caller.UserId.ToString() || string.Equals(v, caller.User, StringComparison.OrdinalIgnoreCase);
+            var key = d.Key ?? PrimaryKeys.GetValueOrDefault(d.Table);
+            using var q = new MySqlCommand($"SELECT `{SafeIdentifier(d.UserColumn)}` FROM `{SafeIdentifier(d.Table)}` WHERE `{SafeIdentifier(key)}` = @v LIMIT 1", cmd.Connection, cmd.Transaction);
+            q.Parameters.AddWithValue("@v", value);
+            var u = Str(q.ExecuteScalar());
+            return u != null && (u == caller.UserId.ToString() || string.Equals(u, caller.User, StringComparison.OrdinalIgnoreCase));
         }
 
         /// <summary>A related row must exist: r.Table where r.Link = (this row's r.LinkFrom column, default its primary key) and r.Where matches.</summary>
