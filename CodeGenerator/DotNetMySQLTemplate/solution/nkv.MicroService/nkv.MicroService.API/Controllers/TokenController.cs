@@ -53,8 +53,8 @@ namespace nkv.MicroService.API.Controllers
                     new Claim(ClaimTypes.Role, usersModel.role_id.ToString()),
                     new Claim(ClaimTypes.NameIdentifier, usersModel.user_id.ToString()),
                     new Claim(ClaimTypes.Actor, owner_name),
-                    // tenant comes only from the server-side user_tenants mapping; empty = platform user
-                    new Claim(DataGuard.TenantClaim, DataGuard.TenantOfUser(usersModel.user_id)?.ToString() ?? "")
+                    // informational only: DataGuard resolves the tenant from user_tenants on every request ("" = platform, "unassigned")
+                    new Claim(DataGuard.TenantClaim, DataGuard.TenantClaimValue(usersModel.user_id, usersModel.role_id))
                         }),
                         Expires = DateTime.UtcNow.AddDays(day),
                         SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)

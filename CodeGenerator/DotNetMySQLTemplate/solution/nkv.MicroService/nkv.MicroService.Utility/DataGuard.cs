@@ -84,9 +84,58 @@ namespace nkv.MicroService.Utility
             using (var cmd = new MySqlCommand(@"CREATE TABLE IF NOT EXISTS user_tenants (user_id INT NOT NULL PRIMARY KEY, tenant_id INT NULL,
                 createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP)", c)) cmd.ExecuteNonQuery();
             LoadSchema(c);
+            if (TenancyEnabled) UpgradeForTenancy(c);
             InitExtensions(c);
             Ready = true;
             Console.WriteLine($"DataGuard: {AppTables.Count} app tables, tenancy {(TenancyEnabled ? $"on ({TenantTables.Count} tenant tables, column {TenantColumn})" : "off")}.");
+        }
+
+        public static int UnassignedMembers { get; private set; }
+
+        /// <summary>
+        /// Upgrading an existing app to tenancy: tag AI files and their text with the tenant of the record they are attached
+        /// to (deterministic, repeatable), and count members that still need a tenant (they get no data access until assigned).
+        /// </summary>
+        static void UpgradeForTenancy(MySqlConnection c)
+        {
+            static long Scalar(MySqlConnection c, string sql, params (string, object)[] ps)
+            {
+                using var q = new MySqlCommand(sql, c);
+                foreach (var (n, v) in ps) q.Parameters.AddWithValue(n, v);
+                var v2 = q.ExecuteScalar();
+                return v2 == null || v2 is DBNull ? 0 : Convert.ToInt64(v2);
+            }
+            static void Exec(MySqlConnection c, string sql, params (string, object)[] ps)
+            {
+                using var q = new MySqlCommand(sql, c);
+                foreach (var (n, v) in ps) q.Parameters.AddWithValue(n, v);
+                q.ExecuteNonQuery();
+            }
+            foreach (var t in new[] { "ai_files", "ai_chunks" })
+                if (Scalar(c, "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = @t", ("@t", t)) > 0 &&
+                    Scalar(c, "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = @t AND column_name = 'tenant_id'", ("@t", t)) == 0)
+                    Exec(c, $"ALTER TABLE {t} ADD COLUMN tenant_id INT NULL");
+            if (Scalar(c, "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'ai_files'") > 0)
+            {
+                var tagged = 0L;
+                var tables = new List<string>();
+                using (var q = new MySqlCommand("SELECT DISTINCT LOWER(table_name) FROM ai_files WHERE tenant_id IS NULL", c))
+                using (var r = q.ExecuteReader()) while (r.Read()) tables.Add(r.GetString(0));
+                foreach (var t in tables.Where(t => TenantTables.Contains(t) && PrimaryKeys.ContainsKey(t)))
+                {
+                    using var u = new MySqlCommand($@"UPDATE ai_files f JOIN `{t}` r ON CAST(r.`{PrimaryKeys[t]}` AS CHAR) = f.record_id
+                        SET f.tenant_id = r.`{TenantColumn}` WHERE f.table_name = @t AND f.tenant_id IS NULL", c);
+                    u.Parameters.AddWithValue("@t", t);
+                    tagged += u.ExecuteNonQuery();
+                }
+                if (Scalar(c, "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'ai_chunks'") > 0)
+                    Exec(c, "UPDATE ai_chunks k JOIN ai_files f ON f.file_id = k.file_id SET k.tenant_id = f.tenant_id WHERE k.tenant_id IS NULL AND f.tenant_id IS NOT NULL");
+                if (tagged > 0) Console.WriteLine($"DataGuard: tagged {tagged} existing AI files with their record's tenant.");
+            }
+            UnassignedMembers = (int)Scalar(c, @"SELECT COUNT(*) FROM users u LEFT JOIN user_tenants ut ON ut.user_id = u.user_id
+                WHERE ut.user_id IS NULL AND u.role_id <> @admin AND u.isActive = 1", ("@admin", AdministratorRoleId));
+            if (UnassignedMembers > 0)
+                Console.WriteLine($"DataGuard: WARNING {UnassignedMembers} member(s) have no tenant and can't access data until assigned (Admin > Members).");
         }
 
         public static void LoadSchema(MySqlConnection c)
@@ -129,6 +178,7 @@ namespace nkv.MicroService.Utility
             public int RoleId;
             public bool IsAi;          // request came through the AI assistant/workflows
             public bool IsSystem;      // background job
+            public bool Unassigned;    // tenancy on, but this account has no tenant mapping yet: no data access
             public string Owner;       // workspace owner (ClaimTypes.Actor)
             public int? Tenant;        // null = platform user
             public string Ip;
@@ -145,7 +195,6 @@ namespace nkv.MicroService.Utility
                 if (ctx?.User?.Identity?.IsAuthenticated != true) return null;
                 if (ctx.Items.TryGetValue("DataGuard.Caller", out var cached)) return (Caller)cached;
                 var u = ctx.User;
-                var t = u.FindFirst(TenantClaim)?.Value;
                 var caller = new Caller
                 {
                     User = u.FindFirst(ClaimTypes.Name)?.Value,
@@ -153,29 +202,55 @@ namespace nkv.MicroService.Utility
                     RoleId = int.TryParse(u.FindFirst(ClaimTypes.Role)?.Value, out var rid) ? rid : 0,
                     IsAi = Regex.IsMatch(ctx.Request.Path.Value ?? "", @"/api/Ai(/|$)", RegexOptions.IgnoreCase), // the AI controller only, not tables named ai_*
                     Owner = u.FindFirst(ClaimTypes.Actor)?.Value,
-                    Tenant = TenancyEnabled && int.TryParse(t, out var tid) ? tid : null,
+
                     Ip = ctx.Connection?.RemoteIpAddress?.ToString(),
                     CorrelationId = ctx.Request.Headers.TryGetValue("X-Correlation-Id", out var cid) && cid.Count > 0 ? cid[0] : ctx.TraceIdentifier,
                 };
+                if (TenancyEnabled)
+                {
+                    // resolved from user_tenants on every request (short cache), never from the token or the request,
+                    // so remapping a user takes effect at once and tokens issued before tenancy can't keep platform access
+                    var (tenant, unassigned) = ResolveTenant(caller.UserId, caller.RoleId);
+                    caller.Tenant = tenant; caller.Unassigned = unassigned;
+                }
                 ctx.Items["DataGuard.Caller"] = caller;
                 return caller;
             }
         }
 
-        /// <summary>Tenant of a login user (null = platform user). Used when issuing tokens.</summary>
-        public static int? TenantOfUser(int userId)
+        const int AdministratorRoleId = 1;
+        static readonly System.Collections.Concurrent.ConcurrentDictionary<int, (int? tenant, bool unassigned, DateTime at)> _tenantCache = new();
+
+        /// <summary>
+        /// Tenant of a login user. A user_tenants row decides (tenant_id NULL = platform user). Without a row, only an
+        /// Administrator (the workspace owner) is a platform user; everyone else is unassigned and gets no data access,
+        /// so turning tenancy on for an existing app never turns its members into platform users.
+        /// </summary>
+        public static (int? tenant, bool unassigned) ResolveTenant(int userId, int roleId)
         {
-            if (!TenancyEnabled || ConnectionString == null) return null;
+            if (!TenancyEnabled || ConnectionString == null) return (null, false);
+            if (_tenantCache.TryGetValue(userId, out var hit) && (DateTime.UtcNow - hit.at).TotalSeconds < 30) return (hit.tenant, hit.unassigned);
             using var c = new MySqlConnection(ConnectionString);
             c.Open();
             using var cmd = new MySqlCommand("SELECT tenant_id FROM user_tenants WHERE user_id = @u", c);
             cmd.Parameters.AddWithValue("@u", userId);
-            var v = cmd.ExecuteScalar();
-            return v == null || v is DBNull ? null : Convert.ToInt32(v);
+            (int? tenant, bool unassigned) result;
+            using (var r = cmd.ExecuteReader())
+                result = r.Read() ? (r.IsDBNull(0) ? null : r.GetInt32(0), false) : (null, roleId != AdministratorRoleId);
+            _tenantCache[userId] = (result.tenant, result.unassigned, DateTime.UtcNow);
+            return result;
+        }
+
+        /// <summary>Informational tenant claim for tokens: tenant id, "" for platform users, "unassigned".</summary>
+        public static string TenantClaimValue(int userId, int roleId)
+        {
+            var (t, unassigned) = ResolveTenant(userId, roleId);
+            return unassigned ? "unassigned" : t?.ToString() ?? "";
         }
 
         public static void SetTenantOfUser(MySqlConnection c, int userId, int? tenantId)
         {
+            _tenantCache.TryRemove(userId, out _);
             using var cmd = new MySqlCommand(@"INSERT INTO user_tenants (user_id, tenant_id) VALUES (@u, @t)
                 ON DUPLICATE KEY UPDATE tenant_id = VALUES(tenant_id)", c);
             cmd.Parameters.AddWithValue("@u", userId);
@@ -197,6 +272,8 @@ namespace nkv.MicroService.Utility
             if (!Ready || cmd == null || _applied.TryGetValue(cmd, out _)) return cmd;
             var caller = Current;
             if (caller == null) return cmd;
+            if (caller.Unassigned && TouchesData(cmd.CommandText))
+                throw new DataGuardException("Your account isn't assigned to a tenant yet. Ask a platform administrator to assign you.", 403);
             _applied.Add(cmd, null);
 
             var sql = cmd.CommandText ?? "";
@@ -213,6 +290,10 @@ namespace nkv.MicroService.Utility
             }
             return cmd;
         }
+
+        static readonly Regex AnyTable = new(@"\b(?:FROM|JOIN|UPDATE|INTO)\s+`?(\w+)`?", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        static bool TouchesData(string sql) =>
+            AnyTable.Matches(sql ?? "").Any(m => AppTables.Contains(m.Groups[1].Value) || TaggedBuiltIns.Contains(m.Groups[1].Value));
 
         static List<string> ScopeConditions(string table, string prefix, Caller caller, MySqlCommand cmd)
         {
