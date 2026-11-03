@@ -66,7 +66,7 @@ namespace nkv.MicroService.DataAccess
                 string orderStr = "";
                 foreach (var r in orderBy)
                 {
-                    orderStr = orderStr + r.ColumnName + " " + r.OrderDir + ",";
+                    orderStr = orderStr + DataGuard.SafeIdentifier(r.ColumnName) + " " + (string.Equals(r.OrderDir?.Trim(), "desc", StringComparison.OrdinalIgnoreCase) ? "DESC" : "ASC") + ",";
                 }
                 orderStr = orderStr.Trim(',');
                 newCommandText = yourRegex.Replace(newCommandText, orderStr);

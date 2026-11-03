@@ -10,7 +10,7 @@ public {tableName}RelationalModel Get{tableName}Relational(string ownername,{pri
             cmd.Parameters.AddWithValue("@ownername", ownername);
             {getByIDQueryParameter}
             {tableName}RelationalModel {tableNameSmall} = null;
-            using (var reader = cmd.ExecuteReader())
+            using (var reader = DataGuard.Apply(cmd).ExecuteReader())
             {
                 while (reader.Read())
                 {
@@ -55,7 +55,7 @@ public List<{tableName}RelationalModel> GetAll{tableName}Relational(string owner
             cmd.Parameters.AddWithValue("@Offset", offset);
             cmd.Parameters.AddWithValue("@ItemsPerPage", itemsPerPage);
             List<{tableName}RelationalModel> {tableNameSmall} = new List<{tableName}RelationalModel>();
-            using (var reader = cmd.ExecuteReader())
+            using (var reader = DataGuard.Apply(cmd).ExecuteReader())
             {
                 while (reader.Read())
                 {

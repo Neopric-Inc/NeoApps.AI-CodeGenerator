@@ -129,6 +129,11 @@ export interface Me {
   role_id: number;
   role_name: string;
   tenant: string;
+  /** data tenant (DataGuard tenancy); null = platform user */
+  tenant_id?: number | null;
+  is_platform?: boolean;
+  tenancy?: boolean;
+  tenant_table?: string | null;
   is_admin: boolean;
   permissions: Record<string, Permission>;
 }

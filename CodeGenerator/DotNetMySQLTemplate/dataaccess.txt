@@ -23,7 +23,7 @@ namespace {projectName}.DataAccess.Impl
                 using (var cmd = connection.CreateCommand())
                 {
                     cmd.CommandText = @"{selectAllRecordCountQuery}";
-                    using (var reader = cmd.ExecuteReader())
+                    using (var reader = DataGuard.Apply(cmd).ExecuteReader())
                         while (reader.Read())
                         { 
                             return reader.GetInt32("TotalCount");
@@ -46,7 +46,7 @@ namespace {projectName}.DataAccess.Impl
                 {
                     cmd.CommandText = @"{selectAllRecordCountQueryByCreatedBy}";
                     cmd.Parameters.AddWithValue("@ownername", ownername);
-                    using (var reader = cmd.ExecuteReader())
+                    using (var reader = DataGuard.Apply(cmd).ExecuteReader())
                         while (reader.Read())
                         { 
                             return reader.GetInt32("TotalCount");
@@ -70,7 +70,7 @@ namespace {projectName}.DataAccess.Impl
                 {
                     cmd.CommandText = @"{searchRecordCountQuery}";
                     cmd.Parameters.AddWithValue("@SearchKey", searchKey);
-                    using (var reader = cmd.ExecuteReader())
+                    using (var reader = DataGuard.Apply(cmd).ExecuteReader())
                         while (reader.Read())
                         { 
                             return reader.GetInt32("TotalCount");
@@ -96,7 +96,7 @@ namespace {projectName}.DataAccess.Impl
                     cmd.CommandText = @"{searchRecordCountQueryByCreatedBy}";
                     cmd.Parameters.AddWithValue("@SearchKey", searchKey);
                     cmd.Parameters.AddWithValue("@ownername", ownername);
-                    using (var reader = cmd.ExecuteReader())
+                    using (var reader = DataGuard.Apply(cmd).ExecuteReader())
                         while (reader.Read())
                         { 
                             return reader.GetInt32("TotalCount");
@@ -124,7 +124,7 @@ namespace {projectName}.DataAccess.Impl
                     {convertSQL}
                     cmd.Parameters.AddWithValue("@Offset", offset);
                     cmd.Parameters.AddWithValue("@ItemsPerPage", itemsPerPage);
-                    using (var reader = cmd.ExecuteReader())
+                    using (var reader = DataGuard.Apply(cmd).ExecuteReader())
                         while (reader.Read())
                         {
                             var t = new {tableName}Model()
@@ -159,7 +159,7 @@ namespace {projectName}.DataAccess.Impl
                     cmd.Parameters.AddWithValue("@Offset", offset);
                     cmd.Parameters.AddWithValue("@ownername", ownername);
                     cmd.Parameters.AddWithValue("@ItemsPerPage", itemsPerPage);
-                    using (var reader = cmd.ExecuteReader())
+                    using (var reader = DataGuard.Apply(cmd).ExecuteReader())
                         while (reader.Read())
                         {
                             var t = new {tableName}Model()
@@ -193,7 +193,7 @@ namespace {projectName}.DataAccess.Impl
                     cmd.Parameters.AddWithValue("@SearchKey", searchKey);
                     cmd.Parameters.AddWithValue("@Offset", offset);
                     cmd.Parameters.AddWithValue("@ItemsPerPage", itemsPerPage);
-                    using (var reader = cmd.ExecuteReader())
+                    using (var reader = DataGuard.Apply(cmd).ExecuteReader())
                         while (reader.Read())
                         {
                             var t = new {tableName}Model()
@@ -227,7 +227,7 @@ namespace {projectName}.DataAccess.Impl
                     cmd.Parameters.AddWithValue("@ownername", ownername);
                     cmd.Parameters.AddWithValue("@Offset", offset);
                     cmd.Parameters.AddWithValue("@ItemsPerPage", itemsPerPage);
-                    using (var reader = cmd.ExecuteReader())
+                    using (var reader = DataGuard.Apply(cmd).ExecuteReader())
                         while (reader.Read())
                         {
                             var t = new {tableName}Model()
@@ -257,7 +257,7 @@ namespace {projectName}.DataAccess.Impl
                     cmd.CommandText = @"{selectOneQuery}";
                     {getByIDQueryParameter}
                     
-                    using (var reader = cmd.ExecuteReader())
+                    using (var reader = DataGuard.Apply(cmd).ExecuteReader())
                         while (reader.Read())
                         {
                             return new {tableName}Model()
@@ -287,7 +287,7 @@ namespace {projectName}.DataAccess.Impl
                     cmd.CommandText = @"{selectOneQueryByCreatedBy}";
                     {getByIDQueryParameter}
                     cmd.Parameters.AddWithValue("@ownername", ownername);
-                    using (var reader = cmd.ExecuteReader())
+                    using (var reader = DataGuard.Apply(cmd).ExecuteReader())
                         while (reader.Read())
                         {
                             return new {tableName}Model()
@@ -320,7 +320,7 @@ namespace {projectName}.DataAccess.Impl
                 {
                     cmd.CommandText = @"{updateQuery}";
                     {updateQueryParameters}
-                    var recs = cmd.ExecuteNonQuery();
+                    var recs = DataGuard.NonQuery(cmd);
                     if (recs > 0)
                     {
                         return true;
@@ -346,7 +346,7 @@ namespace {projectName}.DataAccess.Impl
                 {
                     cmd.CommandText = @"{insertQuery}";
                     {insertQueryParameter}
-                    var recs = cmd.ExecuteNonQuery();
+                    var recs = DataGuard.NonQuery(cmd);
                     if (recs ==1)
                     {
                         return cmd.LastInsertedId ;
@@ -372,7 +372,7 @@ namespace {projectName}.DataAccess.Impl
                 {
                     cmd.CommandText = @"{deleteQuery}";
                     {deleteQueryParameter}
-                    var recs = cmd.ExecuteNonQuery();
+                    var recs = DataGuard.NonQuery(cmd);
                     if (recs > 0)
                     {
                         return true;
@@ -410,13 +410,13 @@ namespace {projectName}.DataAccess.Impl
                                 paramCount++;
                                 if (!string.IsNullOrEmpty(whereClause))
                                 {
-                                    whereClause = whereClause + " " + andOr + " ";
+                                    whereClause = whereClause + " " + (string.Equals(andOr, "or", StringComparison.OrdinalIgnoreCase) ? "OR" : "AND") + " ";
                                 }
-                                whereClause = whereClause + "t." + r.ColumnName + " " + UtilityCommon.ConvertFilterToSQLString(r.ColumnCondition) + " @" + r.ColumnName + paramCount;
+                                whereClause = whereClause + "t." + DataGuard.SafeIdentifier(r.ColumnName) + " " + UtilityCommon.ConvertFilterToSQLString(r.ColumnCondition) + " @" + r.ColumnName + paramCount;
                             }
                         }
                         whereClause = whereClause.Trim();
-                        cmd.CommandText = cmd.CommandText.Replace("{filterColumns}", "Where t.isActive=1 AND t.createdBy=@ownername AND " + whereClause);
+                        cmd.CommandText = cmd.CommandText.Replace("{filterColumns}", "Where t.isActive=1 AND t.createdBy=@ownername AND (" + whereClause + ")");
                     }
                     else
                     {
@@ -436,14 +436,13 @@ namespace {projectName}.DataAccess.Impl
                         int paramCount = 0;
                         foreach (var r in filterBy)
                         {
-                            paramCount++;
                             if (!string.IsNullOrEmpty(r.ColumnName))
                             {
+                                paramCount++;
                                 // Console.WriteLine("Before cmd is : " + cmd.CommandText);
                                 // whereClause = whereClause.Replace("@" + r.ColumnName + paramCount, r.ColumnValue);
                                 // Console.WriteLine("Replace " + "@" + r.ColumnName + paramCount + " With " + r.ColumnValue);
                                 cmd.Parameters.AddWithValue("@" + r.ColumnName + paramCount, r.ColumnValue);
-                                cmd.CommandText = cmd.CommandText.Replace("@" + r.ColumnName + paramCount, $"'{r.ColumnValue}'");
                             }
                         }
                     }
@@ -452,7 +451,7 @@ namespace {projectName}.DataAccess.Impl
                     Console.WriteLine("SQL Command : " + cmd.CommandText);
                     Console.WriteLine("==================================================");
 
-                    using (var reader = cmd.ExecuteReader())
+                    using (var reader = DataGuard.Apply(cmd).ExecuteReader())
                         while (reader.Read())
                         {
                             var t = new {tableName}Model()
@@ -493,9 +492,9 @@ namespace {projectName}.DataAccess.Impl
                                 paramCount++;
                                 if (!string.IsNullOrEmpty(whereClause))
                                 {
-                                    whereClause = whereClause + " " + andOr + " ";
+                                    whereClause = whereClause + " " + (string.Equals(andOr, "or", StringComparison.OrdinalIgnoreCase) ? "OR" : "AND") + " ";
                                 }
-                                whereClause = whereClause + "t." + r.ColumnName + " " + UtilityCommon.ConvertFilterToSQLString(r.ColumnCondition) + " @" + r.ColumnName + paramCount;
+                                whereClause = whereClause + "t." + DataGuard.SafeIdentifier(r.ColumnName) + " " + UtilityCommon.ConvertFilterToSQLString(r.ColumnCondition) + " @" + r.ColumnName + paramCount;
                                 // cmd.Parameters.AddWithValue("@" + r.ColumnName + paramCount, r.ColumnValue);
                                 // Console.WriteLine("whereClause is : " + whereClause);
                                 // whereClause = whereClause.Replace("@" + r.ColumnName + paramCount, r.ColumnValue);
@@ -503,7 +502,7 @@ namespace {projectName}.DataAccess.Impl
                             }
                         }
                         whereClause = whereClause.Trim();
-                        cmd.CommandText = cmd.CommandText.Replace("{filterColumns}", "Where t.isActive=1 AND t.createdBy=@ownername AND " + whereClause);
+                        cmd.CommandText = cmd.CommandText.Replace("{filterColumns}", "Where t.isActive=1 AND t.createdBy=@ownername AND (" + whereClause + ")");
                     }
                     else
                     {
@@ -516,14 +515,13 @@ namespace {projectName}.DataAccess.Impl
                         int paramCount = 0;
                         foreach (var r in filterBy)
                         {
-                            paramCount++;
                             if (!string.IsNullOrEmpty(r.ColumnName))
                             {
+                                paramCount++;
                                 // Console.WriteLine("Before cmd is : " + cmd.CommandText);
                                 // whereClause = whereClause.Replace("@" + r.ColumnName + paramCount, r.ColumnValue);
                                 // Console.WriteLine("Replace " + "@" + r.ColumnName + paramCount + " With " + r.ColumnValue);
                                 cmd.Parameters.AddWithValue("@" + r.ColumnName + paramCount, r.ColumnValue);
-                                cmd.CommandText = cmd.CommandText.Replace("@" + r.ColumnName + paramCount, $"'{r.ColumnValue}'");
                             }
                         }
                     }
@@ -533,7 +531,7 @@ namespace {projectName}.DataAccess.Impl
                     Console.WriteLine("==================================================");
 
 
-                    using (var reader = cmd.ExecuteReader())
+                    using (var reader = DataGuard.Apply(cmd).ExecuteReader())
                         while (reader.Read())
                         {
                             Console.WriteLine("==================================================");
@@ -568,16 +566,16 @@ namespace {projectName}.DataAccess.Impl
                     {
                         if (count == 0)
                         {
-                            cmd.CommandText = cmd.CommandText + " " + r.ColumnName + "=@" + r.ColumnName;
+                            cmd.CommandText = cmd.CommandText + " " + DataGuard.SafeIdentifier(r.ColumnName) + "=@" + r.ColumnName;
                         }
                         else
                         {
-                            cmd.CommandText = cmd.CommandText + " " + andOr + " " + r.ColumnName + "=@" + r.ColumnName;
+                            cmd.CommandText = cmd.CommandText + " " + (string.Equals(andOr, "or", StringComparison.OrdinalIgnoreCase) ? "OR" : "AND") + " " + DataGuard.SafeIdentifier(r.ColumnName) + "=@" + r.ColumnName;
                         }
                         cmd.Parameters.AddWithValue("@" + r.ColumnName, r.ColumnValue);
                         count++;
                     }
-                    var recs = cmd.ExecuteNonQuery();
+                    var recs = DataGuard.NonQuery(cmd);
                     if (recs > 0)
                     {
                         transaction.Commit();

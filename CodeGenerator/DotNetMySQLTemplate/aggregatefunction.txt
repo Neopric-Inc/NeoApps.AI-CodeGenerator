@@ -9,7 +9,7 @@ public {DTOclass}Model Get{DTOclass}({primaryKeyListParam})
             cmd.CommandText = @"{aggregateQuery}";
             {aggregateQueryParameter}
 
-            using (var reader = cmd.ExecuteReader())
+            using (var reader = DataGuard.Apply(cmd).ExecuteReader())
                 while (reader.Read())
                 {
                     return new {DTOclass}Model()

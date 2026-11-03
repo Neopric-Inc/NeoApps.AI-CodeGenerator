@@ -7,6 +7,7 @@ using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Configuration;
 using MySqlConnector;
+using nkv.MicroService.Utility;
 
 namespace nkv.MicroService.API.Ai
 {
@@ -55,9 +56,9 @@ namespace nkv.MicroService.API.Ai
                     @"CREATE TABLE IF NOT EXISTS ai_files (file_id INT AUTO_INCREMENT PRIMARY KEY, owner_name VARCHAR(255) NOT NULL,
                         table_name VARCHAR(64) NOT NULL, record_id VARCHAR(64) NOT NULL, file_name VARCHAR(255) NOT NULL, content_type VARCHAR(150),
                         size_bytes BIGINT, pages INT, status VARCHAR(20) NOT NULL, error TEXT, storage_path VARCHAR(500) NOT NULL,
-                        createdBy VARCHAR(255), createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, KEY ix_files_record (owner_name, table_name, record_id))",
+                        createdBy VARCHAR(255), tenant_id INT NULL, createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, KEY ix_files_record (owner_name, table_name, record_id))",
                     @"CREATE TABLE IF NOT EXISTS ai_chunks (chunk_id INT AUTO_INCREMENT PRIMARY KEY, file_id INT NOT NULL, owner_name VARCHAR(255) NOT NULL,
-                        page INT NOT NULL, text MEDIUMTEXT NOT NULL, KEY ix_chunks_file (file_id), FULLTEXT KEY ft_chunks_text (text)) ENGINE=InnoDB",
+                        page INT NOT NULL, text MEDIUMTEXT NOT NULL, tenant_id INT NULL, KEY ix_chunks_file (file_id), FULLTEXT KEY ft_chunks_text (text)) ENGINE=InnoDB",
                     @"CREATE TABLE IF NOT EXISTS ai_conversations (conversation_id INT AUTO_INCREMENT PRIMARY KEY, owner_name VARCHAR(255) NOT NULL,
                         user_id INT NOT NULL, title VARCHAR(255) NOT NULL, context_table VARCHAR(64), context_record VARCHAR(64),
                         createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, modifiedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, KEY ix_conv_user (owner_name, user_id))",
@@ -71,6 +72,13 @@ namespace nkv.MicroService.API.Ai
                     using var cmd = new MySqlCommand(sql, c);
                     cmd.ExecuteNonQuery();
                 }
+                // databases created before tenancy: tag AI files and chunks with their data tenant
+                foreach (var t in new[] { "ai_files", "ai_chunks" })
+                {
+                    using var has = new MySqlCommand("SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name=@t AND column_name='tenant_id'", c);
+                    has.Parameters.AddWithValue("@t", t);
+                    if (Convert.ToInt64(has.ExecuteScalar()) == 0) { using var alter = new MySqlCommand($"ALTER TABLE {t} ADD COLUMN tenant_id INT NULL", c); alter.ExecuteNonQuery(); }
+                }
                 _schemaReady = true;
             }
         }
@@ -79,7 +87,7 @@ namespace nkv.MicroService.API.Ai
         {
             var cmd = new MySqlCommand(sql, c);
             foreach (var (n, v) in ps) cmd.Parameters.AddWithValue(n, v ?? DBNull.Value);
-            return cmd;
+            return sql.TrimStart().StartsWith("INSERT", StringComparison.OrdinalIgnoreCase) ? cmd : DataGuard.Apply(cmd);
         }
 
         // ------------------------------------------------------------------ permissions & schema

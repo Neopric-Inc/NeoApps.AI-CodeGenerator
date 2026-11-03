@@ -48,7 +48,8 @@ export async function api<T = any>(method: string, path: string, body?: any): Pr
   if (res.status === 401 && path !== "Token") {
     throw new ApiError(401, "You don't have permission for this action.");
   }
-  if (res.status === 403) throw new ApiError(403, "Administrators only.");
+  // data-rule violations (tenancy, lifecycle steps, read-only data, plan limits) come with a readable message
+  if (res.status === 403) throw new ApiError(403, (json && typeof json.message === "string" && json.message) || "Administrators only.");
   if (res.status === 400 && json && json.errors && typeof json.errors === "object") {
     // ASP.NET model validation: {"errors": {"field": ["The field is required."]}}
     const names = Object.keys(json.errors).join(", ");

@@ -42,6 +42,7 @@ namespace nkv.MicroService.API.Controllers
             try { return Ok(await action()); }
             catch (AiException ex) { return BadRequest(new { message = ex.Message }); }
             catch (OperationCanceledException) { return StatusCode(499); }
+            catch (DataGuardException gx) { return StatusCode(gx.StatusCode, new { message = gx.Message }); }
             catch (Exception ex)
             {
                 _log.LogError(ex, "AI request failed");
@@ -81,6 +82,17 @@ namespace nkv.MicroService.API.Controllers
                 return PhysicalFile(path, type, name);
             }
             catch (AiException ex) { return BadRequest(new { message = ex.Message }); }
+        }
+
+        [HttpGet, Route(Route + "/files/{id:int}/link")]
+        public Task<ActionResult> FileLink(int id) =>
+            Run(() => _ai.FileLink(Me(), id, $"{Request.Scheme}://{Request.Host}/{APIEndpoint.Version}/{APIEndpoint.APIRoute}/Ai/files/{id}/signed"));
+
+        [AllowAnonymous, HttpGet, Route(Route + "/files/{id:int}/signed")]
+        public ActionResult SignedDownload(int id, [FromQuery] long exp, [FromQuery] string sig)
+        {
+            try { var (path, name, type) = _ai.SignedFileContent(id, exp, sig); return PhysicalFile(path, type, name); }
+            catch (AiException ex) { return StatusCode(403, new { message = ex.Message }); }
         }
 
         [HttpDelete, Route(Route + "/files/{id:int}")]

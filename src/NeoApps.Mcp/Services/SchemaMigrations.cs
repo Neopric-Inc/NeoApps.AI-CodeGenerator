@@ -14,6 +14,7 @@ namespace NeoApps.Mcp.Services;
 /// </summary>
 public static class SchemaMigrations
 {
+    private static readonly HashSet<string> BuiltInAi = new(StringComparer.OrdinalIgnoreCase) { "ai_files", "ai_chunks", "ai_conversations", "ai_messages", "ai_runs" };
     public sealed record LiveTable(Table Table, Dictionary<string, string> ForeignKeyNames);
 
     public sealed class Plan
@@ -47,7 +48,7 @@ public static class SchemaMigrations
             while (r.Read())
             {
                 var table = r.GetString(0).ToLowerInvariant();
-                if (Reserved.Contains(table) || table.StartsWith("ai_")) continue;
+                if (Reserved.Contains(table) || BuiltInAi.Contains(table)) continue;
                 if (!cols.TryGetValue(table, out var list)) { cols[table] = list = []; names.Add(table); }
                 list.Add(new Column(r.GetString(1), r.GetString(2).ToUpperInvariant(), r.GetString(3) == "NO",
                     r.IsDBNull(4) ? null : r.GetString(4), r.GetString(5) == "PRI", r.GetString(6).Contains("auto_increment", StringComparison.OrdinalIgnoreCase)));
