@@ -60,6 +60,7 @@ namespace HelloWorld
 
                     Console.WriteLine("Executed " + count + " statement(s).");
                     using (var fkOn = new MySqlCommand("SET FOREIGN_KEY_CHECKS=1", connection)) fkOn.ExecuteNonQuery();
+                    AddUserColumns(connection);
                 }
                 catch (Exception ex)
                 {
@@ -78,6 +79,31 @@ namespace HelloWorld
 
             }
         }
+        /// <summary>
+        /// Adds created_by_user / modified_by_user (who really created or last changed a row; createdBy holds the workspace
+        /// owner used for scoping) to every app table. DataGuard stamps them on every write.
+        /// </summary>
+        static readonly System.Collections.Generic.HashSet<string> BuiltInTables = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "roles", "users", "entities", "permissionmatrix", "messagequeue", "s3bucket", "s3bucket_folders", "dnd_ui_versions",
+            "project_dnd_ui_versions", "workflow", "workflows", "workflows_projects", "workflow_builds", "workflow_runs",
+            "workflow_deployments", "workflow_triggers", "workflow_trigger_conditions", "ai_files", "ai_chunks", "ai_conversations",
+            "ai_messages", "ai_runs", "versioninfo", "user_tenants", "login_attempts", "user_security"
+        };
+
+        public static void AddUserColumns(MySqlConnection connection)
+        {
+            var missing = new System.Collections.Generic.List<(string table, string col)>();
+            using (var q = new MySqlCommand(@"SELECT t.table_name, x.col FROM information_schema.columns t
+                    JOIN (SELECT 'created_by_user' col UNION ALL SELECT 'modified_by_user') x
+                    WHERE t.table_schema = DATABASE() AND LOWER(t.column_name) = 'createdby'
+                      AND NOT EXISTS (SELECT 1 FROM information_schema.columns c WHERE c.table_schema = t.table_schema
+                                      AND c.table_name = t.table_name AND LOWER(c.column_name) = x.col)", connection))
+            using (var r = q.ExecuteReader()) while (r.Read()) if (!BuiltInTables.Contains(r.GetString(0))) missing.Add((r.GetString(0), r.GetString(1)));
+            foreach (var (table, col) in missing)
+                using (var a = new MySqlCommand($"ALTER TABLE `{table}` ADD COLUMN `{col}` VARCHAR(255) NULL", connection)) a.ExecuteNonQuery();
+        }
+
         public static string extractDatabaseName(string fileName, string DB)
         {
             try

@@ -86,7 +86,9 @@ Pass the key to the API from the environment, e.g. `set -a; . ~/secrets/anthropi
 `conversations`, `workflows/{id}/preview|apply`.
 
 Login: `POST /v1/api/Token {"username","password"}` → `document.accessToken`. Use it as a Bearer token on `/v1/api/<Table>`.
-Rows are owner-scoped (`createdBy` = the logged-in user), so seed rows inserted with another `createdBy` won't show up.
+Rows are owner-scoped (`createdBy`/`modifiedBy` hold the workspace owner), so seed rows inserted with another `createdBy` won't show up.
+Who really created or last changed a row is in `created_by_user`/`modified_by_user` (`<user> via AI` for AI writes, `system` for jobs):
+added to every app table automatically and stamped by DataGuard on every write, so don't put them in schema.sql.
 
 ### Verify before you say it works
 

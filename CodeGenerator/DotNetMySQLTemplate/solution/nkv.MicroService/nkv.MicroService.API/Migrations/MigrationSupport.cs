@@ -120,7 +120,9 @@ public static class NeoAppsMigrationExtensions
              .WithColumn("modifiedBy").AsCustom("VARCHAR(255)").NotNullable()
              .WithColumn("createdAt").AsCustom("DATETIME").NotNullable().WithDefault(SystemMethods.CurrentDateTime)
              .WithColumn("modifiedAt").AsCustom("DATETIME").NotNullable().WithDefault(SystemMethods.CurrentDateTime)
-             .WithColumn("isActive").AsCustom("TINYINT(1)").NotNullable().WithDefaultValue(1);
+             .WithColumn("isActive").AsCustom("TINYINT(1)").NotNullable().WithDefaultValue(1)
+             .WithColumn("created_by_user").AsCustom("VARCHAR(255)").Nullable()
+             .WithColumn("modified_by_user").AsCustom("VARCHAR(255)").Nullable();
 
     /// <summary>
     /// Registers a new table with RBAC: adds it to entities, gives administrators full access, adds role template rows

@@ -31,6 +31,8 @@ public static class SchemaMigrations
     }
 
     private static readonly string[] Audit = ["createdBy", "modifiedBy", "createdAt", "modifiedAt", "isActive"];
+    /// <summary>Who really created/changed a row: added to every app table and stamped by DataGuard, never part of the diff.</summary>
+    public static readonly string[] UserColumns = ["created_by_user", "modified_by_user"];
 
     // ------------------------------------------------------------------ live schema
 
@@ -49,6 +51,7 @@ public static class SchemaMigrations
             {
                 var table = r.GetString(0).ToLowerInvariant();
                 if (Reserved.Contains(table) || BuiltInAi.Contains(table)) continue;
+                if (UserColumns.Contains(r.GetString(1), StringComparer.OrdinalIgnoreCase)) continue;
                 if (!cols.TryGetValue(table, out var list)) { cols[table] = list = []; names.Add(table); }
                 list.Add(new Column(r.GetString(1), r.GetString(2).ToUpperInvariant(), r.GetString(3) == "NO",
                     r.IsDBNull(4) ? null : r.GetString(4), r.GetString(5) == "PRI", r.GetString(6).Contains("auto_increment", StringComparison.OrdinalIgnoreCase)));
@@ -95,7 +98,8 @@ public static class SchemaMigrations
         ICollection<string> existingRoles, Func<string, bool> hasRows, string name, DateTimeOffset now, JsonObject? previousUi = null)
     {
         var plan = new Plan();
-        desired = desired.Where(t => !Reserved.Contains(t.Name)).ToList();
+        desired = desired.Where(t => !Reserved.Contains(t.Name))
+            .Select(t => t with { Columns = t.Columns.Where(c => !UserColumns.Contains(c.Name, StringComparer.OrdinalIgnoreCase)).ToList() }).ToList();
         var liveByName = live.ToDictionary(l => l.Table.Name, StringComparer.OrdinalIgnoreCase);
         var roleGrants = RoleGrants(ui, desired);
 
