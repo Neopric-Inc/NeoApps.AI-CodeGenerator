@@ -24,7 +24,7 @@ public static class UiKit
         // AI assistant (created by the API on first use)
         "ai_files", "ai_chunks", "ai_conversations", "ai_messages", "ai_runs",
         // DataGuard tenancy (created by the API on startup)
-        "user_tenants",
+        "user_tenants", "login_attempts", "user_security",
         // migration history (FluentMigrator)
         "versioninfo",
     };

@@ -24,7 +24,7 @@ Work in the app's planning folder `workspace/<App>/` (git-ignored): `requirement
    - **never** reuse a built-in table name: `roles`, `users`, `entities`, `permissionmatrix`, `messagequeue`,
      `s3bucket`, `s3bucket_folders`, `dnd_ui_versions`, `project_dnd_ui_versions`, `workflow`, `workflows`,
      `workflows_projects`, `workflow_builds`, `workflow_runs`, `workflow_deployments`, `workflow_triggers`,
-     `workflow_trigger_conditions`, `ai_files`, `ai_chunks`, `ai_conversations`, `ai_messages`, `ai_runs`, `versioninfo`, `user_tenants` (use e.g. `members`, `automation_runs`)
+     `workflow_trigger_conditions`, `ai_files`, `ai_chunks`, `ai_conversations`, `ai_messages`, `ai_runs`, `versioninfo`, `user_tenants`, `login_attempts`, `user_security` (use e.g. `members`, `automation_runs`)
    - plain `CREATE TABLE` / `INSERT` only: no `CREATE DATABASE`, `USE`, `DELIMITER`, procedures
    Save it as `workspace/<App>/schema.sql` (copy it to `samples/` if it should be committed).
 3. **Design the UI** (recommended): write `workspace/<App>/ui.config.json` following `neoapps_ui_config_guide`
@@ -86,6 +86,11 @@ Production settings of a generated API (`appsettings.json`, override with env va
 in Development only), `Api:MaxPageSize` (default 1000), `Logging:LogSql` (off). Unexpected errors return a generic message
 with a reference (the `X-Correlation-Id` header) and are logged server-side; `/health/ready` checks MySQL, Redis and RabbitMQ.
 `--deploy` runs the API in Production with the UI origin allowed and Swagger on for local use.
+Sign-in protection (`Auth` in appsettings): lockout after `MaxFailedLogins` failures for `LockoutMinutes`, per-IP rate limit
+(`LoginsPerMinutePerIp`), password rules (`MinPasswordLength`, letters + digits), access tokens of `TokenMinutes` (8h).
+Sign-out (`POST /Access/logout`), password/role/active changes and `POST /Access/members/{id}/sign-out` end existing sessions
+(checked per request, 30s cache per API instance); `POST /Access/members/{id}/unlock` clears a lockout; `PUT /Access/me/password`.
+Tests that sign in many users quickly need a higher `Auth__LoginsPerMinutePerIp`.
 
 Pass the key to the API from the environment, e.g. `set -a; . ~/secrets/anthropic.env; set +a` before `dotnet run`
 (`--deploy` forwards `ANTHROPIC_API_KEY` into the container). AI endpoints: `/v1/api/Ai/status`, `files`, `ask`,

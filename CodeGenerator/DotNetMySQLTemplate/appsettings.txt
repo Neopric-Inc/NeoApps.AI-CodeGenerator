@@ -12,6 +12,7 @@
     "LogSql": false
   },
   "Api": { "MaxPageSize": 1000 },
+  "Auth": { "MaxFailedLogins": 5, "LockoutMinutes": 15, "LoginsPerMinutePerIp": 20, "MinPasswordLength": 10, "TokenMinutes": 480 },
   "Cors": { "AllowedOrigins": "" },
   "Swagger": { "Enabled": false },
  "AWS": {

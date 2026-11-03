@@ -92,8 +92,29 @@ namespace {projectName}.API
                     ValidateIssuerSigningKey = true,
                     IssuerSigningKey = new SymmetricSecurityKey(key),
                     ValidateIssuer = false,
-                    ValidateAudience = false
+                    ValidateAudience = false,
+                    ClockSkew = TimeSpan.FromMinutes(1)
                 };
+                // revoked sessions (sign-out, password/role change, deactivated account) are refused on every request
+                x.Events = new JwtBearerEvents
+                {
+                    OnTokenValidated = ctx =>
+                    {
+                        var uid = int.TryParse(ctx.Principal?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out var u) ? u : 0;
+                        var tv = int.TryParse(ctx.Principal?.FindFirst(AuthGuard.VersionClaim)?.Value, out var v) ? v : 1;
+                        if (!AuthGuard.TokenIsCurrent(uid, tv)) ctx.Fail("This session has ended. Sign in again.");
+                        return System.Threading.Tasks.Task.CompletedTask;
+                    }
+                };
+            });
+            // sign-in rate limit per client IP (Auth:LoginsPerMinutePerIp)
+            var loginsPerMinute = Math.Max(1, Configuration.GetValue("Auth:LoginsPerMinutePerIp", 20));
+            services.AddRateLimiter(o =>
+            {
+                o.RejectionStatusCode = 429;
+                o.AddPolicy("login", ctx => System.Threading.RateLimiting.RateLimitPartition.GetFixedWindowLimiter(
+                    ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                    _ => new System.Threading.RateLimiting.FixedWindowRateLimiterOptions { PermitLimit = loginsPerMinute, Window = TimeSpan.FromMinutes(1) }));
             });
 
             services.AddSingleton<IConfiguration>(Configuration);
@@ -156,8 +177,10 @@ namespace {projectName}.API
                 }
             });
             {projectName}.Utility.GuardJobs.Start(app.ApplicationServices);
+            AuthGuard.Init(Configuration, Configuration.GetConnectionString("MySQLDatabase"));
 
             app.UseRouting();
+            app.UseRateLimiter();
             app.UseCors("AllowAllHeaders");
             app.UseAuthentication();
             app.UseAuthorization();
