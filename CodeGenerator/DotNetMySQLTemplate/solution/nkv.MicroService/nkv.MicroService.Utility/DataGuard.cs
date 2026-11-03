@@ -85,6 +85,7 @@ namespace nkv.MicroService.Utility
                 createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP)", c)) cmd.ExecuteNonQuery();
             LoadSchema(c);
             if (TenancyEnabled) UpgradeForTenancy(c);
+            LoadScopes();
             InitExtensions(c);
             Ready = true;
             Console.WriteLine($"DataGuard: {AppTables.Count} app tables, tenancy {(TenancyEnabled ? $"on ({TenantTables.Count} tenant tables, column {TenantColumn})" : "off")}.");
@@ -309,6 +310,7 @@ namespace nkv.MicroService.Utility
                 else if (table.Equals(TenantTable, StringComparison.OrdinalIgnoreCase) && TenantTablePk != null) conds.Add($"{prefix}`{TenantTablePk}` = @__g_tenant");
                 if (conds.Count > 0) Bind(cmd, "@__g_tenant", caller.Tenant.Value);
             }
+            conds.AddRange(RowScopeConditions(table, prefix, caller, cmd));
             return conds;
         }
 
@@ -327,10 +329,12 @@ namespace nkv.MicroService.Utility
 
         static void GuardSelect(MySqlCommand cmd, Caller caller, string table, string alias, int afterFrom)
         {
-            if (TaggedBuiltIns.Contains(table) && caller.Tenant != null)
+            if (TaggedBuiltIns.Contains(table))
             {
-                Bind(cmd, "@__g_tenant", caller.Tenant.Value);
-                cmd.CommandText = InjectWhere(cmd.CommandText, afterFrom, $"{alias ?? table}.tenant_id = @__g_tenant");
+                var fc = new List<string>();
+                if (caller.Tenant != null) { Bind(cmd, "@__g_tenant", caller.Tenant.Value); fc.Add($"{alias ?? table}.tenant_id = @__g_tenant"); }
+                fc.AddRange(RowScopeFileConditions(table, alias ?? table, caller, cmd));
+                if (fc.Count > 0) cmd.CommandText = InjectWhere(cmd.CommandText, afterFrom, string.Join(" AND ", fc));
                 return;
             }
             if (!AppTables.Contains(table)) return;
@@ -348,6 +352,11 @@ namespace nkv.MicroService.Utility
                 foreach (Match pm in Regex.Matches(setPart, $@"`?\b{Regex.Escape(TenantColumn)}\b`?\s*=\s*(@\w+)", RegexOptions.IgnoreCase))
                     Bind(cmd, pm.Groups[1].Value, caller.Tenant.Value);
             var values = SetAssignments(setPart, cmd);
+            GuardScopedWrite(cmd, caller, table, values, col =>
+            {
+                var pm = Regex.Match(setPart, $@"`?\b{Regex.Escape(col)}\b`?\s*=\s*(@\w+)", RegexOptions.IgnoreCase);
+                return pm.Success ? pm.Groups[1].Value : null;
+            }, insert: false);
             CheckForeignKeys(cmd, caller, table, values);
             BeforeUpdate(cmd, caller, table, values);
             var conds = ScopeConditions(table, "", caller, cmd);
@@ -388,6 +397,11 @@ namespace nkv.MicroService.Utility
             }
             if (caller.Tenant != null && TenantTables.Contains(table) && !cols.Contains(TenantColumn.ToLowerInvariant()))
                 throw new DataGuardException($"{table} rows must include {TenantColumn}");
+            GuardScopedWrite(cmd, caller, table, values, col =>
+            {
+                var i = cols.IndexOf(col.ToLowerInvariant());
+                return i >= 0 && i < exprs.Count && exprs[i].Trim().StartsWith("@") ? exprs[i].Trim() : null;
+            }, insert: true);
             CheckForeignKeys(cmd, caller, table, values);
             BeforeInsert(cmd, caller, table, values);
         }

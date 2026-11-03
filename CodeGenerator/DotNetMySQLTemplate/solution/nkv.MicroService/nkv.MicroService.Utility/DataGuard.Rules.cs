@@ -76,6 +76,7 @@ namespace nkv.MicroService.Utility
                     ["frozen"] = new JsonArray(kv.Value.Frozen.Select(x => (JsonNode)x).ToArray()),
                 }))),
                 ["immutable"] = new JsonObject(_immutable.Select(kv => KeyValuePair.Create(kv.Key, (JsonNode)new JsonArray(kv.Value.Select(x => (JsonNode)x).ToArray())))),
+                ["rowScopes"] = ScopesSummary(),
                 ["audit"] = _auditTable, ["outbox"] = _outboxTable, ["outboxRules"] = _outboxAll ? -1 : _outboxRules.Count,
             };
         }
@@ -492,9 +493,12 @@ namespace nkv.MicroService.Utility
             return d;
         }
 
-        static string RoleName(MySqlConnection c, Caller caller)
+        static string RoleName(MySqlConnection _, Caller caller)
         {
             if (_roleNames.TryGetValue(caller.RoleId, out var n)) return n;
+            // own connection: callers may be in the middle of reading from theirs
+            using var c = new MySqlConnection(ConnectionString);
+            c.Open();
             using var q = new MySqlCommand("SELECT role_name FROM roles WHERE role_id = @r", c);
             q.Parameters.AddWithValue("@r", caller.RoleId);
             n = q.ExecuteScalar()?.ToString();

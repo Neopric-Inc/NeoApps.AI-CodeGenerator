@@ -123,6 +123,15 @@ internal static class UiConfigTools
               signed token (never the request), foreign keys must point at the same tenant, tables without the column are
               read-only for tenant users. Members get a tenant in Admin > Members (POST /Access/members "tenant_id");
               users without one are platform users. Tenant admins can't edit shared role templates or the UI config.
+          "rowScopes": [ { "name": "customer", "roles": ["Customer User"], "column": "customer_id",
+                           "userValue": { "table": "contacts", "match": "login_username", "column": "customer_id" } } ]
+              Row-level access inside a tenant: users in the roles only reach rows of their own value (here their customer):
+              tables with the column, the home table whose primary key is the column (customers), and tables linked to
+              those by foreign keys (up to 3 hops, e.g. tasks.case_id -> cases.customer_id). The column is forced on writes,
+              foreign keys must stay inside the scope, users without a value see nothing, other roles are unaffected, and
+              AI files of out-of-scope records are hidden. "match" is compared with the login name ("matchBy": "user_id" for
+              the numeric user id); optional "tables" / "exclude" limit where it applies. Same pattern for "experts only
+              see their assigned cases" (column assigned_expert_id, home table = the experts table).
           "lifecycles": { "cases": { "column": "status", "initial": ["draft"], "frozen": ["closed"],
               "transitions": [ { "from": "draft", "to": "submitted", "roles": ["*"], "actors": ["human"] },
                                { "from": "qa", "to": "delivered", "roles": ["Manager"],
