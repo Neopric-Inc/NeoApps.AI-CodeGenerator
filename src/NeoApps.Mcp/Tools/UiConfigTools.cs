@@ -117,6 +117,41 @@ internal static class UiConfigTools
         (types in src/neoapps/extensions.ts; use api/listRecords/createRecord/updateRecord from ../neoapps/api and useApp()
         for me/can()). Example: samples/splitshare/custom.
 
+        Data rules (enforced by the generated API on every query, AI included; see Utility/DataGuard*.cs). All optional:
+          "tenancy": { "column": "tenant_id", "tenantTable": "tenants", "sharedWritable": [] }
+              Tables with the column are isolated per tenant: reads filtered, the column forced on insert/update from the
+              signed token (never the request), foreign keys must point at the same tenant, tables without the column are
+              read-only for tenant users. Members get a tenant in Admin > Members (POST /Access/members "tenant_id");
+              users without one are platform users. Tenant admins can't edit shared role templates or the UI config.
+          "lifecycles": { "cases": { "column": "status", "initial": ["draft"], "frozen": ["closed"],
+              "transitions": [ { "from": "draft", "to": "submitted", "roles": ["*"], "actors": ["human"] },
+                               { "from": "qa", "to": "delivered", "roles": ["Manager"],
+                                 "requires": [ { "table": "approvals", "link": "case_id", "where": { "status": "approved" },
+                                                 "message": "needs an approval" } ] } ],
+              "history": { "table": "case_status_history", "link": "case_id", "from": "old_status", "to": "new_status", "actor": "changed_by_type" },
+              "timestamps": { "delivered": "delivered_at" },
+              "sla": { "table": "case_deadlines", "link": "case_id", "type": "deadline_type", "due": "due_at", "met": "met_at",
+                       "hours": { "expert_review": 24 } } } }
+              Only listed steps are allowed (409 otherwise), by the listed roles (Administrator: any listed step) and actors
+              ("human" default; add "ai" to let AI workflows do it). "requires": related rows that must exist ("linkFrom":
+              column of this row to match instead of its id). Frozen states lock the record. History rows, timestamps and SLA
+              deadline rows are written automatically in the same transaction.
+          "immutable": { "audit_logs": ["*"], "findings": ["ai_text", "confidence"] }   // "*" = append-only; else read-only columns
+          "audit": { "table": "audit_logs", "platformTable": "platform_audit_logs", "exclude": [] }
+              One row per create/update/delete (actor_type, actor_ref, action_code, entity_type, entity_ref, details JSON of
+              changes, correlation_ref, ip_address, tenant column: whichever the table has).
+          "outbox": { "table": "outbox_events", "exchange": "app.events", "maxAttempts": 5,
+                      "events": [ { "table": "cases", "on": "update", "when": { "status": "submitted" }, "event": "CaseSubmitted" } ] }
+              Event rows (event_type, aggregate_type, aggregate_ref, payload, status...) written in the write's transaction and
+              published to RabbitMQ (topic exchange, routing key = event, MessageId for de-duplication, retries, dead letter).
+          "jobs": { "everySeconds": 60, "deadlines": [ { "table": "case_deadlines", "due": "due_at", "met": "met_at", "breached": "is_breached",
+                    "escalate": { "table": "case_escalations", "values": { "case_id": "{case_id}", "reason": "Missed {deadline_type}" } } } ] }
+          "limits": [ { "table": "members", "where": { "kind": "employee" }, "max": { "from": "subscriptions", "column": "seats", "where": { "status": "active" } } },
+                      { "table": "usage", "sum": "quantity", "period": "month", "max": { "from": "plans", "column": "credits",
+                        "join": { "table": "subscriptions", "on": "plan_id" } } } ]     // 402 when exceeded; platform users exempt
+          Files: uploads are stored under tenant-{id}/; GET /Ai/files/{id}/link returns a 5-minute signed download link.
+          Verify with ./neoapps test <App> (tenant isolation on every table, append-only tables, lifecycle steps).
+
         AI assistant (Claude). Optional "ai" section; active when the API runs with ANTHROPIC_API_KEY set:
           "ai": {
             "enabled": true,

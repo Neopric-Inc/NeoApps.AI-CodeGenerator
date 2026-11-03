@@ -9,6 +9,7 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using MySqlConnector;
+using nkv.MicroService.Utility;
 
 namespace nkv.MicroService.API.Ai
 {
@@ -37,14 +38,16 @@ namespace nkv.MicroService.API.Ai
                 throw new AiException("Unsupported file type. Upload PDF, DOCX, TXT, MD, CSV or JSON.");
             using var c = _data.Open();
             RequirePerm(c, u, table, p => p.Update || p.Create, "attach files to");
-            var dir = Path.Combine(_settings.FilesRoot, Safe(u.Tenant));
+            if (!DataGuard.RecordVisible(c, table, recordId)) throw new AiException("Record not found.");
+            var dir = Path.Combine(_settings.FilesRoot, Safe(u.Tenant), DataGuard.StoragePrefix());
             Directory.CreateDirectory(dir);
             var path = Path.Combine(dir, Guid.NewGuid().ToString("N") + Path.GetExtension(fileName).ToLowerInvariant());
             using (var fs = File.Create(path)) content.CopyTo(fs);
 
-            var cmd = AiData.Cmd(c, @"INSERT INTO ai_files (owner_name, table_name, record_id, file_name, content_type, size_bytes, status, storage_path, createdBy)
-                                     VALUES (@o, @t, @r, @n, @ct, @s, 'indexing', @p, @by)",
-                ("@o", u.Tenant), ("@t", table), ("@r", recordId), ("@n", fileName), ("@ct", contentType), ("@s", new FileInfo(path).Length), ("@p", path), ("@by", u.Username));
+            var dataTenant = (object)DataGuard.Current?.Tenant ?? DBNull.Value;
+            var cmd = AiData.Cmd(c, @"INSERT INTO ai_files (owner_name, table_name, record_id, file_name, content_type, size_bytes, status, storage_path, createdBy, tenant_id)
+                                     VALUES (@o, @t, @r, @n, @ct, @s, 'indexing', @p, @by, @tn)",
+                ("@o", u.Tenant), ("@t", table), ("@r", recordId), ("@n", fileName), ("@ct", contentType), ("@s", new FileInfo(path).Length), ("@p", path), ("@by", u.Username), ("@tn", dataTenant));
             cmd.ExecuteNonQuery();
             var fileId = (int)cmd.LastInsertedId;
             try
@@ -53,8 +56,8 @@ namespace nkv.MicroService.API.Ai
                 foreach (var (text, i) in pages.Select((t, i) => (t, i)))
                 {
                     if (string.IsNullOrWhiteSpace(text)) continue;
-                    AiData.Cmd(c, "INSERT INTO ai_chunks (file_id, owner_name, page, text) VALUES (@f, @o, @p, @t)",
-                        ("@f", fileId), ("@o", u.Tenant), ("@p", i + 1), ("@t", text)).ExecuteNonQuery();
+                    AiData.Cmd(c, "INSERT INTO ai_chunks (file_id, owner_name, page, text, tenant_id) VALUES (@f, @o, @p, @t, @tn)",
+                        ("@f", fileId), ("@o", u.Tenant), ("@p", i + 1), ("@t", text), ("@tn", dataTenant)).ExecuteNonQuery();
                 }
                 var chars = pages.Sum(p => p.Length);
                 var status = chars < 20 ? "no_text" : "indexed";
@@ -72,6 +75,7 @@ namespace nkv.MicroService.API.Ai
         {
             using var c = _data.Open();
             RequirePerm(c, u, table, p => p.Read, "read");
+            if (!DataGuard.RecordVisible(c, table, recordId)) throw new AiException("Record not found.");
             return AiData.Rows(AiData.Cmd(c, @"SELECT file_id, file_name, content_type, size_bytes, pages, status, error, createdBy, createdAt
                                               FROM ai_files WHERE owner_name=@o AND table_name=@t AND record_id=@r ORDER BY file_id DESC",
                 ("@o", u.Tenant), ("@t", table), ("@r", recordId)));
@@ -83,6 +87,24 @@ namespace nkv.MicroService.API.Ai
             var f = FileRow(c, u, fileId);
             RequirePerm(c, u, f.table, p => p.Read, "read");
             return (f.path, f.name, f.type ?? "application/octet-stream");
+        }
+
+        /// <summary>Short-lived signed link (5 minutes) for a file the caller may read.</summary>
+        public JsonObject FileLink(AiUser u, int fileId, string baseUrl)
+        {
+            FileContent(u, fileId); // authorization
+            var exp = DateTimeOffset.UtcNow.AddMinutes(5).ToUnixTimeSeconds();
+            return new JsonObject { ["url"] = $"{baseUrl}?exp={exp}&sig={DataGuard.Sign("ai_file:" + fileId, exp)}", ["expires"] = exp };
+        }
+
+        /// <summary>File behind a valid signed link (no login needed until it expires).</summary>
+        public (string path, string name, string type) SignedFileContent(int fileId, long exp, string sig)
+        {
+            if (!DataGuard.VerifySignature("ai_file:" + fileId, exp, sig)) throw new AiException("This link has expired or is invalid.");
+            using var c = _data.Open();
+            using var r = AiData.Cmd(c, "SELECT storage_path, file_name, content_type FROM ai_files WHERE file_id=@id", ("@id", fileId)).ExecuteReader();
+            if (!r.Read()) throw new AiException("File not found.");
+            return (r.GetString(0), r.GetString(1), r.IsDBNull(2) ? "application/octet-stream" : r.GetString(2));
         }
 
         public void DeleteFile(AiUser u, int fileId)
@@ -619,7 +641,7 @@ When done, call propose_records exactly once with all rows.";
                     cmd.Parameters.AddWithValue("@v" + i, val ?? DBNull.Value);
                 }
                 cmd.Transaction = tx;
-                try { cmd.ExecuteNonQuery(); }
+                try { DataGuard.NonQuery(cmd); }
                 catch (MySqlException ex) { throw new AiException($"Couldn't create a {table} row: {ex.Message}"); }
                 ids[ready["ref"]!.GetValue<string>()] = cmd.LastInsertedId;
                 created[table] = created.GetValueOrDefault(table) + 1;

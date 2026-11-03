@@ -52,7 +52,9 @@ namespace nkv.MicroService.API.Controllers
                     new Claim(ClaimTypes.Name, usersModel.username.ToString()),
                     new Claim(ClaimTypes.Role, usersModel.role_id.ToString()),
                     new Claim(ClaimTypes.NameIdentifier, usersModel.user_id.ToString()),
-                    new Claim(ClaimTypes.Actor, owner_name)
+                    new Claim(ClaimTypes.Actor, owner_name),
+                    // tenant comes only from the server-side user_tenants mapping; empty = platform user
+                    new Claim(DataGuard.TenantClaim, DataGuard.TenantOfUser(usersModel.user_id)?.ToString() ?? "")
                         }),
                         Expires = DateTime.UtcNow.AddDays(day),
                         SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)

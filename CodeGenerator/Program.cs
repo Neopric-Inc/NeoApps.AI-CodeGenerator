@@ -2858,24 +2858,24 @@ APIResponse Update{tableName}Transactional({primaryKeyListParam},{tableName}Tran
                     {
                         string data = utility.getType(column["DATA_TYPE"].ToString());
                         if (data.Contains("Date"))
-                            selectAllModelInit += Column_Name_Left + "= " + "reader.IsDBNull(Helper.GetColumnOrder(reader," + "\"" + column["COLUMN_NAME"].ToString() + "\"" + ")) ? " + "(" + "String" + "?)null : reader.Get" + data + "(" + "\"" + column["COLUMN_NAME"].ToString() + "\"" + ").ToString()";
+                            selectAllModelInit += Column_Name_Left + "= " + "reader.IsDBNull(Helper.GetColumnOrder(reader," + "\"" + column["COLUMN_NAME"].ToString() + "\"" + ")) ? " + "(" + "String" + "?)null : reader.Get" + data + "(" + "\"" + column["COLUMN_NAME"].ToString() + "\"" + ").ToString(\"yyyy-MM-ddTHH:mm:ss\", System.Globalization.CultureInfo.InvariantCulture)"; // ISO 8601 so values round-trip (was culture-specific)
                         else if (data.Contains("float"))
                             selectAllModelInit += Column_Name_Left + "= " + "reader.IsDBNull(Helper.GetColumnOrder(reader," + "\"" + column["COLUMN_NAME"].ToString() + "\"" + ")) ? " + "(" + dict[column["DATA_TYPE"].ToString()].ToLower() + "?)null : reader.Get" + dict[column["DATA_TYPE"].ToString()] + "(" + "\"" + column["COLUMN_NAME"].ToString() + "\"" + ")";
                         else
                             selectAllModelInit += Column_Name_Left + "= " + "reader.IsDBNull(Helper.GetColumnOrder(reader," + "\"" + column["COLUMN_NAME"].ToString() + "\"" + ")) ? " + "(" + dict[column["DATA_TYPE"].ToString()] + "?)null : reader.Get" + dict[column["DATA_TYPE"].ToString()] + "(" + "\"" + column["COLUMN_NAME"].ToString() + "\"" + ")";
-                        if (column.ItemArray.Length != columns.Rows.Count - 1)
+                        if (true) // trailing comma is valid C#; old check broke 22-column tables
                             selectAllModelInit += ",\n";
                     }
                     else
                     {
                         string data = utility.getType(column["DATA_TYPE"].ToString());
                         if (data.Contains("Date"))
-                            selectAllModelInit += Column_Name_Left + "= " + "reader.GetValue<" + data + ">(" + "\"" + column["COLUMN_NAME"].ToString() + "\"" + ").ToString()";
+                            selectAllModelInit += Column_Name_Left + "= " + "reader.GetValue<" + data + ">(" + "\"" + column["COLUMN_NAME"].ToString() + "\"" + ").ToString(\"yyyy-MM-ddTHH:mm:ss\", System.Globalization.CultureInfo.InvariantCulture)"; // ISO 8601 so values round-trip (was culture-specific)
                         else if (data.Contains("float"))
                             selectAllModelInit += Column_Name_Left + "= " + "reader.GetValue<" + dict[column["DATA_TYPE"].ToString()].ToLower() + ">(" + "\"" + column["COLUMN_NAME"].ToString() + "\"" + ")";
                         else
                             selectAllModelInit += Column_Name_Left + "= " + "reader.GetValue<" + dict[column["DATA_TYPE"].ToString()] + ">(" + "\"" + column["COLUMN_NAME"].ToString() + "\"" + ")";
-                        if (column.ItemArray.Length != columns.Rows.Count - 1)
+                        if (true) // trailing comma is valid C#; old check broke 22-column tables
                             selectAllModelInit += ",\n";
                     }
 

@@ -5,7 +5,7 @@ if ({tableNameSmall} != null)
     cmd.Parameters.AddWithValue("@ownername", ownername);
     {getByIDQueryParameter}
 
-    using (var reader = cmd.ExecuteReader())
+    using (var reader = DataGuard.Apply(cmd).ExecuteReader())
     {
         while (reader.Read())
         {

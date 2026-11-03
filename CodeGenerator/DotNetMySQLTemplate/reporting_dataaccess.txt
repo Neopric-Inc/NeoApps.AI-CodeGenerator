@@ -10,7 +10,7 @@ public {tableName}ReportingModel Get{tableName}Reporting(string ownername,{prima
             cmd.Parameters.AddWithValue("@ownername", ownername);
             {getByIDQueryParameter}
             {tableName}ReportingModel {tableNameSmall} = null;
-            using (var reader = cmd.ExecuteReader())
+            using (var reader = DataGuard.Apply(cmd).ExecuteReader())
             {
                 while (reader.Read())
                 {
@@ -51,7 +51,7 @@ public List<{tableName}ReportingModel> GetAll{tableName}Reporting(string ownerna
             cmd.Parameters.AddWithValue("@ownername", ownername);
             cmd.Parameters.AddWithValue("@ItemsPerPage", itemsPerPage);
             List<{tableName}ReportingModel> {tableNameSmall} = new List<{tableName}ReportingModel>();
-            using (var reader = cmd.ExecuteReader())
+            using (var reader = DataGuard.Apply(cmd).ExecuteReader())
             {
                 while (reader.Read())
                 {

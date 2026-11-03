@@ -133,6 +133,21 @@ namespace {projectName}.API
                 c.SwaggerEndpoint("/swagger/v1/swagger.json", "{projectName}");
             });
 
+            // Data rules (tenancy, lifecycle, audit/outbox, read-only data) enforced on every generated query: see Utility/DataGuard*.cs
+            {projectName}.Utility.DataGuard.Init(app.ApplicationServices.GetService<IHttpContextAccessor>(),
+                Configuration.GetConnectionString("MySQLDatabase"), env.ContentRootPath);
+            app.Use(async (ctx, next) =>
+            {
+                try { await next(); }
+                catch ({projectName}.Utility.DataGuardException gx)
+                {
+                    if (ctx.Response.HasStarted) throw;
+                    ctx.Response.StatusCode = gx.StatusCode;
+                    await ctx.Response.WriteAsJsonAsync(new { code = 0, message = gx.Message });
+                }
+            });
+            {projectName}.Utility.GuardJobs.Start(app.ApplicationServices);
+
             app.UseRouting();
             app.UseCors("AllowAllHeaders");
             app.UseAuthentication();

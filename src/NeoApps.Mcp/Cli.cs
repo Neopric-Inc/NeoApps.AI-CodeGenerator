@@ -10,7 +10,7 @@ namespace NeoApps.Mcp;
 /// </summary>
 public static class Cli
 {
-    private static readonly string[] Commands = ["new", "evolve", "migrate", "preview", "frontend", "ui", "deploy", "status", "logs", "stop", "list", "doctor", "guidelines", "infra", "help", "--help", "-h"];
+    private static readonly string[] Commands = ["new", "evolve", "migrate", "preview", "frontend", "ui", "deploy", "status", "test", "logs", "stop", "list", "doctor", "guidelines", "infra", "help", "--help", "-h"];
     private static readonly JsonSerializerOptions Pretty = new() { WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
 
     public static bool IsCommand(string arg) => Commands.Contains(arg, StringComparer.OrdinalIgnoreCase);
@@ -79,6 +79,19 @@ public static class Cli
                     return ok ? 0 : 1;
                 }
                 case "status": Print(await tools.AppStatus(Name(), ct)); return 0;
+                case "test":
+                {
+                    // data-rule tests against the running API (tenancy, append-only data, lifecycles): scripts/guard-tests.py
+                    var root = AppContext.BaseDirectory;
+                    while (root != null && !File.Exists(Path.Combine(root, "scripts", "guard-tests.py"))) root = Path.GetDirectoryName(root);
+                    root ??= Directory.GetCurrentDirectory();
+                    var psi = new System.Diagnostics.ProcessStartInfo("python3") { WorkingDirectory = root };
+                    psi.ArgumentList.Add(Path.Combine(root, "scripts", "guard-tests.py"));
+                    psi.ArgumentList.Add(Name());
+                    using var p = System.Diagnostics.Process.Start(psi)!;
+                    await p.WaitForExitAsync(ct);
+                    return p.ExitCode;
+                }
                 case "logs": Console.WriteLine(await tools.AppLogs(Name(), Opt("--service"), int.TryParse(Opt("--tail"), out var t) ? t : 100, ct)); return 0;
                 case "stop": Print(await tools.StopApp(Name(), ct)); return 0;
                 case "list": Print(tools.ListApps()); return 0;
@@ -135,6 +148,7 @@ public static class Cli
           frontend <App> [--template app|dnd]   regenerate the UI
           ui <App> [--set changes.json [--replace]]   show the UI config, or merge changes into it and regenerate the UI
           deploy <App> [--consumer]             build and run the app in Docker
+          test <App>                            run the data-rule tests (tenant isolation, append-only data, lifecycles) against the running API
           status <App> | logs <App> [--service api|web] [--tail N] | stop <App>
           list                                  apps created so far
           doctor                                check .NET / Docker / shared services

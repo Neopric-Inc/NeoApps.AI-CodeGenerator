@@ -133,6 +133,21 @@ namespace nkv.MicroService.API
                 c.SwaggerEndpoint("/swagger/v1/swagger.json", "nkv.MicroService");
             });
 
+            // Data rules (tenancy, lifecycle, audit/outbox, read-only data) enforced on every generated query: see Utility/DataGuard*.cs
+            nkv.MicroService.Utility.DataGuard.Init(app.ApplicationServices.GetService<IHttpContextAccessor>(),
+                Configuration.GetConnectionString("MySQLDatabase"), env.ContentRootPath);
+            app.Use(async (ctx, next) =>
+            {
+                try { await next(); }
+                catch (nkv.MicroService.Utility.DataGuardException gx)
+                {
+                    if (ctx.Response.HasStarted) throw;
+                    ctx.Response.StatusCode = gx.StatusCode;
+                    await ctx.Response.WriteAsJsonAsync(new { code = 0, message = gx.Message });
+                }
+            });
+            nkv.MicroService.Utility.GuardJobs.Start(app.ApplicationServices);
+
             app.UseRouting();
             app.UseCors("AllowAllHeaders");
             app.UseAuthentication();

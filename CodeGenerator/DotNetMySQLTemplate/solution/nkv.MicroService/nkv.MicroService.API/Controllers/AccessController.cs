@@ -40,6 +40,10 @@ namespace nkv.MicroService.API.Controllers
         private int RoleId => int.TryParse(User.FindFirst(ClaimTypes.Role)?.Value, out var v) ? v : 0;
         private string Tenant => User.FindFirst(ClaimTypes.Actor)?.Value ?? Username;
         private bool IsAdmin => RoleId == AdminRoleId;
+        /// <summary>Data tenant of the caller from the signed token (DataGuard tenancy); null = platform user.</summary>
+        private int? DataTenant => DataGuard.Current?.Tenant;
+        /// <summary>Role templates and the UI config are shared by every tenant, so only platform administrators change them.</summary>
+        private bool IsPlatformAdmin => IsAdmin && DataTenant == null;
 
         // ------------------------------------------------------------------ me
 
@@ -68,6 +72,10 @@ namespace nkv.MicroService.API.Controllers
                 role_id = RoleId,
                 role_name = Scalar<string>(conn, "SELECT role_name FROM roles WHERE role_id = @id", ("@id", RoleId)),
                 tenant = Tenant,
+                tenant_id = DataTenant,
+                is_platform = DataTenant == null,
+                tenancy = DataGuard.TenancyEnabled,
+                tenant_table = DataGuard.TenantTable,
                 is_admin = IsAdmin,
                 permissions
             }));
@@ -98,7 +106,7 @@ namespace nkv.MicroService.API.Controllers
         [Route(Route + "/roles")]
         public ActionResult CreateRole(RoleInput input)
         {
-            if (!IsAdmin) return Forbid();
+            if (!IsPlatformAdmin) return Forbid();
             if (string.IsNullOrWhiteSpace(input?.role_name)) return BadRequest(new APIResponse(ResponseCode.ERROR, "role_name is required"));
             using var conn = Open();
             using var cmd = new MySqlCommand("INSERT INTO roles (role_name, createdBy, modifiedBy, isActive) VALUES (@n, @u, @u, 1)", conn);
@@ -133,7 +141,7 @@ namespace nkv.MicroService.API.Controllers
         [Route(Route + "/roles/{roleId}/permissions")]
         public ActionResult SaveRolePermissions(int roleId, List<PermissionInput> input)
         {
-            if (!IsAdmin) return Forbid();
+            if (!IsPlatformAdmin) return Forbid();
             if (roleId == AdminRoleId) return BadRequest(new APIResponse(ResponseCode.ERROR, "The Administrator role always has full access."));
             using var conn = Open();
             SaveRoleTemplate(conn, roleId, input ?? new List<PermissionInput>());
@@ -153,18 +161,21 @@ namespace nkv.MicroService.API.Controllers
             if (!IsAdmin) return Forbid();
             using var conn = Open();
             var list = new List<object>();
-            using var cmd = new MySqlCommand(@"SELECT u.user_id, u.username, u.role_id, r.role_name, u.isActive, u.createdAt
-                FROM users u LEFT JOIN roles r ON r.role_id = u.role_id
+            using var cmd = new MySqlCommand(@"SELECT u.user_id, u.username, u.role_id, r.role_name, u.isActive, u.createdAt, ut.tenant_id
+                FROM users u LEFT JOIN roles r ON r.role_id = u.role_id LEFT JOIN user_tenants ut ON ut.user_id = u.user_id
                 WHERE u.user_id IN (SELECT DISTINCT p.user_id FROM permissionmatrix p WHERE p.owner_name = @t AND p.user_id IS NOT NULL)
+                  AND (@dt IS NULL OR ut.tenant_id = @dt)
                 ORDER BY u.user_id", conn);
             cmd.Parameters.AddWithValue("@t", Tenant);
+            cmd.Parameters.AddWithValue("@dt", (object)DataTenant ?? DBNull.Value);
             using var r = cmd.ExecuteReader();
             while (r.Read())
                 list.Add(new
                 {
                     user_id = r.GetInt32(0), username = r.GetString(1), role_id = r.GetInt32(2),
                     role_name = r.IsDBNull(3) ? null : r.GetString(3), isActive = Convert.ToInt32(r.GetValue(4)),
-                    createdAt = r.IsDBNull(5) ? (DateTime?)null : r.GetDateTime(5), is_you = r.GetInt32(0) == UserId
+                    createdAt = r.IsDBNull(5) ? (DateTime?)null : r.GetDateTime(5), is_you = r.GetInt32(0) == UserId,
+                    tenant_id = r.IsDBNull(6) ? (int?)null : r.GetInt32(6)
                 });
             return Ok(new APIResponse(ResponseCode.SUCCESS, "OK", list));
         }
@@ -175,6 +186,9 @@ namespace nkv.MicroService.API.Controllers
             public string password { get; set; }
             public int role_id { get; set; }
             public int? isActive { get; set; }
+            /// <summary>Data tenant of the member. Ignored for tenant administrators (members always join their tenant);
+            /// platform administrators may set it (0 = platform user). Omit on update to keep it.</summary>
+            public int? tenant_id { get; set; }
         }
 
         [HttpPost]
@@ -195,6 +209,7 @@ namespace nkv.MicroService.API.Controllers
             cmd.Parameters.AddWithValue("@by", Username);
             cmd.ExecuteNonQuery();
             var userId = (int)cmd.LastInsertedId;
+            DataGuard.SetTenantOfUser(conn, userId, DataTenant ?? (input.tenant_id is > 0 ? input.tenant_id : null));
             WriteUserPermissions(conn, userId, input.role_id);
             return Ok(new APIResponse(ResponseCode.SUCCESS, "Member added", new { user_id = userId }));
         }
@@ -221,6 +236,8 @@ namespace nkv.MicroService.API.Controllers
                 cmd.Parameters.AddWithValue("@id", userId);
                 cmd.ExecuteNonQuery();
             }
+            if (DataTenant == null && input.tenant_id.HasValue)
+                DataGuard.SetTenantOfUser(conn, userId, input.tenant_id > 0 ? input.tenant_id : null);
             WriteUserPermissions(conn, userId, input.role_id, active: input.isActive ?? 1);
             ClearPermissionCache();
             return Ok(new APIResponse(ResponseCode.SUCCESS, "Member updated"));
@@ -242,7 +259,7 @@ namespace nkv.MicroService.API.Controllers
         [Route(Route + "/ui-config")]
         public ActionResult SaveUiConfig([FromBody] JsonElement config)
         {
-            if (!IsAdmin) return Forbid();
+            if (!IsPlatformAdmin) return Forbid();
             using var conn = Open();
             Exec(conn, "UPDATE dnd_ui_versions SET isActive = 0 WHERE dnd_ui_type = @t AND createdBy = @o", ("@t", UiConfigType), ("@o", Truncate(Tenant)));
             Exec(conn, @"INSERT INTO dnd_ui_versions (layout, components, ui_pages, dnd_ui_type, createdBy, modifiedBy, isActive)
@@ -289,8 +306,10 @@ namespace nkv.MicroService.API.Controllers
         private List<int> MembersOfTenant(MySqlConnection conn)
         {
             var ids = new List<int>();
-            using var cmd = new MySqlCommand("SELECT DISTINCT user_id FROM permissionmatrix WHERE owner_name = @t AND user_id IS NOT NULL", conn);
+            using var cmd = new MySqlCommand(@"SELECT DISTINCT p.user_id FROM permissionmatrix p LEFT JOIN user_tenants ut ON ut.user_id = p.user_id
+                WHERE p.owner_name = @t AND p.user_id IS NOT NULL AND (@dt IS NULL OR ut.tenant_id = @dt)", conn);
             cmd.Parameters.AddWithValue("@t", Tenant);
+            cmd.Parameters.AddWithValue("@dt", (object)DataTenant ?? DBNull.Value);
             using var r = cmd.ExecuteReader();
             while (r.Read()) ids.Add(r.GetInt32(0));
             return ids;

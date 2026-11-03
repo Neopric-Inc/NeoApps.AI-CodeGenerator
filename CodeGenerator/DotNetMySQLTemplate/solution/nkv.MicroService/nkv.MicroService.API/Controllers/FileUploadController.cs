@@ -54,7 +54,8 @@ namespace nkv.MicroService.API.Controllers
                 var s3Client = new AmazonS3Client(bux.bucket_url, _configuration["AWS:SecretKey"], config);
 
                 var fileTransferUtility = new TransferUtility(s3Client);
-                string key = $@"{_configuration["AWS:SubBucketName"]}/{model.folderselected}/{model.File.FileName}";
+                // per-tenant namespace (tenant-{id}/ or platform/) + sanitized folder and file names: no path traversal, no cross-tenant keys
+                string key = DataGuard.StorageKey(_configuration["AWS:SubBucketName"], model.folderselected, model.File.FileName);
                 // replace 'your-bucket-name' with your actual bucket name
                 await fileTransferUtility.UploadAsync(model.File.OpenReadStream(), bux.bucket_name, key);
 
@@ -68,7 +69,7 @@ namespace nkv.MicroService.API.Controllers
 
                 var url = s3Client.GetPreSignedURL(request);*/
 
-                return Ok(new APIResponse(ResponseCode.SUCCESS, "File uploaded successfully", model.File.FileName));
+                return Ok(new APIResponse(ResponseCode.SUCCESS, "File uploaded successfully", key));
             }
             catch (Exception ex)
             {
@@ -102,8 +103,8 @@ namespace nkv.MicroService.API.Controllers
                 var request = new Amazon.S3.Model.GetPreSignedUrlRequest
                 {
                     BucketName = bux.bucket_name,
-                    Key = model.Key,
-                    Expires = DateTime.UtcNow.AddHours(1)  // Expires in 1 hour
+                    Key = DataGuard.CheckStorageKey(model.Key),
+                    Expires = DateTime.UtcNow.AddMinutes(15)  // short-lived signed download link
                 };
 
                 var url = s3Client.GetPreSignedURL(request);
