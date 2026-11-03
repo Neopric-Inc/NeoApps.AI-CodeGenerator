@@ -7,6 +7,8 @@ the app's schema.sql and ui.config.json, then checks against the running API:
                update or delete them; a tenant_id sent by B is replaced with B's own; shared tables are read-only.
   immutable  - append-only tables reject updates.
   lifecycles - a status jump that no transition allows is rejected.
+  rowScopes  - per scope: two home records (e.g. two customers) with a linked user each; rows of every covered table
+               created for the second are invisible to the first and visible to the second.
 
 Exit code 0 when everything passes. Writes workspace/<App>/guard-test-report.json.
 """
@@ -98,6 +100,7 @@ def value(table, col, spec, unique):
 class Factory:
     def __init__(self, tok, tenant):
         self.tok, self.tenant, self.made, self.errors = tok, tenant, {}, {}
+        self.link_to = set()   # tables whose foreign keys are filled even when optional (row-scope chains)
     def row(self, table, unique=None):
         unique = unique or str(random.randint(100, 999999))
         info, body = tables[table], {}
@@ -106,11 +109,11 @@ class Factory:
             if col == TCOL: body[col] = self.tenant; continue
             ref = info["fks"].get(col)
             if ref:
-                if not spec["notnull"]: continue
+                if not spec["notnull"] and ref not in self.link_to: continue
                 parent = self.tenant if ref == TTABLE else self.ensure(ref)
                 if parent is None: return None
                 body[col] = parent; continue
-            if not spec["notnull"] and spec["type"] not in ("varchar", "char") : continue
+            if not spec["notnull"] and spec["type"] not in ("varchar", "char") and col != getattr(self, "scope_col", None): continue
             body[col] = value(table, col, spec, unique)
         return body
     def ensure(self, table):
@@ -190,6 +193,56 @@ if TTABLE:
         if body is None: continue
         st, r = call("POST", ctl(t), body, tokA)
         check("tenancy", f"{t}: shared table is read-only for tenant users", st == 403, (st, r if st != 200 else "created"))
+
+# ------------------------------------------------------------------ row scopes (inside tenant A)
+def scope_tables(sc):
+    col = sc["column"].lower()
+    home = next((t for t in order if tables[t]["pk"] == col), None)
+    only, excl = set(sc.get("tables") or order), set(sc.get("exclude") or [])
+    ok = lambda t: t in only and t not in excl
+    direct = {t for t in order if ok(t) and col in tables[t]["cols"] and t != home}
+    reached = set(direct) | ({home} if home else set())
+    linked = set()
+    for _ in range(3):
+        new = {t for t in order if ok(t) and t not in reached and any(r in reached for r in tables[t]["fks"].values())}
+        if not new: break
+        linked |= new; reached |= new
+    return home, direct, linked
+
+if users and CFG.get("rowScopes"):
+    for sc in CFG["rowScopes"]:
+        home, direct, linked = scope_tables(sc)
+        uv = sc.get("userValue") or {}
+        if not home or not uv.get("table") or not sc.get("roles"):
+            report["skipped"]["rowScope " + sc.get("name", "?")] = "needs a home table, userValue and roles"; continue
+        homes, toks = [], []
+        for k in (1, 2):
+            st, r = call("POST", ctl(home), A.row(home, unique=f"h{k}"), tokA)
+            if st != 200: report["skipped"]["rowScope " + sc["name"]] = f"home row: {st} {r}"; break
+            hid = doc((st, r)); homes.append(hid)
+            uname = f"guardscope{k}_{RUN}"
+            call("POST", "Access/members", {"username": uname, "password": "GuardTest!2026", "role_id": roles.get(sc["roles"][0]), "tenant_id": ta}, ADMIN)
+            link = A.row(uv["table"], unique=f"l{k}") or {}
+            link[uv["match"]] = uname; link[uv["column"]] = hid
+            st, r = call("POST", ctl(uv["table"]), link, tokA)
+            if st != 200: report["skipped"]["rowScope " + sc["name"]] = f"user link: {st} {r}"; break
+            toks.append(login(uname, "GuardTest!2026"))
+        if len(toks) < 2: continue
+        F2 = Factory(tokA, ta); F2.made[home] = homes[1]
+        F2.link_to = {home} | direct | linked; F2.scope_col = sc["column"].lower()
+        for t in sorted(direct | linked):
+            if t == uv["table"]: continue
+            rid = F2.ensure(t)
+            if rid is None: report["skipped"][f"{t} (scope {sc['name']})"] = F2.errors.get(t, "not created"); continue
+            pk = tables[t]["pk"]
+            st1, r1 = call("GET", f"{ctl(t)}?itemsPerPage=1000", tok=toks[0])
+            if st1 != 200: report["skipped"][f"{t} (scope {sc['name']})"] = f"role can't read ({st1})"; continue
+            check("rowscope", f"{t}: other {sc['name']}'s row hidden from list", rid not in [x[pk] for x in ((doc((st1, r1)) or {}).get("records") or [])])
+            check("rowscope", f"{t}: other {sc['name']}'s row hidden by id", not doc(call("GET", f"{ctl(t)}/{rid}", tok=toks[0])))
+            check("rowscope", f"{t}: own {sc['name']} sees the row", doc(call("GET", f"{ctl(t)}/{rid}", tok=toks[1])) is not None)
+        st, r = call("GET", f"{ctl(home)}?itemsPerPage=1000", tok=toks[0])
+        if st == 200:
+            check("rowscope", f"{home}: scoped user sees only its own record", [x[tables[home]['pk']] for x in doc((st, r))["records"]] == [homes[0]])
 
 # ------------------------------------------------------------------ append-only
 writer = users["a"][1] if users else ADMIN

@@ -5293,6 +5293,20 @@
     "tenantTable": "saas_tenants",
     "sharedWritable": []
   },
+  "rowScopes": [
+    {
+      "name": "customer",
+      "roles": [
+        "Customer User"
+      ],
+      "column": "customer_id",
+      "userValue": {
+        "table": "tenant_users",
+        "match": "login_username",
+        "column": "customer_id"
+      }
+    }
+  ],
   "lifecycles": {
     "cases": {
       "column": "status",
