@@ -24,7 +24,7 @@ Work in the app's planning folder `workspace/<App>/` (git-ignored): `requirement
    - **never** reuse a built-in table name: `roles`, `users`, `entities`, `permissionmatrix`, `messagequeue`,
      `s3bucket`, `s3bucket_folders`, `dnd_ui_versions`, `project_dnd_ui_versions`, `workflow`, `workflows`,
      `workflows_projects`, `workflow_builds`, `workflow_runs`, `workflow_deployments`, `workflow_triggers`,
-     `workflow_trigger_conditions`, `ai_files`, `ai_chunks`, `ai_conversations`, `ai_messages`, `ai_runs`, `versioninfo` (use e.g. `members`, `automation_runs`)
+     `workflow_trigger_conditions`, `ai_files`, `ai_chunks`, `ai_conversations`, `ai_messages`, `ai_runs`, `versioninfo`, `user_tenants` (use e.g. `members`, `automation_runs`)
    - plain `CREATE TABLE` / `INSERT` only: no `CREATE DATABASE`, `USE`, `DELIMITER`, procedures
    Save it as `workspace/<App>/schema.sql` (copy it to `samples/` if it should be committed).
 3. **Design the UI** (recommended): write `workspace/<App>/ui.config.json` following `neoapps_ui_config_guide`

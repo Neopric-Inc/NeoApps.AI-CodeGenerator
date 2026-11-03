@@ -8,7 +8,7 @@ import { api, listRecords } from "../api";
 import { useApp } from "../AppContext";
 import { parseApiDate } from "../format";
 
-interface Member { user_id: number; username: string; role_id: number; role_name: string; isActive: number; createdAt?: string; is_you: boolean; tenant_id?: number | null }
+interface Member { user_id: number; username: string; role_id: number; role_name: string; isActive: number; createdAt?: string; is_you: boolean; tenant_id?: number | null; tenant_assigned?: boolean }
 interface Role { role_id: number; role_name: string; is_admin: boolean }
 
 export const Members: React.FC = () => {
@@ -32,6 +32,14 @@ export const Members: React.FC = () => {
     }).catch(() => setTenants([]));
   }, [pickTenant, me]);
   const tenantLabel = (id?: number | null) => (id ? tenants.find((t) => t.id === id)?.label || `#${id}` : "Platform");
+  const unassigned = members.filter((m) => me?.tenancy && m.tenant_assigned === false);
+  const [bulkTenant, setBulkTenant] = useState(0);
+  const assignAll = async () => {
+    if (!bulkTenant) return;
+    setBusy(true);
+    try { await api("POST", "Access/members/assign-tenant", { tenant_id: bulkTenant }); await load(); }
+    catch (e: any) { setError(e.message); } finally { setBusy(false); }
+  };
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
@@ -59,7 +67,7 @@ export const Members: React.FC = () => {
     setBusy(true);
     setError(undefined);
     try {
-      await api("POST", "Access/members", form);
+      await api("POST", "Access/members", pickTenant ? form : { ...form, tenant_id: undefined });
       setInviting(false);
       setForm({ username: "", password: "", role_id: 0, tenant_id: 0 });
       load();
@@ -77,9 +85,23 @@ export const Members: React.FC = () => {
           <Typography variant="h5" fontWeight={700}>Members</Typography>
           <Typography variant="body2" color="text.secondary">People in your workspace and the role that controls what they can see and change.</Typography>
         </Box>
-        <Button variant="contained" startIcon={<PersonAddOutlined />} onClick={() => { setForm({ username: "", password: "", role_id: roles.find((r) => !r.is_admin)?.role_id || 1, tenant_id: 0 }); setInviting(true); }}>Add member</Button>
+        <Button variant="contained" startIcon={<PersonAddOutlined />} onClick={() => { setForm({ username: "", password: "", role_id: roles.find((r) => !r.is_admin)?.role_id || 1, tenant_id: tenants[0]?.id || 0 }); setInviting(true); }}>Add member</Button>
       </Box>
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(undefined)}>{error}</Alert>}
+      {unassigned.length > 0 && (
+        <Alert severity="warning" sx={{ mb: 2, alignItems: "center" }}
+          action={pickTenant ? (
+            <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+              <TextField select size="small" label="Tenant" value={bulkTenant} onChange={(e) => setBulkTenant(Number(e.target.value))} sx={{ minWidth: 220 }}>
+                <MenuItem value={0} disabled>Choose a tenant</MenuItem>
+                {tenants.map((t) => <MenuItem key={t.id} value={t.id}>{t.label}</MenuItem>)}
+              </TextField>
+              <Button variant="contained" size="small" disabled={!bulkTenant || busy} onClick={assignAll}>Assign all</Button>
+            </Box>
+          ) : undefined}>
+          {unassigned.length} member{unassigned.length === 1 ? " has" : "s have"} no tenant and can't see any data until assigned.
+        </Alert>
+      )}
       <Paper variant="outlined" sx={{ borderRadius: 2, overflow: "hidden" }}>
         <Table>
           <TableHead>
@@ -98,12 +120,14 @@ export const Members: React.FC = () => {
                 </TableCell>
                 {pickTenant ? (
                   <TableCell sx={{ width: 220 }}>
-                    <TextField select size="small" fullWidth value={m.tenant_id || 0} disabled={m.is_you} onChange={(e) => update(m, { tenant_id: Number(e.target.value) || null })}>
+                    <TextField select size="small" fullWidth value={m.tenant_assigned === false ? -1 : m.tenant_id || 0} disabled={m.is_you}
+                      error={m.tenant_assigned === false} onChange={(e) => update(m, { tenant_id: Number(e.target.value) || null })}>
+                      {m.tenant_assigned === false && <MenuItem value={-1} disabled>Unassigned</MenuItem>}
                       <MenuItem value={0}>Platform</MenuItem>
                       {tenants.map((t) => <MenuItem key={t.id} value={t.id}>{t.label}</MenuItem>)}
                     </TextField>
                   </TableCell>
-                ) : me?.tenancy ? <TableCell>{tenantLabel(m.tenant_id)}</TableCell> : null}
+                ) : me?.tenancy ? <TableCell>{m.tenant_assigned === false ? <Chip size="small" color="warning" label="Unassigned" /> : tenantLabel(m.tenant_id)}</TableCell> : null}
                 <TableCell><Switch checked={m.isActive === 1} disabled={m.is_you} onChange={(e) => update(m, { isActive: e.target.checked ? 1 : 0 })} /></TableCell>
                 <TableCell>{parseApiDate(m.createdAt)?.toLocaleDateString() || "—"}</TableCell>
               </TableRow>

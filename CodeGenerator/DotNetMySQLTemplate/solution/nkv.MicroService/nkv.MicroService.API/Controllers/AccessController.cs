@@ -73,7 +73,8 @@ namespace nkv.MicroService.API.Controllers
                 role_name = Scalar<string>(conn, "SELECT role_name FROM roles WHERE role_id = @id", ("@id", RoleId)),
                 tenant = Tenant,
                 tenant_id = DataTenant,
-                is_platform = DataTenant == null,
+                tenant_assigned = DataGuard.Current?.Unassigned != true,
+                is_platform = DataTenant == null && DataGuard.Current?.Unassigned != true,
                 tenancy = DataGuard.TenancyEnabled,
                 tenant_table = DataGuard.TenantTable,
                 is_admin = IsAdmin,
@@ -161,7 +162,7 @@ namespace nkv.MicroService.API.Controllers
             if (!IsAdmin) return Forbid();
             using var conn = Open();
             var list = new List<object>();
-            using var cmd = new MySqlCommand(@"SELECT u.user_id, u.username, u.role_id, r.role_name, u.isActive, u.createdAt, ut.tenant_id
+            using var cmd = new MySqlCommand(@"SELECT u.user_id, u.username, u.role_id, r.role_name, u.isActive, u.createdAt, ut.tenant_id, ut.user_id IS NOT NULL AS assigned
                 FROM users u LEFT JOIN roles r ON r.role_id = u.role_id LEFT JOIN user_tenants ut ON ut.user_id = u.user_id
                 WHERE u.user_id IN (SELECT DISTINCT p.user_id FROM permissionmatrix p WHERE p.owner_name = @t AND p.user_id IS NOT NULL)
                   AND (@dt IS NULL OR ut.tenant_id = @dt)
@@ -175,7 +176,9 @@ namespace nkv.MicroService.API.Controllers
                     user_id = r.GetInt32(0), username = r.GetString(1), role_id = r.GetInt32(2),
                     role_name = r.IsDBNull(3) ? null : r.GetString(3), isActive = Convert.ToInt32(r.GetValue(4)),
                     createdAt = r.IsDBNull(5) ? (DateTime?)null : r.GetDateTime(5), is_you = r.GetInt32(0) == UserId,
-                    tenant_id = r.IsDBNull(6) ? (int?)null : r.GetInt32(6)
+                    tenant_id = r.IsDBNull(6) ? (int?)null : r.GetInt32(6),
+                    // no mapping: only an Administrator is a platform user; anyone else has no data access until assigned
+                    tenant_assigned = Convert.ToInt32(r.GetValue(7)) == 1 || r.GetInt32(2) == AdminRoleId
                 });
             return Ok(new APIResponse(ResponseCode.SUCCESS, "OK", list));
         }
@@ -186,8 +189,8 @@ namespace nkv.MicroService.API.Controllers
             public string password { get; set; }
             public int role_id { get; set; }
             public int? isActive { get; set; }
-            /// <summary>Data tenant of the member. Ignored for tenant administrators (members always join their tenant);
-            /// platform administrators may set it (0 = platform user). Omit on update to keep it.</summary>
+            /// <summary>Data tenant of the member. Ignored for tenant administrators (members always join their tenant).
+            /// Platform administrators: a tenant id, 0 = platform user, omitted = unassigned (no data access). Omit on update to keep it.</summary>
             public int? tenant_id { get; set; }
         }
 
@@ -209,9 +212,47 @@ namespace nkv.MicroService.API.Controllers
             cmd.Parameters.AddWithValue("@by", Username);
             cmd.ExecuteNonQuery();
             var userId = (int)cmd.LastInsertedId;
-            DataGuard.SetTenantOfUser(conn, userId, DataTenant ?? (input.tenant_id is > 0 ? input.tenant_id : null));
+            // tenancy: tenant admins add members to their own tenant; platform admins choose (0 = platform user, omitted = unassigned).
+            // Without tenancy nothing is stored, so enabling it later never turns existing members into platform users.
+            if (DataGuard.TenancyEnabled)
+            {
+                if (DataTenant != null) DataGuard.SetTenantOfUser(conn, userId, DataTenant);
+                else if (input.tenant_id.HasValue) DataGuard.SetTenantOfUser(conn, userId, input.tenant_id > 0 ? input.tenant_id : null);
+            }
             WriteUserPermissions(conn, userId, input.role_id);
             return Ok(new APIResponse(ResponseCode.SUCCESS, "Member added", new { user_id = userId }));
+        }
+
+        public class AssignTenantInput
+        {
+            public int tenant_id { get; set; }
+            /// <summary>Members to assign; omit to assign every member that has no tenant yet (upgrading an existing app).</summary>
+            public List<int> user_ids { get; set; }
+        }
+
+        [HttpPost]
+        [Route(Route + "/members/assign-tenant")]
+        public ActionResult AssignTenant(AssignTenantInput input)
+        {
+            if (!IsPlatformAdmin || !DataGuard.TenancyEnabled) return Forbid();
+            using var conn = Open();
+            if (DataGuard.TenantTable != null && DataGuard.TenantTablePk != null &&
+                Scalar<long>(conn, $"SELECT COUNT(*) FROM `{DataGuard.TenantTable}` WHERE `{DataGuard.TenantTablePk}` = @t AND isActive = 1", ("@t", input.tenant_id)) == 0)
+                return BadRequest(new APIResponse(ResponseCode.ERROR, "Unknown tenant"));
+            var members = MembersOfTenant(conn);
+            List<int> targets;
+            if (input.user_ids != null && input.user_ids.Count > 0) targets = input.user_ids.Where(members.Contains).ToList();
+            else
+            {
+                targets = new List<int>();
+                using var cmd = new MySqlCommand(@"SELECT u.user_id FROM users u LEFT JOIN user_tenants ut ON ut.user_id = u.user_id
+                    WHERE ut.user_id IS NULL AND u.role_id <> @admin", conn);
+                cmd.Parameters.AddWithValue("@admin", AdminRoleId);
+                using var r = cmd.ExecuteReader();
+                while (r.Read()) if (members.Contains(r.GetInt32(0))) targets.Add(r.GetInt32(0));
+            }
+            foreach (var id in targets) DataGuard.SetTenantOfUser(conn, id, input.tenant_id);
+            return Ok(new APIResponse(ResponseCode.SUCCESS, $"{targets.Count} member(s) assigned", new { assigned = targets }));
         }
 
         [HttpPut]
@@ -236,7 +277,7 @@ namespace nkv.MicroService.API.Controllers
                 cmd.Parameters.AddWithValue("@id", userId);
                 cmd.ExecuteNonQuery();
             }
-            if (DataTenant == null && input.tenant_id.HasValue)
+            if (DataGuard.TenancyEnabled && DataTenant == null && input.tenant_id.HasValue)
                 DataGuard.SetTenantOfUser(conn, userId, input.tenant_id > 0 ? input.tenant_id : null);
             WriteUserPermissions(conn, userId, input.role_id, active: input.isActive ?? 1);
             ClearPermissionCache();
