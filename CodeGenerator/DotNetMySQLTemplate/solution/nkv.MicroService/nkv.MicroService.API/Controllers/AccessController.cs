@@ -199,8 +199,8 @@ namespace nkv.MicroService.API.Controllers
         public ActionResult AddMember(MemberInput input)
         {
             if (!IsAdmin) return Forbid();
-            if (string.IsNullOrWhiteSpace(input?.username) || string.IsNullOrWhiteSpace(input.password) || input.password.Length < 8)
-                return BadRequest(new APIResponse(ResponseCode.ERROR, "username and a password of at least 8 characters are required"));
+            if (string.IsNullOrWhiteSpace(input?.username)) return BadRequest(new APIResponse(ResponseCode.ERROR, "username is required"));
+            if (AuthGuard.PasswordProblem(input.password, input.username) is string weak) return BadRequest(new APIResponse(ResponseCode.ERROR, weak));
             using var conn = Open();
             if (Scalar<long>(conn, "SELECT COUNT(*) FROM users WHERE username = @u", ("@u", input.username.Trim())) > 0)
                 return BadRequest(new APIResponse(ResponseCode.ERROR, "That username is taken"));
@@ -261,10 +261,13 @@ namespace nkv.MicroService.API.Controllers
         {
             if (!IsAdmin) return Forbid();
             if (userId == UserId && input.role_id != AdminRoleId) return BadRequest(new APIResponse(ResponseCode.ERROR, "You can't remove your own admin role."));
-            if (!string.IsNullOrWhiteSpace(input.password) && input.password.Length < 8)
-                return BadRequest(new APIResponse(ResponseCode.ERROR, "Passwords must be at least 8 characters"));
             using var conn = Open();
             if (!MembersOfTenant(conn).Contains(userId)) return NotFound(new APIResponse(ResponseCode.ERROR, "Member not found"));
+            var memberName = Scalar<string>(conn, "SELECT username FROM users WHERE user_id = @id", ("@id", userId));
+            if (!string.IsNullOrWhiteSpace(input.password) && AuthGuard.PasswordProblem(input.password, memberName) is string weak)
+                return BadRequest(new APIResponse(ResponseCode.ERROR, weak));
+            var before = (role: Scalar<int>(conn, "SELECT role_id FROM users WHERE user_id = @id", ("@id", userId)),
+                          active: Convert.ToInt32(Scalar<object>(conn, "SELECT isActive FROM users WHERE user_id = @id", ("@id", userId))));
             var sets = new List<string> { "role_id = @r", "modifiedBy = @by", "modifiedAt = NOW()" };
             if (input.isActive.HasValue) sets.Add("isActive = @a");
             if (!string.IsNullOrWhiteSpace(input.password)) sets.Add("password_hash = @p");
@@ -281,7 +284,62 @@ namespace nkv.MicroService.API.Controllers
                 DataGuard.SetTenantOfUser(conn, userId, input.tenant_id > 0 ? input.tenant_id : null);
             WriteUserPermissions(conn, userId, input.role_id, active: input.isActive ?? 1);
             ClearPermissionCache();
+            // new password, role or deactivation: end the member's existing sessions
+            var pwChanged = !string.IsNullOrWhiteSpace(input.password);
+            if (pwChanged || before.role != input.role_id || (input.isActive.HasValue && input.isActive.Value != before.active))
+                AuthGuard.RevokeTokens(userId, passwordChanged: pwChanged);
+            if (pwChanged) AuthGuard.Unlock(memberName);
             return Ok(new APIResponse(ResponseCode.SUCCESS, "Member updated"));
+        }
+
+        /// <summary>Signs the caller out everywhere (all of their tokens stop working).</summary>
+        [HttpPost]
+        [Route(Route + "/logout")]
+        public ActionResult Logout()
+        {
+            AuthGuard.RevokeTokens(UserId);
+            return Ok(new APIResponse(ResponseCode.SUCCESS, "Signed out"));
+        }
+
+        public class PasswordChangeInput { public string current_password { get; set; } public string new_password { get; set; } }
+
+        /// <summary>Change your own password (needs the current one); other sessions end.</summary>
+        [HttpPut]
+        [Route(Route + "/me/password")]
+        public ActionResult ChangeOwnPassword(PasswordChangeInput input)
+        {
+            using var conn = Open();
+            var hash = Scalar<string>(conn, "SELECT password_hash FROM users WHERE user_id = @id AND isActive = 1", ("@id", UserId));
+            if (hash == null || !PasswordHasher.Verify(input?.current_password ?? "", hash))
+                return BadRequest(new APIResponse(ResponseCode.ERROR, "The current password is wrong."));
+            if (AuthGuard.PasswordProblem(input.new_password, Username) is string weak) return BadRequest(new APIResponse(ResponseCode.ERROR, weak));
+            Exec(conn, "UPDATE users SET password_hash = @p, modifiedBy = @u, modifiedAt = NOW() WHERE user_id = @id",
+                ("@p", PasswordHasher.Hash(input.new_password)), ("@u", Username), ("@id", UserId));
+            AuthGuard.RevokeTokens(UserId, passwordChanged: true);
+            return Ok(new APIResponse(ResponseCode.SUCCESS, "Password changed. Sign in again."));
+        }
+
+        /// <summary>Administrators: end all sessions of a member, or clear a sign-in lockout.</summary>
+        [HttpPost]
+        [Route(Route + "/members/{userId}/sign-out")]
+        public ActionResult SignOutMember(int userId)
+        {
+            if (!IsAdmin) return Forbid();
+            using var conn = Open();
+            if (!MembersOfTenant(conn).Contains(userId)) return NotFound(new APIResponse(ResponseCode.ERROR, "Member not found"));
+            AuthGuard.RevokeTokens(userId);
+            return Ok(new APIResponse(ResponseCode.SUCCESS, "Member signed out everywhere"));
+        }
+
+        [HttpPost]
+        [Route(Route + "/members/{userId}/unlock")]
+        public ActionResult UnlockMember(int userId)
+        {
+            if (!IsAdmin) return Forbid();
+            using var conn = Open();
+            if (!MembersOfTenant(conn).Contains(userId)) return NotFound(new APIResponse(ResponseCode.ERROR, "Member not found"));
+            AuthGuard.Unlock(Scalar<string>(conn, "SELECT username FROM users WHERE user_id = @id", ("@id", userId)));
+            return Ok(new APIResponse(ResponseCode.SUCCESS, "Sign-in lockout cleared"));
         }
 
         // ------------------------------------------------------------------ UI configuration

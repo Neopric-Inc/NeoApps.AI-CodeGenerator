@@ -1125,13 +1125,20 @@ WHERE
             return usernameBuilder.ToString();
         }
 
+        sealed class CryptoRandom
+        {
+            public int Next(int max) => System.Security.Cryptography.RandomNumberGenerator.GetInt32(max);
+            public int Next(int min, int max) => System.Security.Cryptography.RandomNumberGenerator.GetInt32(min, max);
+        }
+
         static string GeneratePassword()
         {
-            Random random = new Random();
+            // cryptographically random, 16 characters (was System.Random, 8)
+            var random = new CryptoRandom();
             const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
             const string specialChars = "!@#$%_+?";
 
-            int length = 8;
+            int length = 16;
             StringBuilder passwordBuilder = new StringBuilder();
 
             // Add a capital letter
