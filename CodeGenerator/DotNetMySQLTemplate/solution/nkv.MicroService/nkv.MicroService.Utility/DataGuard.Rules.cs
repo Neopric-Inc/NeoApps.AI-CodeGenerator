@@ -68,7 +68,7 @@ namespace nkv.MicroService.Utility
         {
             return new JsonObject
             {
-                ["tenancy"] = TenancyEnabled ? new JsonObject { ["column"] = TenantColumn, ["tenantTable"] = TenantTable, ["tenantTables"] = TenantTables.Count } : null,
+                ["tenancy"] = TenancyEnabled ? new JsonObject { ["column"] = TenantColumn, ["tenantTable"] = TenantTable, ["tenantTables"] = TenantTables.Count, ["unassignedMembersAtStartup"] = UnassignedMembers } : null,
                 ["lifecycles"] = new JsonObject(_lifecycles.Select(kv => KeyValuePair.Create(kv.Key, (JsonNode)new JsonObject
                 {
                     ["column"] = kv.Value.Column,

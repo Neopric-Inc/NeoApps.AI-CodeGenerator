@@ -20,7 +20,7 @@ internal static class SchemaGuidelines
            roles, users, entities, permissionmatrix (login and role-based access), messagequeue, s3bucket,
            s3bucket_folders, dnd_ui_versions, project_dnd_ui_versions, workflow, workflows, workflows_projects,
            workflow_builds, workflow_runs, workflow_deployments, workflow_triggers, workflow_trigger_conditions,
-           ai_files, ai_chunks, ai_conversations, ai_messages, ai_runs (AI assistant), versioninfo (migrations).
+           ai_files, ai_chunks, ai_conversations, ai_messages, ai_runs (AI assistant), versioninfo (migrations), user_tenants (tenancy).
            Don't model chat threads/messages/citations or file text yourself: the built-in assistant provides them.
            For app-level people use e.g. app_users or members; for automations use e.g. automation_runs.
         5. Declare relations with FOREIGN KEY (...) REFERENCES parent(parent_id). Create parent tables before

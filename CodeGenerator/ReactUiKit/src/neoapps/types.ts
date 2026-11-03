@@ -132,6 +132,7 @@ export interface Me {
   /** data tenant (DataGuard tenancy); null = platform user */
   tenant_id?: number | null;
   is_platform?: boolean;
+  tenant_assigned?: boolean;
   tenancy?: boolean;
   tenant_table?: string | null;
   is_admin: boolean;

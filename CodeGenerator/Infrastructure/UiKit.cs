@@ -23,6 +23,8 @@ public static class UiKit
         "workflow_runs", "workflow_deployments", "workflow_triggers", "workflow_trigger_conditions",
         // AI assistant (created by the API on first use)
         "ai_files", "ai_chunks", "ai_conversations", "ai_messages", "ai_runs",
+        // DataGuard tenancy (created by the API on startup)
+        "user_tenants",
         // migration history (FluentMigrator)
         "versioninfo",
     };
