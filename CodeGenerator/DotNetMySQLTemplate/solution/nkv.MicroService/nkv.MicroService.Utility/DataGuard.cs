@@ -54,7 +54,7 @@ namespace nkv.MicroService.Utility
             "roles", "users", "entities", "permissionmatrix", "messagequeue", "s3bucket", "s3bucket_folders", "dnd_ui_versions",
             "project_dnd_ui_versions", "workflow", "workflows", "workflows_projects", "workflow_builds", "workflow_runs",
             "workflow_deployments", "workflow_triggers", "workflow_trigger_conditions", "ai_files", "ai_chunks", "ai_conversations",
-            "ai_messages", "ai_runs", "versioninfo", "user_tenants", "guard_audit", "guard_outbox"
+            "ai_messages", "ai_runs", "versioninfo", "user_tenants", "login_attempts", "user_security", "guard_audit", "guard_outbox"
         };
 
         static readonly ConditionalWeakTable<MySqlCommand, object> _applied = new();

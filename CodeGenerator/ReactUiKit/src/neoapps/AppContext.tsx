@@ -103,6 +103,7 @@ export const AppProvider: React.FC = ({ children }) => {
   }, []);
 
   const logout = useCallback(() => {
+    api("POST", "Access/logout").catch(() => undefined); // end the session on the server too
     setToken(null);
     setMe(null);
   }, []);
