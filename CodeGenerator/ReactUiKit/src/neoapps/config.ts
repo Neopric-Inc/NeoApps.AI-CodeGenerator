@@ -93,13 +93,14 @@ function defaultListColumns(t: TableSchema, display: string): string[] {
   return ordered.slice(0, 6);
 }
 
-export function resolveTable(schema: AppSchema, t: TableSchema, cfg: TableConfig = {}, all: Record<string, TableConfig> = {}): ResolvedTable {
+export function resolveTable(schema: AppSchema, t: TableSchema, cfg: TableConfig = {}, all: Record<string, TableConfig> = {}, numbered: string[] = []): ResolvedTable {
   const label = cfg.label || humanize(t.name);
   const displayField = cfg.displayField && t.columns.find((c) => c.name === cfg.displayField) ? cfg.displayField : defaultDisplayField(t);
   const fields: Record<string, ResolvedField> = {};
   for (const col of t.columns) {
     const fc: FieldConfig = (cfg.fields || {})[col.name] || {};
     const isAudit = AUDIT_FIELDS.includes(col.name);
+    const isNumbered = numbered.includes(col.name); // assigned by the API ("numbering"), read-only
     const widget: Widget = fc.widget || defaultWidget(col);
     fields[col.name] = {
       ...fc,
@@ -108,8 +109,9 @@ export function resolveTable(schema: AppSchema, t: TableSchema, cfg: TableConfig
       label: fc.label || (col.references ? referenceLabel(col.references.table, all) : humanize(col.name)),
       widget,
       options: fc.options || enumOptions(col),
-      hideInForm: fc.hideInForm ?? (col.isPrimaryKey || col.isAutoIncrement || isAudit),
-      required: fc.required ?? (!col.nullable && !col.hasDefault && !col.isAutoIncrement && !isAudit),
+      hideInForm: isNumbered || (fc.hideInForm ?? (col.isPrimaryKey || col.isAutoIncrement || isAudit)),
+      required: !isNumbered && (fc.required ?? (!col.nullable && !col.hasDefault && !col.isAutoIncrement && !isAudit)),
+      readOnly: isNumbered || fc.readOnly,
     };
   }
   const children = cfg.children || schema.tables
@@ -136,7 +138,8 @@ export function resolveTable(schema: AppSchema, t: TableSchema, cfg: TableConfig
 
 export function resolveAll(schema: AppSchema, ui: UiConfig): Record<string, ResolvedTable> {
   const out: Record<string, ResolvedTable> = {};
-  for (const t of schema.tables) out[t.name] = resolveTable(schema, t, (ui.tables || {})[t.name], ui.tables || {});
+  const numbered = (table: string) => ([] as any[]).concat((ui.numbering || {})[table] || []).map((n) => n && n.column).filter(Boolean);
+  for (const t of schema.tables) out[t.name] = resolveTable(schema, t, (ui.tables || {})[t.name], ui.tables || {}, numbered(t.name));
   return out;
 }
 

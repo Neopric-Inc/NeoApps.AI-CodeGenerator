@@ -84,6 +84,7 @@ namespace nkv.MicroService.Utility
                 }))),
                 ["immutable"] = new JsonObject(_immutable.Select(kv => KeyValuePair.Create(kv.Key, (JsonNode)new JsonArray(kv.Value.Select(x => (JsonNode)x).ToArray())))),
                 ["rowScopes"] = ScopesSummary(),
+                ["numbering"] = new JsonArray(_numbering.Values.SelectMany(l => l).Select(n => (JsonNode)$"{n.Table}.{n.Column}: {n.Pattern} (reset {n.Reset})").ToArray()),
                 ["audit"] = _auditTable, ["outbox"] = _outboxTable, ["outboxRules"] = _outboxAll ? -1 : _outboxRules.Count,
             };
         }
@@ -202,6 +203,7 @@ namespace nkv.MicroService.Utility
             foreach (var lc in _lifecycles.Values.Where(l => l.HistoryTable != null))
                 if (!_immutable.ContainsKey(lc.HistoryTable)) _immutable[lc.HistoryTable] = new(StringComparer.OrdinalIgnoreCase) { "*" };
             if (_outboxTable != null) _immutable[_outboxTable] = new(StringComparer.OrdinalIgnoreCase) { "*" };
+            LoadNumbering(c);
         }
 
         // ------------------------------------------------------------------ write execution

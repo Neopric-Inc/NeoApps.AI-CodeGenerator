@@ -24,7 +24,7 @@ Work in the app's planning folder `workspace/<App>/` (git-ignored): `requirement
    - **never** reuse a built-in table name: `roles`, `users`, `entities`, `permissionmatrix`, `messagequeue`,
      `s3bucket`, `s3bucket_folders`, `dnd_ui_versions`, `project_dnd_ui_versions`, `workflow`, `workflows`,
      `workflows_projects`, `workflow_builds`, `workflow_runs`, `workflow_deployments`, `workflow_triggers`,
-     `workflow_trigger_conditions`, `ai_files`, `ai_chunks`, `ai_conversations`, `ai_messages`, `ai_runs`, `versioninfo`, `user_tenants`, `login_attempts`, `user_security` (use e.g. `members`, `automation_runs`)
+     `workflow_trigger_conditions`, `ai_files`, `ai_chunks`, `ai_conversations`, `ai_messages`, `ai_runs`, `versioninfo`, `user_tenants`, `login_attempts`, `user_security`, `number_sequences` (use e.g. `members`, `automation_runs`)
    - plain `CREATE TABLE` / `INSERT` only: no `CREATE DATABASE`, `USE`, `DELIMITER`, procedures
    Save it as `workspace/<App>/schema.sql` (copy it to `samples/` if it should be committed).
 3. **Design the UI** (recommended): write `workspace/<App>/ui.config.json` following `neoapps_ui_config_guide`
@@ -46,7 +46,7 @@ Work in the app's planning folder `workspace/<App>/` (git-ignored): `requirement
    ui.json (assistant instructions, `documentTables`, `tools`, `workflows`; see the guide) instead of modelling chat
    tables. It runs on the Claude API when the API process has `ANTHROPIC_API_KEY` set (never put the key in files).
    **Data rules:** for multi-tenant apps, customer portals (customers see only their own rows), status workflows, approvals,
-   audit trails, domain events, SLAs, plan limits or field validation (formats, ranges, date order, totals), add the `tenancy`, `rowScopes`, `lifecycles`, `validations`, `immutable`, `audit`, `outbox`, `jobs` and `limits` sections to ui.config.json (see the guide)
+   audit trails, domain events, SLAs, plan limits, field validation (formats, ranges, date order, totals) or automatic numbers (INV-2026-00001), add the `tenancy`, `rowScopes`, `lifecycles`, `validations`, `numbering`, `immutable`, `audit`, `outbox`, `jobs` and `limits` sections to ui.config.json (see the guide)
    instead of hand-writing checks: the generated API enforces them on every query (`Utility/DataGuard*.cs`). After deploying,
    run `./neoapps test <App>` and report the result (tenant isolation per table, row scopes, append-only tables, lifecycle steps).
 4. **When requirements change** (they will): add a changelog line to `requirements.md`, update the schema and UI config,
@@ -83,7 +83,7 @@ CYPRESS_INSTALL_BINARY=0 npm install --force && npm run build && npx serve -s bu
 
 Production settings of a generated API (`appsettings.json`, override with env vars such as `Cors__AllowedOrigins`):
 `Cors:AllowedOrigins` (set to the generated UI's origin; any origin only in Development), `Swagger:Enabled` (Swagger is on
-in Development only), `Api:MaxPageSize` (default 1000), `Logging:LogSql` (off). Unexpected errors return a generic message
+in Development only), `Api:MaxPageSize` (default 1000), `Api:MinThreads` (64), `Logging:LogSql` (off). Unexpected errors return a generic message
 with a reference (the `X-Correlation-Id` header) and are logged server-side; `/health/ready` checks MySQL, Redis and RabbitMQ.
 `--deploy` runs the API in Production with the UI origin allowed and Swagger on for local use.
 Sign-in protection (`Auth` in appsettings): lockout after `MaxFailedLogins` failures for `LockoutMinutes`, per-IP rate limit
@@ -137,6 +137,6 @@ added to every app table automatically and stamped by DataGuard on every write, 
   `1_*/` or `workspace/` (both are git-ignored).
 - MySQL must run with `lower_case_table_names=1`: generated SQL mixes the casing of table names.
 - Data rules live in the template's `Utility/DataGuard.cs` (tenancy, SQL choke point: every generated command runs through
-  `DataGuard.Apply`/`DataGuard.NonQuery`), `DataGuard.Scopes.cs` (row scopes), `DataGuard.Rules.cs` (lifecycles, immutability, audit, outbox, limits, SLA), `DataGuard.Validation.cs` (field validations) and
+  `DataGuard.Apply`/`DataGuard.NonQuery`), `DataGuard.Scopes.cs` (row scopes), `DataGuard.Rules.cs` (lifecycles, immutability, audit, outbox, limits, SLA), `DataGuard.Validation.cs` (field validations), `DataGuard.Numbering.cs` (numbering) and
   `GuardJobs*.cs` (outbox publisher, deadline job). Any new data-access code must execute through them.
 - Never commit credentials. Generated apps get a random JWT secret, and S3 keys come from env vars.

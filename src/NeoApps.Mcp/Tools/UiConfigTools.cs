@@ -162,6 +162,12 @@ internal static class UiConfigTools
               Field rules beyond NOT NULL and types, checked by the API on every create/update (400 with
               {"errors": {"column": ["message"]}}, shown next to the field) and by the form before saving ("equals" only
               by the API). "message" overrides the default text. On updates only rules touching a changed column run.
+          "numbering": { "customer_invoices": { "column": "invoice_number", "pattern": "INV-{yyyy}-{seq:5}" },
+                         "cases": [ { "column": "case_number", "pattern": "C{yy}{mm}-{seq:4}" } ] }
+              Numbers assigned by the API on insert, then read-only (the form hides the field; clients may leave it empty).
+              Tokens {yyyy} {yy} {mm} {dd} (UTC), {seq} / {seq:N} zero-padded, {tenant}. One gap-free sequence per
+              table/column, tenant and period ("reset": yearly with a year in the pattern, monthly with {mm}, daily with
+              {dd}, else never; or set it). New sequences continue after the highest number already stored.
           "immutable": { "audit_logs": ["*"], "findings": ["ai_text", "confidence"] }   // "*" = append-only; else read-only columns
           "audit": { "table": "audit_logs", "platformTable": "platform_audit_logs", "exclude": [] }
               One row per create/update/delete (actor_type, actor_ref, action_code, entity_type, entity_ref, details JSON of
