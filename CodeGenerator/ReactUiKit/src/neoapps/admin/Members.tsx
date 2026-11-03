@@ -139,7 +139,7 @@ export const Members: React.FC = () => {
         <DialogTitle>Add member</DialogTitle>
         <DialogContent dividers>
           <TextField label="Username" name="username" fullWidth margin="dense" value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} />
-          <TextField label="Temporary password" name="password" type="password" fullWidth margin="dense" helperText="At least 8 characters. Share it with them securely."
+          <TextField label="Temporary password" name="password" type="password" fullWidth margin="dense" helperText="At least 10 characters with letters and digits. Share it with them securely."
             value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
           <TextField select label="Role" name="role_id" fullWidth margin="dense" value={form.role_id} onChange={(e) => setForm({ ...form, role_id: Number(e.target.value) })}>
             {roles.map((r) => <MenuItem key={r.role_id} value={r.role_id}>{r.role_name}</MenuItem>)}
@@ -155,7 +155,7 @@ export const Members: React.FC = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setInviting(false)}>Cancel</Button>
-          <Button variant="contained" onClick={invite} disabled={busy || !form.username || form.password.length < 8}>Add member</Button>
+          <Button variant="contained" onClick={invite} disabled={busy || !form.username || form.password.length < 10}>Add member</Button>
         </DialogActions>
       </Dialog>
     </Box>

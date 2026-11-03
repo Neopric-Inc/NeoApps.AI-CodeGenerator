@@ -30,14 +30,20 @@ namespace nkv.MicroService.API.Controllers
         }
         [HttpPost]
         [Route(APIEndpoint.DefaultRoute)]
+        [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("login")]
         public ActionResult Post(AuthenticateModel model)
         {
             try
             {
+                // lockout after repeated failures (same answer for unknown usernames, so accounts can't be discovered)
+                var locked = AuthGuard.LockedMinutes(model?.Username);
+                if (locked > 0)
+                    return StatusCode(429, new APIResponse(ResponseCode.ERROR, $"Too many failed sign-ins. Try again in {locked} minute(s)."));
 
-                UsersModel usersModel = _usersManager.AuthenticateUser(model.Username, model.Password);
+                UsersModel usersModel = _usersManager.AuthenticateUser(model?.Username, model?.Password);
+                if (usersModel == null) AuthGuard.RecordFailure(model?.Username);
+                else AuthGuard.RecordSuccess(model.Username);
 
-                //Note: Implement your own logic to get username/passoward and validate
                 if (usersModel != null)
                 {
                     usersModel.password_hash = null; // never echo credentials back to the client
@@ -54,9 +60,11 @@ namespace nkv.MicroService.API.Controllers
                     new Claim(ClaimTypes.NameIdentifier, usersModel.user_id.ToString()),
                     new Claim(ClaimTypes.Actor, owner_name),
                     // informational only: DataGuard resolves the tenant from user_tenants on every request ("" = platform, "unassigned")
-                    new Claim(DataGuard.TenantClaim, DataGuard.TenantClaimValue(usersModel.user_id, usersModel.role_id))
+                    new Claim(DataGuard.TenantClaim, DataGuard.TenantClaimValue(usersModel.user_id, usersModel.role_id)),
+                    // token version: password/role/active changes and sign-out bump it, ending existing sessions
+                    new Claim(AuthGuard.VersionClaim, AuthGuard.TokenVersion(usersModel.user_id).ToString())
                         }),
-                        Expires = DateTime.UtcNow.AddDays(day),
+                        Expires = DateTime.UtcNow.AddMinutes(AuthGuard.TokenMinutes),
                         SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
                     };
                     var token = tokenHandler.CreateToken(tokenDescriptor);
