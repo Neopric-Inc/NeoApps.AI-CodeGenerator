@@ -122,6 +122,17 @@ namespace nkv.MicroService.API.Controllers
             catch (OperationCanceledException) { return StatusCode(499); }
         }
 
+        /// <summary>A file the job attached (screenshot, video, report). Same visibility as the job.</summary>
+        [HttpGet, Route(Route + "/{id}/files/{name}")]
+        public ActionResult GetFile(string id, string name)
+        {
+            if (Visible(id) == null) return NotFound(new { message = "Job not found." });
+            var path = _store.FilePath(id, name);
+            if (path == null) return NotFound(new { message = "File not found." });
+            var type = new Microsoft.AspNetCore.StaticFiles.FileExtensionContentTypeProvider().TryGetContentType(path, out var t) ? t : "application/octet-stream";
+            return PhysicalFile(path, type, enableRangeProcessing: true);
+        }
+
         public sealed class DecisionRequest
         {
             public JsonObject Decision { get; set; }

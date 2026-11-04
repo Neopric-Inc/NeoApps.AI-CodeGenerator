@@ -24,7 +24,7 @@ export interface Job {
 
 export interface JobEvent {
   id: number;
-  level: "info" | "warn" | "error" | "approval" | "done";
+  level: "info" | "warn" | "error" | "approval" | "done" | "file";
   message: string;
   progress?: number | null;
   data?: any;
@@ -58,6 +58,13 @@ export const jobEvents = (id: string, after: number, wait: number, signal?: Abor
 export const approveJob = (id: string, decision: Record<string, any>) => call<Job>("POST", `/${id}/approve`, { decision });
 export const rejectJob = (id: string, reason?: string) => call<Job>("POST", `/${id}/reject`, { reason });
 export const cancelJob = (id: string) => call<Job>("POST", `/${id}/cancel`);
+
+/** A file a job attached (screenshot, video, report) as an object URL; fetched with the bearer token. Revoke it when done. */
+export async function jobFileUrl(id: string, name: string): Promise<string> {
+  const res = await fetch(apiBase() + `Jobs/${id}/files/${encodeURIComponent(name)}`, { headers: { Authorization: `Bearer ${getToken()}` } });
+  if (!res.ok) throw new ApiError(res.status, "Couldn't load the file.");
+  return URL.createObjectURL(await res.blob());
+}
 
 /**
  * Follows a job live: long-polls its feed (the API answers the moment something happens) until the job finishes or the

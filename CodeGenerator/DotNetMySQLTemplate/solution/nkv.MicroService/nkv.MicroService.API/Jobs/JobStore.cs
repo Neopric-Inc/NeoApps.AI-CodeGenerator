@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
+using Microsoft.AspNetCore.Hosting;
 using System.Linq;
 using System.Text.Json.Nodes;
 using Microsoft.Extensions.Configuration;
@@ -20,10 +22,41 @@ namespace nkv.MicroService.API.Jobs
         private readonly string _cs;
         private readonly JobSignals _signals;
 
-        public JobStore(IConfiguration configuration, JobSignals signals)
+        public JobStore(IConfiguration configuration, JobSignals signals, IWebHostEnvironment env)
         {
             _cs = configuration.GetConnectionString("MySQLDatabase");
             _signals = signals;
+            FilesRoot = configuration["Jobs:FilesPath"] is { Length: > 0 } p ? p : Path.Combine(env.ContentRootPath, "App_Data", "job-files");
+        }
+
+        /// <summary>Where job files (screenshots, videos, reports) are kept: Jobs:FilesPath, default App_Data/job-files.</summary>
+        public string FilesRoot { get; }
+
+        /// <summary>Safe file name for a job file, or null if it isn't one.</summary>
+        public static string SafeName(string name)
+        {
+            var n = Path.GetFileName(name ?? "");
+            return n.Length == 0 || n.Length > 150 || n.StartsWith(".") || n.Any(c => char.IsControl(c) || c == '/' || c == '\\') ? null : n;
+        }
+
+        /// <summary>Full path of a job's file, or null when the name is invalid or the file doesn't exist.</summary>
+        public string FilePath(string jobId, string name)
+        {
+            var safe = SafeName(name);
+            if (safe == null || jobId.Any(c => !char.IsLetterOrDigit(c))) return null;
+            var path = Path.Combine(FilesRoot, jobId, safe);
+            return File.Exists(path) ? path : null;
+        }
+
+        /// <summary>Stores a file for a job and adds a feed line pointing at it (data: {file, type, size}).</summary>
+        public string SaveFile(string jobId, string name, string contentType, byte[] content, string caption)
+        {
+            var safe = SafeName(name) ?? throw new JobException($"'{name}' isn't a valid file name.");
+            var dir = Path.Combine(FilesRoot, jobId);
+            Directory.CreateDirectory(dir);
+            File.WriteAllBytes(Path.Combine(dir, safe), content);
+            AddEvent(jobId, "file", caption ?? safe, null, new JsonObject { ["file"] = safe, ["type"] = contentType ?? "application/octet-stream", ["size"] = content.Length });
+            return safe;
         }
 
         public MySqlConnection Open()

@@ -86,6 +86,26 @@ namespace nkv.MicroService.API.Jobs
 
         public void SaveState() => Store.SaveState(JobId, State);
 
+        /// <summary>
+        /// Keeps a file with the job (a screenshot, a video, a report) and shows it in the live feed: images and videos are
+        /// displayed inline. Returns the stored name. Download: GET /Jobs/{id}/files/{name}.
+        /// </summary>
+        public string AttachFile(string name, string contentType, byte[] content, string caption = null) =>
+            Store.SaveFile(JobId, name, contentType, content, caption);
+
+        /// <summary>Same as <see cref="AttachFile(string,string,byte[],string)"/> for a file on disk (e.g. a recorded video).</summary>
+        public string AttachFile(string path, string contentType, string caption = null) =>
+            Store.SaveFile(JobId, System.IO.Path.GetFileName(path), contentType, System.IO.File.ReadAllBytes(path), caption);
+
+        /// <summary>A private folder for this run's temporary files (deleted when the job finishes or pauses).</summary>
+        public string TempDir => _temp ??= System.IO.Directory.CreateDirectory(System.IO.Path.Combine(System.IO.Path.GetTempPath(), "neoapps-job-" + JobId)).FullName;
+        private string _temp;
+
+        internal void CleanupTemp()
+        {
+            try { if (_temp != null && System.IO.Directory.Exists(_temp)) System.IO.Directory.Delete(_temp, true); } catch { }
+        }
+
         /// <summary>Pauses the job until a person approves or rejects <paramref name="proposal"/> (shown to them as the job's result).</summary>
         public void AwaitApproval(JsonNode proposal, string message)
         {

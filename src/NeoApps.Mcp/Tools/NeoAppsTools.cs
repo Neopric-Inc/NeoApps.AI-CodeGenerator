@@ -451,23 +451,99 @@ public sealed class NeoAppsTools(
     /// App-specific backend code: workspace/App/custom-api/**/*.cs is copied into the generated API's Custom/ folder on every
     /// generate (so it survives regeneration), with the template namespace "nkv.MicroService" replaced by the app name.
     /// Background job kinds (JobHandler subclasses) placed there are registered automatically.
+    /// custom-api/packages.json adds NuGet packages and, for browser automation, browsers to the API image:
+    ///   { "packages": { "Microsoft.Playwright": "1.52.0" }, "browsers": ["chromium"] }
+    /// ("browsers" defaults to ["chromium"] when Microsoft.Playwright is listed.)
+    /// Returns the number of files copied plus packages added, so the caller rebuilds when anything changed.
     /// </summary>
-    private int CopyCustomApi(ProjectState state)
+    private int CopyCustomApi(ProjectState state, Job job)
     {
         if (state.BackendPath is null) return 0;
         var source = Path.Combine(store.ProjectDir(state.Name), "custom-api");
-        var target = Path.Combine(state.BackendPath, $"{state.Name}.API", "Custom");
+        var apiDir = Path.Combine(state.BackendPath, $"{state.Name}.API");
+        var target = Path.Combine(apiDir, "Custom");
         if (Directory.Exists(target)) Directory.Delete(target, recursive: true);
-        if (!Directory.Exists(source)) return 0;
         var n = 0;
-        foreach (var file in Directory.EnumerateFiles(source, "*.cs", SearchOption.AllDirectories))
+        if (Directory.Exists(source))
+            foreach (var file in Directory.EnumerateFiles(source, "*.cs", SearchOption.AllDirectories))
+            {
+                var dest = Path.Combine(target, Path.GetRelativePath(source, file));
+                Directory.CreateDirectory(Path.GetDirectoryName(dest)!);
+                File.WriteAllText(dest, File.ReadAllText(file).Replace("nkv.MicroService", state.Name));
+                n++;
+            }
+
+        var (packages, browsers) = ReadCustomPackages(Path.Combine(source, "packages.json"));
+        WriteCustomPackages(Path.Combine(apiDir, $"{state.Name}.API.csproj"), packages);
+        WriteBrowserInstall(Path.Combine(state.BackendPath, "Dockerfile"), state.Name, browsers);
+        if (packages.Count > 0) job.Log($"Added {packages.Count} custom package(s): {string.Join(", ", packages.Select(p => $"{p.Key} {p.Value}"))}.");
+        if (browsers.Count > 0) job.Log($"The API image installs browser(s): {string.Join(", ", browsers)}.");
+        return n + packages.Count;
+    }
+
+    private static readonly System.Text.RegularExpressions.Regex PackageName = new(@"^[A-Za-z0-9_][A-Za-z0-9_.\-]{0,99}$");
+    private static readonly System.Text.RegularExpressions.Regex PackageVersion = new(@"^[0-9A-Za-z.\-+*\[\](), ]{1,50}$");
+    private static readonly string[] KnownBrowsers = { "chromium", "firefox", "webkit" };
+
+    private static (Dictionary<string, string> packages, List<string> browsers) ReadCustomPackages(string file)
+    {
+        var packages = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var browsers = new List<string>();
+        if (!File.Exists(file)) return (packages, browsers);
+        var json = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(file),
+            documentOptions: new System.Text.Json.JsonDocumentOptions { CommentHandling = System.Text.Json.JsonCommentHandling.Skip, AllowTrailingCommas = true })
+            as System.Text.Json.Nodes.JsonObject ?? throw new InvalidOperationException("custom-api/packages.json must be a JSON object.");
+        foreach (var (name, version) in json["packages"] as System.Text.Json.Nodes.JsonObject ?? new System.Text.Json.Nodes.JsonObject())
         {
-            var dest = Path.Combine(target, Path.GetRelativePath(source, file));
-            Directory.CreateDirectory(Path.GetDirectoryName(dest)!);
-            File.WriteAllText(dest, File.ReadAllText(file).Replace("nkv.MicroService", state.Name));
-            n++;
+            var v = version?.ToString() ?? "";
+            if (!PackageName.IsMatch(name) || !PackageVersion.IsMatch(v))
+                throw new InvalidOperationException($"custom-api/packages.json: '{name}': '{v}' isn't a valid NuGet package name and version.");
+            packages[name] = v;
         }
-        return n;
+        if (json["browsers"] is System.Text.Json.Nodes.JsonArray list)
+            foreach (var b in list.Select(x => x?.ToString().ToLowerInvariant()))
+            {
+                if (!KnownBrowsers.Contains(b)) throw new InvalidOperationException($"custom-api/packages.json: unknown browser '{b}' (chromium, firefox or webkit).");
+                browsers.Add(b!);
+            }
+        else if (packages.ContainsKey("Microsoft.Playwright")) browsers.Add("chromium");
+        return (packages, browsers.Distinct().ToList());
+    }
+
+    /// <summary>Replaces the custom-api ItemGroup of the API project with the requested packages (removing it when none).</summary>
+    private static void WriteCustomPackages(string csproj, Dictionary<string, string> packages)
+    {
+        if (!File.Exists(csproj)) return;
+        var text = System.Text.RegularExpressions.Regex.Replace(File.ReadAllText(csproj),
+            @"\s*<ItemGroup Label=""custom-api"">.*?</ItemGroup>", "", System.Text.RegularExpressions.RegexOptions.Singleline);
+        if (packages.Count > 0)
+        {
+            var group = "\n  <ItemGroup Label=\"custom-api\">\n" +
+                string.Concat(packages.Select(p => $"    <PackageReference Include=\"{p.Key}\" Version=\"{p.Value}\" />\n")) + "  </ItemGroup>\n";
+            text = text.Replace("</Project>", group.TrimStart('\n') + "</Project>");
+        }
+        File.WriteAllText(csproj, text);
+    }
+
+    /// <summary>Adds (or removes) the step that installs Playwright browsers and their system libraries in the API image.</summary>
+    private static void WriteBrowserInstall(string dockerfile, string app, List<string> browsers)
+    {
+        if (!File.Exists(dockerfile)) return;
+        const string begin = "# >>> custom-api browsers", end = "# <<< custom-api browsers";
+        var text = System.Text.RegularExpressions.Regex.Replace(File.ReadAllText(dockerfile),
+            $@"{System.Text.RegularExpressions.Regex.Escape(begin)}.*?{System.Text.RegularExpressions.Regex.Escape(end)}\n?", "",
+            System.Text.RegularExpressions.RegexOptions.Singleline);
+        if (browsers.Count > 0)
+        {
+            var step = $"{begin} (from custom-api/packages.json; rewritten on every generate)\n" +
+                       "ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright\n" +
+                       $"RUN dotnet {app}.API.dll --install-browsers --with-deps {string.Join(" ", browsers)} && rm -rf /var/lib/apt/lists/*\n" +
+                       $"{end}\n";
+            var anchor = "COPY --from=build /app/publish .\n";
+            if (!text.Contains(anchor)) throw new InvalidOperationException("Can't add the browser install step: the API Dockerfile has no 'COPY --from=build /app/publish .' line.");
+            text = text.Replace(anchor, anchor + step);
+        }
+        File.WriteAllText(dockerfile, text);
     }
 
     /// <summary>The generated API only accepts browser calls from its own UI (Cors:AllowedOrigins), not from any website.</summary>
@@ -506,8 +582,8 @@ public sealed class NeoAppsTools(
         AllowUiOrigin(state, job);
         var n = migrations.CopyIntoApi(state);
         if (n > 0) job.Log($"Copied {n} migration(s) into {state.Name}.API/Migrations.");
-        var custom = CopyCustomApi(state);
-        if (custom > 0) job.Log($"Copied {custom} custom API file(s) into {state.Name}.API/Custom.");
+        var custom = CopyCustomApi(state, job);
+        if (custom > 0) job.Log($"Installed custom API code from workspace/{state.Name}/custom-api.");
 
         // The generator compiled the solution before the migrations were copied in; rebuild so the output includes them
         // (and so a broken hand-written migration, or a column named after a C# keyword, fails here, not at deploy).
