@@ -59,7 +59,7 @@ namespace nkv.MicroService.Utility
             "roles", "users", "entities", "permissionmatrix", "messagequeue", "s3bucket", "s3bucket_folders", "dnd_ui_versions",
             "project_dnd_ui_versions", "workflow", "workflows", "workflows_projects", "workflow_builds", "workflow_runs",
             "workflow_deployments", "workflow_triggers", "workflow_trigger_conditions", "ai_files", "ai_chunks", "ai_conversations",
-            "ai_messages", "ai_runs", "versioninfo", "user_tenants", "login_attempts", "user_security", "number_sequences", "guard_audit", "guard_outbox"
+            "ai_messages", "ai_runs", "versioninfo", "user_tenants", "login_attempts", "user_security", "number_sequences", "guard_audit", "guard_outbox", "background_jobs", "background_job_events"
         };
 
         static readonly ConditionalWeakTable<MySqlCommand, object> _applied = new();
@@ -260,11 +260,32 @@ namespace nkv.MicroService.Utility
             public bool IsPlatform => Tenant == null;
         }
 
-        /// <summary>The authenticated caller of the current request, or null outside a request.</summary>
+        static readonly System.Threading.AsyncLocal<Caller> _ambient = new();
+
+        /// <summary>
+        /// Runs code outside a web request (background jobs) as <paramref name="caller"/>: every query inside the using block
+        /// is scoped exactly like a request from that user. Without it, code outside a request runs unscoped.
+        /// </summary>
+        public static IDisposable RunAs(Caller caller)
+        {
+            var previous = _ambient.Value;
+            _ambient.Value = caller;
+            return new Restore(() => _ambient.Value = previous);
+        }
+
+        sealed class Restore : IDisposable
+        {
+            readonly Action _undo;
+            public Restore(Action undo) => _undo = undo;
+            public void Dispose() => _undo();
+        }
+
+        /// <summary>The authenticated caller of the current request (or of the enclosing <see cref="RunAs"/>), or null outside both.</summary>
         public static Caller Current
         {
             get
             {
+                if (_ambient.Value is { } ambient) return ambient;
                 var ctx = Accessor?.HttpContext;
                 if (ctx?.User?.Identity?.IsAuthenticated != true) return null;
                 if (ctx.Items.TryGetValue("DataGuard.Caller", out var cached)) return (Caller)cached;

@@ -138,6 +138,15 @@ namespace {projectName}.API
             services.AddHttpClient<{projectName}.API.Ai.ClaudeClient>(h => h.Timeout = System.TimeSpan.FromMinutes(5));
             services.AddHttpClient("clinicaltrials");
             services.AddScoped<{projectName}.API.Ai.AiService>();
+            // Background jobs (Jobs/): RabbitMQ queue + worker, live progress over Redis, pause for approval and resume.
+            // Every JobHandler subclass in this assembly (including Custom/, from workspace/<App>/custom-api) is a job kind.
+            services.AddSingleton<{projectName}.API.Jobs.JobSignals>();
+            services.AddSingleton<{projectName}.API.Jobs.JobStore>();
+            services.AddSingleton<{projectName}.API.Jobs.JobQueue>();
+            foreach (var handler in typeof(Startup).Assembly.GetTypes())
+                if (!handler.IsAbstract && typeof({projectName}.API.Jobs.JobHandler).IsAssignableFrom(handler))
+                    services.AddScoped(typeof({projectName}.API.Jobs.JobHandler), handler);
+            services.AddHostedService<{projectName}.API.Jobs.JobWorker>();
             #region Dependency
             {serviceDependency}
             #endregion
