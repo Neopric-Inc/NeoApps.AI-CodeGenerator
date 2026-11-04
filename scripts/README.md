@@ -3,7 +3,7 @@
 | Script | What it does |
 |---|---|
 | `sandbox-deps.sh` | Installs/starts MySQL, Redis and RabbitMQ without Docker (cloud sessions, CI). |
-| `setup.sh` | Registers the MCP server for Claude Desktop. |
+| `setup.sh` | Runs `../install.sh` against this clone: builds the CLI, puts `neoapps` on PATH, registers the MCP server with Claude Code / Claude Desktop. |
 | `expertos-model.py <dir>` | Generates the ExpertOS sample (135 tables, every data-rule section) into `<dir>`. `samples/expertos.*` are its output. |
 | `regen-expertos.sh` | Regenerates and builds ExpertOS from `workspace/ExpertOS`, prints the admin login and the run command. |
 | `seed-expertos.py` | Seeds ExpertOS with a tenant, customers and one case walked through its lifecycle. |

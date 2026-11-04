@@ -70,7 +70,7 @@ Work in the app's planning folder `workspace/<App>/` (git-ignored): `requirement
 |---|---|
 | Docker available (user's Mac/PC) | `./neoapps new ... --deploy`. Shared MySQL (3307), Redis and RabbitMQ start automatically. |
 | No Docker (Claude Code cloud session, CI) | `sudo ./scripts/sandbox-deps.sh` once, then `export NEOAPPS_SKIP_INFRA=true NEOAPPS_MYSQL_PORT=3306` before `./neoapps new ...` (without `--deploy`). Run the app as shown below. |
-| Claude Desktop | `./scripts/setup.sh` registers the MCP server. The same operations are exposed as `neoapps_*` tools. |
+| User's machine, not cloned yet | `curl -fsSL https://raw.githubusercontent.com/Neopric-Inc/NeoApps.AI-CodeGenerator/main/install.sh \| bash` installs to `~/.neoapps`, puts `neoapps` on PATH and registers the MCP server with Claude Code / Claude Desktop (`./scripts/setup.sh` does the same for an existing clone). The same operations are exposed as `neoapps_*` tools. |
 
 Running a generated app without Docker:
 
