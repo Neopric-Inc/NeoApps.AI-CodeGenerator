@@ -212,6 +212,24 @@ Start it with `POST /v1/api/Jobs {"kind": "billing.monthly-invoices", "input": {
 `startJob`, `useJobFeed` and `<JobFeed/>` from `src/neoapps/jobs/`. Full example:
 [`samples/custom-api-example/ActivateAccountsJob.cs`](samples/custom-api-example/ActivateAccountsJob.cs).
 
+**Evidence files.** `ctx.AttachFile("page.png", "image/png", bytes, "Screenshot")` (or a path, e.g. a recorded video)
+keeps a file with the job: screenshots and videos show inline in the live feed and under *Evidence* on the job, and
+`GET /Jobs/{id}/files/{name}` downloads them with the job's visibility rules. They're stored under `Jobs:FilesPath`
+(default `App_Data/job-files`, the persisted volume with `--deploy`). `ctx.TempDir` is scratch space deleted after each run.
+
+**NuGet packages and browsers.** `workspace/<App>/custom-api/packages.json` adds packages to the API project, and
+browsers (with their system libraries) to its Docker image:
+
+```json
+{ "packages": { "Microsoft.Playwright": "1.63.0" }, "browsers": ["chromium"] }
+```
+
+`browsers` defaults to Chromium when `Microsoft.Playwright` is listed; outside Docker run
+`dotnet <App>.API.dll --install-browsers chromium` once. Example browser job:
+[`samples/custom-api-browser/`](samples/custom-api-browser) opens a page, records a video, takes a screenshot and reports
+console errors and failed requests. Only hosts in `Browser:AllowedHosts` may be opened (default `localhost,127.0.0.1`),
+because the server's browser can reach whatever the server can.
+
 **Settings** (`appsettings.json` or env vars): `Jobs__Worker` (default `true`; to scale, run extra instances of the API
 image as workers and set it to `false` on the web-facing ones), `Jobs__Concurrency` (jobs per instance, 2),
 `Jobs__TimeoutMinutes` (30), `Jobs__MaxAttempts` (3).
@@ -277,6 +295,7 @@ Run `neoapps guidelines` (MCP: `neoapps_schema_guidelines`) for the full rules. 
 | [`samples/constructos/`](samples/constructos) | 41 tables, seven roles, nine AI workflows, and a v1 → v2 `evolve` you can replay |
 | [`samples/expertos.*`](samples/expertos.ui.json) | 135 tables using every data-rule section |
 | [`samples/custom-api-example/`](samples/custom-api-example) | A custom background job: progress, approval, resume |
+| [`samples/custom-api-browser/`](samples/custom-api-browser) | A browser job (Playwright): screenshot, video, console and network errors |
 
 Run one: `neoapps new ClinicalSite --schema ~/.neoapps/samples/clinical-research-site.sql --ui ~/.neoapps/samples/clinical-research-site.ui.json --deploy`.
 

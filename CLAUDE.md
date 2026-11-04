@@ -50,7 +50,10 @@ Work in the app's planning folder `workspace/<App>/` (git-ignored): `requirement
    `nkv.MicroService.API.Custom`, replaced by the app name; example `samples/custom-api-example/`). It runs on the
    RabbitMQ worker as the user who started it (`DataGuard.RunAs`), reports progress (`ctx.Progress`), can pause
    (`ctx.AwaitApproval`) and resume (`ResumeAsync`). API: `POST /v1/api/Jobs {kind, input}`, `GET /Jobs/{id}/events?after=N`
-   (long-poll), `POST /Jobs/{id}/approve|reject|cancel`, `GET /Jobs`. UI: `src/neoapps/jobs/` (`startJob`, `useJobFeed`, `<JobFeed/>`).
+   (long-poll), `POST /Jobs/{id}/approve|reject|cancel`, `GET /Jobs`, `GET /Jobs/{id}/files/{name}`. UI: `src/neoapps/jobs/`
+   (`startJob`, `useJobFeed`, `<JobFeed/>`, `<JobFiles/>`). Jobs attach evidence with `ctx.AttachFile` (shown inline).
+   NuGet packages and Playwright browsers: `custom-api/packages.json` (`{"packages": {...}, "browsers": ["chromium"]}`);
+   browser example `samples/custom-api-browser/` (restrict hosts with `Browser:AllowedHosts`).
    **Data rules:** for multi-tenant apps, customer portals (customers see only their own rows), status workflows, approvals,
    audit trails, domain events, SLAs, plan limits, field validation (formats, ranges, date order, totals) or automatic numbers (INV-2026-00001), add the `tenancy`, `rowScopes`, `lifecycles`, `validations`, `numbering`, `immutable`, `audit`, `outbox`, `jobs` and `limits` sections to ui.config.json (see the guide)
    instead of hand-writing checks: the generated API enforces them on every query (`Utility/DataGuard*.cs`). After deploying,
@@ -151,5 +154,7 @@ added to every app table automatically and stamped by DataGuard on every write, 
   `background_job_events`, `JobQueue` = RabbitMQ, `JobSignals` = Redis pub/sub, `JobWorker` = hosted consumer) and
   `Controllers/JobsController.cs`; they're registered in `startup.txt` (the generated Startup.cs comes from it, not from
   the solution folder). Code outside a web request must run inside `DataGuard.RunAs(caller)`: otherwise `DataGuard.Current`
-  is null and queries are not scoped. `workspace/<App>/custom-api/` is copied by `NeoAppsTools.CopyCustomApi`.
+  is null and queries are not scoped. `workspace/<App>/custom-api/` is copied by `NeoAppsTools.CopyCustomApi`, which also writes
+  its `packages.json` into the API csproj (`<ItemGroup Label="custom-api">`) and the browser install step into the API
+  Dockerfile (between `# >>> custom-api browsers` markers; `Program.cs` handles `--install-browsers` before building the host).
 - Never commit credentials. Generated apps get a random JWT secret, and S3 keys come from env vars.

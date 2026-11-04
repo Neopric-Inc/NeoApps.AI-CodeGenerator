@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
@@ -15,6 +16,12 @@ namespace nkv.MicroService.API
     {
         public static int Main(string[] args)
         {
+            // --install-browsers [chromium|firefox|webkit] [--with-deps]: install Playwright's browsers and exit. Used by the
+            // Dockerfile when custom-api/packages.json asks for a browser; runs before the host is built, so no MySQL,
+            // Redis or RabbitMQ is needed at image build time.
+            if (Array.IndexOf(args, "--install-browsers") is var bi && bi >= 0)
+                return InstallBrowsers(args.Skip(bi + 1).ToArray());
+
             var host = CreateHostBuilder(args).Build();
             var config = host.Services.GetRequiredService<IConfiguration>();
             var connectionString = config.GetConnectionString("MySQLDatabase");
@@ -36,6 +43,21 @@ namespace nkv.MicroService.API
 
             host.Run();
             return 0;
+        }
+
+        /// <summary>Runs Playwright's installer (Microsoft.Playwright, added via custom-api/packages.json) without a compile-time reference.</summary>
+        private static int InstallBrowsers(string[] rest)
+        {
+            var playwright = Type.GetType("Microsoft.Playwright.Program, Microsoft.Playwright");
+            if (playwright == null)
+            {
+                Console.Error.WriteLine("Microsoft.Playwright isn't referenced. Add it to workspace/<App>/custom-api/packages.json.");
+                return 1;
+            }
+            var browsers = rest.Where(a => !a.StartsWith("-")).DefaultIfEmpty("chromium");
+            var install = new[] { "install" }.Concat(rest.Where(a => a == "--with-deps")).Concat(browsers).ToArray();
+            Console.WriteLine("playwright " + string.Join(" ", install));
+            return (int)playwright.GetMethod("Main", BindingFlags.Public | BindingFlags.Static)!.Invoke(null, new object[] { install })!;
         }
 
         public static IHostBuilder CreateHostBuilder(string[] args) =>

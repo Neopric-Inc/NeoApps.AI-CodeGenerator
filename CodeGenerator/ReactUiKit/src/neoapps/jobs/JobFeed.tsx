@@ -6,6 +6,8 @@ import HourglassTop from "@mui/icons-material/HourglassTop";
 import PanTool from "@mui/icons-material/PanTool";
 import WarningAmber from "@mui/icons-material/WarningAmber";
 import FiberManualRecord from "@mui/icons-material/FiberManualRecord";
+import ImageOutlined from "@mui/icons-material/ImageOutlined";
+import { JobFile } from "./JobFile";
 import { FINISHED, Job, JobEvent, JobStatus } from "./jobsApi";
 
 const STATUS: Record<JobStatus, { label: string; color: "default" | "primary" | "success" | "warning" | "error" | "info" }> = {
@@ -31,6 +33,7 @@ const icon = (e: JobEvent) => {
     case "error": return <ErrorOutline color="error" sx={sx} />;
     case "warn": return <WarningAmber color="warning" sx={sx} />;
     case "approval": return <PanTool color="warning" sx={sx} />;
+    case "file": return <ImageOutlined color="action" sx={sx} />;
     default: return <FiberManualRecord color="disabled" sx={{ ...sx, fontSize: 10, mt: "5px", mx: "3px" }} />;
   }
 };
@@ -58,7 +61,10 @@ export const JobFeed: React.FC<{ job?: Job; events: JobEvent[]; error?: string; 
         {events.map((e) => (
           <Box key={e.id} sx={{ display: "flex", gap: 1, alignItems: "flex-start", py: 0.25 }}>
             {icon(e)}
-            <Typography variant="body2" sx={{ flex: 1, fontWeight: e.level === "approval" || e.level === "done" ? 600 : 400 }}>{e.message}</Typography>
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Typography variant="body2" sx={{ fontWeight: e.level === "approval" || e.level === "done" ? 600 : 400 }}>{e.message}</Typography>
+              {e.level === "file" && e.data?.file && job && <JobFile jobId={job.job_id} info={e.data} caption={e.message} height={64} />}
+            </Box>
             <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: "nowrap" }}>{time(e.at)}</Typography>
           </Box>
         ))}

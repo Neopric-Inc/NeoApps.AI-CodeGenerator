@@ -213,7 +213,9 @@ internal static class UiConfigTools
         Background jobs. Other long-running work (imports, monthly runs, anything that waits for approval) is a C# class
         deriving from JobHandler in workspace/<App>/custom-api/ (copied into <App>.API/Custom/ on every generate,
         "nkv.MicroService" is replaced by the app name). It gets the same queue, live feed, approval/resume, cancel and
-        per-user data scoping. Example: samples/custom-api-example/ActivateAccountsJob.cs. Show the Background jobs page in
+        per-user data scoping, and can attach screenshots/videos (ctx.AttachFile). custom-api/packages.json adds NuGet
+        packages and browsers ({"packages": {"Microsoft.Playwright": "1.63.0"}, "browsers": ["chromium"]}). Examples:
+        samples/custom-api-example/ (approval), samples/custom-api-browser/ (Playwright page check). Show the Background jobs page in
         the menu without AI with: "jobs": { "menu": true }
         """;
 }

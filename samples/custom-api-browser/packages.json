@@ -1,0 +1,5 @@
+{
+  // NuGet packages for the code in this folder. Microsoft.Playwright also makes the API image install Chromium.
+  "packages": { "Microsoft.Playwright": "1.63.0" },
+  "browsers": ["chromium"]
+}

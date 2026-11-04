@@ -130,13 +130,14 @@ namespace nkv.MicroService.API.Jobs
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(stop);
             cts.CancelAfter(TimeSpan.FromMinutes(Setting("TimeoutMinutes", 30)));
             _running[id] = cts;
+            JobContext ctx = null;
             try
             {
                 using var scope = _services.CreateScope();
                 using var _ = DataGuard.RunAs(caller);
                 var handler = scope.ServiceProvider.GetServices<JobHandler>().FirstOrDefault(h => h.Kind == job.Kind);
                 if (handler == null) { Fail($"No handler for job kind '{job.Kind}'."); return true; }
-                var ctx = new JobContext(_store, id, job.Kind, user, job.Input, job.State, scope.ServiceProvider, cts.Token);
+                ctx = new JobContext(_store, id, job.Kind, user, job.Input, job.State, scope.ServiceProvider, cts.Token);
                 _store.AddEvent(id, "info", resume ? "Approved: continuing." : "Started.", null, null);
                 if (resume) await handler.ResumeAsync(ctx, job.Decision ?? new System.Text.Json.Nodes.JsonObject());
                 else await handler.RunAsync(ctx);
@@ -164,7 +165,7 @@ namespace nkv.MicroService.API.Jobs
                 Fail("The job ran into an error. Reference: job-" + id);
                 return true;
             }
-            finally { _running.TryRemove(id, out _); }
+            finally { _running.TryRemove(id, out _); ctx?.CleanupTemp(); }
         }
     }
 }

@@ -7,6 +7,7 @@ import { useApp } from "../AppContext";
 import { WorkflowDialog } from "../ai/Workflows";
 import { approveJob, cancelJob, Job, listJobs, rejectJob, useJobFeed } from "./jobsApi";
 import { JobFeed, JobStatusChip } from "./JobFeed";
+import { JobFiles } from "./JobFile";
 
 const when = (iso: string) => new Date(iso).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
 
@@ -35,6 +36,13 @@ const JobDialog: React.FC<{ jobId: string; onClose: () => void }> = ({ jobId, on
       </DialogTitle>
       <DialogContent dividers>
         {actionError && <Alert severity="error" sx={{ mb: 2 }}>{actionError}</Alert>}
+        {events.some((e) => e.level === "file") && (
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="subtitle2" sx={{ mb: 1 }}>Evidence</Typography>
+            <JobFiles jobId={jobId} events={events} height={220} />
+          </Box>
+        )}
+        <Typography variant="subtitle2" sx={{ mb: 1 }}>Steps</Typography>
         <JobFeed job={job} events={events} error={error} />
         {job?.result != null && (
           <Box component="pre" sx={{ mt: 2, p: 1.5, bgcolor: "action.hover", borderRadius: 1, fontSize: 12, overflow: "auto", maxHeight: 260 }}>
