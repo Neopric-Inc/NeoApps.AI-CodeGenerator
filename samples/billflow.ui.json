@@ -1,0 +1,177 @@
+{
+  "appName": "BillFlow",
+  "tagline": "Billing with an AI operator built in",
+  "theme": {
+    "primary": "#4f46e5",
+    "secondary": "#0ca678"
+  },
+  "menu": [
+    {
+      "group": "Customers",
+      "items": [
+        "accounts",
+        "contacts",
+        "subscriptions"
+      ]
+    },
+    {
+      "group": "Catalog",
+      "items": [
+        "plans"
+      ]
+    }
+  ],
+  "dashboard": {
+    "cards": [
+      {
+        "table": "accounts",
+        "label": "Accounts"
+      },
+      {
+        "table": "subscriptions",
+        "label": "Subscriptions"
+      },
+      {
+        "table": "plans",
+        "label": "Plans"
+      }
+    ],
+    "recentTable": "accounts"
+  },
+  "roles": {
+    "Support Rep": {
+      "*": "r",
+      "accounts": "cru",
+      "contacts": "cru",
+      "subscriptions": "cru"
+    },
+    "Viewer": {
+      "*": "r"
+    }
+  },
+  "tables": {
+    "plans": {
+      "icon": "sell",
+      "displayField": "name",
+      "listColumns": [
+        "name",
+        "monthly_price",
+        "seats_included"
+      ],
+      "fields": {
+        "monthly_price": {
+          "widget": "currency"
+        }
+      }
+    },
+    "accounts": {
+      "icon": "business",
+      "displayField": "company_name",
+      "listColumns": [
+        "company_name",
+        "industry",
+        "status"
+      ],
+      "children": [
+        "contacts",
+        "subscriptions"
+      ],
+      "fields": {
+        "status": {
+          "widget": "select",
+          "options": [
+            "onboarding",
+            "active",
+            "churned"
+          ],
+          "colors": {
+            "onboarding": "warning",
+            "active": "success",
+            "churned": "error"
+          }
+        }
+      }
+    },
+    "contacts": {
+      "icon": "person",
+      "displayField": "full_name",
+      "listColumns": [
+        "full_name",
+        "email",
+        "account_id",
+        "is_primary"
+      ],
+      "fields": {
+        "is_primary": {
+          "widget": "checkbox",
+          "label": "Primary contact"
+        }
+      }
+    },
+    "subscriptions": {
+      "icon": "autorenew",
+      "listColumns": [
+        "account_id",
+        "plan_id",
+        "billing_cycle",
+        "start_date",
+        "status"
+      ],
+      "fields": {
+        "billing_cycle": {
+          "widget": "select",
+          "options": [
+            "monthly",
+            "yearly"
+          ]
+        },
+        "start_date": {
+          "widget": "date"
+        },
+        "status": {
+          "widget": "select",
+          "options": [
+            "active",
+            "paused",
+            "cancelled"
+          ],
+          "colors": {
+            "active": "success",
+            "paused": "warning",
+            "cancelled": "error"
+          }
+        }
+      }
+    }
+  },
+  "ai": {
+    "enabled": true,
+    "model": "claude-sonnet-5-5",
+    "assistantName": "BillFlow Operator",
+    "instructions": "You are the in-app operator for BillFlow, a billing app. Support reps ask for outcomes in plain English and you do the work through the app's records. Only use plans that exist. Never invent prices.",
+    "tools": [
+      "records"
+    ],
+    "suggestions": [
+      "Onboard Acme on the Growth plan, contact Jane Doe jane@acme.com",
+      "Which accounts are still onboarding?",
+      "How many active subscriptions per plan?"
+    ],
+    "workflows": [
+      {
+        "id": "onboard_account",
+        "label": "Onboard a customer",
+        "description": "Type who to onboard; the operator creates the account, primary contact and subscription for you to review.",
+        "targets": [
+          "accounts",
+          "contacts",
+          "subscriptions"
+        ],
+        "tools": [
+          "records"
+        ],
+        "instructions": "Read the user's note (company, plan, contact name, email, optional billing cycle and industry).\n1. Read plans and pick the plan whose name matches the note. If none matches, create nothing and say which plans exist.\n2. Create one accounts row: company_name, industry if given, status 'onboarding'.\n3. Create one contacts row: account_id='@<account ref>', full_name, email, is_primary=1.\n4. Create one subscriptions row: account_id='@<account ref>', plan_id = the matched plan_id, billing_cycle 'monthly' unless the note says yearly/annual, start_date = today, status 'active'."
+      }
+    ]
+  }
+}
