@@ -25,6 +25,8 @@ public static class UiKit
         "ai_files", "ai_chunks", "ai_conversations", "ai_messages", "ai_runs",
         // DataGuard tenancy (created by the API on startup)
         "user_tenants", "login_attempts", "user_security", "number_sequences",
+        // background jobs (created by the API on startup)
+        "background_jobs", "background_job_events",
         // migration history (FluentMigrator)
         "versioninfo",
     };

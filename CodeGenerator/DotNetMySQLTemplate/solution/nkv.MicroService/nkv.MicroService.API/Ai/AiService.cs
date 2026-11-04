@@ -486,8 +486,37 @@ How to answer:
             return _data.AppTables(c).Where(wanted.Contains).ToList();
         }
 
+        /// <summary>
+        /// Quick checks before a workflow runs in the background (AI configured, workflow exists, create permission on its
+        /// targets, a record given when it runs on one). Returns the workflow's label.
+        /// </summary>
+        public string CheckWorkflow(AiUser u, string workflowId, string recordId)
+        {
+            var cfg = _settings.Config(u.Tenant);
+            if (!_settings.Enabled(cfg)) throw new AiException("AI is not configured. Set ANTHROPIC_API_KEY for the API.");
+            var wf = Workflow(cfg, workflowId);
+            using var c = _data.Open();
+            var perms = _data.Permissions(c, u);
+            var denied = Targets(c, wf).Where(t => !perms.TryGetValue(t, out var p) || !p.Create).ToList();
+            if (denied.Count > 0) throw new AiException($"You need create permission on: {string.Join(", ", denied)}.");
+            if (wf["table"] != null && string.IsNullOrEmpty(recordId)) throw new AiException("This workflow runs on a record.");
+            return wf["label"]?.GetValue<string>() ?? workflowId;
+        }
+
+        /// <summary>What a tool call is doing, in words for the job's live feed.</summary>
+        private static string DescribeTool(string name, JsonObject input) => name switch
+        {
+            "search_documents" => $"Searching documents for \"{Trim(input["query"]?.ToString() ?? "", 80)}\"",
+            "list_tables" => "Looking at what the app tracks",
+            "query_records" => $"Reading {input["table"]?.ToString() ?? "records"}",
+            "aggregate_records" => $"Summarising {input["table"]?.ToString() ?? "records"}",
+            "search_clinical_trials" => "Searching ClinicalTrials.gov",
+            "propose_records" => "Drafting the proposal",
+            _ => "Using " + name,
+        };
+
         /// <summary>Asks the model to propose records for the workflow's target tables. Nothing is saved.</summary>
-        public async Task<JsonObject> PreviewWorkflow(AiUser u, string workflowId, string recordId, string note, CancellationToken ct)
+        public async Task<JsonObject> PreviewWorkflow(AiUser u, string workflowId, string recordId, string note, CancellationToken ct, Action<string> progress = null)
         {
             var cfg = _settings.Config(u.Tenant);
             if (!_settings.Enabled(cfg)) throw new AiException("AI is not configured. Set ANTHROPIC_API_KEY for the API.");
@@ -519,6 +548,7 @@ How to answer:
                     while (r.Read() && text.Length < 180000) text.AppendLine($"--- {r.GetString(0)} page {r.GetInt32(1)} ---\n{r.GetString(2)}");
                 if (text.Length == 0 && wf["requiresDocument"]?.GetValue<bool>() != false)
                     throw new AiException("Upload the document to this record first (Files section), then run the workflow.");
+                progress?.Invoke(text.Length == 0 ? $"Read the {sourceTable} record" : $"Read the {sourceTable} record and its documents ({text.Length / 1000}k characters)");
                 sb.AppendLine("ATTACHED DOCUMENT TEXT:\n" + text);
             }
 
@@ -558,10 +588,14 @@ How to answer:
 Use only the tables listed as targets. Fill required columns. Use values that exist in the source; don't invent facts. Dates as YYYY-MM-DD.
 When done, call propose_records exactly once with all rows.";
             var sources = new Dictionary<string, Source>();
+            progress?.Invoke($"Asking {_settings.Model(cfg)} to work through: {string.Join(", ", targets)}");
             var (text2, _, proposal) = await _claude.RunAsync(_settings.Model(cfg), system,
                 new JsonArray(new JsonObject { ["role"] = "user", ["content"] = sb.ToString() }), tools, 16000,
-                (name, input) => RunTool(name, input, u, sources, ct), ct, stopOnTool: "propose_records", maxTurns: 12);
+                (name, input) => { progress?.Invoke(DescribeTool(name, input)); return RunTool(name, input, u, sources, ct); },
+                ct, stopOnTool: "propose_records", maxTurns: 12,
+                onToolCall: name => { if (name == "propose_records") progress?.Invoke(DescribeTool(name, new JsonObject())); });
             if (proposal == null) throw new AiException("The assistant didn't propose any records: " + Trim(text2, 300));
+            progress?.Invoke($"Checking {(proposal["records"] as JsonArray)?.Count ?? 0} proposed rows against the tables");
 
             var cleaned = ValidateProposal(c, targets, proposal["records"] as JsonArray ?? new JsonArray(), inherit, out var warnings);
             return new JsonObject

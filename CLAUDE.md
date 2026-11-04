@@ -24,7 +24,7 @@ Work in the app's planning folder `workspace/<App>/` (git-ignored): `requirement
    - **never** reuse a built-in table name: `roles`, `users`, `entities`, `permissionmatrix`, `messagequeue`,
      `s3bucket`, `s3bucket_folders`, `dnd_ui_versions`, `project_dnd_ui_versions`, `workflow`, `workflows`,
      `workflows_projects`, `workflow_builds`, `workflow_runs`, `workflow_deployments`, `workflow_triggers`,
-     `workflow_trigger_conditions`, `ai_files`, `ai_chunks`, `ai_conversations`, `ai_messages`, `ai_runs`, `versioninfo`, `user_tenants`, `login_attempts`, `user_security`, `number_sequences` (use e.g. `members`, `automation_runs`)
+     `workflow_trigger_conditions`, `ai_files`, `ai_chunks`, `ai_conversations`, `ai_messages`, `ai_runs`, `versioninfo`, `user_tenants`, `login_attempts`, `user_security`, `number_sequences`, `background_jobs`, `background_job_events` (use e.g. `members`, `automation_runs`)
    - plain `CREATE TABLE` / `INSERT` only: no `CREATE DATABASE`, `USE`, `DELIMITER`, procedures
    Save it as `workspace/<App>/schema.sql` (copy it to `samples/` if it should be committed).
 3. **Design the UI** (recommended): write `workspace/<App>/ui.config.json` following `neoapps_ui_config_guide`
@@ -45,6 +45,12 @@ Work in the app's planning folder `workspace/<App>/` (git-ignored): `requirement
    **AI:** if the app needs document Q&A, "ask your data", or AI-driven record creation, add an `ai` section to the
    ui.json (assistant instructions, `documentTables`, `tools`, `workflows`; see the guide) instead of modelling chat
    tables. It runs on the Claude API when the API process has `ANTHROPIC_API_KEY` set (never put the key in files).
+   **Background jobs:** for long-running work (AI workflows already use it; imports, batch runs, anything that should
+   pause for a person's approval), write a `JobHandler` subclass in `workspace/<App>/custom-api/*.cs` (namespace
+   `nkv.MicroService.API.Custom`, replaced by the app name; example `samples/custom-api-example/`). It runs on the
+   RabbitMQ worker as the user who started it (`DataGuard.RunAs`), reports progress (`ctx.Progress`), can pause
+   (`ctx.AwaitApproval`) and resume (`ResumeAsync`). API: `POST /v1/api/Jobs {kind, input}`, `GET /Jobs/{id}/events?after=N`
+   (long-poll), `POST /Jobs/{id}/approve|reject|cancel`, `GET /Jobs`. UI: `src/neoapps/jobs/` (`startJob`, `useJobFeed`, `<JobFeed/>`).
    **Data rules:** for multi-tenant apps, customer portals (customers see only their own rows), status workflows, approvals,
    audit trails, domain events, SLAs, plan limits, field validation (formats, ranges, date order, totals) or automatic numbers (INV-2026-00001), add the `tenancy`, `rowScopes`, `lifecycles`, `validations`, `numbering`, `immutable`, `audit`, `outbox`, `jobs` and `limits` sections to ui.config.json (see the guide)
    instead of hand-writing checks: the generated API enforces them on every query (`Utility/DataGuard*.cs`). After deploying,
@@ -108,6 +114,8 @@ added to every app table automatically and stamped by DataGuard on every write, 
 - `/health` returns ok, login returns a token, and one create + list call succeeds.
 - When ui.config.json has data rules: `./neoapps test <App>` passes (writes workspace/<App>/guard-test-report.json).
 - `GET /v1/api/Access/me` returns the admin's permissions. Log into the UI and open a list page and a form.
+- When the app has AI workflows or custom jobs: start one (`POST /v1/api/Jobs`), follow `GET /Jobs/{id}/events` until
+  `awaiting_approval` or `completed`, and approve it. Without a real key, set `AI__BaseUrl` to a stand-in server.
 
 ## Working on the generator
 
@@ -139,4 +147,9 @@ added to every app table automatically and stamped by DataGuard on every write, 
 - Data rules live in the template's `Utility/DataGuard.cs` (tenancy, SQL choke point: every generated command runs through
   `DataGuard.Apply`/`DataGuard.NonQuery`), `DataGuard.Scopes.cs` (row scopes), `DataGuard.Rules.cs` (lifecycles, immutability, audit, outbox, limits, SLA), `DataGuard.Validation.cs` (field validations), `DataGuard.Numbering.cs` (numbering) and
   `GuardJobs*.cs` (outbox publisher, deadline job). Any new data-access code must execute through them.
+- Background jobs live in the template's `<App>.API/Jobs/` (`JobHandler`, `JobStore` = MySQL tables `background_jobs` /
+  `background_job_events`, `JobQueue` = RabbitMQ, `JobSignals` = Redis pub/sub, `JobWorker` = hosted consumer) and
+  `Controllers/JobsController.cs`; they're registered in `startup.txt` (the generated Startup.cs comes from it, not from
+  the solution folder). Code outside a web request must run inside `DataGuard.RunAs(caller)`: otherwise `DataGuard.Current`
+  is null and queries are not scoped. `workspace/<App>/custom-api/` is copied by `NeoAppsTools.CopyCustomApi`.
 - Never commit credentials. Generated apps get a random JWT secret, and S3 keys come from env vars.

@@ -88,6 +88,8 @@ export interface UiConfig {
   roles?: Record<string, Record<string, string>>;
   /** AI assistant settings, read by the API (instructions, tools, workflows) and the UI. */
   ai?: Record<string, any>;
+  /** Background jobs: {"menu": true} shows the Background jobs page in the menu (it always shows when AI is enabled). */
+  jobs?: { menu?: boolean };
   /** Field rules enforced by the API (DataGuard) and checked in forms before saving: {"table": {"column": {"format": "email"}}}. */
   validations?: Record<string, Record<string, FieldRule>>;
   /** Numbers assigned by the API on insert: {"customer_invoices": {"column": "invoice_number", "pattern": "INV-{yyyy}-{seq:5}"}}. */
