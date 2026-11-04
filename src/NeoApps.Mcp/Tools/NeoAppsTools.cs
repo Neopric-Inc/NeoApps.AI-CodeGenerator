@@ -447,6 +447,29 @@ public sealed class NeoAppsTools(
 
     // ---------------------------------------------------------------- helpers
 
+    /// <summary>
+    /// App-specific backend code: workspace/App/custom-api/**/*.cs is copied into the generated API's Custom/ folder on every
+    /// generate (so it survives regeneration), with the template namespace "nkv.MicroService" replaced by the app name.
+    /// Background job kinds (JobHandler subclasses) placed there are registered automatically.
+    /// </summary>
+    private int CopyCustomApi(ProjectState state)
+    {
+        if (state.BackendPath is null) return 0;
+        var source = Path.Combine(store.ProjectDir(state.Name), "custom-api");
+        var target = Path.Combine(state.BackendPath, $"{state.Name}.API", "Custom");
+        if (Directory.Exists(target)) Directory.Delete(target, recursive: true);
+        if (!Directory.Exists(source)) return 0;
+        var n = 0;
+        foreach (var file in Directory.EnumerateFiles(source, "*.cs", SearchOption.AllDirectories))
+        {
+            var dest = Path.Combine(target, Path.GetRelativePath(source, file));
+            Directory.CreateDirectory(Path.GetDirectoryName(dest)!);
+            File.WriteAllText(dest, File.ReadAllText(file).Replace("nkv.MicroService", state.Name));
+            n++;
+        }
+        return n;
+    }
+
     /// <summary>The generated API only accepts browser calls from its own UI (Cors:AllowedOrigins), not from any website.</summary>
     private static void AllowUiOrigin(ProjectState state, Job job)
     {
@@ -483,10 +506,12 @@ public sealed class NeoAppsTools(
         AllowUiOrigin(state, job);
         var n = migrations.CopyIntoApi(state);
         if (n > 0) job.Log($"Copied {n} migration(s) into {state.Name}.API/Migrations.");
+        var custom = CopyCustomApi(state);
+        if (custom > 0) job.Log($"Copied {custom} custom API file(s) into {state.Name}.API/Custom.");
 
         // The generator compiled the solution before the migrations were copied in; rebuild so the output includes them
         // (and so a broken hand-written migration, or a column named after a C# keyword, fails here, not at deploy).
-        if (n > 0 || databaseExists)
+        if (n > 0 || custom > 0 || databaseExists)
         {
             job.Log("Building the API...");
             var build = await CommandRunner.RunAsync("dotnet", ["build", $"{state.Name}.sln", "-nologo", "-v", "q", "-clp:ErrorsOnly"], state.BackendPath, job.Log, timeout: TimeSpan.FromMinutes(10), ct: ct);

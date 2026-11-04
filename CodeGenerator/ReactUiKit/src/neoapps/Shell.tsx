@@ -46,6 +46,7 @@ export const Shell: React.FC = () => {
           <NavItem to="/" icon="dashboard" label="Dashboard" onClick={close} />
           {me && (extensions.nav || []).filter((n) => !n.visible || n.visible(me)).map((n) => <NavItem key={n.to} to={n.to} icon={n.icon} label={n.label} onClick={close} />)}
           {ai?.enabled && <NavItem to="/assistant" icon="auto_awesome" label={ai.assistantName || "Assistant"} onClick={close} />}
+          {(ai?.enabled || config.jobs?.menu) && <NavItem to="/jobs" icon="bolt" label="Background jobs" onClick={close} />}
         </List>
         {menu.map((g) => (
           <List key={g.group} dense subheader={<ListSubheader sx={{ lineHeight: "32px", fontSize: 11, textTransform: "uppercase", letterSpacing: 0.6, bgcolor: "transparent" }}>{g.group}</ListSubheader>}>

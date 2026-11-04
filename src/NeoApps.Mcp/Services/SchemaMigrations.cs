@@ -14,7 +14,7 @@ namespace NeoApps.Mcp.Services;
 /// </summary>
 public static class SchemaMigrations
 {
-    private static readonly HashSet<string> BuiltInAi = new(StringComparer.OrdinalIgnoreCase) { "ai_files", "ai_chunks", "ai_conversations", "ai_messages", "ai_runs", "user_tenants", "login_attempts", "user_security", "number_sequences" };
+    private static readonly HashSet<string> BuiltInAi = new(StringComparer.OrdinalIgnoreCase) { "ai_files", "ai_chunks", "ai_conversations", "ai_messages", "ai_runs", "user_tenants", "login_attempts", "user_security", "number_sequences", "background_jobs", "background_job_events" };
     public sealed record LiveTable(Table Table, Dictionary<string, string> ForeignKeyNames);
 
     public sealed class Plan

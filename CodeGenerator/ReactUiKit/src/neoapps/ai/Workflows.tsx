@@ -1,11 +1,13 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Alert, Box, Button, Checkbox, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Table, TableBody, TableCell,
   TableHead, TableRow, TextField, Typography,
 } from "@mui/material";
 import AutoAwesome from "@mui/icons-material/AutoAwesome";
 import { useApp } from "../AppContext";
-import { AiWorkflow, applyWorkflow, previewWorkflow, ProposedRow, WorkflowPreview } from "./aiApi";
+import { AiWorkflow, ProposedRow, WorkflowPreview } from "./aiApi";
+import { approveJob, cancelJob, FINISHED, rejectJob, startJob, useJobFeed } from "../jobs/jobsApi";
+import { JobFeed, JobStatusChip } from "../jobs/JobFeed";
 
 /** Rows whose foreign keys point (directly or not) at an excluded row can't be created either. */
 function withDependents(rows: ProposedRow[], excluded: Set<string>): Set<string> {
@@ -22,14 +24,30 @@ function withDependents(rows: ProposedRow[], excluded: Set<string>): Set<string>
   return out;
 }
 
-const WorkflowDialog: React.FC<{ wf: AiWorkflow; recordId?: string; onClose: () => void; onApplied?: () => void }> = ({ wf, recordId, onClose, onApplied }) => {
+export const WorkflowDialog: React.FC<{ wf: AiWorkflow; recordId?: string; jobId?: string; onClose: () => void; onApplied?: () => void }> = ({
+  wf, recordId, jobId: existingJob, onClose, onApplied,
+}) => {
   const { tables } = useApp();
   const [note, setNote] = useState("");
+  const [jobId, setJobId] = useState<string | undefined>(existingJob);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
   const [preview, setPreview] = useState<WorkflowPreview>();
   const [excluded, setExcluded] = useState<Set<string>>(new Set());
-  const [done, setDone] = useState<string>();
+  const { job, events, error: feedError } = useJobFeed(jobId);
+  const status = job?.status;
+
+  // The proposal arrives as the job's result when it pauses for approval; keep it while the rows are being created.
+  useEffect(() => {
+    if (status === "awaiting_approval" && job?.result) setPreview(job.result as WorkflowPreview);
+  }, [status, job?.result]);
+  const appliedOnce = React.useRef(false);
+  useEffect(() => {
+    if (status === "completed" && job?.result?.created && !appliedOnce.current) {
+      appliedOnce.current = true;
+      onApplied?.();
+    }
+  }, [status, job?.result, onApplied]);
 
   const skipped = useMemo(() => withDependents(preview?.records || [], excluded), [preview, excluded]);
   const byTable = useMemo(() => {
@@ -44,32 +62,30 @@ const WorkflowDialog: React.FC<{ wf: AiWorkflow; recordId?: string; onClose: () 
     return String((t && row.values[t.displayField]) ?? Object.values(row.values).find((v) => typeof v === "string" && !v.startsWith("@")) ?? ref);
   };
 
-  const run = async () => {
+  const act = async (fn: () => Promise<any>) => {
     setBusy(true);
     setError(undefined);
     try {
-      setPreview(await previewWorkflow(wf.id, recordId, note || undefined));
-      setExcluded(new Set());
+      await fn();
     } catch (e: any) {
       setError(e.message);
     } finally {
       setBusy(false);
     }
   };
-  const apply = async () => {
-    if (!preview) return;
-    setBusy(true);
-    setError(undefined);
-    try {
-      const res = await applyWorkflow(wf.id, preview.records.filter((r) => !skipped.has(r.ref)), recordId);
-      setDone(res.summary);
-      onApplied?.();
-    } catch (e: any) {
-      setError(e.message);
-    } finally {
-      setBusy(false);
-    }
-  };
+  const run = () => act(async () => {
+    const j = await startJob("ai.workflow", { workflow: wf.id, recordId, note: note || undefined });
+    setPreview(undefined);
+    setExcluded(new Set());
+    appliedOnce.current = false;
+    setJobId(j.job_id);
+  });
+  const apply = () => act(async () => {
+    if (!preview || !jobId) return;
+    await approveJob(jobId, { records: preview.records.filter((r) => !skipped.has(r.ref)) });
+  });
+  const reject = () => act(async () => { if (jobId) await rejectJob(jobId); });
+  const cancel = () => act(async () => { if (jobId) await cancelJob(jobId); });
   const toggle = (ref: string) => setExcluded((s) => {
     const n = new Set(s);
     if (n.has(ref)) n.delete(ref);
@@ -77,27 +93,35 @@ const WorkflowDialog: React.FC<{ wf: AiWorkflow; recordId?: string; onClose: () 
     return n;
   });
   const count = (preview?.records.length || 0) - skipped.size;
+  const reviewing = status === "awaiting_approval" && !!preview;
+  const working = !!jobId && (!status || status === "queued" || status === "running" || status === "approved");
+  const finished = !!status && FINISHED.includes(status);
 
   return (
-    <Dialog open onClose={busy ? undefined : onClose} maxWidth={preview ? "lg" : "sm"} fullWidth>
-      <DialogTitle sx={{ display: "flex", alignItems: "center", gap: 1 }}><AutoAwesome color="primary" fontSize="small" />{wf.label}</DialogTitle>
+    <Dialog open onClose={onClose} maxWidth={reviewing ? "lg" : "sm"} fullWidth>
+      <DialogTitle sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+        <AutoAwesome color="primary" fontSize="small" />{wf.label}
+        {status && <Box sx={{ ml: "auto" }}><JobStatusChip status={status} /></Box>}
+      </DialogTitle>
       <DialogContent dividers>
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-        {done ? (
-          <Alert severity="success">{done}</Alert>
-        ) : !preview ? (
+        {!jobId && (
           <>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              {wf.description || "The assistant reads the source and proposes new records."} Nothing is saved until you review the proposal and apply it.
+              {wf.description || "The assistant reads the source and proposes new records."} It runs in the background and nothing is saved until you review the proposal and approve it.
             </Typography>
             <TextField fullWidth multiline minRows={2} label="Anything to focus on? (optional)" value={note} onChange={(e) => setNote(e.target.value)} disabled={busy} />
-            {busy && (
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mt: 3, color: "text.secondary" }}>
-                <CircularProgress size={20} /><Typography variant="body2">Working… this can take a minute for long documents.</Typography>
-              </Box>
-            )}
           </>
-        ) : (
+        )}
+        {jobId && !reviewing && (
+          <>
+            {status === "completed" && <Alert severity="success" sx={{ mb: 2 }}>{job?.result?.summary || "Done."}</Alert>}
+            {(status === "cancelled" || status === "rejected") && <Alert severity="info" sx={{ mb: 2 }}>{status === "cancelled" ? "Cancelled." : "Rejected: nothing was created."}</Alert>}
+            <JobFeed job={job} events={events} error={feedError} />
+            {working && <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 1 }}>You can close this window: the job keeps running, and you'll find it under Background jobs.</Typography>}
+          </>
+        )}
+        {reviewing && preview && (
           <>
             <Alert severity="info" icon={false} sx={{ mb: 2 }}>{preview.summary}</Alert>
             {preview.warnings.map((w) => <Alert key={w} severity="warning" sx={{ mb: 1 }}>{w}</Alert>)}
@@ -138,14 +162,19 @@ const WorkflowDialog: React.FC<{ wf: AiWorkflow; recordId?: string; onClose: () 
                 </Box>
               );
             })}
+            <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.5 }}>How it got here</Typography>
+            <JobFeed job={job} events={events} error={feedError} maxHeight={140} />
           </>
         )}
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose} disabled={busy}>{done ? "Close" : "Cancel"}</Button>
-        {!done && !preview && <Button variant="contained" onClick={run} disabled={busy} startIcon={<AutoAwesome />}>Generate proposal</Button>}
-        {!done && preview && (
+        {working && <Button color="inherit" onClick={cancel} disabled={busy}>Cancel job</Button>}
+        <Button onClick={onClose}>{working ? "Run in background" : finished || reviewing ? "Close" : "Cancel"}</Button>
+        {!jobId && <Button variant="contained" onClick={run} disabled={busy} startIcon={<AutoAwesome />}>Generate proposal</Button>}
+        {finished && status !== "completed" && <Button variant="contained" onClick={run} disabled={busy} startIcon={<AutoAwesome />}>Try again</Button>}
+        {reviewing && (
           <>
+            <Button color="inherit" onClick={reject} disabled={busy}>Reject</Button>
             <Button onClick={run} disabled={busy}>Regenerate</Button>
             <Button variant="contained" onClick={apply} disabled={busy || count === 0}>
               {busy ? <CircularProgress size={18} color="inherit" /> : `Create ${count} record${count === 1 ? "" : "s"}`}

@@ -158,7 +158,7 @@ Add an `ai` section to `ui.config.json` and run the API with `ANTHROPIC_API_KEY`
 
 - **Assistant page.** Answers questions from uploaded documents, with `[S1]` citations that open the file and page, and from the app's own records ("ask your data"). It says plainly when the sources don't contain the answer, keeps a conversation history per user, and is limited to the tables each user may read.
 - **Files panel** on the record pages of `documentTables`. Upload PDF, DOCX, TXT, MD, CSV or JSON. Text is extracted (PDF tables keep their column layout) and indexed in MySQL full-text search.
-- **Workflows.** Buttons that have Claude read a record's documents (or external data such as ClinicalTrials.gov) and propose new records across several tables. The user reviews the proposal, unticks rows if needed, and applies it in one transaction. Rows written by AI are stamped `<user> via AI`.
+- **Workflows.** Buttons that have Claude read a record's documents (or external data such as ClinicalTrials.gov) and propose new records across several tables. They run as [background jobs](#background-jobs): the dialog shows each step live, the user can close it and come back, and the job pauses with the proposal. The user reviews it, unticks rows if needed, and approves; the rows are created in one transaction and stamped `<user> via AI`.
 - **Ask AI** on every record page, which opens the assistant focused on that record.
 
 The key is read only from the environment, so it never touches generated files. Keep it in a private file and load it
@@ -166,6 +166,55 @@ before running: `set -a; . ~/secrets/anthropic.env; set +a`. `--deploy` passes i
 in a Docker volume. Without a key the app works normally and the assistant reports itself as not configured. See the
 `ai` section of [`samples/clinical-research-site.ui.json`](samples/clinical-research-site.ui.json): protocol Q&A, a
 Schedule of Assessments → visits, assessments and source worksheets workflow, and a ClinicalTrials.gov trial finder.
+
+## Background jobs
+
+Long-running work runs on a worker instead of inside a web request, so it doesn't time out and the user doesn't wait
+on a spinner. Every generated app includes it; AI workflows use it out of the box.
+
+```
+UI ──POST /Jobs──▶ API ──job id──▶ RabbitMQ ──▶ worker ── runs the job as the user who started it
+ ▲                  │                               │
+ └── live feed ◀────┴──── MySQL (record) + Redis pub/sub (instant updates) ◀── progress, pause, result
+```
+
+- **Live feed.** `GET /v1/api/Jobs/{id}/events?after=<last id>` returns new steps at once, or waits up to 20 s for the
+  next one (Redis pub/sub wakes it). The UI shows it as a timeline with a progress bar.
+- **Pause for approval, then resume.** A job can stop with a proposal (`awaiting_approval`). `POST /Jobs/{id}/approve`
+  with the (possibly edited) decision puts it back on the queue, and a worker continues where it left off.
+  `/reject` and `/cancel` stop it. By default the person who started it or an administrator can approve.
+- **Safe by default.** Each job runs as its user: every query is scoped exactly like their own request (workspace,
+  tenant, row scopes), permissions are re-checked, and a job whose user was deactivated stops. A job interrupted by a
+  restart or crash is picked up again by another worker (up to `Jobs:MaxAttempts`).
+- **Background jobs page.** Users see their jobs (administrators: everyone's), reopen running ones, and approve
+  waiting ones. It's in the menu when AI is enabled, or with `"jobs": {"menu": true}` in `ui.config.json`.
+
+**Your own job types.** Put a class deriving from `JobHandler` in `workspace/<App>/custom-api/`. It's copied into
+`<App>.API/Custom/` on every generate (write the namespace as `nkv.MicroService`; it's replaced with the app name) and
+registered automatically:
+
+```csharp
+public sealed class MonthlyInvoicesJob : JobHandler
+{
+    public override string Kind => "billing.monthly-invoices";
+    public override string Validate(JobUser user, JsonObject input) => "Create this month's invoices"; // runs in the request: check permissions here
+    public override async Task RunAsync(JobContext ctx)
+    {
+        ctx.Progress("Reading subscriptions", 10);
+        // ... query with DataGuard.Apply(cmd): scoped to ctx.User ...
+        ctx.AwaitApproval(proposal, "12 invoices ready. Approve to create them.");
+    }
+    public override Task ResumeAsync(JobContext ctx, JsonObject decision) { /* create them */ ctx.Complete(result, "Created 12 invoices."); return Task.CompletedTask; }
+}
+```
+
+Start it with `POST /v1/api/Jobs {"kind": "billing.monthly-invoices", "input": {...}}`, or from a custom screen with
+`startJob`, `useJobFeed` and `<JobFeed/>` from `src/neoapps/jobs/`. Full example:
+[`samples/custom-api-example/ActivateAccountsJob.cs`](samples/custom-api-example/ActivateAccountsJob.cs).
+
+**Settings** (`appsettings.json` or env vars): `Jobs__Worker` (default `true`; to scale, run extra instances of the API
+image as workers and set it to `false` on the web-facing ones), `Jobs__Concurrency` (jobs per instance, 2),
+`Jobs__TimeoutMinutes` (30), `Jobs__MaxAttempts` (3).
 
 ## Changing a running app (migrations)
 
@@ -215,7 +264,7 @@ Run `neoapps guidelines` (MCP: `neoapps_schema_guidelines`) for the full rules. 
 - Every table has `<singular>_id INT AUTO_INCREMENT PRIMARY KEY` plus the audit columns `createdBy`, `modifiedBy` (`VARCHAR(255) NOT NULL`), `createdAt`, `modifiedAt` (`DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP`) and `isActive` (`TINYINT(1) NOT NULL DEFAULT '1'`).
 - Lowercase snake_case names, relations as `FOREIGN KEY ... REFERENCES`, 3–15 tables. Plain `CREATE TABLE` / `INSERT` only.
 - Keep status/type columns as `VARCHAR` and give them options in `ui.config.json`.
-- Don't reuse built-in table names (`roles`, `users`, `entities`, `permissionmatrix`, `workflows`, `ai_files`, …; the guidelines list them all). Use e.g. `members` instead of `users`.
+- Don't reuse built-in table names (`roles`, `users`, `entities`, `permissionmatrix`, `workflows`, `ai_files`, `background_jobs`, …; the guidelines list them all). Use e.g. `members` instead of `users`.
 - Records are owner-scoped: the API returns rows whose `createdBy` matches the workspace owner.
 
 ## Samples
@@ -227,6 +276,7 @@ Run `neoapps guidelines` (MCP: `neoapps_schema_guidelines`) for the full rules. 
 | [`samples/splitshare/`](samples/splitshare) | Custom screens (My balances, settle-up, Split now) |
 | [`samples/constructos/`](samples/constructos) | 41 tables, seven roles, nine AI workflows, and a v1 → v2 `evolve` you can replay |
 | [`samples/expertos.*`](samples/expertos.ui.json) | 135 tables using every data-rule section |
+| [`samples/custom-api-example/`](samples/custom-api-example) | A custom background job: progress, approval, resume |
 
 Run one: `neoapps new ClinicalSite --schema ~/.neoapps/samples/clinical-research-site.sql --ui ~/.neoapps/samples/clinical-research-site.ui.json --deploy`.
 
@@ -255,6 +305,7 @@ Paths are inside the generator folder (`~/.neoapps` when installed).
 | `NEOAPPS_FIRST_API_PORT` / `NEOAPPS_FIRST_WEB_PORT` | `5100` / `3100` | Port ranges for new apps |
 | `NEOAPPS_SKIP_BUILD` | `false` | Skip the compile check of the generated solution |
 | `ANTHROPIC_API_KEY` | (unset) | Enables the AI assistant in generated APIs (read at runtime, never written to disk) |
+| `Jobs__Worker` / `Jobs__Concurrency` / `Jobs__TimeoutMinutes` / `Jobs__MaxAttempts` | `true` / `2` / `30` / `3` | [Background jobs](#background-jobs) in generated APIs |
 
 Generated APIs read production settings from `appsettings.json` or env vars (`Cors__AllowedOrigins`, `Swagger__Enabled`, `Api__MaxPageSize`, `Auth__*`); see [CLAUDE.md](CLAUDE.md).
 

@@ -46,7 +46,8 @@ namespace nkv.MicroService.API.Ai
         /// </summary>
         public async Task<(string text, List<string> toolsUsed, JsonObject lastToolInput)> RunAsync(
             string model, string system, JsonArray messages, JsonArray tools, int maxTokens,
-            Func<string, JsonObject, Task<string>> runTool, CancellationToken ct, string stopOnTool = null, int maxTurns = 10)
+            Func<string, JsonObject, Task<string>> runTool, CancellationToken ct, string stopOnTool = null, int maxTurns = 10,
+            Action<string> onToolCall = null)
         {
             var used = new List<string>();
             for (var turn = 0; turn < maxTurns; turn++)
@@ -76,7 +77,7 @@ namespace nkv.MicroService.API.Ai
                     var name = call["name"]!.GetValue<string>();
                     var input = call["input"] as JsonObject ?? new JsonObject();
                     used.Add(name);
-                    if (name == stopOnTool) return ("", used, input);
+                    if (name == stopOnTool) { onToolCall?.Invoke(name); return ("", used, input); }
                     string output;
                     var isError = false;
                     try { output = await runTool(name, input); }
