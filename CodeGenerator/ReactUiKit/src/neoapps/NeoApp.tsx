@@ -7,6 +7,7 @@ import { Customize } from "./admin/Customize";
 import { Members } from "./admin/Members";
 import { Roles } from "./admin/Roles";
 import { Assistant } from "./ai/Assistant";
+import { JobsPage } from "./jobs/JobsPage";
 import { Dashboard } from "./Dashboard";
 import { Login } from "./Login";
 import { RecordPage } from "./RecordPage";
@@ -46,6 +47,7 @@ const Routed: React.FC = () => {
           <Route path="/" element={<Dashboard />} />
           <Route path="/dashboard" element={<Navigate to="/" replace />} />
           <Route path="/assistant" element={<Assistant />} />
+          <Route path="/jobs" element={<JobsPage />} />
           {(extensions.routes || []).map((r) => <Route key={r.path} path={r.path} element={r.element} />)}
           <Route path="/r/:table" element={<ResourcePage />} />
           <Route path="/r/:table/:id" element={<RecordPage />} />

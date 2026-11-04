@@ -204,8 +204,18 @@ internal static class UiConfigTools
             ]
           }
         The assistant answers from uploaded files (with [S1] citations to file and page) and from the app's records,
-        always limited to what the signed-in user may read. Workflows show a preview that the user reviews (and can
-        untick rows) before anything is created. "records" = query/aggregate tables; "clinicaltrials_gov" = live
-        ClinicalTrials.gov search. Model enum-like target columns as VARCHAR and describe valid values in "instructions".
+        always limited to what the signed-in user may read. Workflows run as background jobs (RabbitMQ worker): the dialog
+        shows each step live, the job pauses with a proposal the user reviews (and can untick rows), and nothing is created
+        until they approve. They can close the dialog and come back under Background jobs. "records" = query/aggregate
+        tables; "clinicaltrials_gov" = live ClinicalTrials.gov search. Model enum-like target columns as VARCHAR and
+        describe valid values in "instructions".
+
+        Background jobs. Other long-running work (imports, monthly runs, anything that waits for approval) is a C# class
+        deriving from JobHandler in workspace/<App>/custom-api/ (copied into <App>.API/Custom/ on every generate,
+        "nkv.MicroService" is replaced by the app name). It gets the same queue, live feed, approval/resume, cancel and
+        per-user data scoping, and can attach screenshots/videos (ctx.AttachFile). custom-api/packages.json adds NuGet
+        packages and browsers ({"packages": {"Microsoft.Playwright": "1.63.0"}, "browsers": ["chromium"]}). Examples:
+        samples/custom-api-example/ (approval), samples/custom-api-browser/ (Playwright page check). Show the Background jobs page in
+        the menu without AI with: "jobs": { "menu": true }
         """;
 }

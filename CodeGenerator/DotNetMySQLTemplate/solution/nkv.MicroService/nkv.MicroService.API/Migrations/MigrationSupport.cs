@@ -227,7 +227,7 @@ public static class NeoAppsMigrationExtensions
         "roles", "users", "entities", "permissionmatrix", "messagequeue", "s3bucket", "s3bucket_folders", "dnd_ui_versions",
         "project_dnd_ui_versions", "workflow", "workflows", "workflows_projects", "workflow_builds", "workflow_runs",
         "workflow_deployments", "workflow_triggers", "workflow_trigger_conditions",
-        "ai_files", "ai_chunks", "ai_conversations", "ai_messages", "ai_runs", "versioninfo",
+        "ai_files", "ai_chunks", "ai_conversations", "ai_messages", "ai_runs", "versioninfo", "background_jobs", "background_job_events",
     };
 
     private static void EditSavedMenus(Migration m, Func<JsonArray, bool> edit) =>
