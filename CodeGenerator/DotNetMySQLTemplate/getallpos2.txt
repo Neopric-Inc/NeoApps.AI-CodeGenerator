@@ -9,12 +9,12 @@ for (int i = 0; i < {tableNameSmall}.Count; i++)
     {
         while (reader.Read())
         {
-            var {rftablenameSmall} = new {rftableNameMain}RelationalModel()
+            var rel_{rftablenameSmall} = new {rftableNameMain}RelationalModel()
             {
                 {selectAllRfModelInit}
             };
 
-            {tableNameSmall}[i].{rftableName} = {rftablenameSmall};
+            {tableNameSmall}[i].{rftableName} = rel_{rftablenameSmall};
         }
     }
 }

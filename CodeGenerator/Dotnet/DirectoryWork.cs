@@ -53,6 +53,10 @@ namespace NoCodeAppGenerator
             foreach (string dirPath in Directory.GetDirectories(sourcePath))
             {
                 string dirName = Path.GetFileName(dirPath);
+                // Build artifacts (e.g. created by an IDE's design-time build of the template) must never be cloned:
+                // they collide with the nkv.MicroService -> <App> rename ("file already exists") and break generation.
+                if (dirName.Equals("bin", StringComparison.OrdinalIgnoreCase) || dirName.Equals("obj", StringComparison.OrdinalIgnoreCase))
+                    continue;
                 string destinationDirPath = Path.Combine(destinationPath, dirName);
                 CloneFolderStructure(dirPath, destinationDirPath);
             }
