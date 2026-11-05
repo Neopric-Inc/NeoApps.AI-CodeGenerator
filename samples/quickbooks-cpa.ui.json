@@ -1,0 +1,1673 @@
+{
+  "appName": "QuickBooks AI - CPA Document Intelligence Platform",
+  "tagline": "Intake → Analyze → Workflow → Audit",
+  "theme": {
+    "primary": "#059669",
+    "secondary": "#1e40af",
+    "accent": "#dc2626",
+    "background": "#f8fafc",
+    "surface": "#ffffff"
+  },
+  "menu": [
+    {
+      "group": "Dashboard",
+      "items": [
+        "source_documents",
+        "workflow_instances",
+        "workflow_tasks",
+        "document_requests",
+        "invoices",
+        "bills",
+        "bank_accounts",
+        "audit_engagements",
+        "cra_gst_hst_returns",
+        "agent_workflow_executions"
+      ]
+    },
+    {
+      "group": "Intake & Documents",
+      "items": [
+        "intake_channels",
+        "source_documents",
+        "document_classifications",
+        "extracted_fields",
+        "extraction_templates",
+        "document_parsing_jobs"
+      ]
+    },
+    {
+      "group": "Workflows",
+      "items": [
+        "workflow_definitions",
+        "workflow_instances",
+        "workflow_tasks",
+        "task_assignments"
+      ]
+    },
+    {
+      "group": "Client Portal",
+      "items": [
+        "client_portals",
+        "portal_users",
+        "document_requests",
+        "request_items",
+        "client_notifications"
+      ]
+    },
+    {
+      "group": "Banking",
+      "items": [
+        "bank_accounts",
+        "bank_transactions",
+        "bank_statements",
+        "statement_transactions",
+        "transfers",
+        "deposits"
+      ]
+    },
+    {
+      "group": "Sales",
+      "items": [
+        "customers",
+        "customer_contacts",
+        "invoices",
+        "invoice_lines",
+        "estimates",
+        "estimate_lines",
+        "credit_memos",
+        "credit_memo_lines",
+        "payments",
+        "payment_applications"
+      ]
+    },
+    {
+      "group": "Expenses",
+      "items": [
+        "vendors",
+        "vendor_contacts",
+        "bills",
+        "bill_lines",
+        "purchase_orders",
+        "purchase_order_lines",
+        "vendor_credits"
+      ]
+    },
+    {
+      "group": "Accounting",
+      "items": [
+        "gl_accounts",
+        "gl_entries",
+        "journal_lines",
+        "payment_terms",
+        "payment_methods",
+        "class_codes",
+        "geo_locations",
+        "currencies",
+        "exchange_rates",
+        "recurring_templates",
+        "recurring_template_lines"
+      ]
+    },
+    {
+      "group": "Products & Services",
+      "items": [
+        "products_services",
+        "item_bundles"
+      ]
+    },
+    {
+      "group": "Projects",
+      "items": [
+        "client_engagements",
+        "time_entries",
+        "employees"
+      ]
+    },
+    {
+      "group": "Tax & Compliance (CRA)",
+      "items": [
+        "tax_codes",
+        "tax_rates",
+        "tax_filings",
+        "cra_business_profiles",
+        "cra_gst_hst_returns",
+        "cra_gst_hst_line_details",
+        "cra_payroll_remittances",
+        "cra_corp_tax_returns",
+        "cra_notices_assessments"
+      ]
+    },
+    {
+      "group": "Audit",
+      "items": [
+        "audit_engagements",
+        "audit_workpapers",
+        "audit_programs",
+        "audit_procedures",
+        "procedure_executions",
+        "sampling_plans",
+        "sample_items",
+        "analytical_procedures",
+        "representation_letters"
+      ]
+    },
+    {
+      "group": "AI Agents",
+      "items": [
+        "agent_definitions",
+        "agent_conversations",
+        "agent_messages",
+        "agent_workflows",
+        "agent_workflow_executions",
+        "agent_human_escalations"
+      ]
+    },
+    {
+      "group": "Administration",
+      "items": [
+        "attachments",
+        "budgets",
+        "budget_lines",
+        "fixed_assets",
+        "asset_depreciation",
+        "document_embeddings",
+        "knowledge_base_embeddings"
+      ]
+    }
+  ],
+  "dashboard": {
+    "cards": [
+      {
+        "table": "source_documents",
+        "label": "Documents Processing",
+        "filters": {
+          "status": [
+            "uploaded",
+            "processing",
+            "classifying",
+            "extracting"
+          ]
+        }
+      },
+      {
+        "table": "workflow_instances",
+        "label": "Active Workflows",
+        "filters": {
+          "status": "running"
+        }
+      },
+      {
+        "table": "workflow_tasks",
+        "label": "My Pending Tasks",
+        "filters": {
+          "status": [
+            "pending",
+            "assigned",
+            "in_progress"
+          ]
+        }
+      },
+      {
+        "table": "document_requests",
+        "label": "Outstanding PBC Requests",
+        "filters": {
+          "status": [
+            "sent",
+            "in_progress"
+          ]
+        }
+      },
+      {
+        "table": "invoices",
+        "label": "AR Balance",
+        "sum": "balance_due",
+        "filters": {
+          "status": [
+            "sent",
+            "partial",
+            "overdue"
+          ]
+        }
+      },
+      {
+        "table": "bills",
+        "label": "AP Balance",
+        "sum": "balance_due",
+        "filters": {
+          "status": [
+            "open",
+            "partial"
+          ]
+        }
+      },
+      {
+        "table": "bank_accounts",
+        "label": "Total Cash",
+        "sum": "current_balance"
+      },
+      {
+        "table": "audit_engagements",
+        "label": "Active Engagements",
+        "filters": {
+          "status": [
+            "planning",
+            "fieldwork",
+            "review"
+          ]
+        }
+      },
+      {
+        "table": "cra_gst_hst_returns",
+        "label": "Upcoming CRA Deadlines",
+        "filters": {
+          "filing_status": [
+            "draft",
+            "ready_to_file"
+          ]
+        }
+      },
+      {
+        "table": "agent_workflow_executions",
+        "label": "AI Workflows Running",
+        "filters": {
+          "status": "running"
+        }
+      }
+    ],
+    "recentTable": "documents"
+  },
+  "roles": {
+    "Platform Admin": {
+      "*": "cru"
+    },
+    "Firm Admin": {
+      "*": "cru",
+      "workflow_definitions": "cru",
+      "extraction_templates": "cru",
+      "agent_definitions": "cru",
+      "client_portals": "cru"
+    },
+    "Partner": {
+      "*": "r",
+      "audit_engagements": "cru",
+      "audit_workpapers": "cru",
+      "procedure_executions": "cru",
+      "representation_letters": "cru",
+      "analytical_procedures": "cru",
+      "sampling_plans": "cru",
+      "cra_gst_hst_returns": "cru",
+      "cra_corp_tax_returns": "cru",
+      "agent_workflows": "cru"
+    },
+    "Manager": {
+      "*": "r",
+      "audit_engagements": "cru",
+      "audit_workpapers": "cru",
+      "procedure_executions": "cru",
+      "sampling_plans": "cru",
+      "analytical_procedures": "cru",
+      "workflow_instances": "cru",
+      "workflow_tasks": "cru",
+      "document_requests": "cru",
+      "gl_entries": "cru"
+    },
+    "Senior": {
+      "*": "r",
+      "audit_workpapers": "cru",
+      "procedure_executions": "cru",
+      "sampling_plans": "cru",
+      "analytical_procedures": "cru",
+      "workflow_tasks": "cru",
+      "source_documents": "cru",
+      "extracted_fields": "cru",
+      "bank_transactions": "cru",
+      "invoices": "cru",
+      "bills": "cru"
+    },
+    "Staff": {
+      "*": "r",
+      "source_documents": "cru",
+      "extracted_fields": "cru",
+      "workflow_tasks": "cru",
+      "bank_transactions": "cru",
+      "invoices": "cru",
+      "invoice_lines": "cru",
+      "bills": "cru",
+      "bill_lines": "cru",
+      "time_entries": "cru",
+      "payments": "cru"
+    },
+    "Tax Specialist": {
+      "*": "r",
+      "cra_business_profiles": "cru",
+      "cra_gst_hst_returns": "cru",
+      "cra_gst_hst_line_details": "cru",
+      "cra_payroll_remittances": "cru",
+      "cra_corp_tax_returns": "cru",
+      "cra_notices_assessments": "cru",
+      "tax_codes": "cru",
+      "tax_rates": "cru",
+      "tax_filings": "cru",
+      "source_documents": "cru",
+      "extracted_fields": "cru"
+    },
+    "Client Portal User": {
+      "source_documents": "cr",
+      "document_requests": "r",
+      "request_items": "cr",
+      "client_notifications": "r",
+      "invoices": "r",
+      "payments": "r",
+      "bank_statements": "r"
+    },
+    "Read-Only Auditor": {
+      "*": "r"
+    }
+  },
+  "tables": {
+    "source_documents": {
+      "icon": "file_text",
+      "displayField": "file_name",
+      "listColumns": [
+        "file_name",
+        "source_type",
+        "status",
+        "uploaded_at"
+      ],
+      "fields": {
+        "status": {
+          "widget": "select",
+          "options": [
+            "uploaded",
+            "virus_scanning",
+            "ocr_processing",
+            "classifying",
+            "extracting",
+            "validating",
+            "completed",
+            "failed",
+            "archived"
+          ],
+          "colors": {
+            "uploaded": "default",
+            "processing": "info",
+            "completed": "success",
+            "failed": "error",
+            "archived": "warning"
+          }
+        },
+        "source_type": {
+          "widget": "select",
+          "options": [
+            "email_attachment",
+            "dropbox_upload",
+            "portal_upload",
+            "mobile_photo",
+            "api",
+            "scanner"
+          ]
+        }
+      },
+      "children": [
+        "document_versions",
+        "document_classifications",
+        "extracted_fields",
+        "document_parsing_jobs"
+      ]
+    },
+    "document_classifications": {
+      "icon": "tag",
+      "displayField": "document_type",
+      "listColumns": [
+        "document_type",
+        "sub_type",
+        "confidence",
+        "is_manual_override",
+        "classified_at"
+      ],
+      "fields": {
+        "document_type": {
+          "widget": "select",
+          "options": [
+            "invoice",
+            "receipt",
+            "bank_statement",
+            "contract",
+            "lease",
+            "payroll",
+            "tax_notice",
+            "board_minutes",
+            "legal",
+            "other"
+          ]
+        },
+        "confidence": {
+          "widget": "progress",
+          "format": "percent"
+        }
+      }
+    },
+    "extracted_fields": {
+      "icon": "database",
+      "displayField": "field_name",
+      "listColumns": [
+        "field_name",
+        "field_value",
+        "field_type",
+        "confidence",
+        "validation_status"
+      ],
+      "fields": {
+        "validation_status": {
+          "widget": "select",
+          "options": [
+            "pending",
+            "passed",
+            "failed",
+            "warning"
+          ],
+          "colors": {
+            "pending": "warning",
+            "passed": "success",
+            "failed": "error",
+            "warning": "warning"
+          }
+        }
+      }
+    },
+    "extraction_templates": {
+      "icon": "template",
+      "displayField": "template_name",
+      "listColumns": [
+        "template_name",
+        "document_type",
+        "sub_type",
+        "version",
+        "is_system",
+        "is_active"
+      ]
+    },
+    "document_parsing_jobs": {
+      "icon": "activity",
+      "displayField": "job_type",
+      "listColumns": [
+        "job_type",
+        "status",
+        "provider",
+        "pages_processed",
+        "fields_extracted",
+        "started_at",
+        "completed_at"
+      ],
+      "fields": {
+        "status": {
+          "widget": "select",
+          "options": [
+            "queued",
+            "processing",
+            "completed",
+            "failed",
+            "retry"
+          ],
+          "colors": {
+            "queued": "default",
+            "processing": "info",
+            "completed": "success",
+            "failed": "error"
+          }
+        }
+      }
+    },
+    "intake_channels": {
+      "icon": "mail",
+      "displayField": "channel_name",
+      "listColumns": [
+        "channel_name",
+        "channel_type",
+        "is_active",
+        "last_polled_at",
+        "last_error"
+      ],
+      "fields": {
+        "channel_type": {
+          "widget": "select",
+          "options": [
+            "email",
+            "dropbox",
+            "portal",
+            "mobile",
+            "api",
+            "scanner"
+          ]
+        }
+      }
+    },
+    "workflow_definitions": {
+      "icon": "git_branch",
+      "displayField": "name",
+      "listColumns": [
+        "name",
+        "category",
+        "version",
+        "is_template",
+        "is_active"
+      ],
+      "fields": {
+        "category": {
+          "widget": "select",
+          "options": [
+            "pbc",
+            "banking",
+            "invoicing",
+            "audit",
+            "tax",
+            "onboarding",
+            "close"
+          ]
+        }
+      }
+    },
+    "workflow_instances": {
+      "icon": "play",
+      "displayField": "name",
+      "listColumns": [
+        "name",
+        "current_state",
+        "status",
+        "started_at"
+      ],
+      "fields": {
+        "status": {
+          "widget": "select",
+          "options": [
+            "running",
+            "completed",
+            "failed",
+            "cancelled",
+            "suspended"
+          ],
+          "colors": {
+            "running": "info",
+            "completed": "success",
+            "failed": "error",
+            "cancelled": "warning",
+            "suspended": "warning"
+          }
+        }
+      },
+      "children": [
+        "workflow_tasks"
+      ]
+    },
+    "workflow_tasks": {
+      "icon": "check_square",
+      "displayField": "task_name",
+      "listColumns": [
+        "task_name",
+        "task_type",
+        "status",
+        "priority",
+        "due_at",
+        "assigned_to_user_id",
+        "assigned_to_role"
+      ],
+      "fields": {
+        "task_type": {
+          "widget": "select",
+          "options": [
+            "human",
+            "service",
+            "script",
+            "decision",
+            "timer"
+          ]
+        },
+        "status": {
+          "widget": "select",
+          "options": [
+            "pending",
+            "assigned",
+            "in_progress",
+            "completed",
+            "failed",
+            "skipped",
+            "cancelled"
+          ],
+          "colors": {
+            "pending": "default",
+            "assigned": "info",
+            "in_progress": "warning",
+            "completed": "success",
+            "failed": "error"
+          }
+        }
+      },
+      "children": [
+        "task_assignments",
+        "task_comments"
+      ]
+    },
+    "task_assignments": {
+      "icon": "user_plus",
+      "displayField": "user_id",
+      "listColumns": [
+        "user_id",
+        "role",
+        "assigned_at",
+        "acknowledged_at",
+        "is_primary"
+      ]
+    },
+    "client_portals": {
+      "icon": "globe",
+      "displayField": "subdomain",
+      "listColumns": [
+        "subdomain",
+        "custom_domain",
+        "is_active"
+      ]
+    },
+    "portal_users": {
+      "icon": "users",
+      "displayField": "email",
+      "listColumns": [
+        "email",
+        "first_name",
+        "last_name",
+        "role",
+        "status",
+        "last_login_at"
+      ],
+      "fields": {
+        "role": {
+          "widget": "select",
+          "options": [
+            "owner",
+            "controller",
+            "ap_clerk",
+            "viewer",
+            "custom"
+          ]
+        },
+        "status": {
+          "widget": "select",
+          "options": [
+            "invited",
+            "active",
+            "suspended",
+            "deactivated"
+          ],
+          "colors": {
+            "invited": "warning",
+            "active": "success",
+            "suspended": "warning",
+            "deactivated": "error"
+          }
+        }
+      }
+    },
+    "document_requests": {
+      "icon": "folder_plus",
+      "displayField": "request_name",
+      "listColumns": [
+        "request_name",
+        "status",
+        "due_date",
+        "sent_at",
+        "completed_at"
+      ],
+      "fields": {
+        "status": {
+          "widget": "select",
+          "options": [
+            "draft",
+            "sent",
+            "in_progress",
+            "completed",
+            "cancelled"
+          ],
+          "colors": {
+            "draft": "default",
+            "sent": "info",
+            "in_progress": "warning",
+            "completed": "success",
+            "cancelled": "error"
+          }
+        }
+      },
+      "children": [
+        "request_items"
+      ]
+    },
+    "request_items": {
+      "icon": "file_plus",
+      "displayField": "item_name",
+      "listColumns": [
+        "item_name",
+        "document_type",
+        "is_required",
+        "status",
+        "uploaded_document_id"
+      ],
+      "fields": {
+        "status": {
+          "widget": "select",
+          "options": [
+            "pending",
+            "uploaded",
+            "reviewed",
+            "accepted",
+            "rejected",
+            "more_info"
+          ],
+          "colors": {
+            "pending": "warning",
+            "uploaded": "info",
+            "reviewed": "info",
+            "accepted": "success",
+            "rejected": "error",
+            "more_info": "warning"
+          }
+        }
+      }
+    },
+    "bank_accounts": {
+      "icon": "credit_card",
+      "displayField": "name",
+      "listColumns": [
+        "name",
+        "account_type",
+        "institution_name",
+        "account_number_last4",
+        "current_balance",
+        "last_reconciled_date"
+      ],
+      "fields": {
+        "account_type": {
+          "widget": "select",
+          "options": [
+            "checking",
+            "savings",
+            "credit_card",
+            "money_market",
+            "loan",
+            "other"
+          ]
+        }
+      },
+      "children": [
+        "bank_transactions",
+        "bank_statements"
+      ]
+    },
+    "bank_transactions": {
+      "icon": "arrow_left_right",
+      "displayField": "description",
+      "listColumns": [
+        "transaction_date",
+        "amount",
+        "transaction_type",
+        "description",
+        "payee",
+        "is_reconciled",
+        "matched_transaction_id"
+      ],
+      "fields": {
+        "transaction_type": {
+          "widget": "select",
+          "options": [
+            "debit",
+            "credit"
+          ]
+        }
+      }
+    },
+    "bank_statements": {
+      "icon": "file_text",
+      "displayField": "file_name",
+      "listColumns": [
+        "file_name",
+        "statement_date_from",
+        "statement_date_to",
+        "opening_balance",
+        "closing_balance",
+        "status",
+        "uploaded_at"
+      ],
+      "fields": {
+        "status": {
+          "widget": "select",
+          "options": [
+            "uploaded",
+            "processing",
+            "completed",
+            "failed",
+            "error"
+          ],
+          "colors": {
+            "uploaded": "default",
+            "processing": "info",
+            "completed": "success",
+            "failed": "error",
+            "error": "error"
+          }
+        }
+      },
+      "children": [
+        "statement_transactions"
+      ]
+    },
+    "statement_transactions": {
+      "icon": "list",
+      "displayField": "description",
+      "listColumns": [
+        "transaction_date",
+        "amount",
+        "transaction_type",
+        "description",
+        "payee",
+        "is_matched",
+        "match_confidence",
+        "needs_review"
+      ]
+    },
+    "invoices": {
+      "icon": "file_text",
+      "displayField": "invoice_number",
+      "listColumns": [
+        "invoice_number",
+        "customer_id",
+        "invoice_date",
+        "due_date",
+        "status",
+        "total_amount",
+        "balance_due"
+      ],
+      "fields": {
+        "status": {
+          "widget": "select",
+          "options": [
+            "draft",
+            "pending",
+            "sent",
+            "paid",
+            "partial",
+            "overdue",
+            "void"
+          ],
+          "colors": {
+            "draft": "default",
+            "pending": "info",
+            "sent": "info",
+            "paid": "success",
+            "partial": "warning",
+            "overdue": "error",
+            "void": "default"
+          }
+        }
+      },
+      "children": [
+        "invoice_lines"
+      ]
+    },
+    "bills": {
+      "icon": "file_text",
+      "displayField": "bill_number",
+      "listColumns": [
+        "bill_number",
+        "vendor_id",
+        "bill_date",
+        "due_date",
+        "status",
+        "total_amount",
+        "balance_due"
+      ],
+      "fields": {
+        "status": {
+          "widget": "select",
+          "options": [
+            "open",
+            "paid",
+            "partial",
+            "void"
+          ],
+          "colors": {
+            "open": "warning",
+            "paid": "success",
+            "partial": "warning",
+            "void": "default"
+          }
+        }
+      },
+      "children": [
+        "bill_lines"
+      ]
+    },
+    "audit_engagements": {
+      "icon": "briefcase",
+      "displayField": "client_name",
+      "listColumns": [
+        "client_name",
+        "fiscal_year_end",
+        "engagement_type",
+        "status",
+        "partner_id",
+        "planning_materiality",
+        "started_at"
+      ],
+      "fields": {
+        "engagement_type": {
+          "widget": "select",
+          "options": [
+            "audit",
+            "review",
+            "compilation",
+            "agreed_upon"
+          ]
+        },
+        "status": {
+          "widget": "select",
+          "options": [
+            "planning",
+            "fieldwork",
+            "review",
+            "completed",
+            "archived"
+          ],
+          "colors": {
+            "planning": "info",
+            "fieldwork": "warning",
+            "review": "warning",
+            "completed": "success",
+            "archived": "default"
+          }
+        }
+      },
+      "children": [
+        "audit_workpapers",
+        "audit_procedures",
+        "sampling_plans",
+        "analytical_procedures",
+        "representation_letters"
+      ]
+    },
+    "audit_workpapers": {
+      "icon": "file_text",
+      "displayField": "reference",
+      "listColumns": [
+        "reference",
+        "title",
+        "status",
+        "preparer_id",
+        "preparer_date",
+        "reviewer_id",
+        "reviewer_date"
+      ],
+      "fields": {
+        "status": {
+          "widget": "select",
+          "options": [
+            "draft",
+            "in_review",
+            "approved",
+            "rejected"
+          ],
+          "colors": {
+            "draft": "default",
+            "in_review": "warning",
+            "approved": "success",
+            "rejected": "error"
+          }
+        }
+      }
+    },
+    "audit_procedures": {
+      "icon": "clipboard_list",
+      "displayField": "title",
+      "listColumns": [
+        "step_number",
+        "title",
+        "procedure_type",
+        "estimated_hours"
+      ],
+      "fields": {
+        "procedure_type": {
+          "widget": "select",
+          "options": [
+            "inspection",
+            "observation",
+            "inquiry",
+            "confirmation",
+            "recalculation",
+            "analytical"
+          ]
+        }
+      }
+    },
+    "procedure_executions": {
+      "icon": "check",
+      "displayField": "conclusion",
+      "listColumns": [
+        "procedure_id",
+        "tester_id",
+        "execution_date",
+        "conclusion",
+        "hours_spent",
+        "reviewer_id"
+      ],
+      "fields": {
+        "conclusion": {
+          "widget": "select",
+          "options": [
+            "passed",
+            "failed",
+            "exception",
+            "n_a"
+          ],
+          "colors": {
+            "passed": "success",
+            "failed": "error",
+            "exception": "warning",
+            "n_a": "default"
+          }
+        }
+      }
+    },
+    "cra_gst_hst_returns": {
+      "icon": "file_text",
+      "displayField": "return_id",
+      "listColumns": [
+        "period_start",
+        "period_end",
+        "due_date",
+        "filing_status",
+        "net_tax",
+        "amount_owing",
+        "filing_date"
+      ],
+      "fields": {
+        "filing_status": {
+          "widget": "select",
+          "options": [
+            "draft",
+            "ready_to_file",
+            "filed",
+            "assessed",
+            "reassessed"
+          ],
+          "colors": {
+            "draft": "default",
+            "ready_to_file": "info",
+            "filed": "success",
+            "assessed": "warning",
+            "reassessed": "warning"
+          }
+        }
+      },
+      "children": [
+        "cra_gst_hst_line_details"
+      ]
+    },
+    "cra_payroll_remittances": {
+      "icon": "calculator",
+      "displayField": "remittance_id",
+      "listColumns": [
+        "period_start",
+        "period_end",
+        "due_date",
+        "total_remittance",
+        "status",
+        "filing_date"
+      ]
+    },
+    "agent_definitions": {
+      "icon": "bot",
+      "displayField": "name",
+      "listColumns": [
+        "name",
+        "agent_type",
+        "is_system",
+        "is_active"
+      ],
+      "fields": {
+        "agent_type": {
+          "widget": "select",
+          "options": [
+            "intake",
+            "extraction",
+            "workflow",
+            "audit",
+            "tax",
+            "client_comm",
+            "review",
+            "supervisor"
+          ]
+        }
+      }
+    },
+    "agent_conversations": {
+      "icon": "message_square",
+      "displayField": "title",
+      "listColumns": [
+        "title",
+        "agent_definition_id",
+        "status",
+        "started_at"
+      ],
+      "fields": {
+        "status": {
+          "widget": "select",
+          "options": [
+            "active",
+            "completed",
+            "archived"
+          ]
+        }
+      },
+      "children": [
+        "agent_messages"
+      ]
+    },
+    "agent_workflows": {
+      "icon": "git_branch",
+      "displayField": "name",
+      "listColumns": [
+        "name",
+        "trigger_type",
+        "is_active"
+      ]
+    },
+    "agent_workflow_executions": {
+      "icon": "play",
+      "displayField": "workflow_id",
+      "listColumns": [
+        "workflow_id",
+        "status",
+        "current_agent_index",
+        "started_at",
+        "completed_at"
+      ],
+      "fields": {
+        "status": {
+          "widget": "select",
+          "options": [
+            "running",
+            "completed",
+            "failed",
+            "paused"
+          ],
+          "colors": {
+            "running": "info",
+            "completed": "success",
+            "failed": "error",
+            "paused": "warning"
+          }
+        }
+      }
+    },
+    "agent_human_escalations": {
+      "icon": "alert_triangle",
+      "displayField": "reason",
+      "listColumns": [
+        "reason",
+        "status",
+        "assigned_to_user_id",
+        "createdAt"
+      ],
+      "fields": {
+        "reason": {
+          "widget": "select",
+          "options": [
+            "low_confidence",
+            "policy_violation",
+            "approval_required",
+            "error"
+          ]
+        },
+        "status": {
+          "widget": "select",
+          "options": [
+            "pending",
+            "acknowledged",
+            "resolved",
+            "dismissed"
+          ],
+          "colors": {
+            "pending": "warning",
+            "acknowledged": "info",
+            "resolved": "success",
+            "dismissed": "default"
+          }
+        }
+      }
+    },
+    "gl_accounts": {
+      "icon": "book_open",
+      "displayField": "name",
+      "listColumns": [
+        "code",
+        "name",
+        "account_type",
+        "detail_type",
+        "current_balance",
+        "is_active"
+      ],
+      "fields": {
+        "account_type": {
+          "widget": "select",
+          "options": [
+            "asset",
+            "liability",
+            "equity",
+            "income",
+            "expense"
+          ]
+        }
+      }
+    },
+    "gl_entries": {
+      "icon": "journal",
+      "displayField": "entry_number",
+      "listColumns": [
+        "entry_number",
+        "entry_date",
+        "status",
+        "total_debit",
+        "total_credit",
+        "is_adjusting"
+      ],
+      "fields": {
+        "status": {
+          "widget": "select",
+          "options": [
+            "draft",
+            "posted",
+            "voided"
+          ],
+          "colors": {
+            "draft": "default",
+            "posted": "success",
+            "voided": "error"
+          }
+        }
+      },
+      "children": [
+        "journal_lines"
+      ]
+    },
+    "customers": {
+      "icon": "users",
+      "displayField": "display_name",
+      "listColumns": [
+        "display_name",
+        "company_name",
+        "email",
+        "phone",
+        "status",
+        "currency_id"
+      ],
+      "children": [
+        "customer_contacts",
+        "invoices",
+        "estimates"
+      ]
+    },
+    "vendors": {
+      "icon": "truck",
+      "displayField": "display_name",
+      "listColumns": [
+        "display_name",
+        "company_name",
+        "email",
+        "phone",
+        "status",
+        "is_1099_eligible"
+      ],
+      "children": [
+        "vendor_contacts",
+        "bills",
+        "purchase_orders"
+      ]
+    },
+    "products_services": {
+      "icon": "package",
+      "displayField": "name",
+      "listColumns": [
+        "name",
+        "item_type",
+        "sku",
+        "unit_price",
+        "cost",
+        "is_active",
+        "track_qty_on_hand"
+      ],
+      "fields": {
+        "item_type": {
+          "widget": "select",
+          "options": [
+            "service",
+            "inventory",
+            "non_inventory",
+            "bundle"
+          ]
+        }
+      }
+    },
+    "client_engagements": {
+      "icon": "folder",
+      "displayField": "name",
+      "listColumns": [
+        "name",
+        "customer_id",
+        "status",
+        "billing_type",
+        "budget_amount",
+        "actual_cost"
+      ],
+      "fields": {
+        "status": {
+          "widget": "select",
+          "options": [
+            "planning",
+            "in_progress",
+            "completed",
+            "on_hold",
+            "cancelled"
+          ]
+        },
+        "billing_type": {
+          "widget": "select",
+          "options": [
+            "fixed",
+            "time_material",
+            "non_billable"
+          ]
+        }
+      },
+      "children": [
+        "time_entries"
+      ]
+    },
+    "time_entries": {
+      "icon": "clock",
+      "displayField": "entry_date",
+      "listColumns": [
+        "entry_date",
+        "client_engagement_id",
+        "employee_id",
+        "hours",
+        "rate",
+        "billable",
+        "status"
+      ],
+      "fields": {
+        "status": {
+          "widget": "select",
+          "options": [
+            "draft",
+            "submitted",
+            "approved",
+            "billed"
+          ]
+        }
+      }
+    },
+    "recurring_templates": {
+      "icon": "repeat",
+      "displayField": "name",
+      "listColumns": [
+        "name",
+        "template_type",
+        "frequency",
+        "next_date",
+        "is_active"
+      ],
+      "fields": {
+        "template_type": {
+          "widget": "select",
+          "options": [
+            "invoice",
+            "bill",
+            "journal_entry",
+            "check",
+            "expense",
+            "credit_card_charge"
+          ]
+        },
+        "frequency": {
+          "widget": "select",
+          "options": [
+            "daily",
+            "weekly",
+            "monthly",
+            "quarterly",
+            "yearly",
+            "none"
+          ]
+        }
+      },
+      "children": [
+        "recurring_template_lines"
+      ]
+    },
+    "attachments": {
+      "icon": "paperclip",
+      "displayField": "file_name",
+      "listColumns": [
+        "file_name",
+        "entity_type",
+        "entity_id",
+        "file_size",
+        "mime_type",
+        "uploaded_at"
+      ]
+    },
+    "budgets": {
+      "icon": "target",
+      "displayField": "name",
+      "listColumns": [
+        "name",
+        "fiscal_year",
+        "interval_type",
+        "is_active"
+      ],
+      "children": [
+        "budget_lines"
+      ]
+    },
+    "fixed_assets": {
+      "icon": "building",
+      "displayField": "name",
+      "listColumns": [
+        "name",
+        "purchase_date",
+        "purchase_cost",
+        "useful_life_months",
+        "depreciation_method",
+        "is_active"
+      ],
+      "fields": {
+        "depreciation_method": {
+          "widget": "select",
+          "options": [
+            "straight_line",
+            "declining_balance",
+            "sum_of_years"
+          ]
+        }
+      },
+      "children": [
+        "asset_depreciation"
+      ]
+    },
+    "cra_business_profiles": {
+      "icon": "building_2",
+      "displayField": "business_number",
+      "listColumns": [
+        "business_number",
+        "legal_name",
+        "operating_name",
+        "filing_frequency",
+        "is_active"
+      ]
+    },
+    "payment_terms": {
+      "icon": "calendar",
+      "displayField": "name",
+      "listColumns": [
+        "name",
+        "days_due",
+        "discount_percent",
+        "discount_days"
+      ]
+    },
+    "class_codes": {
+      "icon": "tag",
+      "displayField": "name",
+      "listColumns": [
+        "name",
+        "description",
+        "is_active",
+        "parent_class_code_id"
+      ]
+    },
+    "geo_locations": {
+      "icon": "map_pin",
+      "displayField": "name",
+      "listColumns": [
+        "name",
+        "description",
+        "is_active",
+        "parent_geo_location_id"
+      ]
+    }
+  },
+  "ai": {
+    "enabled": true,
+    "model": "claude-sonnet-5-5",
+    "assistantName": "QuickBooks AI Accountant",
+    "instructions": "You are the AI accountant for a CPA Document Intelligence Platform. You help CPA firms manage document intake, workflow automation, audit engagements, and Canadian tax compliance (CRA). You have access to specialized agents for intake, extraction, workflow, audit, tax, client communication, and review. You can orchestrate multi-agent workflows for complex processes like bank reconciliation, PBC collection, tax return preparation, and audit fieldwork. Always cite sources from documents and records. Respect user permissions and data scoping. Ask clarifying questions when ambiguous.",
+    "documentTables": [
+      "source_documents",
+      "audit_workpapers",
+      "attachments"
+    ],
+    "tools": [
+      "records",
+      "documents",
+      "workflows",
+      "cra_filing",
+      "audit_procedures"
+    ],
+    "suggestions": [
+      "Upload January bank statements for all clients",
+      "Start PBC collection for Acme Corp FY2024 audit",
+      "Prepare Q1 2025 GST/HST returns for all clients",
+      "Run bank reconciliation for Chase checking accounts",
+      "Generate audit planning memo for new engagement",
+      "Check for overdue CRA payroll remittances",
+      "Create recurring invoice templates for retainer clients",
+      "Analyze flux variances for month-end close"
+    ],
+    "workflows": [
+      {
+        "id": "bank_reconciliation",
+        "label": "Bank Reconciliation Wizard",
+        "description": "Upload statements → OCR → Auto-match → Review exceptions → Complete reconciliation",
+        "targets": [
+          "bank_statements",
+          "statement_transactions",
+          "bank_transactions"
+        ],
+        "tools": [
+          "records",
+          "documents"
+        ],
+        "instructions": "1. User uploads bank statement PDF. 2. Intake agent processes via OCR. 3. Extraction agent parses transactions. 4. Workflow agent matches to existing transactions. 5. Human reviews exceptions. 6. Post reconciliation."
+      },
+      {
+        "id": "pbc_collection",
+        "label": "PBC Request & Collection",
+        "description": "Create request list → Send to client portal → Track uploads → Review → Link to workpapers",
+        "targets": [
+          "document_requests",
+          "request_items",
+          "source_documents",
+          "audit_workpapers"
+        ],
+        "tools": [
+          "records",
+          "documents",
+          "workflows"
+        ],
+        "instructions": "1. Senior creates PBC request from audit program. 2. Client notified via portal. 3. Client uploads documents. 4. Staff reviews and links to workpapers. 5. Track completion status."
+      },
+      {
+        "id": "gst_hst_filing",
+        "label": "GST/HST Return Preparation",
+        "description": "Collect transactions → Calculate liability → Generate GSTR lines → Review → NETFILE",
+        "targets": [
+          "cra_gst_hst_returns",
+          "cra_gst_hst_line_details",
+          "gl_entries"
+        ],
+        "tools": [
+          "records",
+          "cra_filing"
+        ],
+        "instructions": "1. Tax agent pulls sales/purchase transactions for period. 2. Calculates GST/HST collected and ITCs. 3. Populates lines 101-113. 4. Senior reviews. 5. Files via NETFILE."
+      },
+      {
+        "id": "audit_fieldwork",
+        "label": "Audit Fieldwork Execution",
+        "description": "Select procedures → Assign to team → Execute → Document evidence → Review → Conclude",
+        "targets": [
+          "audit_procedures",
+          "procedure_executions",
+          "sampling_plans",
+          "sample_items",
+          "audit_workpapers"
+        ],
+        "tools": [
+          "records",
+          "audit_procedures"
+        ],
+        "instructions": "1. Manager assigns procedures from audit program. 2. Staff executes and documents evidence. 3. Sampling performed per plan. 4. Senior reviews. 5. Manager approves. 6. Partner signs off."
+      },
+      {
+        "id": "month_end_close",
+        "label": "Month-End Close Process",
+        "description": "Run recurring JEs → Reconcile accounts → Flux analysis → Review → Lock period",
+        "targets": [
+          "gl_entries",
+          "recurring_templates",
+          "bank_transactions",
+          "analytical_procedures"
+        ],
+        "tools": [
+          "records",
+          "workflows"
+        ],
+        "instructions": "1. Generate recurring journal entries. 2. Reconcile all bank accounts. 3. Run analytical procedures (flux). 4. Review variances. 5. Post adjusting entries. 6. Lock period."
+      },
+      {
+        "id": "invoice_processing",
+        "label": "Invoice Processing (3-Way Match)",
+        "description": "Receive invoice → Extract data → Match PO/Receipt → Approve → Schedule payment",
+        "targets": [
+          "source_documents",
+          "extracted_fields",
+          "purchase_orders",
+          "bills",
+          "bill_lines"
+        ],
+        "tools": [
+          "records",
+          "documents",
+          "workflows"
+        ],
+        "instructions": "1. Invoice received via intake. 2. OCR extracts header and line data. 3. Match to PO and receiving. 4. Route for approval. 5. Create bill. 6. Schedule payment."
+      }
+    ]
+  }
+}
