@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" 
+                  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+                  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+                  xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+                  id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:process id="Process_Bank_Reconciliation" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_1" name="Upload Bank Statement">
+      <bpmn:outgoing>Flow_1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:serviceTask id="Task_OCR" name="OCR Processing (Azure Form Recognizer)">
+      <bpmn:incoming>Flow_1</bpmn:incoming>
+      <bpmn:outgoing>Flow_2</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_Extract" name="Extract Transactions">
+      <bpmn:incoming>Flow_2</bpmn:incoming>
+      <bpmn:outgoing>Flow_3</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_AutoMatch" name="Auto-Match to Existing Transactions">
+      <bpmn:incoming>Flow_3</bpmn:incoming>
+      <bpmn:outgoing>Flow_4</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:userTask id="Task_ReviewExceptions" name="Review Unmatched Exceptions">
+      <bpmn:incoming>Flow_4</bpmn:incoming>
+      <bpmn:outgoing>Flow_5</bpmn:outgoing>
+      <bpmn:formKey>reconciliation_exception_form</bpmn:formKey>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="Gateway_ExceptionDecision" name="Exception Resolution">
+      <bpmn:incoming>Flow_5</bpmn:incoming>
+      <bpmn:outgoing>Flow_Resolved</bpmn:outgoing>
+      <bpmn:outgoing>Flow_CreateNew</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Adjust</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_Resolved" name="Matched" sourceRef="Gateway_ExceptionDecision" targetRef="Task_UpdateMatch">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${resolution == 'matched'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_CreateNew" name="Create New Transaction" sourceRef="Gateway_ExceptionDecision" targetRef="Task_CreateTransaction">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${resolution == 'create_new'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Adjust" name="Adjust Existing" sourceRef="Gateway_ExceptionDecision" targetRef="Task_AdjustTransaction">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${resolution == 'adjust'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:serviceTask id="Task_UpdateMatch" name="Update Match Status">
+      <bpmn:incoming>Flow_Resolved</bpmn:incoming>
+      <bpmn:outgoing>Flow_6</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:userTask id="Task_CreateTransaction" name="Create New Transaction">
+      <bpmn:incoming>Flow_CreateNew</bpmn:incoming>
+      <bpmn:outgoing>Flow_6</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Task_AdjustTransaction" name="Adjust Existing Transaction">
+      <bpmn:incoming>Flow_Adjust</bpmn:incoming>
+      <bpmn:outgoing>Flow_6</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:serviceTask id="Task_CompleteReconciliation" name="Post Reconciliation">
+      <bpmn:incoming>Flow_6</bpmn:incoming>
+      <bpmn:outgoing>Flow_7</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="EndEvent_1" name="Reconciliation Complete">
+      <bpmn:incoming>Flow_7</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+</bpmn:definitions>

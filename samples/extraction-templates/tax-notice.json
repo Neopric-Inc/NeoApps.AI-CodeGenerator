@@ -1,0 +1,53 @@
+{
+  "template_name": "CRA Tax Notice Extraction",
+  "document_type": "tax_notice",
+  "sub_type": "cra_assessment",
+  "version": 1,
+  "schema_json": {
+    "type": "object",
+    "properties": {
+      "notice_type": {"type": "string", "enum": ["notice_of_assessment", "notice_of_reassessment", "gst_hst_return", "payroll_remittance", "corp_tax_return", "other"]},
+      "business_number": {"type": "string", "pattern": "^\\d{9}[A-Z]{2}\\d{4}$"},
+      "tax_year": {"type": "integer"},
+      "period_start": {"type": "string", "format": "date"},
+      "period_end": {"type": "string", "format": "date"},
+      "date_issued": {"type": "string", "format": "date"},
+      "amount_owing": {"type": "number", "default": 0},
+      "amount_refund": {"type": "number", "default": 0},
+      "balance": {"type": "number", "default": 0},
+      "assessment_details": {
+        "type": "object",
+        "properties": {
+          "total_income": {"type": "number"},
+          "total_deductions": {"type": "number"},
+          "taxable_income": {"type": "number"},
+          "federal_tax": {"type": "number"},
+          "provincial_tax": {"type": "number"},
+          "total_tax": {"type": "number"},
+          "credits": {"type": "number"},
+          "installments_paid": {"type": "number"}
+        }
+      },
+      "gst_hst_details": {
+        "type": "object",
+        "properties": {
+          "total_sales": {"type": "number"},
+          "taxable_sales": {"type": "number"},
+          "gst_collected": {"type": "number"},
+          "hst_collected": {"type": "number"},
+          "itcs_claimed": {"type": "number"},
+          "net_tax": {"type": "number"}
+        }
+      }
+    },
+    "required": ["notice_type", "business_number", "tax_year", "date_issued"]
+  },
+  "validation_rules_json": {
+    "rules": [
+      {"field": "business_number", "rule": "valid_canadian_bn", "message": "Must be valid 15-character Canadian Business Number"},
+      {"field": "balance", "rule": "equals_owing_minus_refund", "message": "Balance must equal amount owing minus amount refund"}
+    ]
+  },
+  "is_system": true,
+  "is_active": true
+}
