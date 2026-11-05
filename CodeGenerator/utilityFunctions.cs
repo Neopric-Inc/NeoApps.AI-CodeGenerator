@@ -32,7 +32,7 @@ namespace HelloWorld
                 }
                 else
                 {
-                    jsType = "Unknown";
+                    jsType = "String";
                 }
             }
             catch (Exception ex)
@@ -40,7 +40,7 @@ namespace HelloWorld
                 Console.WriteLine("Error in GetJsAggregateType:");
                 Console.WriteLine(ex.ToString());
                 Program.errors_list.Add("Error in GetJsAggregateType: " + ex.ToString());
-                jsType = "Unknown"; // Return a fallback value in case of an error
+                jsType = "String"; // Return a fallback value in case of an error
             }
             return jsType;
         }
@@ -60,7 +60,8 @@ namespace HelloWorld
                 {
                     jsType = "Date";
                 }
-                else if (mysqlType == "CHAR" || mysqlType == "VARCHAR" || mysqlType == "TINYTEXT" || mysqlType == "TEXT" || mysqlType == "MEDIUMTEXT" || mysqlType == "LONGTEXT" || mysqlType == "ENUM" || mysqlType == "SET")
+                // JSON is serialized as a string by the API (C# getType falls back to string), so keep the TS side consistent.
+                else if (mysqlType == "CHAR" || mysqlType == "VARCHAR" || mysqlType == "TINYTEXT" || mysqlType == "TEXT" || mysqlType == "MEDIUMTEXT" || mysqlType == "LONGTEXT" || mysqlType == "ENUM" || mysqlType == "SET" || mysqlType == "JSON")
                 {
                     jsType = "String";
                 }
@@ -70,7 +71,8 @@ namespace HelloWorld
                 }
                 else
                 {
-                    jsType = "Unknown";
+                    // "Unknown" is emitted as a cast function (Unknown(x)) in generated TS and does not exist -> TS2304.
+                    jsType = "String";
                 }
             }
             catch (Exception ex)
@@ -78,7 +80,7 @@ namespace HelloWorld
                 Console.WriteLine("Error in GetJSType:");
                 Console.WriteLine(ex.ToString());
                 Program.errors_list.Add("Error in GetJSType: " + ex.ToString());
-                jsType = "Unknown"; // Return a fallback value in case of an error
+                jsType = "String"; // Return a fallback value in case of an error
             }
             return jsType;
         }
