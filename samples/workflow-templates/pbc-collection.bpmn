@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" 
+                  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+                  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+                  xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+                  id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:process id="Process_PBC_Collection" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_1" name="Create PBC Request">
+      <bpmn:outgoing>Flow_1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:userTask id="Task_CreateRequest" name="Senior Creates PBC Request List">
+      <bpmn:incoming>Flow_1</bpmn:incoming>
+      <bpmn:outgoing>Flow_2</bpmn:outgoing>
+      <bpmn:formKey>pbc_request_form</bpmn:formKey>
+    </bpmn:userTask>
+    <bpmn:serviceTask id="Task_NotifyClient" name="Notify Client via Portal">
+      <bpmn:incoming>Flow_2</bpmn:incoming>
+      <bpmn:outgoing>Flow_3</bpmn:outgoing>
+      <bpmn:scriptFormat>javascript</bpmn:scriptFormat>
+      <bpmn:script>sendPortalNotification(clientId, 'PBC Request Created', requestDetails)</bpmn:script>
+    </bpmn:serviceTask>
+    <bpmn:userTask id="Task_ClientUpload" name="Client Uploads Documents">
+      <bpmn:incoming>Flow_3</bpmn:incoming>
+      <bpmn:outgoing>Flow_4</bpmn:outgoing>
+      <bpmn:formKey>document_upload_form</bpmn:formKey>
+    </bpmn:userTask>
+    <bpmn:userTask id="Task_StaffReview" name="Staff Reviews Uploaded Documents">
+      <bpmn:incoming>Flow_4</bpmn:incoming>
+      <bpmn:outgoing>Flow_5</bpmn:outgoing>
+      <bpmn:formKey>document_review_form</bpmn:formKey>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="Gateway_ReviewDecision" name="Review Decision">
+      <bpmn:incoming>Flow_5</bpmn:incoming>
+      <bpmn:outgoing>Flow_Accepted</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Rejected</bpmn:outgoing>
+      <bpmn:outgoing>Flow_MoreInfo</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_Accepted" name="Accepted" sourceRef="Gateway_ReviewDecision" targetRef="Task_LinkWorkpaper">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${reviewStatus == 'accepted'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Rejected" name="Rejected" sourceRef="Gateway_ReviewDecision" targetRef="Task_NotifyClientRejected">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${reviewStatus == 'rejected'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_MoreInfo" name="More Info Needed" sourceRef="Gateway_ReviewDecision" targetRef="Task_RequestMoreInfo">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${reviewStatus == 'more_info'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:serviceTask id="Task_LinkWorkpaper" name="Link to Audit Workpaper">
+      <bpmn:incoming>Flow_Accepted</bpmn:incoming>
+      <bpmn:outgoing>Flow_6</bpmn:outgoing>
+      <bpmn:scriptFormat>javascript</bpmn:scriptFormat>
+      <bpmn:script>linkDocumentToWorkpaper(documentId, workpaperId)</bpmn:script>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_NotifyClientRejected" name="Notify Client - Document Rejected">
+      <bpmn:incoming>Flow_Rejected</bpmn:incoming>
+      <bpmn:outgoing>Flow_7</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_RequestMoreInfo" name="Request Additional Information">
+      <bpmn:incoming>Flow_MoreInfo</bpmn:incoming>
+      <bpmn:outgoing>Flow_8</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:userTask id="Task_ClientResponds" name="Client Provides Additional Info">
+      <bpmn:incoming>Flow_8</bpmn:incoming>
+      <bpmn:outgoing>Flow_4</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="EndEvent_1" name="PBC Item Complete">
+      <bpmn:incoming>Flow_6</bpmn:incoming>
+      <bpmn:incoming>Flow_7</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_PBC_Collection">
+      <bpmndi:BPMNShape id="StartEvent_1_di" bpmnElement="StartEvent_1" isMarkerVisible="true"><dc:Bounds x="100" y="100" width="36" height="36"/></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_CreateRequest_di" bpmnElement="Task_CreateRequest"><dc:Bounds x="180" y="80" width="200" height="80"/></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_NotifyClient_di" bpmnElement="Task_NotifyClient"><dc:Bounds x="450" y="80" width="200" height="80"/></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_ClientUpload_di" bpmnElement="Task_ClientUpload"><dc:Bounds x="720" y="80" width="200" height="80"/></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_StaffReview_di" bpmnElement="Task_StaffReview"><dc:Bounds x="990" y="80" width="200" height="80"/></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_ReviewDecision_di" bpmnElement="Gateway_ReviewDecision"><dc:Bounds x="1250" y="90" width="50" height="50"/></bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

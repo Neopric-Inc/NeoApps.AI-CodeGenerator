@@ -1,0 +1,51 @@
+{
+  "template_name": "Invoice Extraction",
+  "document_type": "invoice",
+  "sub_type": "sales_invoice",
+  "version": 1,
+  "schema_json": {
+    "type": "object",
+    "properties": {
+      "invoice_number": {"type": "string", "description": "Invoice number from document"},
+      "invoice_date": {"type": "string", "format": "date", "description": "Invoice date"},
+      "due_date": {"type": "string", "format": "date", "description": "Due date"},
+      "vendor_name": {"type": "string", "description": "Vendor/Supplier name"},
+      "vendor_address": {"type": "string", "description": "Vendor address"},
+      "vendor_tax_id": {"type": "string", "description": "Vendor tax ID/GST number"},
+      "customer_name": {"type": "string", "description": "Customer name"},
+      "customer_address": {"type": "string", "description": "Customer address"},
+      "line_items": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "description": {"type": "string"},
+            "quantity": {"type": "number"},
+            "unit_price": {"type": "number"},
+            "amount": {"type": "number"},
+            "tax_code": {"type": "string"},
+            "account_code": {"type": "string"}
+          },
+          "required": ["description", "quantity", "unit_price", "amount"]
+        }
+      },
+      "subtotal": {"type": "number", "description": "Subtotal before tax"},
+      "tax_amount": {"type": "number", "description": "Total tax amount"},
+      "total_amount": {"type": "number", "description": "Total amount due"},
+      "currency": {"type": "string", "enum": ["CAD", "USD"], "default": "CAD"},
+      "payment_terms": {"type": "string", "description": "Payment terms (e.g., Net 30)"},
+      "notes": {"type": "string", "description": "Additional notes"}
+    },
+    "required": ["invoice_number", "invoice_date", "vendor_name", "line_items", "total_amount"]
+  },
+  "validation_rules_json": {
+    "rules": [
+      {"field": "total_amount", "rule": "sum_of_line_items_plus_tax", "message": "Total must equal sum of line items plus tax"},
+      {"field": "invoice_date", "rule": "not_future", "message": "Invoice date cannot be in the future"},
+      {"field": "line_items", "rule": "at_least_one", "message": "At least one line item required"},
+      {"field": "vendor_tax_id", "rule": "canadian_bn_format", "message": "Must be valid Canadian Business Number format"}
+    ]
+  },
+  "is_system": true,
+  "is_active": true
+}

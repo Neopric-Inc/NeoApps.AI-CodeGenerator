@@ -1,0 +1,45 @@
+{
+  "template_name": "Contract Extraction",
+  "document_type": "contract",
+  "sub_type": "service_agreement",
+  "version": 1,
+  "schema_json": {
+    "type": "object",
+    "properties": {
+      "contract_number": {"type": "string"},
+      "contract_title": {"type": "string"},
+      "parties": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "party_name": {"type": "string"},
+            "party_role": {"type": "string", "enum": ["client", "vendor", "partner", "other"]},
+            "address": {"type": "string"},
+            "signatory": {"type": "string"},
+            "title": {"type": "string"}
+          },
+          "required": ["party_name", "party_role"]
+        }
+      },
+      "effective_date": {"type": "string", "format": "date"},
+      "expiration_date": {"type": "string", "format": "date"},
+      "auto_renewal": {"type": "boolean", "default": false},
+      "renewal_terms": {"type": "string"},
+      "payment_terms": {"type": "string"},
+      "total_value": {"type": "number"},
+      "currency": {"type": "string", "enum": ["CAD", "USD"], "default": "CAD"},
+      "key_terms": {"type": "string"},
+      "termination_clause": {"type": "string"},
+      "governing_law": {"type": "string", "default": "Ontario, Canada"}
+    },
+    "required": ["contract_number", "contract_title", "parties", "effective_date"]
+  },
+  "validation_rules_json": {
+    "rules": [
+      {"field": "expiration_date", "rule": "after_effective_date", "message": "Expiration date must be after effective date"}
+    ]
+  },
+  "is_system": true,
+  "is_active": true
+}
