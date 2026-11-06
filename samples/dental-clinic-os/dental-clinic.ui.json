@@ -1,0 +1,654 @@
+{
+  "appName": "Dental Clinic OS",
+  "tagline": "Patients, appointments, treatments and billing in one place",
+  "theme": {
+    "primary": "#0d9488",
+    "secondary": "#2563eb"
+  },
+  "menu": [
+    {
+      "group": "Schedule",
+      "items": [
+        "appointments"
+      ]
+    },
+    {
+      "group": "Patients",
+      "items": [
+        "patients",
+        "treatments"
+      ]
+    },
+    {
+      "group": "Team",
+      "items": [
+        "dentists"
+      ]
+    },
+    {
+      "group": "Billing",
+      "items": [
+        "invoices"
+      ]
+    },
+    {
+      "group": "Policies",
+      "items": [
+        "clinic_policies"
+      ]
+    }
+  ],
+  "dashboard": {
+    "cards": [
+      {
+        "table": "appointments",
+        "label": "Scheduled Appointments",
+        "where": {
+          "status": "scheduled"
+        }
+      },
+      {
+        "table": "patients",
+        "label": "Active Patients"
+      },
+      {
+        "table": "invoices",
+        "label": "Outstanding Balance",
+        "sum": "balance_due",
+        "where": {
+          "status": "sent"
+        },
+        "format": "currency",
+        "currencyCode": "USD"
+      },
+      {
+        "table": "treatments",
+        "label": "Planned Treatments",
+        "where": {
+          "status": "planned"
+        }
+      }
+    ],
+    "recentTable": "appointments"
+  },
+  "roles": {
+    "FrontDesk": {
+      "*": "r",
+      "patients": "cru",
+      "appointments": "cru",
+      "invoices": "cru",
+      "dentists": "r",
+      "treatments": "r",
+      "clinic_policies": "r"
+    },
+    "Dentist": {
+      "*": "r",
+      "patients": "r",
+      "appointments": "r",
+      "treatments": "cru",
+      "invoices": "r",
+      "dentists": "r",
+      "clinic_policies": "r"
+    },
+    "Owner": {
+      "*": "crud"
+    }
+  },
+  "tables": {
+    "patients": {
+      "icon": "users",
+      "description": "Patient records and contact information",
+      "displayField": "full_name",
+      "listColumns": [
+        "full_name",
+        "phone",
+        "email",
+        "date_of_birth",
+        "insurance_provider",
+        "status"
+      ],
+      "formFields": [
+        "first_name",
+        "last_name",
+        "email",
+        "phone",
+        "date_of_birth",
+        "address",
+        "emergency_contact_name",
+        "emergency_contact_phone",
+        "insurance_provider",
+        "insurance_member_id",
+        "insurance_group_number",
+        "notes",
+        "status"
+      ],
+      "children": [
+        "appointments",
+        "treatments",
+        "invoices"
+      ],
+      "fields": {
+        "status": {
+          "widget": "select",
+          "options": [
+            "active",
+            "inactive",
+            "archived"
+          ],
+          "colors": {
+            "active": "success",
+            "inactive": "warning",
+            "archived": "default"
+          }
+        },
+        "date_of_birth": {
+          "widget": "date"
+        },
+        "address": {
+          "widget": "textarea"
+        },
+        "notes": {
+          "widget": "textarea"
+        }
+      }
+    },
+    "dentists": {
+      "icon": "user-check",
+      "description": "Dentist profiles and schedules",
+      "displayField": "full_name",
+      "listColumns": [
+        "full_name",
+        "specialty",
+        "email",
+        "phone",
+        "license_number",
+        "hire_date",
+        "status"
+      ],
+      "formFields": [
+        "first_name",
+        "last_name",
+        "email",
+        "phone",
+        "specialty",
+        "license_number",
+        "hire_date",
+        "status"
+      ],
+      "children": [
+        "appointments",
+        "treatments"
+      ],
+      "fields": {
+        "specialty": {
+          "widget": "select",
+          "options": [
+            "General Dentistry",
+            "Orthodontics",
+            "Periodontics",
+            "Endodontics",
+            "Oral Surgery",
+            "Pediatric Dentistry",
+            "Prosthodontics"
+          ]
+        },
+        "status": {
+          "widget": "select",
+          "options": [
+            "active",
+            "on_leave",
+            "inactive"
+          ],
+          "colors": {
+            "active": "success",
+            "on_leave": "warning",
+            "inactive": "default"
+          }
+        },
+        "hire_date": {
+          "widget": "date"
+        }
+      }
+    },
+    "appointments": {
+      "icon": "calendar",
+      "description": "Appointment scheduling and management",
+      "displayField": "appointment_summary",
+      "defaultSort": "appointment_date|ASC",
+      "listColumns": [
+        "appointment_date",
+        "patient_id",
+        "dentist_id",
+        "duration_minutes",
+        "appointment_type",
+        "status"
+      ],
+      "formFields": [
+        "patient_id",
+        "dentist_id",
+        "appointment_date",
+        "duration_minutes",
+        "appointment_type",
+        "reason",
+        "notes",
+        "status"
+      ],
+      "children": [
+        "treatments",
+        "invoices"
+      ],
+      "fields": {
+        "appointment_date": {
+          "widget": "datetime"
+        },
+        "duration_minutes": {
+          "widget": "select",
+          "options": [
+            15,
+            30,
+            45,
+            60,
+            90,
+            120
+          ]
+        },
+        "appointment_type": {
+          "widget": "select",
+          "options": [
+            "checkup",
+            "cleaning",
+            "filling",
+            "crown",
+            "root_canal",
+            "extraction",
+            "consultation",
+            "emergency",
+            "follow_up",
+            "other"
+          ]
+        },
+        "status": {
+          "widget": "select",
+          "options": [
+            "scheduled",
+            "confirmed",
+            "in_progress",
+            "completed",
+            "cancelled",
+            "no_show"
+          ],
+          "colors": {
+            "scheduled": "info",
+            "confirmed": "success",
+            "in_progress": "warning",
+            "completed": "success",
+            "cancelled": "error",
+            "no_show": "error"
+          }
+        },
+        "reason": {
+          "widget": "textarea"
+        },
+        "notes": {
+          "widget": "textarea"
+        }
+      }
+    },
+    "treatments": {
+      "icon": "activity",
+      "description": "Clinical treatments and procedures",
+      "displayField": "treatment_name",
+      "defaultSort": "createdAt|DESC",
+      "listColumns": [
+        "treatment_name",
+        "treatment_code",
+        "patient_id",
+        "dentist_id",
+        "appointment_id",
+        "tooth_numbers",
+        "status",
+        "fee",
+        "patient_pay"
+      ],
+      "formFields": [
+        "appointment_id",
+        "patient_id",
+        "dentist_id",
+        "treatment_code",
+        "treatment_name",
+        "description",
+        "tooth_numbers",
+        "surface",
+        "status",
+        "fee",
+        "insurance_covered",
+        "patient_pay",
+        "started_at",
+        "completed_at",
+        "notes"
+      ],
+      "fields": {
+        "treatment_code": {
+          "label": "CDT Code",
+          "widget": "select",
+          "options": [
+            "D0120",
+            "D0150",
+            "D1110",
+            "D1120",
+            "D2140",
+            "D2330",
+            "D2740",
+            "D3310",
+            "D4341",
+            "D7140"
+          ]
+        },
+        "surface": {
+          "widget": "select",
+          "options": [
+            "M",
+            "D",
+            "O",
+            "L",
+            "B",
+            "MD",
+            "MO",
+            "ML",
+            "MB",
+            "DO",
+            "DL",
+            "DB",
+            "OL",
+            "OB",
+            "MOD",
+            "MOL",
+            "MOB",
+            "DLB",
+            "full"
+          ]
+        },
+        "status": {
+          "widget": "select",
+          "options": [
+            "planned",
+            "in_progress",
+            "completed",
+            "cancelled"
+          ],
+          "colors": {
+            "planned": "info",
+            "in_progress": "warning",
+            "completed": "success",
+            "cancelled": "error"
+          }
+        },
+        "fee": {
+          "label": "Fee ($)",
+          "widget": "currency"
+        },
+        "insurance_covered": {
+          "label": "Insurance Covered ($)",
+          "widget": "currency"
+        },
+        "patient_pay": {
+          "label": "Patient Pays ($)",
+          "widget": "currency"
+        },
+        "started_at": {
+          "widget": "datetime"
+        },
+        "completed_at": {
+          "widget": "datetime"
+        },
+        "description": {
+          "widget": "textarea"
+        },
+        "notes": {
+          "widget": "textarea"
+        }
+      }
+    },
+    "invoices": {
+      "icon": "file-text",
+      "description": "Billing and payment tracking",
+      "displayField": "invoice_number",
+      "defaultSort": "invoice_date|DESC",
+      "listColumns": [
+        "invoice_number",
+        "invoice_date",
+        "patient_id",
+        "status",
+        "total_amount",
+        "amount_paid",
+        "balance_due"
+      ],
+      "formFields": [
+        "patient_id",
+        "appointment_id",
+        "invoice_number",
+        "invoice_date",
+        "due_date",
+        "status",
+        "subtotal",
+        "tax_amount",
+        "discount_amount",
+        "total_amount",
+        "amount_paid",
+        "payment_method",
+        "payment_reference",
+        "paid_at",
+        "notes"
+      ],
+      "fields": {
+        "invoice_date": {
+          "widget": "date"
+        },
+        "due_date": {
+          "widget": "date"
+        },
+        "status": {
+          "widget": "select",
+          "options": [
+            "draft",
+            "sent",
+            "partial",
+            "paid",
+            "overdue",
+            "cancelled"
+          ],
+          "colors": {
+            "draft": "default",
+            "sent": "info",
+            "partial": "warning",
+            "paid": "success",
+            "overdue": "error",
+            "cancelled": "error"
+          }
+        },
+        "subtotal": {
+          "label": "Subtotal ($)",
+          "widget": "currency"
+        },
+        "tax_amount": {
+          "label": "Tax ($)",
+          "widget": "currency"
+        },
+        "discount_amount": {
+          "label": "Discount ($)",
+          "widget": "currency"
+        },
+        "total_amount": {
+          "label": "Total ($)",
+          "widget": "currency"
+        },
+        "amount_paid": {
+          "label": "Paid ($)",
+          "widget": "currency"
+        },
+        "payment_method": {
+          "widget": "select",
+          "options": [
+            "cash",
+            "check",
+            "credit_card",
+            "debit_card",
+            "insurance",
+            "financing",
+            "other"
+          ]
+        },
+        "paid_at": {
+          "widget": "datetime"
+        },
+        "notes": {
+          "widget": "textarea"
+        }
+      }
+    },
+    "clinic_policies": {
+      "icon": "file-text",
+      "description": "Clinic policies and procedures for AI reference",
+      "displayField": "title",
+      "defaultSort": "category|ASC,effective_date|DESC",
+      "listColumns": [
+        "title",
+        "category",
+        "version",
+        "effective_date",
+        "expiry_date",
+        "status"
+      ],
+      "formFields": [
+        "title",
+        "category",
+        "version",
+        "effective_date",
+        "expiry_date",
+        "content",
+        "file_url",
+        "status"
+      ],
+      "fields": {
+        "category": {
+          "widget": "select",
+          "options": [
+            "general",
+            "clinical",
+            "billing",
+            "hipaa",
+            "safety",
+            "hr",
+            "emergency",
+            "infection_control"
+          ]
+        },
+        "status": {
+          "widget": "select",
+          "options": [
+            "active",
+            "draft",
+            "archived"
+          ],
+          "colors": {
+            "active": "success",
+            "draft": "warning",
+            "archived": "default"
+          }
+        },
+        "effective_date": {
+          "widget": "date"
+        },
+        "expiry_date": {
+          "widget": "date"
+        },
+        "content": {
+          "label": "Policy Content",
+          "widget": "textarea"
+        }
+      }
+    }
+  },
+  "ai": {
+    "enabled": true,
+    "model": "claude-sonnet-5-5",
+    "assistantName": "Dental Clinic Assistant",
+    "instructions": "You are an AI assistant for a dental clinic. You help staff (front desk, dentists, owner) answer questions from uploaded clinic policies. Policies are stored in the clinic_policies table with full content. When answering, cite the specific policy title and section. Be precise about clinical protocols, billing rules, HIPAA compliance, and safety procedures. Never give medical advice to patients directly.",
+    "documentTables": [
+      "clinic_policies",
+      "appointments",
+      "treatments"
+    ],
+    "tools": [
+      "documents",
+      "records"
+    ],
+    "suggestions": [
+      "What is our policy for missed appointments?",
+      "What are the infection control procedures for operatory turnover?",
+      "How do we handle insurance claim denials?",
+      "What is the protocol for medical emergencies in the clinic?",
+      "What are our HIPAA guidelines for patient communication?",
+      "How should we document treatment notes for crown procedures?"
+    ],
+    "workflows": [
+      {
+        "id": "create_treatment_plan",
+        "label": "Generate Treatment Plan",
+        "table": "appointments",
+        "when": {
+          "status": "completed"
+        },
+        "description": "Reads completed appointment notes and creates planned treatments with CDT codes, fees, and tooth charts.",
+        "targets": [
+          "treatments"
+        ],
+        "inherit": {
+          "patient_id": "patient_id",
+          "dentist_id": "dentist_id",
+          "appointment_id": "appointment_id"
+        },
+        "instructions": "From the appointment's reason and notes, create a treatment plan:\n1. Identify each procedure mentioned.\n2. Map to CDT codes (D0120, D1110, D2330, D2740, D3310, D7140, etc.).\n3. Set tooth_numbers and surface from notes.\n4. Set fee from standard fee schedule; insurance_covered = fee * 0.8 (estimate); patient_pay = fee - insurance_covered.\n5. Status = 'planned'.\nCreate one treatments row per procedure."
+      },
+      {
+        "id": "generate_invoice",
+        "label": "Create Invoice from Treatments",
+        "table": "appointments",
+        "when": {
+          "status": "completed"
+        },
+        "description": "Aggregates completed treatments for an appointment and creates an invoice.",
+        "targets": [
+          "invoices"
+        ],
+        "inherit": {
+          "patient_id": "patient_id",
+          "appointment_id": "appointment_id"
+        },
+        "instructions": "1. Find all treatments for this appointment where status = 'completed'.\n2. Sum fee, insurance_covered, patient_pay.\n3. Create invoice: invoice_number = 'INV-' + YEAR + '-' + 5-digit sequence, invoice_date = today, due_date = +30 days, status = 'draft', subtotal = sum(fee), tax_amount = 0, discount_amount = 0, total_amount = sum(fee), amount_paid = 0, balance_due = total_amount.\n4. Set payment_method = null, notes = 'Auto-generated from appointment treatments'."
+      },
+      {
+        "id": "insurance_preauth",
+        "label": "Prepare Insurance Pre-Authorization",
+        "table": "treatments",
+        "when": {
+          "status": "planned",
+          "treatment_code": [
+            "D2740",
+            "D3310",
+            "D4341"
+          ]
+        },
+        "description": "Creates a pre-auth document for high-value procedures requiring insurance approval.",
+        "targets": [
+          "clinic_policies"
+        ],
+        "inherit": {
+          "patient_id": "patient_id",
+          "dentist_id": "dentist_id"
+        },
+        "instructions": "Create a clinic_policies record (document type) with:\n- title = 'Pre-Auth: ' + treatment_name + ' for ' + patient_name\n- category = 'billing'\n- content = structured pre-auth letter with CDT code, tooth, diagnosis, fee, clinical rationale from treatment notes.\n- status = 'draft'\nThis document can be printed/faxed to insurance."
+      }
+    ]
+  }
+}

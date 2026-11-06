@@ -1,0 +1,76 @@
+CLINICAL NOTE - John Anderson - 2025-12-15
+
+Patient: John Anderson (DOB: 1985-03-12)
+Appointment: 2025-12-15 09:00 AM - 60 min
+Provider: Dr. Sarah Mitchell, DDS
+Appointment Type: Checkup / Treatment Planning
+
+CHIEF COMPLAINT:
+Routine checkup. Patient reports cold sensitivity on lower right posterior tooth #30 (tooth 30) for 2 weeks.
+
+MEDICAL HISTORY REVIEW:
+- Hypertension - controlled on Lisinopril 10mg daily
+- No known drug allergies (NKDA)
+- No antibiotic prophylaxis required
+
+FINDINGS:
+
+Tooth 30 (Lower Right First Molar - #19 FDI):
+- Existing large MOD amalgam restoration (placed ~15 years ago)
+- Recurrent caries detected at mesial and distal margins
+- Mesiobuccal cusp fracture line visible - high fracture risk
+- Cold sensitivity lingers 10-15 seconds
+- Percussion: negative
+- Mobility: WNL
+- Probing depths: 2-3mm all surfaces
+- Radiograph (PA): Radiolucency at mesial/distal margins extending to DEJ, no periapical pathology
+
+Periodontal Status:
+- Generalized moderate calculus supra and subgingival
+- Gingival inflammation: mild-moderate generalized
+- Bleeding on probing: 30% sites
+- Probing depths: 2-4mm, no pockets >4mm
+
+Oral Hygiene:
+- Fair - plaque index 2/3
+- Patient admits inconsistent flossing
+
+TREATMENT PLAN DISCUSSED:
+
+1. TOOTH 30 - FULL COVERAGE CROWN (D2740 - Porcelain/Ceramic)
+   - Indication: Cusp fracture risk + recurrent caries + large existing restoration
+   - Material: Lithium disilicate (e.max) or Zirconia - patient prefers tooth-colored
+   - Shade: A2 (verified under 5500K light)
+   - Lab: Local dental lab (7 business day turnaround)
+   - Temporary: Bis-acryl provisional, TempBond NE cement
+   - Pre-medication: None required
+
+2. FULL MOUTH PROPHYLAXIS (D1110 - Adult Prophylaxis)
+   - Supra and subgingival scaling
+   - Polishing with fine prophy paste
+   - Fluoride varnish application (5% NaF)
+   - Oral hygiene instructions: Bass technique, daily flossing, Waterpik recommended
+
+3. ORAL HYGIENE INSTRUCTION & DIETARY COUNSELING
+   - Demonstrated proper brushing/flossing technique
+   - Discussed cariogenic diet risks (patient reports 2-3 sodas/day)
+   - Recommended: Xylitol gum, fluoride rinse (ACT)
+
+PATIENT CONSENT:
+- Treatment plan, risks, benefits, alternatives, and costs discussed
+- Patient understands crown requires 2 appointments (prep + delivery)
+- Patient agrees to proceed with both procedures today
+- Financial estimate provided: Crown ~$1,200 (insurance est. 80%), Prophy ~$110 (insurance est. 80%)
+
+NEXT APPOINTMENTS:
+1. Crown prep + Prophy: Today (90 min block)
+2. Crown delivery: ~10 business days (lab turnaround)
+
+PROVIDER NOTES:
+- Prep design: 1.5-2mm occlusal reduction, 1-1.5mm axial, chamfer margin 0.5mm
+- Impression: Digital scan (iTero) or PVS (Aquasil) if scanner unavailable
+- Stump shade: Critical for e.max - photograph with shade tab
+- Lab Rx: "e.max crown #30, shade A2, chamfer margin, proximal contacts light, occlusion: MIP only"
+
+SIGNED: Dr. Sarah Mitchell, DDS
+DATE: 2025-12-15
