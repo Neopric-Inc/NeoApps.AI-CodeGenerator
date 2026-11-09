@@ -35,6 +35,18 @@ public static class UiKit
 
     public static void Install(string generatorRoot, string frontendDir, string connectionString, string appName, string uiConfigPath)
     {
+        // The previous per-table UI (redux pages, Syncfusion/antd/bootstrap components) is no longer routed or built:
+        // remove it so the app only contains the schema-driven kit and its custom screens.
+        foreach (var legacy in new[] { "components", "redux", "pages", "services", "Dnd", "template", "test", "styles" })
+        {
+            var d = Path.Combine(frontendDir, "src", legacy);
+            if (Directory.Exists(d)) Directory.Delete(d, true);
+        }
+        foreach (var legacy in new[] { "i18n.js", "meta.json", "react-app-env.d.ts", "reportWebVitals.ts", "setupTests.ts" })
+        {
+            var f = Path.Combine(frontendDir, "src", legacy);
+            if (File.Exists(f)) File.Delete(f);
+        }
         CopyDirectory(Path.Combine(generatorRoot, "ReactUiKit", "src"), Path.Combine(frontendDir, "src"));
         // App-specific screens: <dir of ui.config>/custom replaces the kit's empty src/custom extension point.
         var customDir = string.IsNullOrEmpty(uiConfigPath) ? null : Path.Combine(Path.GetDirectoryName(Path.GetFullPath(uiConfigPath))!, "custom");

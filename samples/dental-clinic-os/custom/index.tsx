@@ -33,9 +33,10 @@ import {
 } from "@mui/icons-material";
 import { useApp } from "../neoapps/AppContext";
 import { api } from "../neoapps/api";
+import { Extensions } from "../neoapps/extensions";
 
 /** Custom extensions for Dental Clinic */
-export const extensions = {
+export const extensions: Extensions = {
   /** Widget shown at top of dashboard */
   dashboardTop: () => <TodayDashboardWidget />,
   
@@ -89,7 +90,12 @@ const TodayDashboardWidget: React.FC = () => {
         Today's Overview
       </Typography>
       <Grid container spacing={2}>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3
+          }}>
           <StatCard
             title="Total Appointments"
             value={stats?.total_appointments ?? 0}
@@ -98,7 +104,12 @@ const TodayDashboardWidget: React.FC = () => {
             subtitle={`${stats?.confirmed ?? 0} confirmed • ${stats?.completed ?? 0} done`}
           />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3
+          }}>
           <StatCard
             title="Hygiene"
             value={stats?.hygiene_appointments ?? 0}
@@ -107,7 +118,12 @@ const TodayDashboardWidget: React.FC = () => {
             subtitle="Cleanings & checkups"
           />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3
+          }}>
           <StatCard
             title="Treatments"
             value={stats?.treatment_appointments ?? 0}
@@ -116,7 +132,12 @@ const TodayDashboardWidget: React.FC = () => {
             subtitle="Crowns, fillings, etc."
           />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3
+          }}>
           <StatCard
             title="Outstanding"
             value={`$${(balance?.total_overdue ?? 0).toLocaleString()}`}
@@ -141,20 +162,28 @@ const StatCard: React.FC<{
     <CardContent>
       <Box sx={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
         <Box>
-          <Typography variant="caption" color="text.secondary" sx={{ textTransform: "uppercase", fontWeight: 600 }}>
+          <Typography
+            variant="caption"
+            sx={{
+              color: "text.secondary",
+              textTransform: "uppercase",
+              fontWeight: 600
+            }}>
             {title}
           </Typography>
           <Typography variant="h4" sx={{ mt: 0.5, mb: 0.5, fontWeight: 700 }}>
             {value}
           </Typography>
-          {subtitle && <Typography variant="caption" color="text.secondary">{subtitle}</Typography>}
+          {subtitle && <Typography variant="caption" sx={{
+            color: "text.secondary"
+          }}>{subtitle}</Typography>}
         </Box>
         <Box sx={{ p: 1, borderRadius: 2, backgroundColor: `var(--palette-${color}-light)` }}>
           {icon}
         </Box>
       </Box>
     </CardContent>
-  Card>
+  </Card>
 );
 
 /** Patient record custom actions */
@@ -322,7 +351,9 @@ const InvoiceRecordActions: React.FC<{ record: any; onChanged: () => void }> = (
         <DialogTitle>Record Payment for {record.invoice_number}</DialogTitle>
         <DialogContent>
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1, minWidth: 300 }}>
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" sx={{
+              color: "text.secondary"
+            }}>
               Balance Due: <strong>${record.balance_due}</strong>
             </Typography>
             <TextField
@@ -330,8 +361,10 @@ const InvoiceRecordActions: React.FC<{ record: any; onChanged: () => void }> = (
               type="number"
               value={payAmount}
               onChange={(e) => setPayAmount(e.target.value)}
-              inputProps={{ min: 0.01, max: record.balance_due, step: 0.01 }}
               fullWidth
+              slotProps={{
+                htmlInput: { min: 0.01, max: record.balance_due, step: 0.01 }
+              }}
             />
             <FormControl fullWidth>
               <InputLabel>Payment Method</InputLabel>

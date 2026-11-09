@@ -92,8 +92,12 @@ export const Customize: React.FC = () => {
     <Box>
       <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2, flexWrap: "wrap" }}>
         <Box sx={{ flex: 1, minWidth: 260 }}>
-          <Typography variant="h5" fontWeight={700}>Customize UI</Typography>
-          <Typography variant="body2" color="text.secondary">Changes preview live. Save to apply them for everyone in this workspace.</Typography>
+          <Typography variant="h5" sx={{
+            fontWeight: 700
+          }}>Customize UI</Typography>
+          <Typography variant="body2" sx={{
+            color: "text.secondary"
+          }}>Changes preview live. Save to apply them for everyone in this workspace.</Typography>
         </Box>
         <Button onClick={() => setImporting(true)}>Import JSON</Button>
         <Button onClick={exportJson}>Export JSON</Button>
@@ -114,9 +118,11 @@ export const Customize: React.FC = () => {
               <TextField label="Primary color" type="color" sx={{ width: 160 }} value={draft.theme?.primary || "#3b5bdb"} onChange={(e) => update((d) => { d.theme = { ...(d.theme || {}), primary: e.target.value }; })} />
               <TextField label="Secondary color" type="color" sx={{ width: 160 }} value={draft.theme?.secondary || "#0ca678"} onChange={(e) => update((d) => { d.theme = { ...(d.theme || {}), secondary: e.target.value }; })} />
             </Box>
-            <TextField select SelectProps={{ multiple: true }} label="Dashboard cards" value={(draft.dashboard?.cards || []).map((c) => c.table)}
-              helperText="Leave empty to show the first eight menu items."
-              onChange={(e) => update((d) => { d.dashboard = { ...(d.dashboard || {}), cards: (e.target.value as unknown as string[]).map((t) => ({ table: t })) }; })}>
+            <TextField select label="Dashboard cards" value={(draft.dashboard?.cards || []).map((c) => c.table)} helperText="Leave empty to show the first eight menu items."
+              onChange={(e) => update((d) => { d.dashboard = { ...(d.dashboard || {}), cards: (e.target.value as unknown as string[]).map((t) => ({ table: t })) }; })}
+              slotProps={{
+                select: { multiple: true }
+              }}>
               {appTables.map((t) => <MenuItem key={t} value={t}>{tables[t]?.label}</MenuItem>)}
             </TextField>
             <TextField select label="Dashboard 'recently updated' list" value={draft.dashboard?.recentTable || ""}
@@ -140,7 +146,9 @@ export const Customize: React.FC = () => {
                   <TableCell><Box sx={{ display: "flex", alignItems: "center", gap: 1 }}><Icon name={tables[r.table]?.icon} />{tables[r.table]?.label}</Box></TableCell>
                   <TableCell sx={{ width: 260 }}>
                     <TextField size="small" fullWidth placeholder="e.g. Studies" value={r.group}
-                      inputProps={{ list: "neoapps-menu-groups" }} onChange={(e) => setMenuGroup(r.table, e.target.value)} />
+                      onChange={(e) => setMenuGroup(r.table, e.target.value)} slotProps={{
+                      htmlInput: { list: "neoapps-menu-groups" }
+                    }} />
                   </TableCell>
                   <TableCell>
                     <Button size="small" disabled={!r.group} onClick={() => moveInMenu(r.table, -1)}>↑</Button>
@@ -190,7 +198,9 @@ export const Customize: React.FC = () => {
                   const f = resolved.fields[c.name];
                   return (
                     <TableRow key={c.name}>
-                      <TableCell sx={{ fontFamily: "monospace", fontSize: 12 }}>{c.name}<br /><Typography variant="caption" color="text.secondary">{c.columnType}</Typography></TableCell>
+                      <TableCell sx={{ fontFamily: "monospace", fontSize: 12 }}>{c.name}<br /><Typography variant="caption" sx={{
+                        color: "text.secondary"
+                      }}>{c.columnType}</Typography></TableCell>
                       <TableCell><TextField size="small" value={f.label} onChange={(e) => update((d) => { fcfg(d, tableName, c.name).label = e.target.value; })} /></TableCell>
                       <TableCell>
                         <TextField size="small" select value={f.widget} sx={{ minWidth: 120 }} onChange={(e) => update((d) => { fcfg(d, tableName, c.name).widget = e.target.value as Widget; })}>

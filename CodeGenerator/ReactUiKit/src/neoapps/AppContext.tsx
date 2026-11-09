@@ -29,14 +29,14 @@ export const useApp = () => useContext(Ctx);
 
 async function fetchJson(path: string) {
   try {
-    const res = await fetch(`${process.env.PUBLIC_URL || ""}${path}`, { cache: "no-store" });
+    const res = await fetch(`${(import.meta.env.BASE_URL || "/").replace(/\/$/, "")}${path}`, { cache: "no-store" });
     return res.ok ? await res.json() : null;
   } catch {
     return null;
   }
 }
 
-export const AppProvider: React.FC = ({ children }) => {
+export const AppProvider: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   const [schema, setSchema] = useState<AppSchema>({ app: "", tables: [] });
   const [fileConfig, setFileConfig] = useState<UiConfig>({});
   const [serverConfig, setServerConfig] = useState<UiConfig | null>(null);

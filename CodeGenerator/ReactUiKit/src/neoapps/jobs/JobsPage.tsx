@@ -83,8 +83,14 @@ export const JobsPage: React.FC = () => {
 
   return (
     <Box>
-      <Typography variant="h5" fontWeight={700}>Background jobs</Typography>
-      <Typography color="text.secondary" sx={{ mb: 2 }}>
+      <Typography variant="h5" sx={{
+        fontWeight: 700
+      }}>Background jobs</Typography>
+      <Typography
+        sx={{
+          color: "text.secondary",
+          mb: 2
+        }}>
         Work that runs on the server, such as AI workflows. Close the window while a job runs and come back here to review it.
         {waiting > 0 && <> <b>{waiting} waiting for your approval.</b></>}
       </Typography>
@@ -101,11 +107,17 @@ export const JobsPage: React.FC = () => {
           </TableHead>
           <TableBody>
             {!jobs.length && (
-              <TableRow><TableCell colSpan={4}><Typography color="text.secondary" sx={{ py: 2 }}>No jobs yet.</Typography></TableCell></TableRow>
+              <TableRow><TableCell colSpan={4}><Typography
+                sx={{
+                  color: "text.secondary",
+                  py: 2
+                }}>No jobs yet.</Typography></TableCell></TableRow>
             )}
             {jobs.map((j) => (
               <TableRow key={j.job_id} hover sx={{ cursor: "pointer" }} onClick={() => setOpen(j)}>
-                <TableCell>{j.title || j.kind}{j.status === "failed" && j.error && <Typography variant="caption" color="error" display="block">{j.error}</Typography>}</TableCell>
+                <TableCell>{j.title || j.kind}{j.status === "failed" && j.error && <Typography variant="caption" color="error" sx={{
+                  display: "block"
+                }}>{j.error}</Typography>}</TableCell>
                 <TableCell><JobStatusChip status={j.status} /></TableCell>
                 <TableCell>{j.username}</TableCell>
                 <TableCell sx={{ whiteSpace: "nowrap" }}>{when(j.createdAt)}</TableCell>

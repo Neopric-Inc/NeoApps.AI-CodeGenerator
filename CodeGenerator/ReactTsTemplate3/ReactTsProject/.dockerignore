@@ -1,5 +1,3 @@
 node_modules
 build
 .git
-cypress/videos
-cypress/screenshots

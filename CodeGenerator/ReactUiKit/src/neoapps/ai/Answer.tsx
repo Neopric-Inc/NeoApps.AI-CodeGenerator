@@ -37,7 +37,9 @@ const CitationChip: React.FC<{ c?: Citation; id: string }> = ({ c, id }) => {
         <Box sx={{ p: 2, maxWidth: 460 }}>
           <Typography variant="subtitle2">{c.file_name} · page {c.page}</Typography>
           {table && can(c.table, "read") && (
-            <Typography variant="caption" color="text.secondary">
+            <Typography variant="caption" sx={{
+              color: "text.secondary"
+            }}>
               {table.singular}: <Link component={RouterLink} to={`/r/${c.table}/${c.record_id}`}>{c.record_label}</Link>
             </Typography>
           )}

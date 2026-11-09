@@ -51,7 +51,9 @@ export const JobFile: React.FC<{ jobId: string; info: JobFileInfo; caption?: str
         <Dialog open onClose={() => setZoom(false)} maxWidth="xl">
           <Box component="img" src={url} alt={caption || info.file} sx={{ display: "block", maxWidth: "90vw", maxHeight: "85vh" }} />
           <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", px: 2, py: 1 }}>
-            <Typography variant="body2" color="text.secondary">{caption || info.file}</Typography>
+            <Typography variant="body2" sx={{
+              color: "text.secondary"
+            }}>{caption || info.file}</Typography>
             <Button onClick={download}>Download</Button>
           </Box>
         </Dialog>
@@ -66,7 +68,9 @@ export const JobFiles: React.FC<{ jobId: string; events: { level: string; messag
     {events.filter((e) => e.level === "file" && e.data?.file).map((e) => (
       <Box key={e.data.file} sx={{ maxWidth: 420 }}>
         <JobFile jobId={jobId} info={e.data} caption={e.message} height={height} />
-        <Typography variant="caption" color="text.secondary">{e.message}</Typography>
+        <Typography variant="caption" sx={{
+          color: "text.secondary"
+        }}>{e.message}</Typography>
       </Box>
     ))}
   </Box>

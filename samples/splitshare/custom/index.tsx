@@ -51,7 +51,11 @@ const first = (data: Data, id: number) => String(nameOf(data, id)).split(" ")[0]
 
 const Amount: React.FC<{ v: number; currency: string; signed?: boolean }> = ({ v, currency, signed }) => {
   const color = !signed || Math.abs(v) < 0.005 ? "text.primary" : v > 0 ? "success.main" : "error.main";
-  return <Typography component="span" fontWeight={600} color={color}>{signed && v > 0.005 ? "+" : ""}{formatMoney(v, currency)}</Typography>;
+  return (
+    <Typography component="span" color={color} sx={{
+      fontWeight: 600
+    }}>{signed && v > 0.005 ? "+" : ""}{formatMoney(v, currency)}</Typography>
+  );
 };
 
 // ---------------------------------------------------------------------------------------------- My balances page
@@ -78,21 +82,45 @@ const GroupCard: React.FC<{ b: GroupBalance; data: Data; meId?: number; onPaid: 
   return (
     <Card variant="outlined" sx={{ borderRadius: 2 }}>
       <CardContent>
-        <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1.5 }}>
+        <Stack
+          direction="row"
+          sx={{
+            alignItems: "center",
+            justifyContent: "space-between",
+            mb: 1.5
+          }}>
           <Box>
-            <Typography variant="h6" fontWeight={700} component={RouterLink} to={`/r/expense_groups/${b.group.expense_group_id}`} sx={{ color: "inherit", textDecoration: "none" }}>{b.group.name}</Typography>
-            <Typography variant="body2" color="text.secondary">{b.memberIds.length} people · {formatMoney(b.totalSpent, b.currency)} spent</Typography>
+            <Typography
+              variant="h6"
+              component={RouterLink}
+              to={`/r/expense_groups/${b.group.expense_group_id}`}
+              sx={{
+                fontWeight: 700,
+                color: "inherit",
+                textDecoration: "none"
+              }}>{b.group.name}</Typography>
+            <Typography variant="body2" sx={{
+              color: "text.secondary"
+            }}>{b.memberIds.length} people · {formatMoney(b.totalSpent, b.currency)} spent</Typography>
           </Box>
           {mine !== undefined && (
-            <Box textAlign="right">
-              <Typography variant="body2" color="text.secondary">{mine > 0.005 ? "You are owed" : mine < -0.005 ? "You owe" : "You're all square"}</Typography>
-              {Math.abs(mine) > 0.005 && <Typography variant="h5" fontWeight={700} color={mine > 0 ? "success.main" : "error.main"}>{formatMoney(Math.abs(mine), b.currency)}</Typography>}
+            <Box sx={{
+              textAlign: "right"
+            }}>
+              <Typography variant="body2" sx={{
+                color: "text.secondary"
+              }}>{mine > 0.005 ? "You are owed" : mine < -0.005 ? "You owe" : "You're all square"}</Typography>
+              {Math.abs(mine) > 0.005 && <Typography variant="h5" color={mine > 0 ? "success.main" : "error.main"} sx={{
+                fontWeight: 700
+              }}>{formatMoney(Math.abs(mine), b.currency)}</Typography>}
             </Box>
           )}
         </Stack>
 
         <Typography variant="subtitle2" sx={{ mb: 0.5 }}>Simplest way to settle up</Typography>
-        {transfers.length === 0 ? <Typography color="text.secondary" variant="body2">Everyone is settled up.</Typography> : (
+        {transfers.length === 0 ? <Typography variant="body2" sx={{
+          color: "text.secondary"
+        }}>Everyone is settled up.</Typography> : (
           <Stack spacing={1} sx={{ mb: 2 }}>
             {transfers.map((t) => {
               const involved = meId !== undefined && (t.from === meId || t.to === meId);
@@ -151,8 +179,14 @@ const MyBalances: React.FC = () => {
   const myGroups = meId !== undefined ? balances.filter((b) => b.memberIds.includes(meId)) : balances;
   return (
     <Box>
-      <Typography variant="h5" fontWeight={700}>{meMember ? `Hi ${String(meMember.full_name).split(" ")[0]}` : "Balances"}</Typography>
-      <Typography color="text.secondary" sx={{ mb: 2 }}>
+      <Typography variant="h5" sx={{
+        fontWeight: 700
+      }}>{meMember ? `Hi ${String(meMember.full_name).split(" ")[0]}` : "Balances"}</Typography>
+      <Typography
+        sx={{
+          color: "text.secondary",
+          mb: 2
+        }}>
         Who owes whom in each group, and the fewest payments to settle up. Balances use split expenses and completed settlements.
       </Typography>
       {!meMember && (
@@ -181,12 +215,26 @@ const Totals: React.FC<{ balances: GroupBalance[]; meId: number }> = ({ balances
   return (
     <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 2, mb: 2 }}>
       <Card variant="outlined" sx={{ borderRadius: 2 }}><CardContent>
-        <Typography variant="body2" color="text.secondary">You owe</Typography>
-        <Typography variant="h4" fontWeight={700} color="error.main">{sum("owe")}</Typography>
+        <Typography variant="body2" sx={{
+          color: "text.secondary"
+        }}>You owe</Typography>
+        <Typography
+          variant="h4"
+          sx={{
+            fontWeight: 700,
+            color: "error.main"
+          }}>{sum("owe")}</Typography>
       </CardContent></Card>
       <Card variant="outlined" sx={{ borderRadius: 2 }}><CardContent>
-        <Typography variant="body2" color="text.secondary">You are owed</Typography>
-        <Typography variant="h4" fontWeight={700} color="success.main">{sum("owed")}</Typography>
+        <Typography variant="body2" sx={{
+          color: "text.secondary"
+        }}>You are owed</Typography>
+        <Typography
+          variant="h4"
+          sx={{
+            fontWeight: 700,
+            color: "success.main"
+          }}>{sum("owed")}</Typography>
       </CardContent></Card>
     </Box>
   );
@@ -201,12 +249,23 @@ const DashboardTop: React.FC = () => {
   const lines = mine.flatMap((b) => b.transfers.filter((t) => t.from === meMember.member_id || t.to === meMember.member_id).map((t) => ({ b, t })));
   return (
     <Paper variant="outlined" sx={{ p: 2, mb: 3, borderRadius: 2 }}>
-      <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" alignItems={{ sm: "center" }} gap={1} sx={{ mb: lines.length ? 1.5 : 0 }}>
-        <Typography fontWeight={700}>Your balances</Typography>
+      <Stack
+        direction={{ xs: "column", sm: "row" }}
+        sx={{
+          justifyContent: "space-between",
+          alignItems: { sm: "center" },
+          gap: 1,
+          mb: lines.length ? 1.5 : 0
+        }}>
+        <Typography sx={{
+          fontWeight: 700
+        }}>Your balances</Typography>
         <Button component={RouterLink} to="/balances" size="small">Open My balances</Button>
       </Stack>
       <Totals balances={mine} meId={meMember.member_id} />
-      {lines.length === 0 ? <Typography color="text.secondary">You're all settled up.</Typography> : (
+      {lines.length === 0 ? <Typography sx={{
+        color: "text.secondary"
+      }}>You're all settled up.</Typography> : (
         <Stack spacing={0.75}>
           {lines.map(({ b, t }) => (
             <Typography key={`${b.group.expense_group_id}-${t.from}-${t.to}`}>

@@ -116,6 +116,8 @@ internal static class UiConfigTools
                                                  dashboardTop: Component, recordActions: Component<{ table, record, onChanged }> };
         (types in src/neoapps/extensions.ts; use api/listRecords/createRecord/updateRecord from ../neoapps/api and useApp()
         for me/can()). Example: samples/splitshare/custom.
+        The UI is React 19 + MUI 9 (Vite): style props go in sx (sx={{ fontWeight: 600 }}, not fontWeight={600}),
+        Grid uses size={{ xs: 12, md: 6 }} (no item/xs props), TextField uses slotProps (no InputProps/InputLabelProps).
 
         Data rules (enforced by the generated API on every query, AI included; see Utility/DataGuard*.cs). All optional:
           "tenancy": { "column": "tenant_id", "tenantTable": "tenants", "sharedWritable": [] }

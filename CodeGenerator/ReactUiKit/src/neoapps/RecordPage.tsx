@@ -3,7 +3,7 @@ import { Link as RouterLink, useNavigate, useParams } from "react-router-dom";
 import { Alert, Box, Breadcrumbs, Button, CircularProgress, Link, Paper, Tab, Tabs, Typography } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import EditOutlined from "@mui/icons-material/EditOutlined";
-import DeleteOutline from "@mui/icons-material/DeleteOutline";
+import DeleteOutline from "@mui/icons-material/DeleteOutlineOutlined";
 import { getRecord, listRecords } from "./api";
 import { useApp } from "./AppContext";
 import { AUDIT_FIELDS } from "./config";
@@ -98,10 +98,17 @@ export const RecordPage: React.FC = () => {
     <Box>
       <Breadcrumbs sx={{ mb: 1 }}>
         <Link component={RouterLink} to={`/r/${name}`} underline="hover" color="inherit">{table.label}</Link>
-        <Typography color="text.primary">{String(record[table.displayField] ?? `#${id}`)}</Typography>
+        <Typography sx={{
+          color: "text.primary"
+        }}>{String(record[table.displayField] ?? `#${id}`)}</Typography>
       </Breadcrumbs>
       <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2.5, flexWrap: "wrap" }}>
-        <Typography variant="h5" fontWeight={700} sx={{ flex: 1 }}>{String(record[table.displayField] ?? `${table.singular} #${id}`)}</Typography>
+        <Typography
+          variant="h5"
+          sx={{
+            fontWeight: 700,
+            flex: 1
+          }}>{String(record[table.displayField] ?? `${table.singular} #${id}`)}</Typography>
         {ai?.enabled && <WorkflowButtons workflows={ai.workflows.filter((w) => w.table === name)} recordId={id} record={record} onApplied={() => setBump((b) => b + 1)} />}
         {ai?.enabled && <Button variant="outlined" startIcon={<AutoAwesome />} onClick={() => navigate(`/assistant?table=${name}&id=${encodeURIComponent(id)}`)}>Ask AI</Button>}
         {extensions.recordActions && record && React.createElement(extensions.recordActions, { table: name, record, onChanged: () => setBump((b) => b + 1) })}
@@ -112,7 +119,13 @@ export const RecordPage: React.FC = () => {
         <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr", lg: "1fr 1fr 1fr" }, gap: 2.5 }}>
           {detailFields.map((f) => (
             <Box key={f.name} sx={{ gridColumn: f.widget === "textarea" ? "1 / -1" : undefined }}>
-              <Typography variant="caption" color="text.secondary" sx={{ textTransform: "uppercase", letterSpacing: 0.4 }}>{f.label}</Typography>
+              <Typography
+                variant="caption"
+                sx={{
+                  color: "text.secondary",
+                  textTransform: "uppercase",
+                  letterSpacing: 0.4
+                }}>{f.label}</Typography>
               <Box sx={{ mt: 0.25, whiteSpace: f.widget === "textarea" ? "pre-wrap" : undefined }}>
                 {f.widget === "reference" && record[f.name] != null && can(f.column.references!.table, "read")
                   ? <Link component={RouterLink} to={`/r/${f.column.references!.table}/${record[f.name]}`}>{labelFor(f.name, record[f.name])}</Link>
@@ -121,7 +134,13 @@ export const RecordPage: React.FC = () => {
             </Box>
           ))}
         </Box>
-        <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 2.5 }}>
+        <Typography
+          variant="caption"
+          sx={{
+            color: "text.secondary",
+            display: "block",
+            mt: 2.5
+          }}>
           Created {renderValue(table.fields.createdAt, record.createdAt)} by {record.created_by_user || record.createdBy || "—"} · Updated {renderValue(table.fields.modifiedAt, record.modifiedAt)}{record.modified_by_user ? ` by ${record.modified_by_user}` : ""}
         </Typography>
       </Paper>

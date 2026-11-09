@@ -82,8 +82,12 @@ export const Members: React.FC = () => {
     <Box>
       <Box sx={{ display: "flex", alignItems: "center", mb: 2.5 }}>
         <Box sx={{ flex: 1 }}>
-          <Typography variant="h5" fontWeight={700}>Members</Typography>
-          <Typography variant="body2" color="text.secondary">People in your workspace and the role that controls what they can see and change.</Typography>
+          <Typography variant="h5" sx={{
+            fontWeight: 700
+          }}>Members</Typography>
+          <Typography variant="body2" sx={{
+            color: "text.secondary"
+          }}>People in your workspace and the role that controls what they can see and change.</Typography>
         </Box>
         <Button variant="contained" startIcon={<PersonAddOutlined />} onClick={() => { setForm({ username: "", password: "", role_id: roles.find((r) => !r.is_admin)?.role_id || 1, tenant_id: tenants[0]?.id || 0 }); setInviting(true); }}>Add member</Button>
       </Box>

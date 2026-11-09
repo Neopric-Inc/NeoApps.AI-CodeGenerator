@@ -131,13 +131,19 @@ export const ResourcePage: React.FC = () => {
             <Icon name={table.icon} />
           </Box>
           <Box>
-            <Typography variant="h5" fontWeight={700}>{table.label}</Typography>
-            <Typography variant="body2" color="text.secondary">{table.description || `${total} ${total === 1 ? table.singular.toLowerCase() : table.label.toLowerCase()}`}</Typography>
+            <Typography variant="h5" sx={{
+              fontWeight: 700
+            }}>{table.label}</Typography>
+            <Typography variant="body2" sx={{
+              color: "text.secondary"
+            }}>{table.description || `${total} ${total === 1 ? table.singular.toLowerCase() : table.label.toLowerCase()}`}</Typography>
           </Box>
         </Box>
         <form onSubmit={(e) => { e.preventDefault(); setPage(0); setQuery(search); }}>
           <TextField size="small" placeholder={`Search ${table.label.toLowerCase()}`} value={search} onChange={(e) => setSearch(e.target.value)}
-            InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }} sx={{ width: { xs: "100%", sm: 260 }, bgcolor: "background.paper" }} />
+            sx={{ width: { xs: "100%", sm: 260 }, bgcolor: "background.paper" }} slotProps={{
+            input: { startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }
+          }} />
         </form>
         {ai?.enabled && <WorkflowButtons workflows={ai.workflows.filter((w) => !w.table && w.targets[0] === name)} onApplied={() => setReload((r) => r + 1)} />}
         {can(name, "create") && (

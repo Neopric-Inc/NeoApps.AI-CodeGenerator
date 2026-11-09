@@ -1,22 +1,22 @@
 {
   "compilerOptions": {
-    "target": "es5",
-    "lib": ["dom", "dom.iterable", "esnext"],
-    "allowJs": true,
+    "target": "ES2022",
+    "lib": ["DOM", "DOM.Iterable", "ES2022"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "strict": false,
     "skipLibCheck": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
-    "strict": false,
-    "forceConsistentCasingInFileNames": true,
-    "noFallthroughCasesInSwitch": true,
-    "module": "esnext",
-    "moduleResolution": "node",
     "resolveJsonModule": true,
     "isolatedModules": true,
+    "forceConsistentCasingInFileNames": true,
+    "noFallthroughCasesInSwitch": true,
     "noEmit": true,
-    "jsx": "react-jsx",
-    "baseUrl": "src"
+    "types": ["vite/client"],
+    "baseUrl": "src",
+    "paths": { "neoapps/*": ["neoapps/*"], "custom/*": ["custom/*"] }
   },
-  "include": ["src"],
-  "exclude": ["cypress/*"]
+  "include": ["src/index.tsx", "src/App.tsx", "src/neoapps", "src/custom", "src/vite-env.d.ts"]
 }

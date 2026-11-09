@@ -107,7 +107,12 @@ export const WorkflowDialog: React.FC<{ wf: AiWorkflow; recordId?: string; jobId
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
         {!jobId && (
           <>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            <Typography
+              variant="body2"
+              sx={{
+                color: "text.secondary",
+                mb: 2
+              }}>
               {wf.description || "The assistant reads the source and proposes new records."} It runs in the background and nothing is saved until you review the proposal and approve it.
             </Typography>
             <TextField fullWidth multiline minRows={2} label="Anything to focus on? (optional)" value={note} onChange={(e) => setNote(e.target.value)} disabled={busy} />
@@ -118,20 +123,30 @@ export const WorkflowDialog: React.FC<{ wf: AiWorkflow; recordId?: string; jobId
             {status === "completed" && <Alert severity="success" sx={{ mb: 2 }}>{job?.result?.summary || "Done."}</Alert>}
             {(status === "cancelled" || status === "rejected") && <Alert severity="info" sx={{ mb: 2 }}>{status === "cancelled" ? "Cancelled." : "Rejected: nothing was created."}</Alert>}
             <JobFeed job={job} events={events} error={feedError} />
-            {working && <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 1 }}>You can close this window: the job keeps running, and you'll find it under Background jobs.</Typography>}
+            {working && <Typography
+              variant="caption"
+              sx={{
+                color: "text.secondary",
+                display: "block",
+                mt: 1
+              }}>You can close this window: the job keeps running, and you'll find it under Background jobs.</Typography>}
           </>
         )}
         {reviewing && preview && (
           <>
             <Alert severity="info" icon={false} sx={{ mb: 2 }}>{preview.summary}</Alert>
             {preview.warnings.map((w) => <Alert key={w} severity="warning" sx={{ mb: 1 }}>{w}</Alert>)}
-            {preview.records.length === 0 && <Typography color="text.secondary">Nothing to create.</Typography>}
+            {preview.records.length === 0 && <Typography sx={{
+              color: "text.secondary"
+            }}>Nothing to create.</Typography>}
             {Object.entries(byTable).map(([table, rows]) => {
               const t = tables[table];
               const cols = Array.from(new Set(rows.flatMap((r) => Object.keys(r.values))));
               return (
                 <Box key={table} sx={{ mb: 3 }}>
-                  <Typography variant="subtitle2" sx={{ mb: 0.5 }}>{t?.label || table} <Typography component="span" variant="caption" color="text.secondary">({rows.filter((r) => !skipped.has(r.ref)).length} of {rows.length})</Typography></Typography>
+                  <Typography variant="subtitle2" sx={{ mb: 0.5 }}>{t?.label || table} <Typography component="span" variant="caption" sx={{
+                    color: "text.secondary"
+                  }}>({rows.filter((r) => !skipped.has(r.ref)).length} of {rows.length})</Typography></Typography>
                   <Box sx={{ overflowX: "auto", border: 1, borderColor: "divider", borderRadius: 1 }}>
                     <Table size="small">
                       <TableHead>
@@ -162,7 +177,12 @@ export const WorkflowDialog: React.FC<{ wf: AiWorkflow; recordId?: string; jobId
                 </Box>
               );
             })}
-            <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.5 }}>How it got here</Typography>
+            <Typography
+              variant="subtitle2"
+              sx={{
+                color: "text.secondary",
+                mb: 0.5
+              }}>How it got here</Typography>
             <JobFeed job={job} events={events} error={feedError} maxHeight={140} />
           </>
         )}
