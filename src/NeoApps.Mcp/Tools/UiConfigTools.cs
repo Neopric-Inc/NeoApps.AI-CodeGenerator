@@ -202,7 +202,9 @@ internal static class UiConfigTools
                 "inherit": { "study_id": "study_id" },                          // target column <- source record column
                 "tools": ["records"],                                           // extra tools while running (optional)
                 "description": "Shown in the dialog.",
-                "instructions": "Step-by-step: what to read and which rows to create. New rows link with '@<ref>'." }
+                "instructions": "Step-by-step: what to read and which rows to create. New rows link with '@<ref>'.",
+                "requiresDocument": false }                                       // default true: the record must have an uploaded file;
+                                                                                  // set false for workflows that work from records (claims, projects)
             ]
           }
         The assistant answers from uploaded files (with [S1] citations to file and page) and from the app's records,
