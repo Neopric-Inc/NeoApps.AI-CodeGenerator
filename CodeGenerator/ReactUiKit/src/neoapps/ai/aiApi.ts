@@ -114,21 +114,47 @@ export function uploadFile(table: string, recordId: string, file: File) {
 export const deleteFile = (id: number) => call("DELETE", `files/${id}`);
 
 /** Opens a stored file in a new tab (fetched with the bearer token, so it can't be a plain link). */
+/**
+ * Opens an uploaded file. PDFs, images and text are shown in a new tab (embedded, so every browser displays them
+ * instead of downloading); other types (Word, Excel, ZIP...) download.
+ */
 export async function openFile(id: number, name: string) {
   const tab = window.open("", "_blank");
+  if (tab) { tab.document.title = name; tab.document.body.innerHTML = '<p style="font:14px system-ui,sans-serif;padding:16px;color:#555">Opening\u2026</p>'; }
   const res = await fetch(apiBase() + `Ai/files/${id}/content`, { headers: { Authorization: `Bearer ${getToken()}` } });
   if (!res.ok) {
     tab?.close();
     throw new ApiError(res.status, "Couldn't open the file.");
   }
-  const url = URL.createObjectURL(await res.blob());
-  if (tab) tab.location.href = url;
-  else {
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = name;
-    a.click();
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const type = blob.type || "";
+  if (tab && /^(application\/pdf|image\/|text\/)/.test(type)) {
+    const d = tab.document;
+    d.title = name;
+    d.body.innerHTML = "";
+    d.body.style.margin = "0";
+    const bar = d.createElement("div");
+    bar.setAttribute("style", "font:13px system-ui,sans-serif;padding:8px 12px;border-bottom:1px solid #ddd;display:flex;gap:12px;align-items:center");
+    const title = d.createElement("b");
+    title.textContent = name;
+    const dl = d.createElement("a");
+    dl.href = url;
+    dl.download = name;
+    dl.textContent = "Download";
+    bar.append(title, dl);
+    const view = type.startsWith("image/") ? d.createElement("img") : d.createElement("iframe");
+    view.setAttribute("src", url);
+    view.setAttribute("style", type.startsWith("image/") ? "display:block;max-width:100%;margin:12px auto" : "border:0;width:100%;height:calc(100vh - 40px);display:block");
+    d.body.append(bar, view);
+    setTimeout(() => URL.revokeObjectURL(url), 30 * 60_000); // the tab needs it while open
+    return;
   }
+  tab?.close();
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = name;
+  a.click();
   setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
 
