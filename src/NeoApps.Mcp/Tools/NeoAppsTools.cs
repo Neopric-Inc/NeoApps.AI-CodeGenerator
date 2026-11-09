@@ -576,8 +576,13 @@ public sealed class NeoAppsTools(
             throw new InvalidOperationException("Backend generation failed:\n" + string.Join('\n', backend.Errors));
 
         state.BackendPath = Path.Combine(backend.OutputPath, "DotNet_Output", "solution", state.Name);
-        state.AdminUsername = backend.AdminUsername ?? state.AdminUsername;
-        state.AdminPassword = backend.AdminPassword ?? state.AdminPassword;
+        // The generator only creates its admin account in a new (or reset) database. When the data is kept, the account
+        // it reports doesn't exist, so keep the credentials of the admin that does.
+        if (!databaseExists || resetDatabase || state.AdminUsername is null)
+        {
+            state.AdminUsername = backend.AdminUsername ?? state.AdminUsername;
+            state.AdminPassword = backend.AdminPassword ?? state.AdminPassword;
+        }
         store.Save(state);
         AllowUiOrigin(state, job);
         var n = migrations.CopyIntoApi(state);
