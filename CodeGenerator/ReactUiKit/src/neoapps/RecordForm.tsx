@@ -179,21 +179,43 @@ export const RecordForm: React.FC<Props> = ({ table, record, defaults, open, onC
       case "textarea":
         return <TextField {...common} multiline minRows={3} />;
       case "date":
-        return <TextField {...common} type="date" InputLabelProps={{ shrink: true }} />;
+        return (
+          <TextField {...common} type="date" slotProps={{
+            inputLabel: { shrink: true }
+          }} />
+        );
       case "datetime":
-        return <TextField {...common} type="datetime-local" InputLabelProps={{ shrink: true }} />;
+        return (
+          <TextField {...common} type="datetime-local" slotProps={{
+            inputLabel: { shrink: true }
+          }} />
+        );
       case "number":
       case "percent":
-        return <TextField {...common} type="number" InputProps={f.widget === "percent" ? { endAdornment: <InputAdornment position="end">%</InputAdornment> } : undefined} />;
+        return (
+          <TextField {...common} type="number" slotProps={{
+            input: f.widget === "percent" ? { endAdornment: <InputAdornment position="end">%</InputAdornment> } : undefined
+          }} />
+        );
       case "currency":
-        return <TextField {...common} type="number" InputProps={{ startAdornment: <InputAdornment position="start">{currencySymbol(f.currencyCode)}</InputAdornment> }} />;
+        return (
+          <TextField {...common} type="number" slotProps={{
+            input: { startAdornment: <InputAdornment position="start">{currencySymbol(f.currencyCode)}</InputAdornment> }
+          }} />
+        );
       case "email":
         return <TextField {...common} type="email" />;
       case "color":
-        return <TextField {...common} type="color" InputLabelProps={{ shrink: true }} />;
+        return (
+          <TextField {...common} type="color" slotProps={{
+            inputLabel: { shrink: true }
+          }} />
+        );
       case "select":
         return (
-          <TextField {...common} select SelectProps={{ renderValue: (v: any) => (v === "" || v == null ? "" : renderValue(f, v)) as any }}>
+          <TextField {...common} select slotProps={{
+            select: { renderValue: (v: any) => (v === "" || v == null ? "" : renderValue(f, v)) as any }
+          }}>
             {!f.required && <MenuItem value=""><em>None</em></MenuItem>}
             {(f.options || []).map((o) => <MenuItem key={o} value={o}>{renderValue(f, o)}</MenuItem>)}
           </TextField>

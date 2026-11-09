@@ -4,7 +4,7 @@ import {
   TableSortLabel, Tooltip, Typography,
 } from "@mui/material";
 import EditOutlined from "@mui/icons-material/EditOutlined";
-import DeleteOutline from "@mui/icons-material/DeleteOutline";
+import DeleteOutline from "@mui/icons-material/DeleteOutlineOutlined";
 import { renderValue } from "./format";
 import { ResolvedTable } from "./types";
 
@@ -53,7 +53,9 @@ export const DataTable: React.FC<Props> = ({
           )}
           {!loading && rows.length === 0 && (
             <TableRow><TableCell colSpan={columns.length + 1} align="center" sx={{ py: 6 }}>
-              <Typography color="text.secondary">{emptyText || `No ${table.label.toLowerCase()} yet.`}</Typography>
+              <Typography sx={{
+                color: "text.secondary"
+              }}>{emptyText || `No ${table.label.toLowerCase()} yet.`}</Typography>
             </TableCell></TableRow>
           )}
           {!loading && rows.map((r) => (

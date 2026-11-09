@@ -87,7 +87,7 @@ Running a generated app without Docker:
 cd 1_*/<App>/DotNet_Output/solution/<App>/<App>.API
 ASPNETCORE_URLS=http://0.0.0.0:5100 dotnet run            # GET /health, /swagger
 cd ../../../../ReactTs_Output3                            # .env already points at the API port
-CYPRESS_INSTALL_BINARY=0 npm install --force && npm run build && npx serve -s build -l 3100
+npm install && npm run build && npm run preview                # Vite; serves build/ on :3100
 ```
 
 Production settings of a generated API (`appsettings.json`, override with env vars such as `Cors__AllowedOrigins`):
@@ -128,12 +128,13 @@ added to every app table automatically and stamped by DataGuard on every write, 
 - `CodeGenerator/`: generator (.NET 10 console app). `Program.cs` is the backend generator and `Reactjs/Functions.cs`
   the frontend one. Both are large legacy files built on string templates, so make surgical edits.
 - Templates: `CodeGenerator/DotNetMySQLTemplate/` (`*.txt` snippets plus `solution/nkv.MicroService`, renamed per app) and
-  `CodeGenerator/ReactTsTemplate{1..4}/` (1 = drag-and-drop, 3 = admin UI).
+  `CodeGenerator/ReactTsTemplate{1..4}/` (1 = drag-and-drop, 3 = admin UI: React 19 + MUI 9 + Vite; `.env` `REACT_APP_*`
+  values are read as `import.meta.env.REACT_APP_*`).
 - `CodeGenerator/Infrastructure/`: config loading (`--config` JSON or the legacy `PARAMETER` env var), `SchemaReader`
   (always scoped to `DATABASE()`), `MySqlScript` (statement splitter), `ProcessRunner`.
 - `CodeGenerator/ReactUiKit/`: the schema-driven admin UI copied into every admin frontend (`src/neoapps/*`).
   `Infrastructure/UiKit.cs` installs it and writes `public/schema.json` (from the DB) and `public/ui.config.json`,
-  and seeds roles. The old per-table components are still generated but no longer routed. `src/custom/` is the
+  and seeds roles. The old per-table components are removed from the admin UI output. `src/custom/` is the
   extension point for app-specific screens (empty by default; replaced by `workspace/<App>/custom/` when present).
 - Migrations: `src/NeoApps.Mcp/Services/SchemaMigrations.cs` diffs `information_schema` against the parsed schema.sql
   (`AppPreview.Parse`) and renders the FluentMigrator class; `MigrationRunner.cs` builds `src/NeoApps.Migrator` with the

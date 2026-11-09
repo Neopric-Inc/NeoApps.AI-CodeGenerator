@@ -19,7 +19,9 @@ const NavItem: React.FC<{ to: string; icon: string; label: string; onClick?: () 
     <ListItemButton component={NavLink as any} to={to} selected={active} onClick={() => { markMenuNavigation(); onClick?.(); }}
       sx={{ borderRadius: 1.5, mx: 1, my: 0.25, py: 0.75, "&.Mui-selected": { bgcolor: "primary.main", color: "primary.contrastText", "& .MuiListItemIcon-root": { color: "inherit" }, "&:hover": { bgcolor: "primary.dark" } } }}>
       <ListItemIcon sx={{ minWidth: 34 }}><Icon name={icon} /></ListItemIcon>
-      <ListItemText primary={label} primaryTypographyProps={{ fontSize: 14, fontWeight: active ? 600 : 500, noWrap: true }} />
+      <ListItemText primary={label} slotProps={{
+        primary: { noWrap: true, sx: { fontSize: 14, fontWeight: active ? 600 : 500 } }
+      }} />
     </ListItemButton>
   );
 };
@@ -39,7 +41,9 @@ export const Shell: React.FC = () => {
         <Box sx={{ width: 32, height: 32, borderRadius: 1.5, bgcolor: "primary.main", color: "primary.contrastText", display: "grid", placeItems: "center", fontWeight: 800, fontSize: 14 }}>
           {appName.replace(/[^A-Za-z]/g, "").slice(0, 2).toUpperCase() || "A"}
         </Box>
-        <Typography fontWeight={700} noWrap>{appName}</Typography>
+        <Typography noWrap sx={{
+          fontWeight: 700
+        }}>{appName}</Typography>
       </Toolbar>
       <Divider />
       <Box sx={{ overflowY: "auto", flex: 1, py: 1 }}>

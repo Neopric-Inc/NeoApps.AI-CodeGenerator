@@ -5,7 +5,7 @@ import {
 } from "@mui/material";
 import SendIcon from "@mui/icons-material/Send";
 import AddIcon from "@mui/icons-material/Add";
-import DeleteOutline from "@mui/icons-material/DeleteOutline";
+import DeleteOutline from "@mui/icons-material/DeleteOutlineOutlined";
 import AutoAwesome from "@mui/icons-material/AutoAwesome";
 import { useApp } from "../AppContext";
 import { AiMessage, ask, conversationMessages, conversations, deleteConversation } from "./aiApi";
@@ -80,12 +80,19 @@ export const Assistant: React.FC = () => {
         </Box>
         <Divider />
         <List dense sx={{ flex: 1, overflowY: "auto", maxHeight: { xs: 200, md: "none" } }}>
-          {convs.length === 0 && <Typography variant="body2" color="text.secondary" sx={{ p: 2 }}>No conversations yet.</Typography>}
+          {convs.length === 0 && <Typography
+            variant="body2"
+            sx={{
+              color: "text.secondary",
+              p: 2
+            }}>No conversations yet.</Typography>}
           {convs.map((c) => (
             <ListItemButton key={c.conversation_id} selected={c.conversation_id === current} onClick={() => open(c.conversation_id)}
               sx={{ "& .del": { visibility: "hidden" }, "&:hover .del": { visibility: "visible" } }}>
-              <ListItemText primary={c.title} primaryTypographyProps={{ noWrap: true, fontSize: 14 }}
-                secondary={new Date(c.modifiedAt).toLocaleDateString()} />
+              <ListItemText primary={c.title} secondary={new Date(c.modifiedAt).toLocaleDateString()}
+                slotProps={{
+                  primary: { noWrap: true, sx: { fontSize: 14 } }
+                }} />
               <IconButton className="del" size="small" onClick={async (e) => {
                 e.stopPropagation();
                 await deleteConversation(c.conversation_id).catch(() => undefined);
@@ -99,7 +106,13 @@ export const Assistant: React.FC = () => {
           <>
             <Divider />
             <Box sx={{ p: 1.5 }}>
-              <Typography variant="caption" color="text.secondary" sx={{ textTransform: "uppercase", letterSpacing: 0.5 }}>Workflows</Typography>
+              <Typography
+                variant="caption"
+                sx={{
+                  color: "text.secondary",
+                  textTransform: "uppercase",
+                  letterSpacing: 0.5
+                }}>Workflows</Typography>
               <WorkflowButtons workflows={globalWorkflows} vertical />
             </Box>
           </>
@@ -111,8 +124,18 @@ export const Assistant: React.FC = () => {
           {messages.length === 0 && (
             <Box sx={{ maxWidth: 640, mx: "auto", textAlign: "center", pt: { md: 6 } }}>
               <AutoAwesome color="primary" sx={{ fontSize: 40 }} />
-              <Typography variant="h5" fontWeight={700} sx={{ mt: 1 }}>{ai.assistantName}</Typography>
-              <Typography color="text.secondary" sx={{ mt: 0.5, mb: 3 }}>
+              <Typography
+                variant="h5"
+                sx={{
+                  fontWeight: 700,
+                  mt: 1
+                }}>{ai.assistantName}</Typography>
+              <Typography
+                sx={{
+                  color: "text.secondary",
+                  mt: 0.5,
+                  mb: 3
+                }}>
                 Ask about your documents and records. Answers cite the source passages{ctxLabel ? `; this conversation starts from ${ctxLabel}` : ""}.
               </Typography>
               <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, justifyContent: "center" }}>

@@ -3,7 +3,7 @@
 const LEGACY_TOKEN_KEY = "neoapps.token";
 
 export const apiBase = (): string => {
-  const base = process.env.REACT_APP_API_BASE_URL || "http://localhost:5000/v1/api/";
+  const base = import.meta.env.REACT_APP_API_BASE_URL || "http://localhost:5000/v1/api/";
   return base.endsWith("/") ? base : base + "/";
 };
 

@@ -50,8 +50,14 @@ export const Dashboard: React.FC = () => {
 
   return (
     <Box>
-      <Typography variant="h5" fontWeight={700}>Welcome back{me ? `, ${me.username}` : ""}</Typography>
-      <Typography color="text.secondary" sx={{ mb: 3 }}>{config.tagline || `Here's what's happening in ${config.appName || schema.app}.`}</Typography>
+      <Typography variant="h5" sx={{
+        fontWeight: 700
+      }}>Welcome back{me ? `, ${me.username}` : ""}</Typography>
+      <Typography
+        sx={{
+          color: "text.secondary",
+          mb: 3
+        }}>{config.tagline || `Here's what's happening in ${config.appName || schema.app}.`}</Typography>
       {extensions.dashboardTop && React.createElement(extensions.dashboardTop)}
       <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr 1fr", md: "repeat(4, 1fr)" }, gap: 2, mb: 3 }}>
         {cards.map((t) => (
@@ -62,7 +68,9 @@ export const Dashboard: React.FC = () => {
                   <Icon name={tables[t].icon} />
                   <Typography variant="body2" noWrap>{labelOf(t)}</Typography>
                 </Box>
-                {counts[t] === undefined ? <Skeleton width={48} height={40} /> : <Typography variant="h4" fontWeight={700}>{display(t)}</Typography>}
+                {counts[t] === undefined ? <Skeleton width={48} height={40} /> : <Typography variant="h4" sx={{
+                  fontWeight: 700
+                }}>{display(t)}</Typography>}
               </CardContent>
             </CardActionArea>
           </Card>
@@ -70,7 +78,14 @@ export const Dashboard: React.FC = () => {
       </Box>
       {recent && (
         <Paper variant="outlined" sx={{ borderRadius: 2, overflow: "hidden" }}>
-          <Typography fontWeight={600} sx={{ px: 2, py: 1.5, borderBottom: 1, borderColor: "divider" }}>Recently updated {recent.label.toLowerCase()}</Typography>
+          <Typography
+            sx={{
+              fontWeight: 600,
+              px: 2,
+              py: 1.5,
+              borderBottom: 1,
+              borderColor: "divider"
+            }}>Recently updated {recent.label.toLowerCase()}</Typography>
           <DataTable table={recent} columns={recent.listColumns.slice(0, 5)} rows={recentRows} total={recentRows.length} loading={loadingRecent}
             page={0} pageSize={5} labelFor={labelFor} dense onOpen={(r) => navigate(`/r/${recent.name}/${r[recent.primaryKey]}`)} />
         </Paper>

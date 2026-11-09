@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Alert, Box, Button, Chip, CircularProgress, IconButton, List, ListItem, ListItemIcon, ListItemText, Paper, Tooltip, Typography } from "@mui/material";
 import UploadFile from "@mui/icons-material/UploadFile";
 import DescriptionOutlined from "@mui/icons-material/DescriptionOutlined";
-import DeleteOutline from "@mui/icons-material/DeleteOutline";
+import DeleteOutline from "@mui/icons-material/DeleteOutlineOutlined";
 import { useApp } from "../AppContext";
 import { AiFile, deleteFile, listFiles, openFile, uploadFile } from "./aiApi";
 
@@ -63,7 +63,12 @@ export const FilesPanel: React.FC<{ table: string; recordId: string; onChange?: 
     <Paper variant="outlined" sx={{ borderRadius: 2, p: 2, mb: 3 }}
       onDragOver={(e) => canEdit && e.preventDefault()} onDrop={(e) => { if (!canEdit) return; e.preventDefault(); upload(e.dataTransfer.files); }}>
       <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
-        <Typography variant="subtitle1" fontWeight={600} sx={{ flex: 1 }}>Files</Typography>
+        <Typography
+          variant="subtitle1"
+          sx={{
+            fontWeight: 600,
+            flex: 1
+          }}>Files</Typography>
         {canEdit && (
           <>
             <input ref={input} type="file" hidden multiple onChange={(e) => upload(e.target.files)} />
@@ -75,7 +80,9 @@ export const FilesPanel: React.FC<{ table: string; recordId: string; onChange?: 
       </Box>
       {error && <Alert severity="warning" sx={{ mb: 1 }} onClose={() => setError(undefined)}>{error}</Alert>}
       {loading ? <CircularProgress size={20} /> : files.length === 0 ? (
-        <Typography variant="body2" color="text.secondary">
+        <Typography variant="body2" sx={{
+          color: "text.secondary"
+        }}>
           {canEdit ? "Drop any files here: PDFs, scans, photos, Word, Excel, PowerPoint, e-mails or ZIPs. Their text is read so the assistant can search and cite them." : "No files attached."}
         </Typography>
       ) : (

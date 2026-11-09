@@ -15,7 +15,7 @@ import { ResourcePage } from "./ResourcePage";
 import { Shell } from "./Shell";
 import { extensions } from "../custom";
 
-const Themed: React.FC = ({ children }) => {
+const Themed: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   const { config } = useApp();
   const theme = useMemo(() => createTheme({
     palette: {
@@ -30,7 +30,7 @@ const Themed: React.FC = ({ children }) => {
   return <ThemeProvider theme={theme}><CssBaseline />{children}</ThemeProvider>;
 };
 
-const AdminOnly: React.FC<{ element: JSX.Element }> = ({ element }) => {
+const AdminOnly: React.FC<{ element: React.JSX.Element }> = ({ element }) => {
   const { me } = useApp();
   return me?.is_admin ? element : <Alert severity="info">Administrators only.</Alert>;
 };

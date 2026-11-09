@@ -34,8 +34,15 @@ export const Login: React.FC = () => {
             <LockOutlined fontSize="small" />
           </Box>
           <Box>
-            <Typography variant="h6" fontWeight={700} lineHeight={1.2}>{appName}</Typography>
-            <Typography variant="body2" color="text.secondary">{config.tagline || "Sign in to continue"}</Typography>
+            <Typography
+              variant="h6"
+              sx={{
+                fontWeight: 700,
+                lineHeight: 1.2
+              }}>{appName}</Typography>
+            <Typography variant="body2" sx={{
+              color: "text.secondary"
+            }}>{config.tagline || "Sign in to continue"}</Typography>
           </Box>
         </Box>
         <form onSubmit={submit}>

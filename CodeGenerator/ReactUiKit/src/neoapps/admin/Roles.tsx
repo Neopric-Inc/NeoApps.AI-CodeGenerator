@@ -89,8 +89,12 @@ export const Roles: React.FC = () => {
     <Box>
       <Box sx={{ display: "flex", alignItems: "center", mb: 2.5 }}>
         <Box sx={{ flex: 1 }}>
-          <Typography variant="h5" fontWeight={700}>Roles & permissions</Typography>
-          <Typography variant="body2" color="text.secondary">Choose what each role can view, create, edit and delete. Changes apply to every member with that role.</Typography>
+          <Typography variant="h5" sx={{
+            fontWeight: 700
+          }}>Roles & permissions</Typography>
+          <Typography variant="body2" sx={{
+            color: "text.secondary"
+          }}>Choose what each role can view, create, edit and delete. Changes apply to every member with that role.</Typography>
         </Box>
         <Button startIcon={<AddIcon />} variant="outlined" onClick={() => setCreating(true)}>New role</Button>
       </Box>
@@ -124,10 +128,14 @@ export const Roles: React.FC = () => {
             <TableBody>
               {rows.map((p) => (
                 <TableRow key={p.entity} hover>
-                  <TableCell>{tables[p.entity]?.label || <Typography variant="body2" color="text.secondary">{p.entity} (system)</Typography>}</TableCell>
+                  <TableCell>{tables[p.entity]?.label || <Typography variant="body2" sx={{
+                    color: "text.secondary"
+                  }}>{p.entity} (system)</Typography>}</TableCell>
                   {ACTIONS.map((a) => (
                     <TableCell key={a} align="center">
-                      <Checkbox size="small" checked={p[a]} disabled={role?.is_admin} onChange={(e) => toggle(p.entity, a, e.target.checked)} inputProps={{ "aria-label": `${p.entity} ${a}` }} />
+                      <Checkbox size="small" checked={p[a]} disabled={role?.is_admin} onChange={(e) => toggle(p.entity, a, e.target.checked)} slotProps={{
+                        input: { "aria-label": `${p.entity} ${a}` }
+                      }} />
                     </TableCell>
                   ))}
                 </TableRow>

@@ -39,7 +39,7 @@ export const Breadcrumbs: React.FC = () => {
     fromMenu = false;
     const i = t.findIndex((p) => pathOf(p) === pathname);
     if (i >= 0) t = t.slice(0, i);
-    t = [...t, pathname + search].slice(-MAX);
+    t = [...t, pathname + search].filter((p) => pathOf(p) !== "/").slice(-MAX); // the dashboard is always the first crumb
     delete recordLabels[pathname]; // refresh the current record's name (it may have been edited)
     write(t);
     setTrail(t);
@@ -89,9 +89,21 @@ export const Breadcrumbs: React.FC = () => {
   return (
     <MuiBreadcrumbs separator={<NavigateNextIcon fontSize="small" />} sx={{ mb: 2, "& .MuiBreadcrumbs-ol": { flexWrap: "wrap" } }}>
       <Link component={RouterLink} to="/" underline="hover" color="inherit" onClick={markMenuNavigation}>Dashboard</Link>
-      {group && <Typography color="text.secondary" sx={{ fontSize: "inherit" }}>{group}</Typography>}
+      {group && <Typography
+        sx={{
+          color: "text.secondary",
+          fontSize: "inherit"
+        }}>{group}</Typography>}
       {trail.map((p, i) => i === trail.length - 1
-        ? <Typography key={p} color="text.primary" fontWeight={600} sx={{ fontSize: "inherit", maxWidth: 360 }} noWrap>{label(p, trail[i - 1])}</Typography>
+        ? <Typography
+        key={p}
+        noWrap
+        sx={{
+          color: "text.primary",
+          fontWeight: 600,
+          fontSize: "inherit",
+          maxWidth: 360
+        }}>{label(p, trail[i - 1])}</Typography>
         : <Link key={p} component={RouterLink} to={p} underline="hover" color="inherit" sx={{ maxWidth: 260, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{label(p, trail[i - 1])}</Link>)}
     </MuiBreadcrumbs>
   );

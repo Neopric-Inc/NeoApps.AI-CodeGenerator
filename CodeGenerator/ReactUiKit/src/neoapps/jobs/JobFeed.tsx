@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import { Alert, Box, Chip, LinearProgress, Typography } from "@mui/material";
 import CheckCircle from "@mui/icons-material/CheckCircle";
-import ErrorOutline from "@mui/icons-material/ErrorOutline";
+import ErrorOutline from "@mui/icons-material/ErrorOutlineOutlined";
 import HourglassTop from "@mui/icons-material/HourglassTop";
 import PanTool from "@mui/icons-material/PanTool";
 import WarningAmber from "@mui/icons-material/WarningAmber";
@@ -57,7 +57,9 @@ export const JobFeed: React.FC<{ job?: Job; events: JobEvent[]; error?: string; 
         </Box>
       )}
       <Box sx={{ maxHeight, overflowY: "auto", border: 1, borderColor: "divider", borderRadius: 1, p: 1, bgcolor: "action.hover" }}>
-        {!events.length && <Typography variant="body2" color="text.secondary">Starting…</Typography>}
+        {!events.length && <Typography variant="body2" sx={{
+          color: "text.secondary"
+        }}>Starting…</Typography>}
         {events.map((e) => (
           <Box key={e.id} sx={{ display: "flex", gap: 1, alignItems: "flex-start", py: 0.25 }}>
             {icon(e)}
@@ -65,7 +67,12 @@ export const JobFeed: React.FC<{ job?: Job; events: JobEvent[]; error?: string; 
               <Typography variant="body2" sx={{ fontWeight: e.level === "approval" || e.level === "done" ? 600 : 400 }}>{e.message}</Typography>
               {e.level === "file" && e.data?.file && job && <JobFile jobId={job.job_id} info={e.data} caption={e.message} height={64} />}
             </Box>
-            <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: "nowrap" }}>{time(e.at)}</Typography>
+            <Typography
+              variant="caption"
+              sx={{
+                color: "text.secondary",
+                whiteSpace: "nowrap"
+              }}>{time(e.at)}</Typography>
           </Box>
         ))}
         <div ref={end} />
