@@ -110,14 +110,16 @@ export const AppProvider: React.FC = ({ children }) => {
     return groups.map((g) => ({ ...g, items: g.items.filter((i) => can(i, "read") && (!only || only.includes(i))) })).filter((g) => g.items.length);
   }, [tables, config, can, me]);
 
-  /** Table pages a role may open: with config.menuByRole, only its menu tables and their child tables (typing a URL doesn't bypass the menu). */
+  /** Table pages a role may open: with config.menuByRole, only its menu tables, their child tables and config.openByRole (typing a URL doesn't bypass the menu). */
   const canOpen = useCallback(
     (table: string) => {
       if (!can(table, "read")) return false;
       if (me?.is_admin) return true;
       const only = me?.role_name ? ((config as any).menuByRole?.[me.role_name] as string[] | undefined) : undefined;
       if (!only) return true;
-      return only.includes(table) || only.some((t) => tables[t]?.children?.includes(table));
+      // config.openByRole = { "Client": ["documents"] }: pages a role may open from custom screens without a menu entry
+      const extra = ((config as any).openByRole?.[me!.role_name] as string[] | undefined) || [];
+      return only.includes(table) || extra.includes(table) || only.some((t) => tables[t]?.children?.includes(table));
     },
     [can, me, config, tables]
   );

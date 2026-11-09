@@ -142,6 +142,8 @@ internal static class UiConfigTools
           "menuByRole": { "Client": ["documents"] }
               The role's sidebar AND the table pages it may open (/r/<table> for other tables shows "not available";
               child tables of listed ones stay reachable). The API is still governed by permissions + the rules above.
+          "openByRole": { "Client": ["documents"] }
+              Extra table pages the role may open (e.g. links from custom screens) without adding them to its sidebar.
           "lifecycles": { "cases": { "column": "status", "initial": ["draft"], "frozen": ["closed"],
               "transitions": [ { "from": "draft", "to": "submitted", "roles": ["*"], "actors": ["human"] },
                                { "from": "qa", "to": "delivered", "roles": ["Manager"],
