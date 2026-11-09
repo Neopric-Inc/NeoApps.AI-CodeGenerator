@@ -84,8 +84,12 @@ public sealed class DockerService(NeoAppsSettings settings, ProjectStore store)
         sb.AppendLine("      AI_VISION_MODEL: ${AI_VISION_MODEL:-}");
         sb.AppendLine("    volumes:");
         sb.AppendLine("      - app_data:/app/App_Data");
+        // the UI reaches the API through its own origin (nginx /v1/api); the API port is published on this machine only (Swagger, scripts)
         sb.AppendLine("    ports:");
-        sb.AppendLine($"      - \"{p.ApiPort}:8080\"");
+        sb.AppendLine($"      - \"127.0.0.1:{p.ApiPort}:8080\"");
+        sb.AppendLine("    networks:");
+        sb.AppendLine("      default:");
+        sb.AppendLine($"        aliases: [{ComposeProjectName(p.Name)}-api]");
         sb.AppendLine("    restart: unless-stopped");
         if (includeConsumer)
         {
@@ -106,6 +110,10 @@ public sealed class DockerService(NeoAppsSettings settings, ProjectStore store)
             sb.AppendLine("  web:");
             sb.AppendLine("    build:");
             sb.AppendLine($"      context: {Quote(p.FrontendPath)}");
+            sb.AppendLine("      args:");
+            sb.AppendLine("        REACT_APP_API_BASE_URL: /v1/api/");
+            sb.AppendLine("    environment:");
+            sb.AppendLine($"      API_UPSTREAM: {Quote($"http://{ComposeProjectName(p.Name)}-api:8080")}");
             sb.AppendLine("    ports:");
             sb.AppendLine($"      - \"{p.WebPort}:80\"");
             sb.AppendLine("    depends_on: [api]");

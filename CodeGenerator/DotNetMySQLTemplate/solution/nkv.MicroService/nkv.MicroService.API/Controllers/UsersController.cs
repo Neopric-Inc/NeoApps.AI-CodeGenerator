@@ -106,7 +106,7 @@ namespace nkv.MicroService.API.Controllers
         {
             try
             {
-                string token = Request.Headers["Authorization"];
+                string token = SessionCookie.RequestToken(Request); // bearer header or the web session cookie
 
                 // Check if the token is present
                 if (string.IsNullOrEmpty(token))
@@ -130,7 +130,7 @@ namespace nkv.MicroService.API.Controllers
         {
             try
             {
-                string token = Request.Headers["Authorization"];
+                string token = SessionCookie.RequestToken(Request); // bearer header or the web session cookie
 
                 // Check if the token is present
                 if (string.IsNullOrEmpty(token))
@@ -159,7 +159,7 @@ namespace nkv.MicroService.API.Controllers
         {
             try
             {
-                string token = Request.Headers["Authorization"];
+                string token = SessionCookie.RequestToken(Request); // bearer header or the web session cookie
 
                 // Check if the token is present
                 if (string.IsNullOrEmpty(token))
@@ -187,7 +187,7 @@ namespace nkv.MicroService.API.Controllers
         {
             try
             {
-                string token = Request.Headers["Authorization"];
+                string token = SessionCookie.RequestToken(Request); // bearer header or the web session cookie
 
                 // Check if the token is present
                 if (string.IsNullOrEmpty(token))

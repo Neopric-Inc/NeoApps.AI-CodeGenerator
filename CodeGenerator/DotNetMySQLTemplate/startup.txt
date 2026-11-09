@@ -61,8 +61,9 @@ namespace {projectName}.API
                    builder =>
                    {
                        builder.AllowAnyHeader().AllowAnyMethod().WithExposedHeaders("X-Correlation-Id");
-                       if (origins.Length > 0) builder.WithOrigins(origins);
-                       else if (ApiHardening.IsDevelopment) builder.AllowAnyOrigin();
+                       // credentials: the UI's session cookie is sent cross-port (UI and API on different ports/hosts)
+                       if (origins.Length > 0) builder.WithOrigins(origins).AllowCredentials();
+                       else if (ApiHardening.IsDevelopment) builder.SetIsOriginAllowed(_ => true).AllowCredentials();
                        else builder.SetIsOriginAllowed(_ => false);
                    });
             });
@@ -70,7 +71,7 @@ namespace {projectName}.API
             ConnectionMultiplexer.Connect(Configuration.GetConnectionString("Redis")));
         services.AddScoped<IRabitMQProducer, RabitMQProducer>();
             services.AddScoped<IRabitMQAsyncProducer, RabitMQAsyncProducer>();
-            services.AddControllers();
+            services.AddControllers(o => o.Filters.Add<FieldAccessFilter>()); // per-role hidden fields on table endpoints
 
             var appSettingsSection = Configuration.GetSection("AppSettings");
             services.Configure<AppSettings>(appSettingsSection);
@@ -98,6 +99,13 @@ namespace {projectName}.API
                 // revoked sessions (sign-out, password/role change, deactivated account) are refused on every request
                 x.Events = new JwtBearerEvents
                 {
+                    // browser sessions use an HttpOnly cookie (SessionCookie); API clients keep using the Authorization header
+                    OnMessageReceived = ctx =>
+                    {
+                        var t = SessionCookie.TokenFor(ctx.Request);
+                        if (t != null) ctx.Token = t;
+                        return System.Threading.Tasks.Task.CompletedTask;
+                    },
                     OnTokenValidated = ctx =>
                     {
                         var uid = int.TryParse(ctx.Principal?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out var u) ? u : 0;
@@ -194,6 +202,7 @@ namespace {projectName}.API
             });
             {projectName}.Utility.GuardJobs.Start(app.ApplicationServices);
             AuthGuard.Init(Configuration, Configuration.GetConnectionString("MySQLDatabase"));
+            SessionCookie.Init(Configuration);
 
             app.UseRouting();
             app.UseRateLimiter();

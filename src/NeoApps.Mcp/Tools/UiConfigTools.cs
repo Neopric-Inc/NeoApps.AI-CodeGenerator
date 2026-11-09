@@ -132,6 +132,16 @@ internal static class UiConfigTools
               AI files of out-of-scope records are hidden. "match" is compared with the login name ("matchBy": "user_id" for
               the numeric user id); optional "tables" / "exclude" limit where it applies. Same pattern for "experts only
               see their assigned cases" (column assigned_expert_id, home table = the experts table).
+          "hiddenFields": { "Client": { "claim_calculations": ["ppa_cap", "notes"], "*": ["created_by_user"] } }
+              Columns a role never receives (API responses, Access/me, AI answers) and can't set (updates keep the stored
+              value, inserts use the column default, so make them nullable or give them a default). Filtering or sorting
+              by them is refused. "*" = every table. Lists, forms and record pages leave them out for that role.
+          "readFilters": [ { "roles": ["Client"], "table": "intake_bundles", "column": "status", "in": ["sent", "approved"] } ]
+              The role only sees and changes rows matching the filter ("in" or "notIn"); other rows behave as missing
+              (404 on /{id}). Use it for drafts, internal notes, anything a role must not reach by typing a URL.
+          "menuByRole": { "Client": ["documents"] }
+              The role's sidebar AND the table pages it may open (/r/<table> for other tables shows "not available";
+              child tables of listed ones stay reachable). The API is still governed by permissions + the rules above.
           "lifecycles": { "cases": { "column": "status", "initial": ["draft"], "frozen": ["closed"],
               "transitions": [ { "from": "draft", "to": "submitted", "roles": ["*"], "actors": ["human"] },
                                { "from": "qa", "to": "delivered", "roles": ["Manager"],

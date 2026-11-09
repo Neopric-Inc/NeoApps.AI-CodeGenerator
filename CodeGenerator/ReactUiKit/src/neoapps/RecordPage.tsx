@@ -56,7 +56,7 @@ const ChildList: React.FC<{ child: ResolvedTable; fk: string; parentId: any }> =
 
 export const RecordPage: React.FC = () => {
   const { table: name = "", id = "" } = useParams();
-  const { tables, can, ai } = useApp();
+  const { tables, can, canOpen, ai } = useApp();
   const navigate = useNavigate();
   const table = tables[name];
   const [record, setRecord] = useState<Record<string, any> | null>(null);
@@ -68,7 +68,7 @@ export const RecordPage: React.FC = () => {
   const { labelFor } = useReferences(table);
 
   const load = useCallback(async () => {
-    if (!table) return;
+    if (!table || !canOpen(table.name)) return;
     setLoading(true);
     try {
       setRecord(await getRecord(table.name, id));
@@ -77,12 +77,13 @@ export const RecordPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [table, id]);
+  }, [table, id, canOpen]);
 
   useEffect(() => { load(); }, [load]);
   const del = useDelete(name, () => navigate(`/r/${name}`));
 
   if (!table) return <Alert severity="warning">Unknown table "{name}".</Alert>;
+  if (!canOpen(name)) return <Alert severity="info">This page isn't available for your role.</Alert>;
   if (loading) return <Box sx={{ display: "grid", placeItems: "center", py: 10 }}><CircularProgress /></Box>;
   if (error || !record) return <Alert severity="error">{error || `${table.singular} not found.`}</Alert>;
 

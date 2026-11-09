@@ -78,7 +78,8 @@ namespace nkv.MicroService.API.Controllers
                 tenancy = DataGuard.TenancyEnabled,
                 tenant_table = DataGuard.TenantTable,
                 is_admin = IsAdmin,
-                permissions
+                permissions,
+                hidden_fields = DataGuard.HiddenFieldMap() // per-role hidden columns (never sent by the API)
             }));
         }
 
@@ -298,6 +299,7 @@ namespace nkv.MicroService.API.Controllers
         public ActionResult Logout()
         {
             AuthGuard.RevokeTokens(UserId);
+            SessionCookie.Clear(Response);
             return Ok(new APIResponse(ResponseCode.SUCCESS, "Signed out"));
         }
 
@@ -316,6 +318,7 @@ namespace nkv.MicroService.API.Controllers
             Exec(conn, "UPDATE users SET password_hash = @p, modifiedBy = @u, modifiedAt = NOW() WHERE user_id = @id",
                 ("@p", PasswordHasher.Hash(input.new_password)), ("@u", Username), ("@id", UserId));
             AuthGuard.RevokeTokens(UserId, passwordChanged: true);
+            SessionCookie.Clear(Response);
             return Ok(new APIResponse(ResponseCode.SUCCESS, "Password changed. Sign in again."));
         }
 

@@ -1,5 +1,5 @@
 // Client for the AI endpoints of the generated API (/v1/api/Ai/...). Responses are plain JSON; errors are {message}.
-import { apiBase, ApiError, getToken } from "../api";
+import { ApiError, apiFetch } from "../api";
 
 export interface AiWorkflow {
   id: string;
@@ -74,9 +74,7 @@ export interface WorkflowPreview {
 async function call<T>(method: string, path: string, body?: any, form?: FormData): Promise<T> {
   const headers: Record<string, string> = {};
   if (!form) headers["Content-Type"] = "application/json";
-  const token = getToken();
-  if (token) headers.Authorization = `Bearer ${token}`;
-  const res = await fetch(apiBase() + "Ai/" + path, { method, headers, body: form ?? (body === undefined ? undefined : JSON.stringify(body)) });
+  const res = await apiFetch("Ai/" + path, { method, headers, body: form ?? (body === undefined ? undefined : JSON.stringify(body)) });
   const text = await res.text();
   let json: any = null;
   try {
@@ -113,7 +111,6 @@ export function uploadFile(table: string, recordId: string, file: File) {
 }
 export const deleteFile = (id: number) => call("DELETE", `files/${id}`);
 
-/** Opens a stored file in a new tab (fetched with the bearer token, so it can't be a plain link). */
 /**
  * Opens an uploaded file. PDFs, images and text are shown in a new tab (embedded, so every browser displays them
  * instead of downloading); other types (Word, Excel, ZIP...) download.
@@ -121,7 +118,7 @@ export const deleteFile = (id: number) => call("DELETE", `files/${id}`);
 export async function openFile(id: number, name: string) {
   const tab = window.open("", "_blank");
   if (tab) { tab.document.title = name; tab.document.body.innerHTML = '<p style="font:14px system-ui,sans-serif;padding:16px;color:#555">Opening\u2026</p>'; }
-  const res = await fetch(apiBase() + `Ai/files/${id}/content`, { headers: { Authorization: `Bearer ${getToken()}` } });
+  const res = await apiFetch(`Ai/files/${id}/content`);
   if (!res.ok) {
     tab?.close();
     throw new ApiError(res.status, "Couldn't open the file.");

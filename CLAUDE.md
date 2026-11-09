@@ -55,7 +55,7 @@ Work in the app's planning folder `workspace/<App>/` (git-ignored): `requirement
    NuGet packages and Playwright browsers: `custom-api/packages.json` (`{"packages": {...}, "browsers": ["chromium"]}`);
    browser example `samples/custom-api-browser/` (restrict hosts with `Browser:AllowedHosts`).
    **Data rules:** for multi-tenant apps, customer portals (customers see only their own rows), status workflows, approvals,
-   audit trails, domain events, SLAs, plan limits, field validation (formats, ranges, date order, totals) or automatic numbers (INV-2026-00001), add the `tenancy`, `rowScopes`, `lifecycles`, `validations`, `numbering`, `immutable`, `audit`, `outbox`, `jobs` and `limits` sections to ui.config.json (see the guide)
+   audit trails, domain events, SLAs, plan limits, field validation (formats, ranges, date order, totals) or automatic numbers (INV-2026-00001), add the `tenancy`, `rowScopes`, `hiddenFields`, `readFilters`, `lifecycles`, `validations`, `numbering`, `immutable`, `audit`, `outbox`, `jobs` and `limits` sections to ui.config.json (see the guide)
    instead of hand-writing checks: the generated API enforces them on every query (`Utility/DataGuard*.cs`). After deploying,
    run `./neoapps test <App>` and report the result (tenant isolation per table, row scopes, append-only tables, lifecycle steps).
 4. **When requirements change** (they will): add a changelog line to `requirements.md`, update the schema and UI config,
@@ -106,6 +106,9 @@ Pass the key to the API from the environment, e.g. `set -a; . ~/secrets/anthropi
 `conversations`, `workflows/{id}/preview|apply`.
 
 Login: `POST /v1/api/Token {"username","password"}` → `document.accessToken`. Use it as a Bearer token on `/v1/api/<Table>`.
+The web UI never holds the token: `/Token` also sets an HttpOnly `neoapps_session` cookie (requests with the
+`X-NeoApps-Client` header get no token in the body; cookie-authenticated writes need that header). With `--deploy` the UI
+calls the API on its own origin (nginx proxies `/v1/api/`) and the API port is published on 127.0.0.1 only.
 Rows are owner-scoped (`createdBy`/`modifiedBy` hold the workspace owner), so seed rows inserted with another `createdBy` won't show up.
 Who really created or last changed a row is in `created_by_user`/`modified_by_user` (`<user> via AI` for AI writes, `system` for jobs):
 added to every app table automatically and stamped by DataGuard on every write, so don't put them in schema.sql.

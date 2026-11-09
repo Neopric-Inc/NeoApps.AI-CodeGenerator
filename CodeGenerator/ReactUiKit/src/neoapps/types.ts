@@ -158,4 +158,6 @@ export interface Me {
   tenant_table?: string | null;
   is_admin: boolean;
   permissions: Record<string, Permission>;
+  /** columns the API never sends to this role (ui.config "hiddenFields") */
+  hidden_fields?: Record<string, string[]>;
 }

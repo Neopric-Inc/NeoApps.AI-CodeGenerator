@@ -70,9 +70,12 @@ namespace nkv.MicroService.API.Controllers
                     var token = tokenHandler.CreateToken(tokenDescriptor);
                     if (token != null)
                     {
+                        var jwt = tokenHandler.WriteToken(token);
+                        SessionCookie.Set(Response, jwt, token.ValidTo);
                         TokenResponse tokenResponse = new TokenResponse()
                         {
-                            AccessToken = tokenHandler.WriteToken(token),
+                            // the web UI signs in with the HttpOnly cookie only; API clients get the bearer token as before
+                            AccessToken = SessionCookie.IsBrowserClient(Request) ? null : jwt,
                             ValidFrom = token.ValidFrom,
                             ValidTo = token.ValidTo,
                             user = usersModel
