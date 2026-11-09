@@ -14,6 +14,8 @@ export interface AiWorkflow {
 
 export interface AiStatus {
   enabled: boolean;
+  /** File uploads stay available when AI is limited to other roles (ai.roles). */
+  files?: boolean;
   configured: boolean;
   model: string;
   assistantName: string;
@@ -49,7 +51,7 @@ export interface AiFile {
   content_type?: string;
   size_bytes: number;
   pages?: number;
-  status: "indexing" | "indexed" | "no_text" | "failed";
+  status: "indexing" | "indexed" | "needs_ocr" | "reading" | "stored" | "no_text" | "failed";
   error?: string;
   createdBy: string;
   createdAt: string;
@@ -83,7 +85,7 @@ async function call<T>(method: string, path: string, body?: any, form?: FormData
     json = null;
   }
   if (res.status === 401) throw new ApiError(401, "Your session has expired. Sign in again.");
-  if (res.status === 413) throw new ApiError(413, "That file is too large (50 MB max).");
+  if (res.status === 413) throw new ApiError(413, "That file is too large (250 MB max). Split it or upload a ZIP of smaller files.");
   if (!res.ok) throw new ApiError(res.status, json?.message || res.statusText || "Request failed");
   return json as T;
 }

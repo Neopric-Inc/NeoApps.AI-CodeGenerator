@@ -34,8 +34,8 @@ namespace nkv.MicroService.API.Ai
         public JsonObject Upload(AiUser u, string table, string recordId, string fileName, string contentType, Stream content)
         {
             fileName = Path.GetFileName(fileName ?? "file");
-            if (!DocumentText.Supported.Contains(Path.GetExtension(fileName).ToLowerInvariant()))
-                throw new AiException("Unsupported file type. Upload PDF, DOCX, TXT, MD, CSV or JSON.");
+            if (DocumentText.Blocked.Contains(Path.GetExtension(fileName)))
+                throw new AiException("Programs and scripts can't be uploaded. Any document, spreadsheet, image, e-mail or archive is fine.");
             using var c = _data.Open();
             RequirePerm(c, u, table, p => p.Update || p.Create, "attach files to");
             if (!DataGuard.RecordVisible(c, table, recordId)) throw new AiException("Record not found.");
@@ -52,17 +52,20 @@ namespace nkv.MicroService.API.Ai
             var fileId = (int)cmd.LastInsertedId;
             try
             {
-                var pages = DocumentText.Extract(path, fileName);
+                // Text formats are indexed now; scans and images wait for the background OCR worker (AiFileWorker).
+                var result = DocumentText.Read(path, fileName);
+                var pages = result.Pages;
                 foreach (var (text, i) in pages.Select((t, i) => (t, i)))
                 {
                     if (string.IsNullOrWhiteSpace(text)) continue;
                     AiData.Cmd(c, "INSERT INTO ai_chunks (file_id, owner_name, page, text, tenant_id) VALUES (@f, @o, @p, @t, @tn)",
                         ("@f", fileId), ("@o", u.Tenant), ("@p", i + 1), ("@t", text), ("@tn", dataTenant)).ExecuteNonQuery();
                 }
-                var chars = pages.Sum(p => p.Length);
-                var status = chars < 20 ? "no_text" : "indexed";
+                var note = result.Status == "needs_ocr"
+                    ? (_settings.HasKey ? "Scanned pages or images: reading them with AI in the background." : "Scanned pages or images: they will be read once AI is configured (ANTHROPIC_API_KEY).")
+                    : result.Note;
                 AiData.Cmd(c, "UPDATE ai_files SET status=@s, pages=@p, error=@e WHERE file_id=@id",
-                    ("@s", status), ("@p", pages.Count), ("@e", status == "no_text" ? "No selectable text found (scanned PDF?)." : null), ("@id", fileId)).ExecuteNonQuery();
+                    ("@s", result.Status), ("@p", pages.Count), ("@e", note), ("@id", fileId)).ExecuteNonQuery();
             }
             catch (Exception ex)
             {
@@ -352,7 +355,7 @@ namespace nkv.MicroService.API.Ai
         {
             if (string.IsNullOrWhiteSpace(question)) throw new AiException("Ask a question.");
             var cfg = _settings.Config(u.Tenant);
-            if (!_settings.Enabled(cfg)) throw new AiException("AI is not configured. Set ANTHROPIC_API_KEY for the API.");
+            RequireAi(u, cfg);
             using var c = _data.Open();
 
             int convId;
@@ -456,12 +459,34 @@ How to answer:
 
         // ================================================================== workflows
 
+        /// <summary>
+        /// ai.roles limits the assistant and workflows to the listed role names (Administrator always allowed).
+        /// Without it every signed-in user may use AI.
+        /// </summary>
+        private bool RoleAllowed(AiUser u, JsonObject cfg)
+        {
+            if (cfg["roles"] is not JsonArray roles || roles.Count == 0) return true;
+            if (u.RoleId == 1) return true;
+            using var c = _data.Open();
+            using var cmd = new MySqlCommand("SELECT role_name FROM roles WHERE role_id = @id", c);
+            cmd.Parameters.AddWithValue("@id", u.RoleId);
+            var name = cmd.ExecuteScalar() as string;
+            return name != null && roles.Any(r => string.Equals(r?.GetValue<string>(), name, StringComparison.OrdinalIgnoreCase));
+        }
+
+        private void RequireAi(AiUser u, JsonObject cfg)
+        {
+            if (!RoleAllowed(u, cfg)) throw new AiException("AI tools are not available for your role.");
+            if (!_settings.Enabled(cfg)) throw new AiException("AI is not configured. Set ANTHROPIC_API_KEY, or OPENAI_API_KEY + OPENAI_BASE_URL, for the API.");
+        }
+
         public JsonObject Status(AiUser u)
         {
             var cfg = _settings.Config(u.Tenant);
             return new JsonObject
             {
-                ["enabled"] = _settings.Enabled(cfg),
+                ["enabled"] = _settings.Enabled(cfg) && RoleAllowed(u, cfg),
+                ["files"] = true,
                 ["configured"] = _settings.HasKey,
                 ["model"] = _settings.Model(cfg),
                 ["assistantName"] = cfg["assistantName"]?.DeepClone() ?? "Assistant",
@@ -493,7 +518,7 @@ How to answer:
         public string CheckWorkflow(AiUser u, string workflowId, string recordId)
         {
             var cfg = _settings.Config(u.Tenant);
-            if (!_settings.Enabled(cfg)) throw new AiException("AI is not configured. Set ANTHROPIC_API_KEY for the API.");
+            RequireAi(u, cfg);
             var wf = Workflow(cfg, workflowId);
             using var c = _data.Open();
             var perms = _data.Permissions(c, u);
@@ -519,7 +544,7 @@ How to answer:
         public async Task<JsonObject> PreviewWorkflow(AiUser u, string workflowId, string recordId, string note, CancellationToken ct, Action<string> progress = null)
         {
             var cfg = _settings.Config(u.Tenant);
-            if (!_settings.Enabled(cfg)) throw new AiException("AI is not configured. Set ANTHROPIC_API_KEY for the API.");
+            RequireAi(u, cfg);
             var wf = Workflow(cfg, workflowId);
             using var c = _data.Open();
             var perms = _data.Permissions(c, u);

@@ -193,6 +193,8 @@ internal static class UiConfigTools
             "documentTables": ["documents"],          // record pages of these tables get a Files panel; uploads are indexed
             "tools": ["documents", "records", "clinicaltrials_gov"],   // what the assistant may use
             "suggestions": ["Which studies are enrolling?"],           // starter questions on the Assistant page
+            "roles": ["Coordinator"],                 // optional: only these roles (and Administrator) see the assistant,
+                                                      // Ask AI and workflows; others keep the Files panel for uploads
             "workflows": [
               { "id": "soa_to_source", "label": "Build visit schedule",
                 "table": "documents", "when": { "document_type": "protocol" },   // button on matching records; omit "table" for a global workflow

@@ -77,6 +77,11 @@ public sealed class DockerService(NeoAppsSettings settings, ProjectStore store)
         sb.AppendLine("      Swagger__Enabled: \"true\"");
         // AI assistant: the key comes from the environment of whoever runs the deploy; never written to disk.
         sb.AppendLine("      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}");
+        sb.AppendLine("      AI_PROVIDER: ${AI_PROVIDER:-}");
+        sb.AppendLine("      OPENAI_API_KEY: ${OPENAI_API_KEY:-}");
+        sb.AppendLine("      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}");
+        sb.AppendLine("      AI_MODEL: ${AI_MODEL:-}");
+        sb.AppendLine("      AI_VISION_MODEL: ${AI_VISION_MODEL:-}");
         sb.AppendLine("    volumes:");
         sb.AppendLine("      - app_data:/app/App_Data");
         sb.AppendLine("    ports:");
