@@ -128,6 +128,7 @@ namespace nkv.MicroService.API.Ai
                                     WHERE table_schema=DATABASE() AND table_name=@t ORDER BY ordinal_position", ("@t", table)).ExecuteReader())
                 while (r.Read())
                 {
+                    if (DataGuard.IsHidden(table, r.GetString(0))) continue; // per-role hidden fields: the AI neither reads nor writes them
                     fks.TryGetValue(r.GetString(0), out var fk);
                     cols.Add(new ColumnInfo(r.GetString(0), r.GetString(1).ToLowerInvariant(), r.GetString(2).ToLowerInvariant(), r.GetString(3) == "YES",
                         !r.IsDBNull(4), r.GetString(5) == "PRI", r.GetString(6).Contains("auto_increment"), fk.Item1, fk.Item2));
@@ -232,12 +233,15 @@ namespace nkv.MicroService.API.Ai
         public static JsonArray Rows(MySqlCommand cmd)
         {
             var arr = new JsonArray();
+            var from = Regex.Match(cmd.CommandText ?? "", @"\bFROM\s+`?(\w+)`?", RegexOptions.IgnoreCase);
+            var hidden = from.Success ? DataGuard.HiddenFields(from.Groups[1].Value) : new HashSet<string>();
             using var r = cmd.ExecuteReader();
             while (r.Read())
             {
                 var o = new JsonObject();
                 for (var i = 0; i < r.FieldCount; i++)
                 {
+                    if (hidden.Contains(r.GetName(i))) continue;
                     var v = r.IsDBNull(i) ? null : r.GetValue(i);
                     o[r.GetName(i)] = v switch
                     {

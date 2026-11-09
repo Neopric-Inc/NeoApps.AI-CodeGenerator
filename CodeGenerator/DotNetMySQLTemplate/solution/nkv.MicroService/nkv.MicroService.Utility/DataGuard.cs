@@ -92,6 +92,7 @@ namespace nkv.MicroService.Utility
             LoadSchema(c);
             if (TenancyEnabled) UpgradeForTenancy(c);
             LoadScopes();
+            LoadFieldAccess();
             InitExtensions(c);
             Ready = true;
             Console.WriteLine($"DataGuard: {AppTables.Count} app tables, tenancy {(TenancyEnabled ? $"on ({TenantTables.Count} tenant tables, column {TenantColumn})" : "off")}.");
@@ -406,6 +407,7 @@ namespace nkv.MicroService.Utility
                 if (conds.Count > 0) Bind(cmd, "@__g_tenant", caller.Tenant.Value);
             }
             conds.AddRange(RowScopeConditions(table, prefix, caller, cmd));
+            conds.AddRange(ReadFilterConditions(table, prefix, caller, cmd));
             return conds;
         }
 
@@ -441,12 +443,14 @@ namespace nkv.MicroService.Utility
         {
             if (!AppTables.Contains(table)) return;
             CheckWritable(table, caller);
+            KeepHiddenOnUpdate(cmd, table, afterSet);
             var setPart = cmd.CommandText.Substring(afterSet);
             // tenant column can't be moved to another tenant
             if (caller.Tenant != null && TenantTables.Contains(table))
                 foreach (Match pm in Regex.Matches(setPart, $@"`?\b{Regex.Escape(TenantColumn)}\b`?\s*=\s*(@\w+)", RegexOptions.IgnoreCase))
                     Bind(cmd, pm.Groups[1].Value, caller.Tenant.Value);
             var values = SetAssignments(setPart, cmd);
+            foreach (var h in HiddenFields(table)) values.Remove(h);
             StampUpdate(cmd, caller, table, afterSet, values);
             GuardScopedWrite(cmd, caller, table, values, col =>
             {
@@ -486,6 +490,7 @@ namespace nkv.MicroService.Utility
                 }
                 values[cols[i]] = e.StartsWith("@") && cmd.Parameters.Contains(e) ? cmd.Parameters[e].Value : (object)e;
             }
+            foreach (var h in HiddenFields(table)) values.Remove(h); // set to the column default below
             if (caller.Owner != null && cols.Contains("createdby"))
             {
                 var i = cols.IndexOf("createdby");
@@ -502,6 +507,7 @@ namespace nkv.MicroService.Utility
             }, insert: true);
             CheckForeignKeys(cmd, caller, table, values);
             BeforeInsert(cmd, caller, table, values);
+            DefaultHiddenOnInsert(cmd, table);
         }
 
         static void CheckWritable(string table, Caller caller)

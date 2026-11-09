@@ -1,27 +1,31 @@
 // Thin client for the generated .NET API (responses are { code, message, document }).
-const TOKEN_KEY = "neoapps.token";
+// The session is an HttpOnly cookie set by POST /Token: scripts never see the token, so nothing is kept in localStorage.
+const LEGACY_TOKEN_KEY = "neoapps.token";
 
 export const apiBase = (): string => {
   const base = process.env.REACT_APP_API_BASE_URL || "http://localhost:5000/v1/api/";
   return base.endsWith("/") ? base : base + "/";
 };
 
-export const getToken = (): string | null => {
-  try {
-    return localStorage.getItem(TOKEN_KEY);
-  } catch {
-    return null;
-  }
-};
+/** @deprecated The session lives in an HttpOnly cookie; kept so older custom code still compiles. Always null. */
+export const getToken = (): string | null => null;
 
-export const setToken = (token: string | null) => {
+/** @deprecated Clears a token left in localStorage by older versions. */
+export const setToken = (_token?: string | null) => {
   try {
-    if (token) localStorage.setItem(TOKEN_KEY, token);
-    else localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(LEGACY_TOKEN_KEY);
   } catch {
     /* storage unavailable */
   }
 };
+setToken(null);
+
+/** fetch() against the API with the session cookie and the client header (required for writes). */
+export function apiFetch(path: string, init: RequestInit = {}): Promise<Response> {
+  const headers = new Headers(init.headers || {});
+  headers.set("X-NeoApps-Client", "web");
+  return fetch(path.startsWith("http") || path.startsWith("/") ? path : apiBase() + path, { ...init, headers, credentials: "include" });
+}
 
 export class ApiError extends Error {
   status: number;
@@ -35,9 +39,7 @@ export class ApiError extends Error {
 
 export async function api<T = any>(method: string, path: string, body?: any): Promise<T> {
   const headers: Record<string, string> = { "Content-Type": "application/json" };
-  const token = getToken();
-  if (token) headers.Authorization = `Bearer ${token}`;
-  const res = await fetch(apiBase() + path, { method, headers, body: body === undefined ? undefined : JSON.stringify(body) });
+  const res = await apiFetch(path, { method, headers, body: body === undefined ? undefined : JSON.stringify(body) });
   const text = await res.text();
   let json: any = null;
   try {
@@ -97,7 +99,5 @@ export async function countWhere(table: string, column: string, value: any): Pro
 
 export async function login(username: string, password: string): Promise<void> {
   const res = await api<any>("POST", "Token", { username, password });
-  const token = res?.document?.accessToken;
-  if (!token) throw new ApiError(401, "Invalid username or password.");
-  setToken(token);
+  if (res?.code !== 1) throw new ApiError(401, "Invalid username or password."); // the cookie is set by the response
 }

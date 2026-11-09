@@ -1,7 +1,7 @@
 // Client for background jobs (/v1/api/Jobs): start, follow the live feed (long-poll), approve/reject, cancel, list.
 // Custom screens (src/custom) can use these too, together with useJobFeed and <JobFeed/>.
 import { useEffect, useRef, useState } from "react";
-import { apiBase, ApiError, getToken } from "../api";
+import { ApiError, apiFetch } from "../api";
 
 export type JobStatus = "queued" | "running" | "awaiting_approval" | "approved" | "completed" | "failed" | "cancelled" | "rejected";
 
@@ -35,9 +35,7 @@ export const FINISHED: JobStatus[] = ["completed", "failed", "cancelled", "rejec
 
 async function call<T>(method: string, path: string, body?: any, signal?: AbortSignal): Promise<T> {
   const headers: Record<string, string> = { "Content-Type": "application/json" };
-  const token = getToken();
-  if (token) headers.Authorization = `Bearer ${token}`;
-  const res = await fetch(apiBase() + "Jobs" + path, { method, headers, signal, body: body === undefined ? undefined : JSON.stringify(body) });
+  const res = await apiFetch("Jobs" + path, { method, headers, signal, body: body === undefined ? undefined : JSON.stringify(body) });
   const text = await res.text();
   let json: any = null;
   try {
@@ -59,9 +57,9 @@ export const approveJob = (id: string, decision: Record<string, any>) => call<Jo
 export const rejectJob = (id: string, reason?: string) => call<Job>("POST", `/${id}/reject`, { reason });
 export const cancelJob = (id: string) => call<Job>("POST", `/${id}/cancel`);
 
-/** A file a job attached (screenshot, video, report) as an object URL; fetched with the bearer token. Revoke it when done. */
+/** A file a job attached (screenshot, video, report) as an object URL; fetched with the session cookie. Revoke it when done. */
 export async function jobFileUrl(id: string, name: string): Promise<string> {
-  const res = await fetch(apiBase() + `Jobs/${id}/files/${encodeURIComponent(name)}`, { headers: { Authorization: `Bearer ${getToken()}` } });
+  const res = await apiFetch(`Jobs/${id}/files/${encodeURIComponent(name)}`);
   if (!res.ok) throw new ApiError(res.status, "Couldn't load the file.");
   return URL.createObjectURL(await res.blob());
 }

@@ -71,7 +71,7 @@ export function useDelete(tableName: string, onDone: () => void) {
 
 export const ResourcePage: React.FC = () => {
   const { table: name = "" } = useParams();
-  const { tables, can, ai } = useApp();
+  const { tables, can, canOpen, ai } = useApp();
   const navigate = useNavigate();
   const table = tables[name];
   const [rows, setRows] = useState<Record<string, any>[]>([]);
@@ -98,7 +98,7 @@ export const ResourcePage: React.FC = () => {
   }, [name, table?.defaultSort]);
 
   const load = useCallback(async () => {
-    if (!table) return;
+    if (!table || !canOpen(table.name)) return;
     setLoading(true);
     setError(undefined);
     try {
@@ -111,7 +111,7 @@ export const ResourcePage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [table, page, pageSize, sort, query]);
+  }, [table, page, pageSize, sort, query, canOpen]);
 
   useEffect(() => {
     load();
@@ -120,6 +120,7 @@ export const ResourcePage: React.FC = () => {
   const del = useDelete(name, () => setReload((r) => r + 1));
 
   if (!table) return <Alert severity="warning">Unknown table "{name}".</Alert>;
+  if (!canOpen(name)) return <Alert severity="info">This page isn't available for your role.</Alert>;
   if (!can(name, "read")) return <Alert severity="info">You don't have access to {table.label}. Ask an administrator.</Alert>;
 
   return (
