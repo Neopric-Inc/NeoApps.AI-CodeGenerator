@@ -69,7 +69,14 @@ export function useDelete(tableName: string, onDone: () => void) {
   return { ask, dialog };
 }
 
+// A fresh page per table: paging, search and sort never carry over from the previous list (a stale sort column made the
+// API reject the first request of the next table).
 export const ResourcePage: React.FC = () => {
+  const { table = "" } = useParams();
+  return <TablePage key={table} />;
+};
+
+const TablePage: React.FC = () => {
   const { table: name = "" } = useParams();
   const { tables, can, canOpen, ai } = useApp();
   const navigate = useNavigate();
