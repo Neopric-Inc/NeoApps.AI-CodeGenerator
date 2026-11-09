@@ -184,8 +184,14 @@ namespace nkv.MicroService.Utility
             {
                 if (!values.TryGetValue(col, out var val) || val == null || val is DBNull || (val is string sv && (sv.Length == 0 || sv.StartsWith("@")))) continue;
                 if (!active.Any(a => a.scope.Covers(refTable))) continue;
-                using var q = new MySqlCommand($"SELECT COUNT(*) FROM `{refTable}` t WHERE t.`{refCol}` = @v AND t.isActive = 1", cmd.Connection, cmd.Transaction);
+                // When the referenced table IS the tenant table, don't apply tenant filter (it's the root of tenancy)
+                var sql = $"SELECT COUNT(*) FROM `{refTable}` t WHERE t.`{refCol}` = @v AND t.isActive = 1";
+                if (!refTable.Equals(TenantTable, StringComparison.OrdinalIgnoreCase) && caller.Tenant != null)
+                    sql += $" AND t.`{TenantColumn}` = @__g_tenant";
+                using var q = new MySqlCommand(sql, cmd.Connection, cmd.Transaction);
                 q.Parameters.AddWithValue("@v", val);
+                if (refTable.Equals(TenantTable, StringComparison.OrdinalIgnoreCase) == false && caller.Tenant != null)
+                    q.Parameters.AddWithValue("@__g_tenant", caller.Tenant.Value);
                 if (Convert.ToInt64(Apply(q).ExecuteScalar()) == 0)
                     throw new DataGuardException($"{table}.{col} = {val} is outside what you can access.", 403);
             }

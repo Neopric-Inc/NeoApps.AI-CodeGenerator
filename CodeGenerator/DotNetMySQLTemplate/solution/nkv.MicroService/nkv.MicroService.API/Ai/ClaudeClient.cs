@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace nkv.MicroService.API.Ai
 {
-    /// <summary>Minimal Anthropic Messages API client with a tool-use loop.</summary>
+    /// <summary>Minimal Anthropic Messages API client with a tool-use loop. With AI_PROVIDER=openai the same calls go to an OpenAI-compatible endpoint (see OpenAiCompat).</summary>
     public sealed class ClaudeClient
     {
         private readonly HttpClient _http;
@@ -22,22 +22,46 @@ namespace nkv.MicroService.API.Ai
             _settings = settings;
         }
 
+        private const int MaxAttempts = 4;
+
+        /// <summary>
+        /// One Messages API call. Temporary failures (connection drops, timeouts, 429 rate limits, 5xx and 529 "overloaded")
+        /// are retried up to <see cref="MaxAttempts"/> times with backoff, honouring retry-after.
+        /// </summary>
         public async Task<JsonObject> CreateAsync(JsonObject body, CancellationToken ct)
         {
-            using var req = new HttpRequestMessage(HttpMethod.Post, _settings.BaseUrl + "/v1/messages")
+            var forcedTool = body["tool_choice"]?["type"]?.GetValue<string>() == "tool" ? body["tool_choice"]!["name"]!.GetValue<string>() : null;
+            var payload = (_settings.IsOpenAi ? OpenAiCompat.ToOpenAi(body) : body).ToJsonString();
+            for (var attempt = 1; ; attempt++)
             {
-                Content = new StringContent(body.ToJsonString(), Encoding.UTF8, "application/json"),
-            };
-            req.Headers.Add("x-api-key", _settings.ApiKey);
-            req.Headers.Add("anthropic-version", "2023-06-01");
-            using var res = await _http.SendAsync(req, ct);
-            var text = await res.Content.ReadAsStringAsync(ct);
-            if (!res.IsSuccessStatusCode)
-            {
-                var msg = JsonNode.Parse(text)?["error"]?["message"]?.GetValue<string>() ?? text;
-                throw new AiException($"Claude API error ({(int)res.StatusCode}): {msg}");
+                TimeSpan? wait = null;
+                try
+                {
+                    var openAi = _settings.IsOpenAi;
+                    using var req = new HttpRequestMessage(HttpMethod.Post, _settings.BaseUrl + (openAi ? "/chat/completions" : "/v1/messages"))
+                    {
+                        Content = new StringContent(payload, Encoding.UTF8, "application/json"),
+                    };
+                    if (openAi) req.Headers.Add("Authorization", "Bearer " + _settings.ApiKey);
+                    else { req.Headers.Add("x-api-key", _settings.ApiKey); req.Headers.Add("anthropic-version", "2023-06-01"); }
+                    using var res = await _http.SendAsync(req, ct);
+                    var text = await res.Content.ReadAsStringAsync(ct);
+                    if (res.IsSuccessStatusCode && openAi) return OpenAiCompat.FromOpenAi(JsonNode.Parse(text)!.AsObject(), forcedTool);
+                    if (res.IsSuccessStatusCode) return JsonNode.Parse(text)!.AsObject();
+                    var code = (int)res.StatusCode;
+                    string msg;
+                    try { var e = JsonNode.Parse(text)?["error"]; msg = (e is JsonValue ev ? ev.ToString() : e?["message"]?.GetValue<string>()) ?? text; } catch { msg = text; }
+                    if (attempt >= MaxAttempts || !(code == 429 || code == 408 || code >= 500))
+                        throw new AiException($"{_settings.ProviderName} API error ({code}): {msg}");
+                    wait = res.Headers.RetryAfter?.Delta;
+                }
+                catch (HttpRequestException ex) when (attempt < MaxAttempts) { _ = ex; }
+                catch (TaskCanceledException) when (!ct.IsCancellationRequested && attempt < MaxAttempts) { /* request timeout */ }
+                catch (HttpRequestException ex) { throw new AiException($"Couldn't reach the {_settings.ProviderName} API: " + ex.Message); }
+                catch (TaskCanceledException) when (!ct.IsCancellationRequested) { throw new AiException($"The {_settings.ProviderName} API didn't answer in time."); }
+                var backoff = wait ?? TimeSpan.FromSeconds(Math.Min(30, 2 * Math.Pow(2, attempt - 1)));
+                await Task.Delay(backoff > TimeSpan.FromSeconds(60) ? TimeSpan.FromSeconds(60) : backoff, ct);
             }
-            return JsonNode.Parse(text)!.AsObject();
         }
 
         /// <summary>

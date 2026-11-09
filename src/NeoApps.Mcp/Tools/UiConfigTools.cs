@@ -193,6 +193,8 @@ internal static class UiConfigTools
             "documentTables": ["documents"],          // record pages of these tables get a Files panel; uploads are indexed
             "tools": ["documents", "records", "clinicaltrials_gov"],   // what the assistant may use
             "suggestions": ["Which studies are enrolling?"],           // starter questions on the Assistant page
+            "roles": ["Coordinator"],                 // optional: only these roles (and Administrator) see the assistant,
+                                                      // Ask AI and workflows; others keep the Files panel for uploads
             "workflows": [
               { "id": "soa_to_source", "label": "Build visit schedule",
                 "table": "documents", "when": { "document_type": "protocol" },   // button on matching records; omit "table" for a global workflow
@@ -200,7 +202,9 @@ internal static class UiConfigTools
                 "inherit": { "study_id": "study_id" },                          // target column <- source record column
                 "tools": ["records"],                                           // extra tools while running (optional)
                 "description": "Shown in the dialog.",
-                "instructions": "Step-by-step: what to read and which rows to create. New rows link with '@<ref>'." }
+                "instructions": "Step-by-step: what to read and which rows to create. New rows link with '@<ref>'.",
+                "requiresDocument": false }                                       // default true: the record must have an uploaded file;
+                                                                                  // set false for workflows that work from records (claims, projects)
             ]
           }
         The assistant answers from uploaded files (with [S1] citations to file and page) and from the app's records,

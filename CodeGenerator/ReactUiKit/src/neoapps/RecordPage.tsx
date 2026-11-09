@@ -124,7 +124,7 @@ export const RecordPage: React.FC = () => {
           Created {renderValue(table.fields.createdAt, record.createdAt)} by {record.created_by_user || record.createdBy || "—"} · Updated {renderValue(table.fields.modifiedAt, record.modifiedAt)}{record.modified_by_user ? ` by ${record.modified_by_user}` : ""}
         </Typography>
       </Paper>
-      {ai?.enabled && ai.documentTables.includes(name) && <FilesPanel table={name} recordId={id} />}
+      {(ai?.enabled || ai?.files) && ai.documentTables.includes(name) && <FilesPanel table={name} recordId={id} />}
       {children.length > 0 && (
         <Paper variant="outlined" sx={{ borderRadius: 2, overflow: "hidden" }}>
           <Tabs value={Math.min(tab, children.length - 1)} onChange={(_, v) => setTab(v)} variant="scrollable" sx={{ borderBottom: 1, borderColor: "divider", px: 1 }}>

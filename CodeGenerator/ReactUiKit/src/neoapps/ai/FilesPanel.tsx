@@ -10,8 +10,11 @@ const size = (n: number) => (n > 1_000_000 ? `${(n / 1_000_000).toFixed(1)} MB` 
 const STATUS: Record<string, { label: string; color: "success" | "warning" | "error" | "default" }> = {
   indexed: { label: "Searchable", color: "success" },
   indexing: { label: "Indexing", color: "default" },
+  needs_ocr: { label: "Reading scan…", color: "default" },
+  reading: { label: "Reading scan…", color: "default" },
+  stored: { label: "Stored", color: "default" },
   no_text: { label: "No text", color: "warning" },
-  failed: { label: "Failed", color: "error" },
+  failed: { label: "Couldn't read", color: "error" },
 };
 
 /** Files attached to a record. Uploaded text is indexed so the assistant can search and cite it. */
@@ -29,6 +32,13 @@ export const FilesPanel: React.FC<{ table: string; recordId: string; onChange?: 
     listFiles(table, recordId).then(setFiles).catch((e) => setError(e.message)).finally(() => setLoading(false));
   }, [table, recordId]);
   useEffect(() => { load(); }, [load]);
+  // scans and photos are read in the background: refresh until they're done
+  const waiting = files.some((f) => f.status === "needs_ocr" || f.status === "reading");
+  useEffect(() => {
+    if (!waiting) return;
+    const t = setInterval(() => listFiles(table, recordId).then(setFiles).catch(() => undefined), 8000);
+    return () => clearInterval(t);
+  }, [waiting, table, recordId]);
 
   const upload = async (list: FileList | null) => {
     if (!list?.length) return;
@@ -37,7 +47,7 @@ export const FilesPanel: React.FC<{ table: string; recordId: string; onChange?: 
     try {
       for (const f of Array.from(list)) {
         const res = await uploadFile(table, recordId, f);
-        if (res.status !== "indexed") setError(`${res.file_name}: ${res.error || "couldn't read any text"}`);
+        if (res.status === "failed") setError(`${res.file_name}: ${res.error || "couldn't read this file"}`);
       }
       load();
       onChange?.();
@@ -56,7 +66,7 @@ export const FilesPanel: React.FC<{ table: string; recordId: string; onChange?: 
         <Typography variant="subtitle1" fontWeight={600} sx={{ flex: 1 }}>Files</Typography>
         {canEdit && (
           <>
-            <input ref={input} type="file" hidden multiple accept=".pdf,.docx,.txt,.md,.csv,.json" onChange={(e) => upload(e.target.files)} />
+            <input ref={input} type="file" hidden multiple onChange={(e) => upload(e.target.files)} />
             <Button size="small" variant="outlined" startIcon={uploading ? <CircularProgress size={14} /> : <UploadFile />} disabled={uploading} onClick={() => input.current?.click()}>
               {uploading ? "Uploading…" : "Upload"}
             </Button>
@@ -66,7 +76,7 @@ export const FilesPanel: React.FC<{ table: string; recordId: string; onChange?: 
       {error && <Alert severity="warning" sx={{ mb: 1 }} onClose={() => setError(undefined)}>{error}</Alert>}
       {loading ? <CircularProgress size={20} /> : files.length === 0 ? (
         <Typography variant="body2" color="text.secondary">
-          {canEdit ? "Drop a PDF, Word or text file here. The assistant can then answer questions about it and cite pages." : "No files attached."}
+          {canEdit ? "Drop any files here: PDFs, scans, photos, Word, Excel, PowerPoint, e-mails or ZIPs. Their text is read so the assistant can search and cite them." : "No files attached."}
         </Typography>
       ) : (
         <List dense disablePadding>

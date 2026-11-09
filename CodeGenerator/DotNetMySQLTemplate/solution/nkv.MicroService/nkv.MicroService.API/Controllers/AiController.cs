@@ -61,7 +61,7 @@ namespace nkv.MicroService.API.Controllers
         /// <summary>Multipart body for file uploads (a model class keeps Swagger generation working with IFormFile).</summary>
         public class UploadForm { public IFormFile file { get; set; } public string table { get; set; } public string recordId { get; set; } }
 
-        [HttpPost, Route(Route + "/files"), RequestSizeLimit(50_000_000)]
+        [HttpPost, Route(Route + "/files"), RequestSizeLimit(250_000_000), RequestFormLimits(MultipartBodyLengthLimit = 250_000_000)]
         public Task<ActionResult> UploadFile([FromForm] UploadForm form) => Run(() =>
         {
             var file = form.file; var table = form.table; var recordId = form.recordId;

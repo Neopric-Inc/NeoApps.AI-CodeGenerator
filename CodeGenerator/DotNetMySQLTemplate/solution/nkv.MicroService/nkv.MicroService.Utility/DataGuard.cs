@@ -401,8 +401,8 @@ namespace nkv.MicroService.Utility
             }
             if (caller.Tenant != null)
             {
-                if (TenantTables.Contains(table)) conds.Add($"{prefix}`{TenantColumn}` = @__g_tenant");
-                else if (table.Equals(TenantTable, StringComparison.OrdinalIgnoreCase) && TenantTablePk != null) conds.Add($"{prefix}`{TenantTablePk}` = @__g_tenant");
+                if (table.Equals(TenantTable, StringComparison.OrdinalIgnoreCase) && TenantTablePk != null) conds.Add($"{prefix}`{TenantTablePk}` = @__g_tenant");
+                else if (TenantTables.Contains(table)) conds.Add($"{prefix}`{TenantColumn}` = @__g_tenant");
                 if (conds.Count > 0) Bind(cmd, "@__g_tenant", caller.Tenant.Value);
             }
             conds.AddRange(RowScopeConditions(table, prefix, caller, cmd));

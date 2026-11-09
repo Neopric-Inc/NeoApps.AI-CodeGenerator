@@ -93,8 +93,11 @@ export const AppProvider: React.FC = ({ children }) => {
 
   const menu = useMemo(() => {
     const groups = resolveMenu(tables, config);
-    return groups.map((g) => ({ ...g, items: g.items.filter((i) => can(i, "read")) })).filter((g) => g.items.length);
-  }, [tables, config, can]);
+    // optional per-role sidebar: config.menuByRole = { "Client": ["documents"] } shows only those tables for that role
+    // (access itself is still governed by role permissions; this only declutters the menu)
+    const only = me?.role_name ? (config as any).menuByRole?.[me.role_name] as string[] | undefined : undefined;
+    return groups.map((g) => ({ ...g, items: g.items.filter((i) => can(i, "read") && (!only || only.includes(i))) })).filter((g) => g.items.length);
+  }, [tables, config, can, me]);
 
   const saveConfig = useCallback(async (cfg: UiConfig) => {
     await api("PUT", "Access/ui-config", cfg);

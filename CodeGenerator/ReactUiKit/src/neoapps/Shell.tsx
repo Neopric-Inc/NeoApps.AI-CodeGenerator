@@ -8,6 +8,7 @@ import MenuIcon from "@mui/icons-material/Menu";
 import { useApp } from "./AppContext";
 import { Icon } from "./icons";
 import { extensions } from "../custom";
+import { Breadcrumbs, markMenuNavigation } from "./Breadcrumbs";
 
 const WIDTH = 248;
 
@@ -15,7 +16,7 @@ const NavItem: React.FC<{ to: string; icon: string; label: string; onClick?: () 
   const { pathname } = useLocation();
   const active = to === "/" ? pathname === "/" : pathname === to || pathname.startsWith(to + "/");
   return (
-    <ListItemButton component={NavLink as any} to={to} selected={active} onClick={onClick}
+    <ListItemButton component={NavLink as any} to={to} selected={active} onClick={() => { markMenuNavigation(); onClick?.(); }}
       sx={{ borderRadius: 1.5, mx: 1, my: 0.25, py: 0.75, "&.Mui-selected": { bgcolor: "primary.main", color: "primary.contrastText", "& .MuiListItemIcon-root": { color: "inherit" }, "&:hover": { bgcolor: "primary.dark" } } }}>
       <ListItemIcon sx={{ minWidth: 34 }}><Icon name={icon} /></ListItemIcon>
       <ListItemText primary={label} primaryTypographyProps={{ fontSize: 14, fontWeight: active ? 600 : 500, noWrap: true }} />
@@ -46,7 +47,7 @@ export const Shell: React.FC = () => {
           <NavItem to="/" icon="dashboard" label="Dashboard" onClick={close} />
           {me && (extensions.nav || []).filter((n) => !n.visible || n.visible(me)).map((n) => <NavItem key={n.to} to={n.to} icon={n.icon} label={n.label} onClick={close} />)}
           {ai?.enabled && <NavItem to="/assistant" icon="auto_awesome" label={ai.assistantName || "Assistant"} onClick={close} />}
-          {(ai?.enabled || config.jobs?.menu) && <NavItem to="/jobs" icon="bolt" label="Background jobs" onClick={close} />}
+          {(ai?.enabled || config.jobs?.menu) && !(me?.role_name && (config as any).menuByRole?.[me.role_name] && !(config as any).menuByRole[me.role_name].includes("jobs")) && <NavItem to="/jobs" icon="bolt" label="Background jobs" onClick={close} />}
         </List>
         {menu.map((g) => (
           <List key={g.group} dense subheader={<ListSubheader sx={{ lineHeight: "32px", fontSize: 11, textTransform: "uppercase", letterSpacing: 0.6, bgcolor: "transparent" }}>{g.group}</ListSubheader>}>
@@ -92,6 +93,7 @@ export const Shell: React.FC = () => {
         </Drawer>
       </Box>
       <Box component="main" sx={{ flexGrow: 1, minWidth: 0, p: { xs: 2, md: 3 }, mt: 8 }}>
+        <Breadcrumbs />
         <Outlet />
       </Box>
     </Box>
