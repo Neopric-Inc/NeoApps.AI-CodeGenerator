@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Stand-in for cloud.neoapps.ai (docs/CLOUD.md): checks the bundle the CLI sends and applies db/init.sql to a fresh local database.
 Usage: python3 scripts/cloud-stub.py 8765   (token nac_test123; PAID=0 to get a checkout link instead)"""
-import json, os, subprocess, tarfile, threading, sys
+import json, os, re, subprocess, tarfile, threading, sys
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 TOKEN = "nac_test123"; PORT = int(sys.argv[1]); PAID = os.environ.get("PAID", "1") == "1"
-jobs = {}; uploads = {}
+jobs = {}; uploads = {}; issued = set()
+SLUG = re.compile(r"^[a-z0-9][a-z0-9-]{0,29}$")
 import tempfile; WORK = tempfile.mkdtemp(prefix="neoapps-cloud-stub-")
 def run_job(jid, slug, blob):
     ev = jobs[jid]["events"]
@@ -51,16 +52,23 @@ class H(BaseHTTPRequestHandler):
             if not PAID: return self.send(200, {"slug": j["slug"], "checkoutUrl": "https://checkout.stripe.com/test"})
             return self.send(200, {"slug": j["slug"], "region": j["region"], "status": "new"})
         if p.endswith("/upload"):
-            slug = p.split("/")[-2]; blob = f"{slug}-1.tar.gz"
+            slug = p.split("/")[-2]
+            if not SLUG.match(slug): return self.send(400, {"message": "invalid slug"})
+            blob = f"{slug}-1.tar.gz"; issued.add(blob)
             return self.send(200, {"uploadUrl": f"http://127.0.0.1:{PORT}/blob/{blob}", "blob": blob})
         if p == "/v1/api/Jobs":
             j = json.loads(b); jid = f"job{len(jobs) + 1}"
+            slug, blob = str(j["input"].get("slug", "")), str(j["input"].get("blob", ""))
+            if not SLUG.match(slug) or blob not in uploads: return self.send(400, {"message": "unknown slug or upload"})
             jobs[jid] = {"status": "running", "events": [], "result": None, "error": None}
-            threading.Thread(target=run_job, args=(jid, j["input"]["slug"], j["input"]["blob"])).start()
+            threading.Thread(target=run_job, args=(jid, slug, blob)).start()
             return self.send(200, {"job_id": jid, "status": "queued"})
         self.send(404, {"message": "no route"})
     def do_PUT(self):
-        blob = self.path.split("/")[-1]; data = self.body(); path = os.path.join(WORK, blob)
+        # only names this stub handed out are written, so the path can't leave WORK
+        blob = self.path.split("/")[-1]; data = self.body()
+        if blob not in issued: return self.send(400, {"message": "unknown upload"})
+        path = os.path.join(WORK, blob)
         assert self.headers.get("x-ms-blob-type") == "BlockBlob"
         open(path, "wb").write(data); uploads[blob] = path; self.send_response(201); self.end_headers()
     def do_GET(self):
