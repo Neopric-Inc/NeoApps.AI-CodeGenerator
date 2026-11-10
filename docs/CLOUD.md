@@ -25,10 +25,12 @@ The token is read from `NEOAPPS_CLOUD_TOKEN` or the OS keychain (service `neoapp
 
 ## API the control plane implements
 
-All calls carry `Authorization: Bearer nac_...`. Base URL: `NEOAPPS_CLOUD_URL` (default `https://cloud.neoapps.ai`).
+Base URL: `NEOAPPS_CLOUD_URL` (default `https://cloud.neoapps.ai`). The deploy token is only sent to `/cloud/session`;
+every other call carries the session it returns (`Authorization: Bearer <accessToken>`), so the standard jobs API works unchanged.
 
 | Call | Returns |
 | --- | --- |
+| `POST /v1/api/cloud/session` with `Authorization: Bearer nac_...` | `{accessToken, expiresAt}`: a one-hour sign-in as the user who created the token |
 | `POST /v1/api/cloud/apps {app, slug, region}` | `{slug, region, status}`, or `{checkoutUrl}` when the account has no active plan; 4xx `{message}` if the slug is taken or the region differs |
 | `POST /v1/api/cloud/apps/{slug}/upload` | `{uploadUrl, blob}`: a one-time link; the CLI `PUT`s the bundle with `x-ms-blob-type: BlockBlob` |
 | `POST /v1/api/Jobs {kind: "cloud.deploy", input: {slug, blob}}` | the job (`job_id`), standard NeoApps jobs API |
