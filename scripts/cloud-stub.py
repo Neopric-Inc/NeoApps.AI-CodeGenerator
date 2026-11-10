@@ -47,6 +47,8 @@ class H(BaseHTTPRequestHandler):
     def do_POST(self):
         if not self.auth(): return
         b = self.body(); p = self.path
+        if p == "/v1/api/cloud/session":
+            return self.send(200, {"accessToken": TOKEN, "expiresAt": "2099-01-01T00:00:00Z"})
         if p == "/v1/api/cloud/apps":
             j = json.loads(b)
             if not PAID: return self.send(200, {"slug": j["slug"], "checkoutUrl": "https://checkout.stripe.com/test"})

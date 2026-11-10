@@ -36,6 +36,10 @@ public sealed class CloudClient : IDisposable
     public async Task<CloudDeployResult> DeployAsync(ProjectState p, string region, string bundle, Action<string> log, CancellationToken ct)
     {
         var slug = CloudBundle.Slug(p.Name);
+        // the deploy token is only good for this exchange; everything else uses the one-hour session it returns
+        var session = await SendAsync(HttpMethod.Post, "v1/api/cloud/session", null, ct);
+        var jwt = session["accessToken"]?.GetValue<string>() ?? throw new InvalidOperationException("NeoApps Cloud did not return a session.");
+        _http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", jwt);
         log($"Registering {slug} in region '{region}'");
         var app = await SendAsync(HttpMethod.Post, "v1/api/cloud/apps", new JsonObject { ["app"] = p.Name, ["slug"] = slug, ["region"] = region }, ct);
         if (app["checkoutUrl"]?.GetValue<string>() is { Length: > 0 } checkout)
