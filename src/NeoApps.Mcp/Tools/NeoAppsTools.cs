@@ -115,7 +115,8 @@ public sealed class NeoAppsTools(
         if (!string.IsNullOrWhiteSpace(uiConfig))
             File.WriteAllText(store.UiConfigFile(name), UiConfigTools.Normalize(uiConfig));
 
-        var state = existing ?? new ProjectState { Name = name, DatabaseName = ProjectStore.ToDatabaseName(name), SchemaFile = schemaFile };
+        // NEOAPPS_DATABASE: a build server chooses the database name (e.g. bld_<slug> on a shared MySQL)
+        var state = existing ?? new ProjectState { Name = name, DatabaseName = Environment.GetEnvironmentVariable("NEOAPPS_DATABASE") is { Length: > 0 } db ? db : ProjectStore.ToDatabaseName(name), SchemaFile = schemaFile };
         state.SchemaFile = schemaFile;
         state.ApiPort = apiPort;
         state.WebPort = webPort;
