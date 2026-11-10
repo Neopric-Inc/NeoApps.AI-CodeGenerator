@@ -113,9 +113,15 @@ public static class Cli
                     {
                         case "login":
                         {
-                            var token = Environment.GetEnvironmentVariable("NEOAPPS_CLOUD_TOKEN") is { Length: > 0 } e ? e : ReadSecret("Paste your deploy token from https://cloud.neoapps.ai: ");
-                            CloudClient.SaveToken(token.Trim());
-                            Console.WriteLine("Signed in. The token is in your keychain (service 'neoapps-cloud').");
+                            // default: browser sign-in (sign up, pay, approve this computer); --token: paste a deploy token (CI)
+                            if (args.Contains("--token"))
+                            {
+                                var token = Environment.GetEnvironmentVariable("NEOAPPS_CLOUD_TOKEN") is { Length: > 0 } e ? e : ReadSecret("Paste your deploy token: ");
+                                CloudClient.SaveToken(token.Trim());
+                                Console.WriteLine("Signed in. The token is in your keychain (service 'neoapps-cloud').");
+                                return 0;
+                            }
+                            await CloudClient.DeviceLoginAsync(Console.WriteLine, ct);
                             return 0;
                         }
                         case "logout":
@@ -213,7 +219,7 @@ public static class Cli
           ui <App> [--set changes.json [--replace]]   show the UI config, or merge changes into it and regenerate the UI
           deploy <App> [--consumer]             build and run the app in Docker
           deploy <App> --target cloud [--region us|ca]   publish to NeoApps Cloud (<app>.<region>.neoapps.ai)
-          cloud login | logout | status         save or remove the NeoApps Cloud deploy token (OS keychain)
+          cloud login [--token] | logout | status   sign in to NeoApps Cloud in the browser (--token: paste a deploy token)
           cloud env set <App> KEY[=value] ...   set settings of a live cloud app (KEY alone = take the value from this shell)
           cloud env unset <App> KEY ...         remove them; the app restarts, values are never shown back
           pack <App> [--region us|ca] [--out file.tar.gz]   write the cloud bundle to a file (no local secrets)

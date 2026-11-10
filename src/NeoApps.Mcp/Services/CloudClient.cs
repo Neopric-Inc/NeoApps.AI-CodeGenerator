@@ -24,8 +24,7 @@ public sealed class CloudClient : IDisposable
     public CloudClient(string? token = null, string? baseUrl = null, HttpMessageHandler? handler = null)
     {
         BaseUrl = new Uri((baseUrl ?? Environment.GetEnvironmentVariable("NEOAPPS_CLOUD_URL") ?? "https://cloud.neoapps.ai").TrimEnd('/') + "/");
-        token ??= ReadToken() ?? throw new InvalidOperationException(
-            "Not signed in to NeoApps Cloud. Create a deploy token at https://cloud.neoapps.ai, then run: neoapps cloud login");
+        token ??= ReadToken() ?? throw new InvalidOperationException("Not signed in to NeoApps Cloud. Run: neoapps cloud login");
         _http = handler is null ? new HttpClient() : new HttpClient(handler);
         _http.BaseAddress = BaseUrl;
         _http.Timeout = TimeSpan.FromMinutes(10);
@@ -127,6 +126,73 @@ public sealed class CloudClient : IDisposable
     }
 
     public void Dispose() => _http.Dispose();
+
+    /// <summary>
+    /// Browser sign-in: asks the control plane for a short code, opens the connect page (sign up or sign in,
+    /// choose a plan if needed, approve this computer), then polls until it hands out a deploy token.
+    /// The token is saved to the keychain when there is one and kept for this process either way.
+    /// </summary>
+    public static async Task<string> DeviceLoginAsync(Action<string> log, CancellationToken ct, string? baseUrl = null, HttpMessageHandler? handler = null, bool openBrowser = true)
+    {
+        var root = new Uri((baseUrl ?? Environment.GetEnvironmentVariable("NEOAPPS_CLOUD_URL") ?? "https://cloud.neoapps.ai").TrimEnd('/') + "/");
+        using var http = handler is null ? new HttpClient() : new HttpClient(handler);
+        http.BaseAddress = root;
+        http.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("neoapps-cli", "1"));
+        var device = $"{Environment.UserName} on {Environment.MachineName}";
+        using var start = await http.PostAsync("v1/api/cloud/device/start", Json(new JsonObject { ["device"] = device }), ct);
+        var s = await ReadJsonAsync(start, ct);
+        if (!start.IsSuccessStatusCode) throw new InvalidOperationException(s?["message"]?.ToString() ?? $"Sign-in failed ({(int)start.StatusCode}).");
+        string userCode = s!["userCode"]!.ToString(), deviceCode = s["deviceCode"]!.ToString(), url = s["verifyUrl"]!.ToString();
+        var interval = TimeSpan.FromSeconds(Math.Max(2, s["interval"]?.GetValue<int>() ?? 3));
+        var until = DateTimeOffset.UtcNow.AddSeconds(s["expiresIn"]?.GetValue<int>() ?? 900);
+        log($"Sign in to NeoApps Cloud: open {url} and check the code is {userCode}.");
+        if (openBrowser) OpenBrowser(url);
+        while (DateTimeOffset.UtcNow < until)
+        {
+            await Task.Delay(interval, ct);
+            using var poll = await http.PostAsync("v1/api/cloud/device/poll", Json(new JsonObject { ["deviceCode"] = deviceCode }), ct);
+            if (poll.StatusCode == HttpStatusCode.Accepted) continue;
+            var p = await ReadJsonAsync(poll, ct);
+            if (!poll.IsSuccessStatusCode) throw new InvalidOperationException(p?["message"]?.ToString() ?? "Sign-in failed; start again.");
+            var token = p!["token"]!.ToString();
+            Environment.SetEnvironmentVariable("NEOAPPS_CLOUD_TOKEN", token); // this process (MCP server) keeps working without a keychain
+            try { SaveToken(token); log("Signed in. The token is in your keychain."); }
+            catch (InvalidOperationException) { log("Signed in for this session (no keychain here)."); }
+            return token;
+        }
+        throw new TimeoutException("The sign-in code expired. Start again.");
+    }
+
+    /// <summary>False when the saved token was revoked or expired (it is then removed), so the caller signs in again.</summary>
+    public static async Task<bool> TokenWorksAsync(CancellationToken ct)
+    {
+        using var c = new CloudClient();
+        using var res = await c._http.PostAsync("v1/api/cloud/session", null, ct);
+        if (res.StatusCode != HttpStatusCode.Unauthorized) return true; // other failures surface in the deploy itself
+        DeleteToken();
+        Environment.SetEnvironmentVariable("NEOAPPS_CLOUD_TOKEN", null);
+        return false;
+    }
+
+    private static StringContent Json(JsonObject o) => new(o.ToJsonString(), System.Text.Encoding.UTF8, "application/json");
+
+    private static async Task<JsonObject?> ReadJsonAsync(HttpResponseMessage res, CancellationToken ct)
+    {
+        try { return JsonNode.Parse(await res.Content.ReadAsStringAsync(ct)) as JsonObject; } catch (System.Text.Json.JsonException) { return null; }
+    }
+
+    public static void OpenBrowser(string url)
+    {
+        if (!url.StartsWith("https://", StringComparison.OrdinalIgnoreCase) && !url.StartsWith("http://127.0.0.1", StringComparison.Ordinal) && !url.StartsWith("http://localhost", StringComparison.Ordinal)) return;
+        try
+        {
+            var psi = OperatingSystem.IsWindows() ? new System.Diagnostics.ProcessStartInfo(url) { UseShellExecute = true }
+                : new System.Diagnostics.ProcessStartInfo(OperatingSystem.IsMacOS() ? "open" : "xdg-open", [url]);
+            psi.RedirectStandardOutput = !OperatingSystem.IsWindows(); psi.RedirectStandardError = !OperatingSystem.IsWindows();
+            System.Diagnostics.Process.Start(psi);
+        }
+        catch (System.ComponentModel.Win32Exception) { } // no browser (CI, SSH): the URL is in the log
+    }
 
     // ---- deploy token: NEOAPPS_CLOUD_TOKEN, else the macOS keychain or the Linux secret service; never a file ----
 

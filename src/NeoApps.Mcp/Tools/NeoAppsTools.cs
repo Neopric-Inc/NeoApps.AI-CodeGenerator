@@ -362,7 +362,8 @@ public sealed class NeoAppsTools(
     [McpServerTool(Name = "neoapps_deploy_app")]
     [Description("Deploys the app. target 'local' (default) builds Docker images and runs them on this machine next to the shared MySQL/Redis/RabbitMQ. " +
                  "target 'cloud' publishes it to NeoApps Cloud at https://<app>.<region>.neoapps.ai: packs the generated code (no local secrets), uploads it and follows the deploy; " +
-                 "the region is fixed after the first cloud deploy (data residency). Cloud needs a deploy token (neoapps cloud login); if the account has no plan the result holds a checkout link to show the user. " +
+                 "the region is fixed after the first cloud deploy (data residency). If this computer isn't signed in, it opens the browser at cloud.neoapps.ai where the user signs up or signs in, " +
+                 "picks a plan and approves this computer; the job log shows the link and code, so show them to the user while the job waits. " +
                  "Long-running: returns a job to poll.")]
     public Task<object> DeployApp(
         [Description("App name.")] string name,
@@ -389,9 +390,10 @@ public sealed class NeoAppsTools(
             throw new McpException($"{state.Name} already lives in region '{fixedRegion}'. Its data stays there; deploy without a region, or create a new app for '{region}'.");
         region ??= state.CloudRegion ?? throw new McpException("Choose a region for the first cloud deploy: 'us' or 'ca' (where the app's data will live).");
         if (!CloudClient.Regions.Contains(region)) throw new McpException("region must be 'us' or 'ca'.");
-        using var probe = new CloudClient(); // fails fast with sign-in instructions when there is no token
         return jobs.StartAndWaitAsync("cloud-deploy", state.Name, async (job, jct) =>
         {
+            // not signed in yet: open the browser to sign up / sign in, pay if needed and approve this computer
+            if (CloudClient.ReadToken() is null || !await CloudClient.TokenWorksAsync(jct)) await CloudClient.DeviceLoginAsync(job.Log, jct);
             var bundle = await new CloudBundle(settings).PackAsync(state, region, job.Log, jct);
             try
             {

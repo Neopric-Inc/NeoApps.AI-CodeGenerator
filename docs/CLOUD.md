@@ -1,12 +1,14 @@
 # Deploying to NeoApps Cloud
 
 ```bash
-./neoapps cloud login                                  # paste a deploy token (nac_...) from https://cloud.neoapps.ai
+./neoapps cloud login                                  # opens the browser: sign up or sign in, pick a plan, approve this computer
 ./neoapps deploy ClaimKit --target cloud --region us   # first deploy picks the region: us or ca
 ./neoapps deploy ClaimKit --target cloud               # later deploys reuse it; data stays in that region
 ```
 
-In Claude Desktop: `neoapps_deploy_app` with `target: "cloud"` and `region`. The app goes live at
+In Claude Desktop: `neoapps_deploy_app` with `target: "cloud"` and `region`. Not signed in yet? The deploy opens the same
+browser page and waits; the job log shows the link and an 8-character code to compare. CI: `./neoapps cloud login --token`
+(or `NEOAPPS_CLOUD_TOKEN`). The app goes live at
 `https://<app>.<region>.neoapps.ai`. The first deploy returns the admin login once.
 
 App settings such as AI keys: `./neoapps cloud env set <App> ANTHROPIC_API_KEY` (value taken from your shell, so it stays out of
@@ -36,6 +38,9 @@ every other call carries the session it returns (`Authorization: Bearer <accessT
 
 | Call | Returns |
 | --- | --- |
+| `POST /v1/api/cloud/device/start {device}` (no auth) | `{userCode, deviceCode, verifyUrl, interval, expiresIn}`: open `verifyUrl` in the browser |
+| `POST /v1/api/cloud/device/poll {deviceCode}` (no auth) | 202 while waiting, then 200 `{token}` once (a deploy token for the approving account), 410 when expired or used |
+| `GET /v1/api/cloud/connect?code=` | the browser page: sign up (`POST cloud/signup`) or sign in, choose a plan (`POST cloud/billing/checkout`), approve (`POST cloud/device/approve`) |
 | `POST /v1/api/cloud/session` with `Authorization: Bearer nac_...` | `{accessToken, expiresAt}`: a one-hour sign-in as the user who created the token |
 | `POST /v1/api/cloud/apps {app, slug, region}` | `{slug, region, status}`, or `{checkoutUrl}` when the account has no active plan; 4xx `{message}` if the slug is taken or the region differs |
 | `POST /v1/api/cloud/apps/{slug}/upload` | `{uploadUrl, blob}`: a one-time link; the CLI `PUT`s the bundle with `x-ms-blob-type: BlockBlob` |
