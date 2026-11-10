@@ -620,6 +620,8 @@ When done, call propose_records exactly once with all rows.";
                 ct, stopOnTool: "propose_records", maxTurns: 12,
                 onToolCall: name => { if (name == "propose_records") progress?.Invoke(DescribeTool(name, new JsonObject())); });
             if (proposal == null) throw new AiException("The assistant didn't propose any records: " + Trim(text2, 300));
+            if (proposal["records"] is JsonValue rv && rv.TryGetValue<string>(out var rs))
+                try { proposal["records"] = JsonNode.Parse(rs) as JsonArray; } catch (System.Text.Json.JsonException) { }
             progress?.Invoke($"Checking {(proposal["records"] as JsonArray)?.Count ?? 0} proposed rows against the tables");
 
             var cleaned = ValidateProposal(c, targets, proposal["records"] as JsonArray ?? new JsonArray(), inherit, out var warnings);
@@ -645,12 +647,19 @@ When done, call propose_records exactly once with all rows.";
                 var table = targets.FirstOrDefault(t => t == requested);
                 if (table == null) { warnings.Add($"Skipped a row for table '{requested}', which isn't a target of this workflow."); continue; }
                 var values = new JsonObject();
-                foreach (var (k, v) in r["values"] as JsonObject ?? new JsonObject())
+                // some models send the values object as a JSON string; accept both
+                var given = r["values"] as JsonObject ?? (r["values"] is JsonValue sv && sv.TryGetValue<string>(out var vs) ? TryParseObject(vs) : null);
+                if (given == null) warnings.Add($"A {table} row came without readable values.");
+                var unknown = new List<string>();
+                foreach (var (k, v) in given ?? new JsonObject())
                 {
                     var col = cols[table].FirstOrDefault(x => string.Equals(x.Name, k, StringComparison.OrdinalIgnoreCase));
-                    if (col == null || col.IsPk || col.AutoIncrement || new[] { "createdBy", "modifiedBy", "createdAt", "modifiedAt", "isActive" }.Contains(col.Name)) continue;
+                    if (col == null) { unknown.Add(k); continue; }
+                    if (col.IsPk || col.AutoIncrement || new[] { "createdBy", "modifiedBy", "createdAt", "modifiedAt", "isActive" }.Contains(col.Name)) continue;
                     values[col.Name] = v?.DeepClone();
                 }
+                if (unknown.Count > 0) warnings.Add($"Ignored {table} fields that aren't columns: {string.Join(", ", unknown)}.");
+                if (values.Count == 0) warnings.Add($"A {table} row has no content of its own; re-run the workflow.");
                 foreach (var (k, v) in inherit)
                     if (cols[table].FirstOrDefault(x => x.Name == k) is { } ic) values[ic.Name] = JsonValue.Create(v.ToString());
                 var refId = r["ref"]?.GetValue<string>() ?? Guid.NewGuid().ToString("N")[..6];
@@ -662,6 +671,11 @@ When done, call propose_records exactly once with all rows.";
                     if (v is JsonValue jv && jv.ToString().StartsWith("@") && !refs.Contains(jv.ToString()[1..]))
                         warnings.Add($"{row["table"]}.{k} points at unknown row {jv}.");
             return output;
+        }
+
+        private static JsonObject TryParseObject(string s)
+        {
+            try { return JsonNode.Parse(s) as JsonObject; } catch (System.Text.Json.JsonException) { return null; }
         }
 
         /// <summary>Creates the (possibly edited) proposed rows in dependency order. All-or-nothing.</summary>
