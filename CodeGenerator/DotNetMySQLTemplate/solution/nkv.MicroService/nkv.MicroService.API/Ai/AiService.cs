@@ -586,6 +586,11 @@ How to answer:
             if (inherit.Count > 0) sb.AppendLine("These values are filled in automatically, don't set them: " + string.Join(", ", inherit.Select(kv => $"{kv.Key}={kv.Value}")));
             if (!string.IsNullOrWhiteSpace(note)) sb.AppendLine("\nNOTE FROM THE USER: " + note);
 
+            var valueProps = new JsonObject();
+            var audit = new[] { "createdBy", "modifiedBy", "createdAt", "modifiedAt", "isActive", "created_by_user", "modified_by_user" };
+            foreach (var t in targets)
+                foreach (var col in _data.Columns(c, t).Where(x => !x.IsPk && !x.AutoIncrement && !audit.Contains(x.Name) && !inherit.ContainsKey(x.Name)))
+                    valueProps[col.Name] ??= new JsonObject { ["type"] = new JsonArray("string", "number", "boolean", "null"), ["description"] = $"{t}.{col.Name} ({col.ColumnType})" };
             var propose = Tool("propose_records", "Return the records to create. Use ref ids to link new rows: put \"@<ref>\" as the value of a foreign key to point at another new row.",
                 new JsonObject
                 {
@@ -600,7 +605,15 @@ How to answer:
                             {
                                 ["ref"] = Str("unique id for this new row, e.g. v1"),
                                 ["table"] = Str("target table"),
-                                ["values"] = new JsonObject { ["type"] = "object", ["description"] = "column -> value; no primary keys or audit columns" },
+                                // the columns are spelled out: endpoints that enforce the schema on a forced tool call
+                                // (e.g. NVIDIA NIM guided decoding) would otherwise only ever produce {}
+                                ["values"] = new JsonObject
+                                {
+                                    ["type"] = "object",
+                                    ["description"] = "column -> value; no primary keys or audit columns",
+                                    ["properties"] = valueProps,
+                                    ["additionalProperties"] = true,
+                                },
                             },
                             ["required"] = new JsonArray("ref", "table", "values"),
                         },
