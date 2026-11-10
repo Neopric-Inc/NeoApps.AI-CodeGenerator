@@ -69,8 +69,10 @@ Work in the app's planning folder `workspace/<App>/` (git-ignored): `requirement
    applies pending migrations on startup, so a deploy moves other databases forward in place.
    Only use `./neoapps new` again when the user wants a fresh database (it resets test data; existing migrations are
    baselined). UI-only changes (labels, options, menu, list columns) can use `./neoapps ui <App> --set changes.json`.
-5. **Going live:** `./neoapps cloud login`, then `./neoapps deploy <App> --target cloud --region us|ca` (MCP: `neoapps_deploy_app`
-   with `target: "cloud"`). Ask the user which region their data must live in on the first cloud deploy; it is fixed after that.
+5. **Going live:** `./neoapps deploy <App> --target cloud --region us|ca` (MCP: `neoapps_deploy_app` with `target: "cloud"`).
+   If this computer isn't signed in, it opens cloud.neoapps.ai in the browser (sign up or sign in, pick a plan, approve) and the job
+   log shows the link and code: show both to the user while the job waits (`./neoapps cloud login` does the same on its own).
+   Ask the user which region their data must live in on the first cloud deploy; it is fixed after that.
    If the result has `checkoutUrl`, show it and deploy again after payment. Show the first-deploy admin login once. See `docs/CLOUD.md`.
    App settings (AI keys): the user runs `./neoapps cloud env set <App> ANTHROPIC_API_KEY` in their own terminal (the value comes from
    their shell); never ask them to paste a key into the chat.
