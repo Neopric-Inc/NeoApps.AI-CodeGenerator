@@ -94,6 +94,14 @@ public sealed class CloudClient : IDisposable
         return res["settings"]?.AsArray().Select(n => n!.GetValue<string>()).ToArray() ?? [];
     }
 
+    /// <summary>New password for the cloud app's first administrator (unlocks it, ends its sessions). Returns (username, password).</summary>
+    public async Task<(string Username, string Password)> ResetAdminAsync(string slug, CancellationToken ct)
+    {
+        await StartSessionAsync(ct);
+        var res = await SendAsync(HttpMethod.Post, $"v1/api/cloud/apps/{slug}/reset-admin", new JsonObject(), ct);
+        return (res["username"]!.GetValue<string>(), res["password"]!.GetValue<string>());
+    }
+
     private bool _session;
     private async Task StartSessionAsync(CancellationToken ct)
     {

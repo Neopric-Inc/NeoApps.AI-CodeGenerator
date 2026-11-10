@@ -73,7 +73,8 @@ Work in the app's planning folder `workspace/<App>/` (git-ignored): `requirement
    If this computer isn't signed in, it opens cloud.neoapps.ai in the browser (sign up or sign in, pick a plan, approve) and the job
    log shows the link and code: show both to the user while the job waits (`./neoapps cloud login` does the same on its own).
    Ask the user which region their data must live in on the first cloud deploy; it is fixed after that.
-   If the result has `checkoutUrl`, show it and deploy again after payment. Show the first-deploy admin login once. See `docs/CLOUD.md`.
+   If the result has `checkoutUrl`, show it and deploy again after payment. Show the result's `cloudAdmin` login once: the cloud copy
+   never uses the local admin password. Lost or not working: `./neoapps cloud reset-admin <App>` (MCP: `neoapps_cloud_reset_admin`). See `docs/CLOUD.md`.
    App settings (AI keys): the user runs `./neoapps cloud env set <App> ANTHROPIC_API_KEY` in their own terminal (the value comes from
    their shell); never ask them to paste a key into the chat.
 6. **Report back:** web URL, Swagger URL, admin username/password (printed by the command and kept in

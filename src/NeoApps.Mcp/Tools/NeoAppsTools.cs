@@ -403,18 +403,32 @@ public sealed class NeoAppsTools(
                 state.CloudRegion = region;
                 state.CloudUrl = r.Url;
                 state.CloudDeployedAt = DateTimeOffset.Now;
+                if (r.AdminPassword is not null) { state.CloudAdminUsername = r.AdminUsername; state.CloudAdminPassword = r.AdminPassword; }
                 store.Save(state);
                 return new
                 {
                     app = state.Name, region, url = r.Url,
-                    admin = r.AdminPassword is null ? null : new { username = r.AdminUsername, password = r.AdminPassword },
-                    note = r.AdminPassword is null
-                        ? "Updated in place; data kept."
-                        : "First deploy: show the admin login once and ask the user to change the password after signing in.",
+                    cloudAdmin = state.CloudAdminPassword is null ? null : new { username = state.CloudAdminUsername, password = state.CloudAdminPassword },
+                    note = (r.AdminPassword is null ? "Updated in place; data kept. " : "First deploy. ") +
+                        "Sign in to the cloud app with cloudAdmin (NOT the local admin login; the cloud copy has its own password). " +
+                        "If it's missing or doesn't work, use neoapps_cloud_reset_admin. Ask the user to change the password after signing in.",
                 };
             }
             finally { try { File.Delete(bundle); } catch (IOException) { } }
         }, ct);
+    }
+
+    [McpServerTool(Name = "neoapps_cloud_reset_admin")]
+    [Description("Gives the live NeoApps Cloud copy of an app a new admin password (shown once; also saved in the app's project.json), unlocks the admin and ends its other sessions. " +
+                 "Use when the user can't sign in to <app>.<region>.neoapps.ai: the cloud copy never uses the local admin password.")]
+    public async Task<object> CloudResetAdmin([Description("App name.")] string name, CancellationToken ct = default)
+    {
+        var state = store.Require(name);
+        if (state.CloudUrl is null) throw new McpException($"{name} hasn't been deployed to NeoApps Cloud from this computer.");
+        using var cloud = new CloudClient();
+        var (user, password) = await cloud.ResetAdminAsync(CloudBundle.Slug(state.Name), ct);
+        state.CloudAdminUsername = user; state.CloudAdminPassword = password; store.Save(state);
+        return new { app = name, url = state.CloudUrl, admin = new { username = user, password }, note = "Show this login to the user once and ask them to change the password after signing in." };
     }
 
     [McpServerTool(Name = "neoapps_app_status", ReadOnly = true)]
@@ -697,7 +711,12 @@ public sealed class NeoAppsTools(
         apiBaseUrl = p.ApiBaseUrl,
         health = $"http://localhost:{p.ApiPort}/health",
         admin = new { username = p.AdminUsername, password = p.AdminPassword },
-        note = "Images build on first deploy (a few minutes). Credentials are for local development only.",
+        cloud = p.CloudUrl is null ? null : new
+        {
+            url = p.CloudUrl, region = p.CloudRegion,
+            admin = p.CloudAdminPassword is null ? null : new { username = p.CloudAdminUsername, password = p.CloudAdminPassword },
+        },
+        note = "admin is for the local copy only. The cloud copy has its own login (cloud.admin); if it's missing, use neoapps_cloud_reset_admin.",
     };
 
     private static string NormalizeTemplate(string t) => t?.Trim().ToLowerInvariant() switch
