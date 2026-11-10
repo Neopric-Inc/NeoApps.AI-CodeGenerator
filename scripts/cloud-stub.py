@@ -4,14 +4,14 @@ Usage: python3 scripts/cloud-stub.py 8765   (token nac_test123; PAID=0 to get a 
 import json, os, re, subprocess, tarfile, threading, sys
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 TOKEN = "nac_test123"; PORT = int(sys.argv[1]); PAID = os.environ.get("PAID", "1") == "1"
-jobs = {}; uploads = {}; issued = set()
+jobs = {}; uploads = {}; issued = {}  # blob name -> server-chosen file path
 SLUG = re.compile(r"^[a-z0-9][a-z0-9-]{0,29}$")
 import tempfile; WORK = tempfile.mkdtemp(prefix="neoapps-cloud-stub-")
 def run_job(jid, slug, blob):
     ev = jobs[jid]["events"]
     def log(m): ev.append({"id": len(ev) + 1, "level": "info", "message": m})
     try:
-        d = os.path.join(WORK, "extract", slug); subprocess.run(["rm", "-rf", d]); os.makedirs(d)
+        d = os.path.join(WORK, f"extract-{jid}"); os.makedirs(d)
         with tarfile.open(uploads[blob]) as t: t.extractall(d, filter="data")
         m = json.load(open(f"{d}/manifest.json")); log(f"manifest ok: {m['app']} region={m['region']} web={m['hasWeb']}")
         names = os.listdir(d); assert {"api", "docker-compose.yml", "db"} <= set(names), names
@@ -54,7 +54,7 @@ class H(BaseHTTPRequestHandler):
         if p.endswith("/upload"):
             slug = p.split("/")[-2]
             if not SLUG.match(slug): return self.send(400, {"message": "invalid slug"})
-            blob = f"{slug}-1.tar.gz"; issued.add(blob)
+            blob = f"{slug}-1.tar.gz"; issued[blob] = os.path.join(WORK, f"upload-{len(issued) + 1}.tar.gz")
             return self.send(200, {"uploadUrl": f"http://127.0.0.1:{PORT}/blob/{blob}", "blob": blob})
         if p == "/v1/api/Jobs":
             j = json.loads(b); jid = f"job{len(jobs) + 1}"
@@ -65,10 +65,10 @@ class H(BaseHTTPRequestHandler):
             return self.send(200, {"job_id": jid, "status": "queued"})
         self.send(404, {"message": "no route"})
     def do_PUT(self):
-        # only names this stub handed out are written, so the path can't leave WORK
-        blob = self.path.split("/")[-1]; data = self.body()
-        if blob not in issued: return self.send(400, {"message": "unknown upload"})
-        path = os.path.join(WORK, blob)
+        # the file path is chosen by the stub when it hands out the upload link; the request only selects it
+        path = issued.get(self.path.split("/")[-1]); data = self.body()
+        if path is None: return self.send(400, {"message": "unknown upload"})
+        blob = next(b for b, v in issued.items() if v == path)
         assert self.headers.get("x-ms-blob-type") == "BlockBlob"
         open(path, "wb").write(data); uploads[blob] = path; self.send_response(201); self.end_headers()
     def do_GET(self):
