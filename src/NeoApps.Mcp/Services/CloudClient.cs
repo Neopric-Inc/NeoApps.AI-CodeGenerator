@@ -77,7 +77,7 @@ public sealed class CloudClient : IDisposable
                 throw new InvalidOperationException($"Deploy {status}: {page["job"]?["error"]?.GetValue<string>() ?? "see the job in the dashboard"}");
             var result = page["job"]?["result"] as JsonObject ?? [];
             return new(slug, region, result["url"]?.GetValue<string>(), null,
-                result["adminUsername"]?.GetValue<string>(), result["adminPassword"]?.GetValue<string>(), null);
+                result["adminUsername"]?.GetValue<string>(), result["adminPassword"]?.GetValue<string>(), result["signIn"]?.GetValue<string>());
         }
     }
 
