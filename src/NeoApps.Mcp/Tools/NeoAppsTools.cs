@@ -360,18 +360,58 @@ public sealed class NeoAppsTools(
     // ---------------------------------------------------------------- deployment
 
     [McpServerTool(Name = "neoapps_deploy_app")]
-    [Description("Builds Docker images for the app's API (and frontend if generated) and runs them locally next to the shared MySQL/Redis/RabbitMQ. Long-running (first build downloads images): returns a job to poll.")]
+    [Description("Deploys the app. target 'local' (default) builds Docker images and runs them on this machine next to the shared MySQL/Redis/RabbitMQ. " +
+                 "target 'cloud' publishes it to NeoApps Cloud at https://<app>.<region>.neoapps.ai: packs the generated code (no local secrets), uploads it and follows the deploy; " +
+                 "the region is fixed after the first cloud deploy (data residency). Cloud needs a deploy token (neoapps cloud login); if the account has no plan the result holds a checkout link to show the user. " +
+                 "Long-running: returns a job to poll.")]
     public Task<object> DeployApp(
         [Description("App name.")] string name,
-        [Description("Also run the RabbitMQ consumer/workflow worker (only needed for workflow automations).")] bool includeConsumer = false,
+        [Description("Also run the RabbitMQ consumer/workflow worker (only needed for workflow automations; local only).")] bool includeConsumer = false,
+        [Description("'local' or 'cloud'.")] string target = "local",
+        [Description("Cloud region: 'us' or 'ca'. Ask the user where their data must live on the first cloud deploy; later deploys reuse the app's region.")] string? region = null,
         CancellationToken ct = default)
     {
         var state = store.Require(name);
+        if (string.Equals(target, "cloud", StringComparison.OrdinalIgnoreCase)) return DeployToCloud(state, region, ct);
+        if (!string.Equals(target, "local", StringComparison.OrdinalIgnoreCase)) throw new McpException("target must be 'local' or 'cloud'.");
         return jobs.StartAndWaitAsync("deploy", state.Name, async (job, jct) =>
         {
             var r = await docker.DeployAsync(state, includeConsumer, job.Log, jct);
             if (!r.Ok) throw new InvalidOperationException("docker compose failed:\n" + r.Tail(60));
             return Urls(state, deployed: true);
+        }, ct);
+    }
+
+    private Task<object> DeployToCloud(ProjectState state, string? region, CancellationToken ct)
+    {
+        region = region?.Trim().ToLowerInvariant();
+        if (state.CloudRegion is { } fixedRegion && region is not null && region != fixedRegion)
+            throw new McpException($"{state.Name} already lives in region '{fixedRegion}'. Its data stays there; deploy without a region, or create a new app for '{region}'.");
+        region ??= state.CloudRegion ?? throw new McpException("Choose a region for the first cloud deploy: 'us' or 'ca' (where the app's data will live).");
+        if (!CloudClient.Regions.Contains(region)) throw new McpException("region must be 'us' or 'ca'.");
+        using var probe = new CloudClient(); // fails fast with sign-in instructions when there is no token
+        return jobs.StartAndWaitAsync("cloud-deploy", state.Name, async (job, jct) =>
+        {
+            var bundle = await new CloudBundle(settings).PackAsync(state, region, job.Log, jct);
+            try
+            {
+                using var cloud = new CloudClient();
+                var r = await cloud.DeployAsync(state, region, bundle, job.Log, jct);
+                if (r.CheckoutUrl is not null) return new { app = state.Name, region, needsPayment = true, checkoutUrl = r.CheckoutUrl, next = r.Message };
+                state.CloudRegion = region;
+                state.CloudUrl = r.Url;
+                state.CloudDeployedAt = DateTimeOffset.Now;
+                store.Save(state);
+                return new
+                {
+                    app = state.Name, region, url = r.Url,
+                    admin = r.AdminPassword is null ? null : new { username = r.AdminUsername, password = r.AdminPassword },
+                    note = r.AdminPassword is null
+                        ? "Updated in place; data kept."
+                        : "First deploy: show the admin login once and ask the user to change the password after signing in.",
+                };
+            }
+            finally { try { File.Delete(bundle); } catch (IOException) { } }
         }, ct);
     }
 

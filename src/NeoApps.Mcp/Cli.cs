@@ -10,7 +10,7 @@ namespace NeoApps.Mcp;
 /// </summary>
 public static class Cli
 {
-    private static readonly string[] Commands = ["new", "evolve", "migrate", "preview", "frontend", "ui", "deploy", "status", "test", "logs", "stop", "list", "doctor", "guidelines", "infra", "help", "--help", "-h"];
+    private static readonly string[] Commands = ["new", "evolve", "migrate", "preview", "frontend", "ui", "deploy", "status", "test", "logs", "stop", "list", "doctor", "guidelines", "infra", "cloud", "help", "--help", "-h"];
     private static readonly JsonSerializerOptions Pretty = new() { WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
 
     public static bool IsCommand(string arg) => Commands.Contains(arg, StringComparer.OrdinalIgnoreCase);
@@ -40,7 +40,7 @@ public static class Cli
                         generateFrontend: !Flag("--no-frontend"), frontendTemplate: Opt("--template") ?? "app",
                         resetDatabase: !Flag("--keep-db"), ct: ct));
                     if (ok && Flag("--deploy"))
-                        ok = await RunJob(jobs, tools.DeployApp(Name(), Flag("--consumer"), ct));
+                        ok = await RunJob(jobs, tools.DeployApp(Name(), Flag("--consumer"), ct: ct));
                     if (ok) Print(await tools.AppStatus(Name(), ct));
                     return ok ? 0 : 1;
                 }
@@ -54,7 +54,7 @@ public static class Cli
                         renames: Opt("--renames") is { } rf ? await File.ReadAllTextAsync(rf) : null,
                         planOnly: Flag("--plan"), ct: ct));
                     if (ok && !Flag("--plan") && Flag("--deploy"))
-                        ok = await RunJob(jobs, tools.DeployApp(Name(), Flag("--consumer"), ct));
+                        ok = await RunJob(jobs, tools.DeployApp(Name(), Flag("--consumer"), ct: ct));
                     return ok ? 0 : 1;
                 }
                 case "migrate":
@@ -74,8 +74,9 @@ public static class Cli
                     return 0;
                 case "deploy":
                 {
-                    var ok = await RunJob(jobs, tools.DeployApp(Name(), Flag("--consumer"), ct));
-                    if (ok) Print(await tools.AppStatus(Name(), ct));
+                    var target = Opt("--target") ?? "local";
+                    var ok = await RunJob(jobs, tools.DeployApp(Name(), Flag("--consumer"), target, Opt("--region"), ct));
+                    if (ok && target == "local") Print(await tools.AppStatus(Name(), ct));
                     return ok ? 0 : 1;
                 }
                 case "status": Print(await tools.AppStatus(Name(), ct)); return 0;
@@ -97,6 +98,26 @@ public static class Cli
                 case "list": Print(tools.ListApps()); return 0;
                 case "doctor": Print(await tools.CheckEnvironment(ct)); return 0;
                 case "guidelines": Console.WriteLine(NeoAppsTools.SchemaGuidelinesTool()); return 0;
+                case "cloud":
+                    switch (args.Length > 1 ? args[1] : "")
+                    {
+                        case "login":
+                        {
+                            var token = Environment.GetEnvironmentVariable("NEOAPPS_CLOUD_TOKEN") is { Length: > 0 } e ? e : ReadSecret("Paste your deploy token from https://cloud.neoapps.ai: ");
+                            CloudClient.SaveToken(token.Trim());
+                            Console.WriteLine("Signed in. The token is in your keychain (service 'neoapps-cloud').");
+                            return 0;
+                        }
+                        case "logout":
+                            Console.WriteLine(CloudClient.DeleteToken() ? "Signed out." : "No saved token.");
+                            return 0;
+                        case "status":
+                            Console.WriteLine(CloudClient.ReadToken() is null ? "Not signed in. Run: neoapps cloud login" : "Signed in.");
+                            return 0;
+                        default:
+                            Console.WriteLine("Usage: neoapps cloud login | logout | status");
+                            return 2;
+                    }
                 case "infra":
                     if (args.Length > 1 && args[1] == "down") { Print(await tools.StopInfrastructure(Flag("--remove-data"), ct)); return 0; }
                     return await RunJob(jobs, tools.StartInfrastructure(ct)) ? 0 : 1;
@@ -127,6 +148,18 @@ public static class Cli
         return false;
     }
 
+    /// <summary>Reads a line without echoing it (falls back to a plain read when input is piped).</summary>
+    private static string ReadSecret(string prompt)
+    {
+        Console.Write(prompt);
+        if (Console.IsInputRedirected) return Console.ReadLine() ?? "";
+        var sb = new System.Text.StringBuilder();
+        for (var k = Console.ReadKey(intercept: true); k.Key != ConsoleKey.Enter; k = Console.ReadKey(intercept: true))
+            if (k.Key == ConsoleKey.Backspace) { if (sb.Length > 0) sb.Length--; } else if (!char.IsControl(k.KeyChar)) sb.Append(k.KeyChar);
+        Console.WriteLine();
+        return sb.ToString();
+    }
+
     private static void Print(object? o) => Console.WriteLine(o is string s ? s : JsonSerializer.Serialize(o, Pretty));
 
     private const string Help = """
@@ -148,6 +181,8 @@ public static class Cli
           frontend <App> [--template app|dnd]   regenerate the UI
           ui <App> [--set changes.json [--replace]]   show the UI config, or merge changes into it and regenerate the UI
           deploy <App> [--consumer]             build and run the app in Docker
+          deploy <App> --target cloud [--region us|ca]   publish to NeoApps Cloud (<app>.<region>.neoapps.ai)
+          cloud login | logout | status         save or remove the NeoApps Cloud deploy token (OS keychain)
           test <App>                            run the data-rule tests (tenant isolation, append-only data, lifecycles) against the running API
           status <App> | logs <App> [--service api|web] [--tail N] | stop <App>
           list                                  apps created so far
