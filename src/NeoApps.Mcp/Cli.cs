@@ -151,8 +151,19 @@ public static class Cli
                             Console.WriteLine($"Saved. {app} restarted with: {(names.Length == 0 ? "no custom settings" : string.Join(", ", names))}");
                             return 0;
                         }
+                        case "reset-admin":
+                        {
+                            // neoapps cloud reset-admin <App>: a new password for the live app's admin (lost or never seen)
+                            var state = store.Require(args.Length > 2 ? args[2] : throw new ArgumentException("Usage: neoapps cloud reset-admin <App>"));
+                            using var cloud = new CloudClient();
+                            var (user, password) = await cloud.ResetAdminAsync(CloudBundle.Slug(state.Name), ct);
+                            state.CloudAdminUsername = user; state.CloudAdminPassword = password; store.Save(state);
+                            Console.WriteLine($"{state.CloudUrl ?? state.Name}: sign in as {user} / {password}");
+                            Console.WriteLine("Saved in this app's project.json. Change the password after signing in.");
+                            return 0;
+                        }
                         default:
-                            Console.WriteLine("Usage: neoapps cloud login | logout | status | env set|unset <App> KEY[=value] ...");
+                            Console.WriteLine("Usage: neoapps cloud login | logout | status | env set|unset <App> KEY[=value] ... | reset-admin <App>");
                             return 2;
                     }
                 case "infra":
@@ -222,6 +233,7 @@ public static class Cli
           cloud login [--token] | logout | status   sign in to NeoApps Cloud in the browser (--token: paste a deploy token)
           cloud env set <App> KEY[=value] ...   set settings of a live cloud app (KEY alone = take the value from this shell)
           cloud env unset <App> KEY ...         remove them; the app restarts, values are never shown back
+          cloud reset-admin <App>               new admin password for the live cloud app (shown once, saved in project.json)
           pack <App> [--region us|ca] [--out file.tar.gz]   write the cloud bundle to a file (no local secrets)
           test <App>                            run the data-rule tests (tenant isolation, append-only data, lifecycles) against the running API
           status <App> | logs <App> [--service api|web] [--tail N] | stop <App>

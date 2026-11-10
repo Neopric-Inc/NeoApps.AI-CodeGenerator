@@ -26,6 +26,9 @@ public sealed class ProjectState
     public string? CloudRegion { get; set; }
     public string? CloudUrl { get; set; }
     public DateTimeOffset? CloudDeployedAt { get; set; }
+    /// <summary>The cloud copy's own admin login (set on the first cloud deploy or by cloud reset-admin); the local one doesn't work there.</summary>
+    public string? CloudAdminUsername { get; set; }
+    public string? CloudAdminPassword { get; set; }
 
     public string ApiBaseUrl => $"http://localhost:{ApiPort}/v1/api/";
 }
