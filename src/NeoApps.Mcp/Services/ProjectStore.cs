@@ -22,6 +22,11 @@ public sealed class ProjectState
     public string? AdminUsername { get; set; }
     public string? AdminPassword { get; set; }
 
+    /// <summary>NeoApps Cloud: region the app was first deployed to (fixed after that), its address and the last deploy.</summary>
+    public string? CloudRegion { get; set; }
+    public string? CloudUrl { get; set; }
+    public DateTimeOffset? CloudDeployedAt { get; set; }
+
     public string ApiBaseUrl => $"http://localhost:{ApiPort}/v1/api/";
 }
 

@@ -69,7 +69,10 @@ Work in the app's planning folder `workspace/<App>/` (git-ignored): `requirement
    applies pending migrations on startup, so a deploy moves other databases forward in place.
    Only use `./neoapps new` again when the user wants a fresh database (it resets test data; existing migrations are
    baselined). UI-only changes (labels, options, menu, list columns) can use `./neoapps ui <App> --set changes.json`.
-5. **Report back:** web URL, Swagger URL, admin username/password (printed by the command and kept in
+5. **Going live:** `./neoapps cloud login`, then `./neoapps deploy <App> --target cloud --region us|ca` (MCP: `neoapps_deploy_app`
+   with `target: "cloud"`). Ask the user which region their data must live in on the first cloud deploy; it is fixed after that.
+   If the result has `checkoutUrl`, show it and deploy again after payment. Show the first-deploy admin login once. See `docs/CLOUD.md`.
+6. **Report back:** web URL, Swagger URL, admin username/password (printed by the command and kept in
    `workspace/<App>/project.json`), and where the code is (`1_<ticks>/<App>/DotNet_Output/solution/<App>` and
    `.../ReactTs_Output3`).
 
