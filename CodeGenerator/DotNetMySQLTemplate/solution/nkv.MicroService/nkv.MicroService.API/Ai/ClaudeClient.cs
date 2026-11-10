@@ -74,6 +74,7 @@ namespace nkv.MicroService.API.Ai
             Action<string> onToolCall = null)
         {
             var used = new List<string>();
+            var nudges = 0;
             for (var turn = 0; turn < maxTurns; turn++)
             {
                 var body = new JsonObject
@@ -84,14 +85,27 @@ namespace nkv.MicroService.API.Ai
                     ["messages"] = messages.DeepClone(),
                 };
                 if (tools != null && tools.Count > 0) body["tools"] = tools.DeepClone();
+                // Workflows must end in their result tool: on the last two turns (or after a nudge) the model is made to call it,
+                // so a model that keeps searching, or spends its output on reasoning, still hands back a result.
+                var mustFinish = stopOnTool != null && (turn >= maxTurns - 2 || nudges > 0);
+                if (mustFinish) body["tool_choice"] = new JsonObject { ["type"] = "tool", ["name"] = stopOnTool };
                 var res = await CreateAsync(body, ct);
                 var content = res["content"]!.AsArray();
-                messages.Add(new JsonObject { ["role"] = "assistant", ["content"] = content.DeepClone() });
+                // keep user/assistant turns alternating even when a model returns nothing
+                messages.Add(new JsonObject { ["role"] = "assistant", ["content"] = content.Count > 0 ? content.DeepClone()
+                    : new JsonArray(new JsonObject { ["type"] = "text", ["text"] = "(no output)" }) });
 
                 var calls = content.Where(b => b?["type"]?.GetValue<string>() == "tool_use").Select(b => b!.AsObject()).ToList();
                 if (calls.Count == 0 || res["stop_reason"]?.GetValue<string>() != "tool_use")
                 {
                     var text = string.Join("\n", content.Where(b => b?["type"]?.GetValue<string>() == "text").Select(b => b!["text"]!.GetValue<string>()));
+                    if (stopOnTool != null && nudges < 2 && turn < maxTurns - 1)
+                    {
+                        // ended without the result (empty answer, ran out of output tokens, or answered in prose): ask for it once more
+                        nudges++;
+                        messages.Add(new JsonObject { ["role"] = "user", ["content"] = $"Call {stopOnTool} now with your best result from what you have already read. Put anything you could not support in the flags instead of searching further." });
+                        continue;
+                    }
                     return (text.Trim(), used, null);
                 }
 
