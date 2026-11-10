@@ -85,9 +85,11 @@ namespace nkv.MicroService.API.Ai
                     ["messages"] = messages.DeepClone(),
                 };
                 if (tools != null && tools.Count > 0) body["tools"] = tools.DeepClone();
-                // Workflows must end in their result tool: on the last two turns (or after a nudge) the model is made to call it,
-                // so a model that keeps searching, or spends its output on reasoning, still hands back a result.
-                var mustFinish = stopOnTool != null && (turn >= maxTurns - 2 || nudges > 0);
+                // Workflows must end in their result tool: a model that stops without it is asked again, and on the last turn it is
+                // made to call it, so one that keeps searching or spends its output on reasoning still hands back a result.
+                // Forcing is a last resort: endpoints that enforce the schema on a forced call (NVIDIA NIM) cap long text
+                // fields, so the model is asked in words first and only forced on the final turn.
+                var mustFinish = stopOnTool != null && (turn == maxTurns - 1 || nudges >= 3);
                 if (mustFinish) body["tool_choice"] = new JsonObject { ["type"] = "tool", ["name"] = stopOnTool };
                 var res = await CreateAsync(body, ct);
                 var content = res["content"]!.AsArray();
@@ -99,7 +101,7 @@ namespace nkv.MicroService.API.Ai
                 if (calls.Count == 0 || res["stop_reason"]?.GetValue<string>() != "tool_use")
                 {
                     var text = string.Join("\n", content.Where(b => b?["type"]?.GetValue<string>() == "text").Select(b => b!["text"]!.GetValue<string>()));
-                    if (stopOnTool != null && nudges < 2 && turn < maxTurns - 1)
+                    if (stopOnTool != null && nudges < 3 && turn < maxTurns - 1 && !mustFinish)
                     {
                         // ended without the result (empty answer, ran out of output tokens, or answered in prose): ask for it once more
                         nudges++;
