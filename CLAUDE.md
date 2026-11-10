@@ -72,6 +72,8 @@ Work in the app's planning folder `workspace/<App>/` (git-ignored): `requirement
 5. **Going live:** `./neoapps cloud login`, then `./neoapps deploy <App> --target cloud --region us|ca` (MCP: `neoapps_deploy_app`
    with `target: "cloud"`). Ask the user which region their data must live in on the first cloud deploy; it is fixed after that.
    If the result has `checkoutUrl`, show it and deploy again after payment. Show the first-deploy admin login once. See `docs/CLOUD.md`.
+   App settings (AI keys): the user runs `./neoapps cloud env set <App> ANTHROPIC_API_KEY` in their own terminal (the value comes from
+   their shell); never ask them to paste a key into the chat.
 6. **Report back:** web URL, Swagger URL, admin username/password (printed by the command and kept in
    `workspace/<App>/project.json`), and where the code is (`1_<ticks>/<App>/DotNet_Output/solution/<App>` and
    `.../ReactTs_Output3`).
@@ -150,7 +152,7 @@ added to every app table automatically and stamped by DataGuard on every write, 
   Passwords use BCrypt (`Utility/PasswordHasher.cs`).
 - `src/NeoApps.Mcp/`: MCP server and CLI (`Cli.cs`). Both use the same services; the generator runs as a child process.
 - Build: `dotnet build NeoApps.slnx`. **Test any generator change by generating an app and building it**
-  (`./neoapps new TestApp --schema samples/todo-app.sql`, then build the generated `.sln` and run `npm run build`).
+  (`./neoapps new TestApp --schema samples/todo-app/todo-app.sql`, then build the generated `.sln` and run `npm run build`).
 - The generator reads templates relative to `CodeGenerator/` and writes apps to `../1_<ticks>/`. Never commit
   `1_*/` or `workspace/` (both are git-ignored).
 - MySQL must run with `lower_case_table_names=1`: generated SQL mixes the casing of table names.

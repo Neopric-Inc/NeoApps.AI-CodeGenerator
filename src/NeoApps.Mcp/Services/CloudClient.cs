@@ -36,10 +36,7 @@ public sealed class CloudClient : IDisposable
     public async Task<CloudDeployResult> DeployAsync(ProjectState p, string region, string bundle, Action<string> log, CancellationToken ct)
     {
         var slug = CloudBundle.Slug(p.Name);
-        // the deploy token is only good for this exchange; everything else uses the one-hour session it returns
-        var session = await SendAsync(HttpMethod.Post, "v1/api/cloud/session", null, ct);
-        var jwt = session["accessToken"]?.GetValue<string>() ?? throw new InvalidOperationException("NeoApps Cloud did not return a session.");
-        _http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", jwt);
+        await StartSessionAsync(ct);
         log($"Registering {slug} in region '{region}'");
         var app = await SendAsync(HttpMethod.Post, "v1/api/cloud/apps", new JsonObject { ["app"] = p.Name, ["slug"] = slug, ["region"] = region }, ct);
         if (app["checkoutUrl"]?.GetValue<string>() is { Length: > 0 } checkout)
@@ -83,6 +80,30 @@ public sealed class CloudClient : IDisposable
             return new(slug, region, result["url"]?.GetValue<string>(), null,
                 result["adminUsername"]?.GetValue<string>(), result["adminPassword"]?.GetValue<string>(), null);
         }
+    }
+
+    /// <summary>Sets or removes settings of a live app (values go straight to its host; names come back, never values).</summary>
+    public async Task<string[]> SetEnvAsync(string slug, IDictionary<string, string> set, IEnumerable<string> unset, CancellationToken ct)
+    {
+        await StartSessionAsync(ct);
+        var body = new JsonObject
+        {
+            ["set"] = new JsonObject(set.Select(kv => KeyValuePair.Create(kv.Key, (JsonNode?)JsonValue.Create(kv.Value)))),
+            ["unset"] = new JsonArray(unset.Select(u => (JsonNode?)JsonValue.Create(u)).ToArray()),
+        };
+        var res = await SendAsync(HttpMethod.Put, $"v1/api/cloud/apps/{slug}/env", body, ct);
+        return res["settings"]?.AsArray().Select(n => n!.GetValue<string>()).ToArray() ?? [];
+    }
+
+    private bool _session;
+    private async Task StartSessionAsync(CancellationToken ct)
+    {
+        if (_session) return;
+        // the deploy token is only good for this exchange; everything else uses the one-hour session it returns
+        var session = await SendAsync(HttpMethod.Post, "v1/api/cloud/session", null, ct);
+        var jwt = session["accessToken"]?.GetValue<string>() ?? throw new InvalidOperationException("NeoApps Cloud did not return a session.");
+        _http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", jwt);
+        _session = true;
     }
 
     private async Task<JsonObject> SendAsync(HttpMethod method, string path, JsonObject? body, CancellationToken ct)

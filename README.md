@@ -66,7 +66,7 @@ An app built in Claude's cloud sandbox can't be opened from your browser. To run
 ## Command line
 
 ```bash
-neoapps new TodoApp --schema ~/.neoapps/samples/todo-app.sql --deploy   # generate + run in Docker
+neoapps new TodoApp --schema ~/.neoapps/samples/todo-app/todo-app.sql --deploy   # generate + run in Docker
 neoapps preview MyApp --schema my.sql --ui my.ui.json                   # visual plan + checks before generating
 neoapps help                                                            # all commands
 ```
@@ -289,7 +289,7 @@ Run `neoapps guidelines` (MCP: `neoapps_schema_guidelines`) for the full rules. 
 
 | Sample | What it shows |
 |---|---|
-| [`samples/todo-app.sql`](samples/todo-app.sql) | Smallest possible app |
+| [`samples/todo-app/todo-app.sql`](samples/todo-app/todo-app.sql) | Smallest possible app |
 | [`samples/billflow.*`](samples/billflow.ui.json) | Billing app with an AI operator: "Onboard a customer" workflow, Support Rep / Viewer roles |
 | [`samples/clinical-research-site.*`](samples/clinical-research-site.ui.json) | Roles, document Q&A, AI workflows, ClinicalTrials.gov search |
 | [`samples/splitshare/`](samples/splitshare) | Custom screens (My balances, settle-up, Split now) |
@@ -357,4 +357,4 @@ NeoApps.slnx              solution (generator + CLI/MCP server + migrator)
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md). After changing the generator, generate an app and build it (`neoapps new TestApp --schema samples/todo-app.sql`, then build the `.sln` and run `npm run build`). The drag-and-drop designer has its own [tutorial](tutorials.md).
+See [CONTRIBUTING.md](CONTRIBUTING.md) and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md). After changing the generator, generate an app and build it (`neoapps new TestApp --schema samples/todo-app/todo-app.sql`, then build the `.sln` and run `npm run build`). The drag-and-drop designer has its own [tutorial](tutorials.md).

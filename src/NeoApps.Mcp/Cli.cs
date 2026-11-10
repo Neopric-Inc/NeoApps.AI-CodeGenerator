@@ -124,8 +124,29 @@ public static class Cli
                         case "status":
                             Console.WriteLine(CloudClient.ReadToken() is null ? "Not signed in. Run: neoapps cloud login" : "Signed in.");
                             return 0;
+                        case "env":
+                        {
+                            // neoapps cloud env set <App> KEY=value | KEY (value read from this shell's environment, so it stays out of shell history)
+                            // neoapps cloud env unset <App> KEY ...
+                            var verb = args.Length > 2 ? args[2] : "";
+                            var app = args.Length > 3 ? args[3] : throw new ArgumentException("Usage: neoapps cloud env set|unset <App> KEY[=value] ...");
+                            var items = args.Skip(4).ToArray();
+                            if (items.Length == 0 || verb is not ("set" or "unset")) throw new ArgumentException("Usage: neoapps cloud env set|unset <App> KEY[=value] ...");
+                            var set = new Dictionary<string, string>(); var unset = new List<string>();
+                            foreach (var item in items)
+                            {
+                                if (verb == "unset") { unset.Add(item); continue; }
+                                var eq = item.IndexOf('=');
+                                if (eq > 0) set[item[..eq]] = item[(eq + 1)..];
+                                else set[item] = Environment.GetEnvironmentVariable(item) ?? throw new ArgumentException($"{item} is not set in this shell; export it first or use {item}=value.");
+                            }
+                            using var cloud = new CloudClient();
+                            var names = await cloud.SetEnvAsync(CloudBundle.Slug(store.Require(app).Name), set, unset, ct);
+                            Console.WriteLine($"Saved. {app} restarted with: {(names.Length == 0 ? "no custom settings" : string.Join(", ", names))}");
+                            return 0;
+                        }
                         default:
-                            Console.WriteLine("Usage: neoapps cloud login | logout | status");
+                            Console.WriteLine("Usage: neoapps cloud login | logout | status | env set|unset <App> KEY[=value] ...");
                             return 2;
                     }
                 case "infra":
@@ -193,6 +214,8 @@ public static class Cli
           deploy <App> [--consumer]             build and run the app in Docker
           deploy <App> --target cloud [--region us|ca]   publish to NeoApps Cloud (<app>.<region>.neoapps.ai)
           cloud login | logout | status         save or remove the NeoApps Cloud deploy token (OS keychain)
+          cloud env set <App> KEY[=value] ...   set settings of a live cloud app (KEY alone = take the value from this shell)
+          cloud env unset <App> KEY ...         remove them; the app restarts, values are never shown back
           pack <App> [--region us|ca] [--out file.tar.gz]   write the cloud bundle to a file (no local secrets)
           test <App>                            run the data-rule tests (tenant isolation, append-only data, lifecycles) against the running API
           status <App> | logs <App> [--service api|web] [--tail N] | stop <App>
