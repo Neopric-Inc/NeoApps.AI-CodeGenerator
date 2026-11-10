@@ -115,7 +115,8 @@ public sealed class NeoAppsTools(
         if (!string.IsNullOrWhiteSpace(uiConfig))
             File.WriteAllText(store.UiConfigFile(name), UiConfigTools.Normalize(uiConfig));
 
-        var state = existing ?? new ProjectState { Name = name, DatabaseName = ProjectStore.ToDatabaseName(name), SchemaFile = schemaFile };
+        // NEOAPPS_DATABASE: a build server chooses the database name (e.g. bld_<slug> on a shared MySQL)
+        var state = existing ?? new ProjectState { Name = name, DatabaseName = Environment.GetEnvironmentVariable("NEOAPPS_DATABASE") is { Length: > 0 } db ? db : ProjectStore.ToDatabaseName(name), SchemaFile = schemaFile };
         state.SchemaFile = schemaFile;
         state.ApiPort = apiPort;
         state.WebPort = webPort;
@@ -404,14 +405,18 @@ public sealed class NeoAppsTools(
                 state.CloudUrl = r.Url;
                 state.CloudDeployedAt = DateTimeOffset.Now;
                 if (r.AdminPassword is not null) { state.CloudAdminUsername = r.AdminUsername; state.CloudAdminPassword = r.AdminPassword; }
+                else if (r.Message is not null) { state.CloudAdminUsername = r.AdminUsername; state.CloudAdminPassword = null; } // signs in with the NeoApps account
                 store.Save(state);
                 return new
                 {
                     app = state.Name, region, url = r.Url,
+                    signIn = r.Message,
                     cloudAdmin = state.CloudAdminPassword is null ? null : new { username = state.CloudAdminUsername, password = state.CloudAdminPassword },
-                    note = (r.AdminPassword is null ? "Updated in place; data kept. " : "First deploy. ") +
-                        "Sign in to the cloud app with cloudAdmin (NOT the local admin login; the cloud copy has its own password). " +
-                        "If it's missing or doesn't work, use neoapps_cloud_reset_admin. Ask the user to change the password after signing in.",
+                    note = r.Message is not null
+                        ? "First deploy. The app's admin is the user's own NeoApps login: tell them the signIn line. Never show the local admin password for the cloud app."
+                        : r.AdminPassword is null
+                            ? "Updated in place; data kept. The cloud app's login is unchanged (the user's NeoApps login, or cloudAdmin if shown)."
+                            : "First deploy. Sign in with cloudAdmin (NOT the local admin login). If it doesn't work, use neoapps_cloud_reset_admin.",
                 };
             }
             finally { try { File.Delete(bundle); } catch (IOException) { } }
@@ -715,8 +720,9 @@ public sealed class NeoAppsTools(
         {
             url = p.CloudUrl, region = p.CloudRegion,
             admin = p.CloudAdminPassword is null ? null : new { username = p.CloudAdminUsername, password = p.CloudAdminPassword },
+            signIn = p.CloudAdminPassword is null && p.CloudAdminUsername is not null ? $"Sign in with your NeoApps username ({p.CloudAdminUsername}) and password." : null,
         },
-        note = "admin is for the local copy only. The cloud copy has its own login (cloud.admin); if it's missing, use neoapps_cloud_reset_admin.",
+        note = "admin is for the local copy only. The cloud copy signs in with the NeoApps account (cloud.signIn) or cloud.admin; if neither works, use neoapps_cloud_reset_admin.",
     };
 
     private static string NormalizeTemplate(string t) => t?.Trim().ToLowerInvariant() switch

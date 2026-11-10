@@ -6,11 +6,17 @@
 ./neoapps deploy ClaimKit --target cloud               # later deploys reuse it; data stays in that region
 ```
 
-In Claude Desktop: `neoapps_deploy_app` with `target: "cloud"` and `region`. Not signed in yet? The deploy opens the same
+**No install at all (non-technical users):** add the NeoApps connector in Claude (Desktop or claude.ai): Settings →
+Connectors → Add custom connector → `https://cloud.neoapps.ai/mcp`, sign in. Claude then plans, previews, publishes and
+changes apps on NeoApps servers (tools `start_here`, `save_app_plan`, `get_app_plan`, `publish_app`, `publish_status`,
+`my_apps`, `open_app`, `delete_app`, `billing`); nothing runs on the user's computer.
+
+**From this repo:** in Claude Desktop: `neoapps_deploy_app` with `target: "cloud"` and `region`. Not signed in yet? The deploy opens the same
 browser page and waits; the job log shows the link and an 8-character code to compare. CI: `./neoapps cloud login --token`
 (or `NEOAPPS_CLOUD_TOKEN`). The app goes live at
-`https://<app>.<region>.neoapps.ai`. The first deploy returns the cloud app's own admin login (not the local one) and saves it in
-`workspace/<App>/project.json`; `./neoapps cloud reset-admin <App>` (MCP: `neoapps_cloud_reset_admin`) makes a new one.
+`https://<app>.<region>.neoapps.ai`. On the first deploy the app's administrator becomes the customer's own NeoApps login (same username and password);
+the result says so in `signIn`. `./neoapps cloud reset-admin <App>` (MCP: `neoapps_cloud_reset_admin`) sets a separate
+password if ever needed.
 
 App settings such as AI keys: `./neoapps cloud env set <App> ANTHROPIC_API_KEY` (value taken from your shell, so it stays out of
 shell history; `KEY=value` also works) and `./neoapps cloud env unset <App> KEY`. They go straight to the app's `.env` on its host

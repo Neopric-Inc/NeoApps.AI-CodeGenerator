@@ -10,7 +10,7 @@ namespace NeoApps.Mcp;
 /// </summary>
 public static class Cli
 {
-    private static readonly string[] Commands = ["new", "evolve", "migrate", "preview", "frontend", "ui", "deploy", "status", "test", "logs", "stop", "list", "doctor", "guidelines", "infra", "cloud", "pack", "help", "--help", "-h"];
+    private static readonly string[] Commands = ["new", "evolve", "migrate", "preview", "frontend", "ui", "deploy", "status", "test", "logs", "stop", "list", "doctor", "guidelines", "ui-guide", "infra", "cloud", "pack", "help", "--help", "-h"];
     private static readonly JsonSerializerOptions Pretty = new() { WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
 
     public static bool IsCommand(string arg) => Commands.Contains(arg, StringComparer.OrdinalIgnoreCase);
@@ -98,6 +98,7 @@ public static class Cli
                 case "list": Print(tools.ListApps()); return 0;
                 case "doctor": Print(await tools.CheckEnvironment(ct)); return 0;
                 case "guidelines": Console.WriteLine(NeoAppsTools.SchemaGuidelinesTool()); return 0;
+                case "ui-guide": Console.WriteLine(NeoAppsTools.UiConfigGuide()); return 0;
                 case "pack":
                 {
                     // the bundle `deploy --target cloud` uploads, written to a file (used to install the control plane itself)
@@ -240,6 +241,7 @@ public static class Cli
           list                                  apps created so far
           doctor                                check .NET / Docker / shared services
           guidelines                            schema rules for writing <file.sql>
+          ui-guide                              format of ui.config.json (labels, widgets, menu, roles, data rules)
           infra [down [--remove-data]]          start/stop shared MySQL, Redis, RabbitMQ
 
         With no command, runs as an MCP server on stdio (for Claude Desktop).

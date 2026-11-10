@@ -91,8 +91,9 @@ export const RecordPage: React.FC = () => {
     child: tables[c],
     fk: tables[c].schema.columns.find((col) => col.references?.table === table.name)!.name,
   })).filter((x) => x.fk);
+  // fields hidden from this role are left out of table.fields (AppContext), so skip the gaps
   const detailFields = table.schema.columns.map((c) => table.fields[c.name])
-    .filter((f) => !f.hidden && !f.column.isPrimaryKey && !AUDIT_FIELDS.includes(f.name));
+    .filter((f) => f && !f.hidden && !f.column.isPrimaryKey && !AUDIT_FIELDS.includes(f.name));
 
   return (
     <Box>
