@@ -154,7 +154,7 @@ fi
 cat <<EOF
 
 Done. Try it:
-  neoapps new TodoApp --schema $DIR/samples/todo-app.sql --deploy
+  neoapps new TodoApp --schema $DIR/samples/todo-app/todo-app.sql --deploy
   neoapps help
 
 Other MCP clients (Cursor, Windsurf, VS Code...): add this server to their MCP config:

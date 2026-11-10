@@ -9,6 +9,10 @@
 In Claude Desktop: `neoapps_deploy_app` with `target: "cloud"` and `region`. The app goes live at
 `https://<app>.<region>.neoapps.ai`. The first deploy returns the admin login once.
 
+App settings such as AI keys: `./neoapps cloud env set <App> ANTHROPIC_API_KEY` (value taken from your shell, so it stays out of
+shell history; `KEY=value` also works) and `./neoapps cloud env unset <App> KEY`. They go straight to the app's `.env` on its host
+and the app restarts; the control plane never stores them and they are never shown back.
+
 `./neoapps pack <App> --out app.tar.gz` writes the same bundle to a file without uploading it (used to install the control plane).
 
 ## What leaves your machine
@@ -35,6 +39,7 @@ every other call carries the session it returns (`Authorization: Bearer <accessT
 | `POST /v1/api/cloud/session` with `Authorization: Bearer nac_...` | `{accessToken, expiresAt}`: a one-hour sign-in as the user who created the token |
 | `POST /v1/api/cloud/apps {app, slug, region}` | `{slug, region, status}`, or `{checkoutUrl}` when the account has no active plan; 4xx `{message}` if the slug is taken or the region differs |
 | `POST /v1/api/cloud/apps/{slug}/upload` | `{uploadUrl, blob}`: a one-time link; the CLI `PUT`s the bundle with `x-ms-blob-type: BlockBlob` |
+| `PUT /v1/api/cloud/apps/{slug}/env {set: {KEY: value}, unset: [KEY]}` | `{slug, settings: [names]}`: written to the app's host, app restarted; platform keys refused |
 | `POST /v1/api/Jobs {kind: "cloud.deploy", input: {slug, blob}}` | the job (`job_id`), standard NeoApps jobs API |
 | `GET /v1/api/Jobs/{id}/events?after=N&wait=20` | `{job: {status, result, error}, events: [{id, message}]}`; `result` = `{url, adminUsername?, adminPassword?}` |
 
