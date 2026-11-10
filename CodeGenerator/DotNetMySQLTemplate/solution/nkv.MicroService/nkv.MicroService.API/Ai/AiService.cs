@@ -630,7 +630,7 @@ When done, call propose_records exactly once with all rows.";
             var (text2, _, proposal) = await _claude.RunAsync(_settings.Model(cfg), system,
                 new JsonArray(new JsonObject { ["role"] = "user", ["content"] = sb.ToString() }), tools, 16000,
                 (name, input) => { progress?.Invoke(DescribeTool(name, input)); return RunTool(name, input, u, sources, ct); },
-                ct, stopOnTool: "propose_records", maxTurns: 12,
+                ct, stopOnTool: "propose_records", maxTurns: 16,
                 onToolCall: name => { if (name == "propose_records") progress?.Invoke(DescribeTool(name, new JsonObject())); });
             if (proposal == null) throw new AiException("The assistant didn't propose any records: " + Trim(text2, 300));
             if (proposal["records"] is JsonValue rv && rv.TryGetValue<string>(out var rs))
@@ -673,6 +673,9 @@ When done, call propose_records exactly once with all rows.";
                 }
                 if (unknown.Count > 0) warnings.Add($"Ignored {table} fields that aren't columns: {string.Join(", ", unknown)}.");
                 if (values.Count == 0) warnings.Add($"A {table} row has no content of its own; re-run the workflow.");
+                foreach (var (k, v) in values)
+                    if (v is JsonValue tv && tv.TryGetValue<string>(out var ts) && (ts.Length == 1024 || ts.Length == 2048 || ts.Length == 4096))
+                        warnings.Add($"{table}.{k} stops at exactly {ts.Length} characters and may be cut off; re-run the workflow.");
                 foreach (var (k, v) in inherit)
                     if (cols[table].FirstOrDefault(x => x.Name == k) is { } ic) values[ic.Name] = JsonValue.Create(v.ToString());
                 var refId = r["ref"]?.GetValue<string>() ?? Guid.NewGuid().ToString("N")[..6];
