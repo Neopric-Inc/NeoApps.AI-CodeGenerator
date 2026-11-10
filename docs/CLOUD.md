@@ -9,6 +9,8 @@
 In Claude Desktop: `neoapps_deploy_app` with `target: "cloud"` and `region`. The app goes live at
 `https://<app>.<region>.neoapps.ai`. The first deploy returns the admin login once.
 
+`./neoapps pack <App> --out app.tar.gz` writes the same bundle to a file without uploading it (used to install the control plane).
+
 ## What leaves your machine
 
 `CloudBundle` packs one `.tar.gz` (deleted after upload):

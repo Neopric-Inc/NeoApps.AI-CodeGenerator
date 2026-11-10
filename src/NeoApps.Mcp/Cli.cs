@@ -10,7 +10,7 @@ namespace NeoApps.Mcp;
 /// </summary>
 public static class Cli
 {
-    private static readonly string[] Commands = ["new", "evolve", "migrate", "preview", "frontend", "ui", "deploy", "status", "test", "logs", "stop", "list", "doctor", "guidelines", "infra", "cloud", "help", "--help", "-h"];
+    private static readonly string[] Commands = ["new", "evolve", "migrate", "preview", "frontend", "ui", "deploy", "status", "test", "logs", "stop", "list", "doctor", "guidelines", "infra", "cloud", "pack", "help", "--help", "-h"];
     private static readonly JsonSerializerOptions Pretty = new() { WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
 
     public static bool IsCommand(string arg) => Commands.Contains(arg, StringComparer.OrdinalIgnoreCase);
@@ -98,6 +98,16 @@ public static class Cli
                 case "list": Print(tools.ListApps()); return 0;
                 case "doctor": Print(await tools.CheckEnvironment(ct)); return 0;
                 case "guidelines": Console.WriteLine(NeoAppsTools.SchemaGuidelinesTool()); return 0;
+                case "pack":
+                {
+                    // the bundle `deploy --target cloud` uploads, written to a file (used to install the control plane itself)
+                    var region = Opt("--region") ?? "us";
+                    var packed = await new CloudBundle(settings).PackAsync(store.Require(Name()), region, line => Console.WriteLine("  " + line), ct);
+                    var target = Opt("--out") is { } o ? Path.GetFullPath(o) : packed;
+                    if (target != packed) File.Move(packed, target, overwrite: true);
+                    Console.WriteLine(target);
+                    return 0;
+                }
                 case "cloud":
                     switch (args.Length > 1 ? args[1] : "")
                     {
@@ -183,6 +193,7 @@ public static class Cli
           deploy <App> [--consumer]             build and run the app in Docker
           deploy <App> --target cloud [--region us|ca]   publish to NeoApps Cloud (<app>.<region>.neoapps.ai)
           cloud login | logout | status         save or remove the NeoApps Cloud deploy token (OS keychain)
+          pack <App> [--region us|ca] [--out file.tar.gz]   write the cloud bundle to a file (no local secrets)
           test <App>                            run the data-rule tests (tenant isolation, append-only data, lifecycles) against the running API
           status <App> | logs <App> [--service api|web] [--tail N] | stop <App>
           list                                  apps created so far
