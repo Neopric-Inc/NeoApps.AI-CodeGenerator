@@ -43,7 +43,10 @@ const time = (iso: string) => new Date(iso).toLocaleTimeString([], { hour: "2-di
 /** Live timeline of a job: a progress bar while it works and one line per step as it happens. */
 export const JobFeed: React.FC<{ job?: Job; events: JobEvent[]; error?: string; maxHeight?: number }> = ({ job, events, error, maxHeight = 260 }) => {
   const end = useRef<HTMLDivElement>(null);
-  useEffect(() => end.current?.scrollIntoView({ block: "nearest" }), [events.length]);
+  // Braces matter: newer browsers return a Promise from scrollIntoView, and React would call it as the effect's cleanup.
+  useEffect(() => {
+    end.current?.scrollIntoView({ block: "nearest" });
+  }, [events.length]);
   const working = job && (job.status === "queued" || job.status === "running" || job.status === "approved");
   return (
     <Box>
