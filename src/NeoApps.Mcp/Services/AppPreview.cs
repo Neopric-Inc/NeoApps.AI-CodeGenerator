@@ -165,7 +165,267 @@ public static class AppPreview
                 if (string.IsNullOrWhiteSpace(wf?["instructions"]?.ToString())) w.Add($"ai workflow '{id}': add step-by-step instructions.");
             }
         }
+        CheckRules(tables, ui, w);
         return w;
+    }
+
+    /// <summary>
+    /// Data-rule sections of ui.config.json (tenancy, rowScopes, hiddenFields, readFilters, lifecycles, validations,
+    /// numbering, immutable, audit, outbox, jobs, limits): a typo in a table, column, role or state would otherwise
+    /// only show at runtime, or silently do nothing.
+    /// </summary>
+    private static void CheckRules(List<Table> tables, JsonObject ui, List<string> w)
+    {
+        var names = tables.Select(t => t.Name).ToHashSet();
+        bool HasCol(string table, string col) => tables.FirstOrDefault(t => t.Name == table)?.Columns.Any(c => c.Name == col) == true;
+        static string? Str(JsonNode? n) => n is JsonValue v && v.TryGetValue<string>(out var s) ? s : null;
+        static IEnumerable<string> Strs(JsonNode? n) => (n as JsonArray ?? []).Select(Str).Where(x => x != null)!;
+        // one rule or a list of rules
+        static IEnumerable<JsonObject> Objs(JsonNode? n) => n is JsonObject o ? [o] : (n as JsonArray ?? []).OfType<JsonObject>();
+
+        bool Table(string where, string? table)
+        {
+            if (table == null) return false;
+            if (names.Contains(table)) return true;
+            w.Add($"{where}: unknown table '{table}'."); return false;
+        }
+        void Col(string where, string table, string? col)
+        {
+            if (col != null && names.Contains(table) && !HasCol(table, col)) w.Add($"{where}: unknown column '{table}.{col}'.");
+        }
+        void Where(string where, string table, JsonNode? cond)
+        {
+            foreach (var (col, _) in cond as JsonObject ?? []) Col(where, table, col);
+        }
+
+        var roleNames = (ui["roles"] as JsonObject)?.Select(r => r.Key).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        void Roles(string where, JsonNode? list)
+        {
+            if (roleNames == null || roleNames.Count == 0) return; // roles not designed here: nothing to compare with
+            foreach (var r in Strs(list))
+                if (r != "*" && !r.Equals("Administrator", StringComparison.OrdinalIgnoreCase) && !roleNames.Contains(r))
+                    w.Add($"{where}: unknown role '{r}' (roles: {string.Join(", ", roleNames)}).");
+        }
+        HashSet<string>? Options(string table, string col)
+        {
+            var opts = ui["tables"]?[table]?["fields"]?[col]?["options"] as JsonArray;
+            if (opts == null || opts.Count == 0) return null;
+            return opts.Select(o => Str(o) ?? Str(o?["value"])).Where(x => x != null).ToHashSet()!;
+        }
+
+        if (ui["tenancy"] is JsonObject ten)
+        {
+            var col = Str(ten["column"]) ?? "tenant_id";
+            if (Str(ten["tenantTable"]) is { } tt) Table("tenancy.tenantTable", tt);
+            foreach (var t in Strs(ten["sharedWritable"])) Table("tenancy.sharedWritable", t);
+            if (!tables.Any(t => t.Columns.Any(c => c.Name == col))) w.Add($"tenancy: no table has the column '{col}', so nothing is isolated.");
+            // a table without the tenant column that points at a tenant-owned table is shared (read-only for tenants)
+            foreach (var t in tables.Where(t => !t.Columns.Any(c => c.Name == col) && t.Name != Str(ten["tenantTable"])))
+                foreach (var fk in t.ForeignKeys.Where(f => f.RefTable != Str(ten["tenantTable"]) && HasCol(f.RefTable, col)))
+                    w.Add($"tenancy: {t.Name} references tenant-owned {fk.RefTable} but has no '{col}' column; tenants can't write to it. Add the column if it is tenant data.");
+        }
+        foreach (var (i, sc) in Objs(ui["rowScopes"]).Select((x, i) => (i, x)))
+        {
+            var where = $"rowScopes[{Str(sc["name"]) ?? i.ToString()}]";
+            Roles(where, sc["roles"]);
+            var col = Str(sc["column"]);
+            if (col == null) w.Add($"{where}: 'column' is required.");
+            else if (!tables.Any(t => t.Columns.Any(c => c.Name == col))) w.Add($"{where}: no table has the column '{col}'.");
+            if (sc["userValue"] is JsonObject uv && Table(where + ".userValue", Str(uv["table"])))
+            {
+                if (Str(uv["matchBy"]) != "user_id") Col(where + ".userValue.match", Str(uv["table"])!, Str(uv["match"]));
+                Col(where + ".userValue.column", Str(uv["table"])!, Str(uv["column"]));
+            }
+            foreach (var t in Strs(sc["tables"]).Concat(Strs(sc["exclude"]))) Table(where, t);
+        }
+        foreach (var (role, perTable) in ui["hiddenFields"] as JsonObject ?? [])
+        {
+            Roles("hiddenFields", new JsonArray(role));
+            foreach (var (table, cols) in perTable as JsonObject ?? [])
+                if (table != "*" && Table($"hiddenFields.{role}", table))
+                    foreach (var c in Strs(cols)) Col($"hiddenFields.{role}", table, c);
+        }
+        foreach (var rf in Objs(ui["readFilters"]))
+        {
+            Roles("readFilters", rf["roles"]);
+            if (Table("readFilters", Str(rf["table"]))) Col("readFilters", Str(rf["table"])!, Str(rf["column"]));
+        }
+        foreach (var key in new[] { "menuByRole", "openByRole" })
+            foreach (var (role, list) in ui[key] as JsonObject ?? [])
+            {
+                Roles(key, new JsonArray(role));
+                foreach (var t in Strs(list)) if (t != "jobs") Table($"{key}.{role}", t);
+            }
+
+        foreach (var (table, node) in ui["lifecycles"] as JsonObject ?? [])
+        {
+            var where = $"lifecycles.{table}";
+            if (!Table("lifecycles", table) || node is not JsonObject lc) continue;
+            var col = Str(lc["column"]);
+            if (col == null) { w.Add($"{where}: 'column' is required."); continue; }
+            Col(where, table, col);
+            var options = Options(table, col);
+            void State(string what, string? state)
+            {
+                if (state != null && state != "*" && options != null && !options.Contains(state))
+                    w.Add($"{where}: {what} state '{state}' is not one of the options of {table}.{col} ({string.Join(", ", options)}).");
+            }
+            if (options == null && HasCol(table, col)) w.Add($"{where}: give {table}.{col} select options (ui.tables.{table}.fields.{col}.options) so the states are checked and shown as a dropdown.");
+            foreach (var st in Strs(lc["initial"])) State("initial", st);
+            foreach (var st in Strs(lc["frozen"])) State("frozen", st);
+            var steps = (lc["transitions"] as JsonArray ?? []).OfType<JsonObject>().ToList();
+            if (steps.Count == 0) w.Add($"{where}: no transitions, so the {col} can never change.");
+            var reachable = Strs(lc["initial"]).ToHashSet();
+            foreach (var tr in steps)
+            {
+                // "from" / "to": one state or a list; "from" defaults to any state
+                static List<string> Set(JsonNode? n) => n is JsonArray ? Strs(n).ToList() : Str(n) is { } one ? [one] : [];
+                var (from, to) = (Set(tr["from"]), Set(tr["to"]));
+                if (from.Count == 0) from = ["*"];
+                var step = $"{where} step {string.Join("/", from)} → {string.Join("/", to)}";
+                if (to.Count == 0) { w.Add($"{where}: every transition needs a 'to' state."); continue; }
+                foreach (var st in from.Concat(to)) State("transition", st);
+                Roles(step, tr["roles"]);
+                foreach (var a in Strs(tr["actors"])) if (a is not ("human" or "ai" or "system")) w.Add($"{step}: unknown actor '{a}' (human, ai, system).");
+                foreach (var kind in new[] { "requires", "forbids" })
+                    foreach (var rq in Objs(tr[kind]))
+                        if (Table($"{step} {kind}", Str(rq["table"])))
+                        {
+                            Col($"{step} {kind}.link", Str(rq["table"])!, Str(rq["link"]));
+                            Col($"{step} {kind}.linkFrom", table, Str(rq["linkFrom"]));
+                            Where($"{step} {kind}.where", Str(rq["table"])!, rq["where"]);
+                        }
+                foreach (var d in tr["distinctFrom"] as JsonArray ?? [])
+                    if (d is JsonObject dob) { Col($"{step} distinctFrom", table, Str(dob["column"])); if (Table($"{step} distinctFrom", Str(dob["table"]))) Col($"{step} distinctFrom", Str(dob["table"])!, Str(dob["userColumn"])); }
+                    else Col($"{step} distinctFrom", table, Str(d));
+                reachable.UnionWith(to);
+            }
+            if (options != null)
+                foreach (var orphan in options.Where(o => !reachable.Contains(o)))
+                    w.Add($"{where}: state '{orphan}' can't be reached (not initial and no transition leads to it).");
+            if (lc["history"] is JsonObject h && Table(where + ".history", Str(h["table"])))
+                foreach (var k in new[] { "link", "from", "to", "actor" }) Col($"{where}.history.{k}", Str(h["table"])!, Str(h[k]));
+            foreach (var (st, tsCol) in lc["timestamps"] as JsonObject ?? []) { State("timestamps", st); Col(where + ".timestamps", table, Str(tsCol)); }
+            if (lc["sla"] is JsonObject sla && Table(where + ".sla", Str(sla["table"])))
+            {
+                foreach (var k in new[] { "link", "type", "due", "met" }) Col($"{where}.sla.{k}", Str(sla["table"])!, Str(sla[k]));
+                foreach (var (st, _) in sla["hours"] as JsonObject ?? []) State("sla.hours", st);
+            }
+        }
+
+        foreach (var (table, rules) in ui["validations"] as JsonObject ?? [])
+        {
+            if (!Table("validations", table)) continue;
+            foreach (var (col, rule) in rules as JsonObject ?? [])
+            {
+                Col($"validations.{table}", table, col);
+                foreach (var cmp in new[] { "gt", "gte", "lt", "lte", "ne" }) Col($"validations.{table}.{col}.{cmp}", table, Str(rule?[cmp]));
+                Where($"validations.{table}.{col}.requiredWhen", table, rule?["requiredWhen"]);
+                if (Str(rule?["pattern"]) is { } pattern)
+                    try { _ = new Regex(pattern); } catch (ArgumentException) { w.Add($"validations.{table}.{col}: the pattern is not a valid regular expression."); }
+                if (Str(rule?["format"]) is { } f && f is not ("email" or "url" or "phone")) w.Add($"validations.{table}.{col}: unknown format '{f}' (email, url, phone).");
+                if (Str(rule?["equals"]) is { } expr)
+                    foreach (Match m in Regex.Matches(expr, "[A-Za-z_][A-Za-z0-9_]*")) Col($"validations.{table}.{col}.equals", table, m.Value);
+            }
+        }
+        foreach (var (table, node) in ui["numbering"] as JsonObject ?? [])
+        {
+            if (!Table("numbering", table)) continue;
+            foreach (var n in Objs(node))
+            {
+                Col($"numbering.{table}", table, Str(n["column"]));
+                if (Str(n["pattern"]) is not { } pat || !pat.Contains("{seq")) w.Add($"numbering.{table}: the pattern needs a {{seq}} or {{seq:N}} token.");
+            }
+        }
+        foreach (var (table, cols) in ui["immutable"] as JsonObject ?? [])
+            if (Table("immutable", table))
+                foreach (var c in Strs(cols)) if (c != "*") Col("immutable", table, c);
+        if (ui["audit"] is JsonObject audit)
+        {
+            Table("audit.table", Str(audit["table"]));
+            if (Str(audit["platformTable"]) is { } pt) Table("audit.platformTable", pt);
+            foreach (var t in Strs(audit["exclude"])) Table("audit.exclude", t);
+        }
+        if (ui["outbox"] is JsonObject outbox)
+        {
+            Table("outbox.table", Str(outbox["table"]));
+            foreach (var ev in Objs(outbox["events"]))
+            {
+                var name = Str(ev["event"]) ?? "?";
+                if (Table($"outbox event {name}", Str(ev["table"]))) Where($"outbox event {name}.when", Str(ev["table"])!, ev["when"]);
+                if (Str(ev["on"]) is { } on && on is not ("insert" or "update" or "delete" or "create")) w.Add($"outbox event {name}: 'on' must be insert, update or delete.");
+            }
+        }
+        foreach (var dl in Objs(ui["jobs"]?["deadlines"]))
+        {
+            if (!Table("jobs.deadlines", Str(dl["table"]))) continue;
+            foreach (var k in new[] { "due", "met", "breached" }) Col($"jobs.deadlines.{k}", Str(dl["table"])!, Str(dl[k]));
+            if (dl["escalate"] is JsonObject esc && Table("jobs.deadlines.escalate", Str(esc["table"])))
+                foreach (var (c, _) in esc["values"] as JsonObject ?? []) Col("jobs.deadlines.escalate.values", Str(esc["table"])!, c);
+        }
+        foreach (var lim in Objs(ui["limits"]))
+        {
+            if (!Table("limits", Str(lim["table"]))) continue;
+            var table = Str(lim["table"])!;
+            Where($"limits.{table}.where", table, lim["where"]);
+            Col($"limits.{table}.sum", table, Str(lim["sum"]));
+            if (lim["max"] is JsonObject max && Table($"limits.{table}.max.from", Str(max["from"])))
+            {
+                Col($"limits.{table}.max.column", Str(max["from"])!, Str(max["column"]));
+                Where($"limits.{table}.max.where", Str(max["from"])!, max["where"]);
+                if (max["join"] is JsonObject j && Table($"limits.{table}.max.join", Str(j["table"]))) Col($"limits.{table}.max.join.on", Str(j["table"])!, Str(j["on"]));
+            }
+        }
+    }
+
+    /// <summary>The data rules as short sentences for preview.html: one card per topic.</summary>
+    private static List<(string Title, List<string> Lines)> RuleLines(JsonObject ui)
+    {
+        static string? Str(JsonNode? n) => n is JsonValue v && v.TryGetValue<string>(out var s) ? s : null;
+        static List<string> Set(JsonNode? n) => n is JsonArray a ? a.Select(Str).Where(x => x != null).ToList()! : Str(n) is { } one ? [one] : [];
+        static IEnumerable<JsonObject> Objs(JsonNode? n) => n is JsonObject o ? [o] : (n as JsonArray ?? []).OfType<JsonObject>();
+        static string Who(JsonNode? roles) => Set(roles) is { Count: > 0 } r && !r.Contains("*") ? string.Join(", ", r) : "anyone allowed to edit";
+        var cards = new List<(string, List<string>)>();
+
+        var access = new List<string>();
+        if (ui["tenancy"] is JsonObject ten) access.Add($"Each {Singular(Label(ui, Str(ten["tenantTable"]) ?? "tenants")).ToLowerInvariant()} only sees its own data.");
+        foreach (var sc in Objs(ui["rowScopes"])) access.Add($"{Who(sc["roles"])}: only records of their own {Str(sc["column"])?.Replace("_id", "").Replace('_', ' ')}.");
+        foreach (var (role, per) in ui["hiddenFields"] as JsonObject ?? [])
+            access.Add($"{role} never sees: {string.Join("; ", (per as JsonObject ?? []).Select(kv => $"{(kv.Key == "*" ? "everywhere" : Label(ui, kv.Key))}: {string.Join(", ", Set(kv.Value))}"))}.");
+        foreach (var rf in Objs(ui["readFilters"]))
+            access.Add($"{Who(rf["roles"])} only see {Label(ui, Str(rf["table"]) ?? "")} where {Str(rf["column"])} is {(rf["in"] != null ? "" : "not ")}{string.Join(" / ", Set(rf["in"] ?? rf["notIn"]))}.");
+        if (access.Count > 0) cards.Add(("Who sees what", access));
+
+        foreach (var (table, node) in ui["lifecycles"] as JsonObject ?? [])
+        {
+            if (node is not JsonObject lc) continue;
+            var lines = new List<string>();
+            if (Set(lc["initial"]) is { Count: > 0 } init) lines.Add($"Starts as: {string.Join(" / ", init)}.");
+            foreach (var tr in (lc["transitions"] as JsonArray ?? []).OfType<JsonObject>())
+            {
+                var from = Set(tr["from"]); var extra = new List<string>();
+                foreach (var rq in Objs(tr["requires"])) extra.Add(Str(rq["message"]) ?? $"needs {Label(ui, Str(rq["table"]) ?? "")}");
+                foreach (var fb in Objs(tr["forbids"])) extra.Add(Str(fb["message"]) ?? $"no {Label(ui, Str(fb["table"]) ?? "")}");
+                if (tr["distinctFrom"] is JsonArray { Count: > 0 }) extra.Add("by a different person");
+                if (Set(tr["actors"]).Contains("ai")) extra.Add("AI may do it");
+                lines.Add($"{(from.Count == 0 ? "any" : string.Join(" / ", from))} → {string.Join(" / ", Set(tr["to"]))}: {Who(tr["roles"])}{(extra.Count > 0 ? $" ({string.Join("; ", extra)})" : "")}.");
+            }
+            if (Set(lc["frozen"]) is { Count: > 0 } frozen) lines.Add($"Locked once {string.Join(" / ", frozen)}.");
+            cards.Add(($"{Label(ui, table)}: {Str(lc["column"])} steps", lines));
+        }
+
+        var data = new List<string>();
+        foreach (var (table, rules) in ui["validations"] as JsonObject ?? [])
+            data.Add($"{Label(ui, table)}: checks on {string.Join(", ", (rules as JsonObject ?? []).Select(kv => kv.Key))}.");
+        foreach (var (table, node) in ui["numbering"] as JsonObject ?? [])
+            foreach (var n in Objs(node)) data.Add($"{Label(ui, table)}: {Str(n["column"])} is numbered automatically ({Str(n["pattern"])}).");
+        foreach (var (table, cols) in ui["immutable"] as JsonObject ?? [])
+            data.Add(Set(cols).Contains("*") ? $"{Label(ui, table)}: can be added to, never changed or deleted." : $"{Label(ui, table)}: {string.Join(", ", Set(cols))} can't be changed after creation.");
+        if (ui["audit"] is JsonObject au) data.Add($"Every change is recorded in {Label(ui, Str(au["table"]) ?? "the audit log")}.");
+        foreach (var lim in Objs(ui["limits"])) data.Add($"{Label(ui, Str(lim["table"]) ?? "")}: limited by the {Str(lim["max"]?["column"]) ?? "plan"} of the {Singular(Label(ui, Str(lim["max"]?["from"]) ?? "plan")).ToLowerInvariant()}.");
+        foreach (var dl in Objs(ui["jobs"]?["deadlines"])) data.Add($"{Label(ui, Str(dl["table"]) ?? "")}: overdue items are flagged automatically.");
+        if (data.Count > 0) cards.Add(("Data checks", data));
+        return cards;
     }
 
     private enum Mark { None, Added, Changed }
@@ -281,7 +541,7 @@ public static class AppPreview
             <div class="stats"><span class="stat">{{tables.Count}} entities</span><span class="stat">{{relations}} relationships</span>
             <span class="stat">{{Roles(ui, tables).Count}} roles</span><span class="stat">{{(ui?["ai"] != null ? "AI assistant on" : "No AI")}}</span>
             <span class="stat" style="{{(warnings.Count > 0 ? "border-color:var(--chg)" : "")}}">{{warnings.Count}} issue{{(warnings.Count == 1 ? "" : "s")}}</span></div></header>
-            <nav>{{(before != null ? "<a href=\"#changes\">What changed</a>" : "")}}<a href="#data">Data model</a><a href="#screens">Screens</a><a href="#roles">Who can do what</a>{{(ui?["ai"] != null ? "<a href=\"#ai\">AI</a>" : "")}}<a href="#issues">Issues</a></nav><main>
+            <nav>{{(before != null ? "<a href=\"#changes\">What changed</a>" : "")}}<a href="#data">Data model</a><a href="#screens">Screens</a><a href="#roles">Who can do what</a>{{(ui != null && RuleLines(ui).Count > 0 ? "<a href=\"#rules\">Rules</a>" : "")}}{{(ui?["ai"] != null ? "<a href=\"#ai\">AI</a>" : "")}}<a href="#issues">Issues</a></nav><main>
             """);
 
         if (before != null)
@@ -374,6 +634,15 @@ public static class AppPreview
                 h.Append($"<div class=\"card small\"><b>⚡ {E(wf?["label"]?.ToString() ?? wf?["id"]?.ToString() ?? "")}</b><div class=\"mut\">{E(where)}</div><p>{E(wf?["description"]?.ToString() ?? "")}</p>");
                 h.Append($"<div class=\"mut\">Creates</div>{string.Concat(targets.Select(x => $"<span class=\"chip p\">{E(x)}</span>"))}<div class=\"mut\" style=\"margin-top:6px\">The user reviews the proposed rows before anything is saved.</div></div>");
             }
+            h.Append("</div></section>");
+        }
+
+        // Data rules: plain-language summary of what the API will enforce
+        if (ui != null && RuleLines(ui) is { Count: > 0 } ruleCards)
+        {
+            h.Append("<section id=\"rules\"><h2>Rules the app enforces</h2><p class=\"mut small\">Checked by the app on every change, whoever makes it (people, imports or AI).</p><div class=\"grid\">");
+            foreach (var (cardTitle, lines) in ruleCards)
+                h.Append($"<div class=\"card small\"><b>{E(cardTitle)}</b><ul class=\"tight\">{string.Concat(lines.Select(x => $"<li>{E(x)}</li>"))}</ul></div>");
             h.Append("</div></section>");
         }
 
