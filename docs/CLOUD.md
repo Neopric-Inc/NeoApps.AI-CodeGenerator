@@ -15,7 +15,12 @@ changes apps on NeoApps servers (tools `start_here`, `save_app_plan`, `get_app_p
 browser page and waits; the job log shows the link and an 8-character code to compare. CI: `./neoapps cloud login --token`
 (or `NEOAPPS_CLOUD_TOKEN`). The app goes live at
 `https://<app>.<region>.neoapps.ai`. On the first deploy the app's administrator becomes the customer's own NeoApps login (same username and password);
-the result says so in `signIn`. `./neoapps cloud reset-admin <App>` (MCP: `neoapps_cloud_reset_admin`) sets a separate
+the result says so in `signIn`.
+
+**AI keys:** each app's AI (document questions, ask your data, AI workflows) uses the customer's own key, added at
+`https://cloud.neoapps.ai/apps/<slug>/ai` (also the **AI settings** button on the app in cloud.neoapps.ai, and the connector's
+`ai_settings` tool, which only returns that link). Anthropic or any OpenAI-compatible endpoint. The key is tested, stored only on the
+app's server, never shown again (last 4 characters only), and can be replaced or removed there. Never paste a key into a chat. `./neoapps cloud reset-admin <App>` (MCP: `neoapps_cloud_reset_admin`) sets a separate
 password if ever needed.
 
 App settings such as AI keys: `./neoapps cloud env set <App> ANTHROPIC_API_KEY` (value taken from your shell, so it stays out of
