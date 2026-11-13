@@ -344,6 +344,7 @@ src/NeoApps.Migrator/     runs an app's migrations (used by evolve/migrate)
 deploy/                   docker-compose for the shared local services
 scripts/                  setup for clones, no-Docker deps, test suites (see scripts/README.md)
 samples/                  example schemas and UI configs
+website/                  the neoapps.ai one-page site (GitHub Pages, .github/workflows/website.yml)
 NeoApps.slnx              solution (generator + CLI/MCP server + migrator)
 ```
 
