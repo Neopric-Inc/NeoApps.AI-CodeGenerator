@@ -77,8 +77,10 @@ Work in the app's planning folder `workspace/<App>/` (git-ignored): `requirement
    admin is their own NeoApps login); never show the local admin password for the cloud app. If it doesn't work:
    `./neoapps cloud reset-admin <App>` (MCP: `neoapps_cloud_reset_admin`). Users who don't want to install anything can use the
    connector `https://cloud.neoapps.ai/mcp` instead (builds run on NeoApps servers). See `docs/CLOUD.md`.
-   App settings (AI keys): the user runs `./neoapps cloud env set <App> ANTHROPIC_API_KEY` in their own terminal (the value comes from
-   their shell); never ask them to paste a key into the chat.
+   AI keys for a cloud app: send the user to `https://cloud.neoapps.ai/apps/<slug>/ai` (signed in to NeoApps, they pick Anthropic or an
+   OpenAI-compatible endpoint and paste the key there; it is tested, kept only on the app's server and never shown again). Technical
+   users can instead run `./neoapps cloud env set <App> ANTHROPIC_API_KEY` in their own terminal. Never ask for a key in the chat; if one
+   is pasted, tell them to revoke it and create a new one.
 6. **Report back:** web URL, Swagger URL, admin username/password (printed by the command and kept in
    `workspace/<App>/project.json`), and where the code is (`1_<ticks>/<App>/DotNet_Output/solution/<App>` and
    `.../ReactTs_Output3`).
