@@ -6,10 +6,12 @@ import {
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import SearchIcon from "@mui/icons-material/Search";
+import DownloadIcon from "@mui/icons-material/FileDownloadOutlined";
 import { countWhere, deleteRecord, listRecords } from "./api";
 import { useApp } from "./AppContext";
 import { WorkflowButtons } from "./ai/Workflows";
 import { DataTable } from "./DataTable";
+import { exportCsv } from "./exportCsv";
 import { Icon } from "./icons";
 import { RecordForm } from "./RecordForm";
 import { invalidateReferences, useReferences } from "./useReferences";
@@ -88,6 +90,7 @@ const TablePage: React.FC = () => {
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(25);
   const [search, setSearch] = useState("");
+  const [exporting, setExporting] = useState(false);
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<{ column: string; dir: "ASC" | "DESC" } | undefined>();
   const [editing, setEditing] = useState<Record<string, any> | null | undefined>(undefined);
@@ -153,6 +156,14 @@ const TablePage: React.FC = () => {
           }} />
         </form>
         {ai?.enabled && <WorkflowButtons workflows={ai.workflows.filter((w) => !w.table && w.targets[0] === name)} onApplied={() => setReload((r) => r + 1)} />}
+        {total > 0 && (
+          <Button variant="outlined" startIcon={<DownloadIcon />} disabled={exporting} onClick={async () => {
+            setExporting(true);
+            try { await exportCsv(table, sort ? `${sort.column}|${sort.dir}` : undefined, query, labelFor); }
+            catch (e: any) { setError(e.message || "Export failed"); }
+            finally { setExporting(false); }
+          }}>{exporting ? "Exporting…" : "Export"}</Button>
+        )}
         {can(name, "create") && (
           <Button variant="contained" startIcon={<AddIcon />} onClick={() => setEditing(null)}>New {table.singular.toLowerCase()}</Button>
         )}
