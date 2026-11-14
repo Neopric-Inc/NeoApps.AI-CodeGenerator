@@ -273,6 +273,11 @@ public static class AppPreview
             if (options == null && HasCol(table, col)) w.Add($"{where}: give {table}.{col} select options (ui.tables.{table}.fields.{col}.options) so the states are checked and shown as a dropdown.");
             foreach (var st in Strs(lc["initial"])) State("initial", st);
             foreach (var st in Strs(lc["frozen"])) State("frozen", st);
+            foreach (var (role, states) in lc["editableIn"] as JsonObject ?? [])
+            {
+                Roles($"{where}.editableIn", new JsonArray(role));
+                foreach (var st in Strs(states)) State("editableIn", st);
+            }
             var steps = (lc["transitions"] as JsonArray ?? []).OfType<JsonObject>().ToList();
             if (steps.Count == 0) w.Add($"{where}: no transitions, so the {col} can never change.");
             var reachable = Strs(lc["initial"]).ToHashSet();
@@ -421,6 +426,8 @@ public static class AppPreview
                 lines.Add($"{(from.Count == 0 ? "any" : string.Join(" / ", from))} → {string.Join(" / ", Set(tr["to"]))}: {Who(tr["roles"])}{(extra.Count > 0 ? $" ({string.Join("; ", extra)})" : "")}.");
             }
             if (Set(lc["frozen"]) is { Count: > 0 } frozen) lines.Add($"Locked once {string.Join(" / ", frozen)}.");
+            foreach (var (role, states) in lc["editableIn"] as JsonObject ?? [])
+                lines.Add($"{role} can only change it while {string.Join(" / ", Set(states))}.");
             cards.Add(($"{Label(ui, table)}: {Str(lc["column"])} steps", lines));
         }
 
