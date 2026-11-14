@@ -84,7 +84,8 @@ export const Breadcrumbs: React.FC = () => {
 
   // the sidebar group of the first page, shown as plain text for orientation
   const first = pathOf(trail[0]).match(LIST) || pathOf(trail[0]).match(RECORD);
-  const group = first ? menu.find((g) => g.items.includes(first[1]))?.group : undefined;
+  const groupName = first ? menu.find((g) => g.items.includes(first[1]))?.group : undefined;
+  const group = groupName && groupName !== label(trail[0]) ? groupName : undefined; // "Engagements > Engagements" says nothing
 
   return (
     <MuiBreadcrumbs separator={<NavigateNextIcon fontSize="small" />} sx={{ mb: 2, "& .MuiBreadcrumbs-ol": { flexWrap: "wrap" } }}>
