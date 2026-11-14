@@ -33,6 +33,8 @@ namespace nkv.MicroService.Utility
             public string SlaTable, SlaLink, SlaType, SlaDue, SlaMet;
             public Dictionary<string, double> SlaHours = new(StringComparer.OrdinalIgnoreCase);
             public string AdminBypass = "any";   // any | platform | none
+            /// <summary>"editableIn": role -> states in which that role may change or delete a record (other roles: any state).</summary>
+            public Dictionary<string, HashSet<string>> EditableIn = new(StringComparer.OrdinalIgnoreCase);
         }
         sealed class Limit
         {
@@ -81,6 +83,7 @@ namespace nkv.MicroService.Utility
                     ["transitions"] = kv.Value.Transitions.Count,
                     ["adminBypass"] = kv.Value.AdminBypass,
                     ["frozen"] = new JsonArray(kv.Value.Frozen.Select(x => (JsonNode)x).ToArray()),
+                    ["editableIn"] = new JsonObject(kv.Value.EditableIn.Select(e => KeyValuePair.Create(e.Key, (JsonNode)new JsonArray(e.Value.Select(x => (JsonNode)x).ToArray())))),
                 }))),
                 ["immutable"] = new JsonObject(_immutable.Select(kv => KeyValuePair.Create(kv.Key, (JsonNode)new JsonArray(kv.Value.Select(x => (JsonNode)x).ToArray())))),
                 ["rowScopes"] = ScopesSummary(),
@@ -144,6 +147,7 @@ namespace nkv.MicroService.Utility
                             lc.Transitions.Add(t);
                         }
                     if (o["adminBypass"] != null) lc.AdminBypass = Bypass(o["adminBypass"]);
+                    if (o["editableIn"] is JsonObject ei) foreach (var (role, states) in ei) lc.EditableIn[role] = Set(states);
                     if (o["history"] is JsonObject h)
                     {
                         lc.HistoryTable = h["table"]?.GetValue<string>(); lc.HistoryFk = h["link"]?.GetValue<string>();
@@ -275,6 +279,7 @@ namespace nkv.MicroService.Utility
                 fromState = Str(current.GetValueOrDefault(lc.Column));
                 if (lc.Frozen.Contains(fromState ?? "") && !isSoftDelete)
                     throw new DataGuardException($"This {table} record is {fromState} and can no longer be changed.", 409);
+                CheckEditable(cmd, caller, table, lc, fromState, isSoftDelete ? "delete" : "change");
                 if (values.TryGetValue(lc.Column, out var nv) && Str(nv) != null && !string.Equals(Str(nv), fromState, StringComparison.OrdinalIgnoreCase))
                 {
                     toState = Str(nv);
@@ -323,10 +328,24 @@ namespace nkv.MicroService.Utility
         {
             if (_immutable.TryGetValue(table, out var im) && im.Contains("*"))
                 throw new DataGuardException($"{table} is append-only: records can't be deleted.", 409);
+            if (_lifecycles.TryGetValue(table, out var lc) && lc.EditableIn.Count > 0
+                && KeyValue(cmd, table, new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase)) is { } id && LoadVisible(cmd, table, id) is { } current)
+                CheckEditable(cmd, caller, table, lc, Str(current.GetValueOrDefault(lc.Column)), "delete");
             After(cmd, (c, _) => WriteAudit(c, caller, table, "hard_delete", null, null, null));
         }
 
         // ------------------------------------------------------------------ lifecycle
+
+        /// <summary>"editableIn": a listed role may change (or delete) a record only while it is in one of its states. The change
+        /// that moves a record out of such a state (submitting a draft) is made in that state, so it is allowed.</summary>
+        static void CheckEditable(MySqlCommand cmd, Caller caller, string table, Lifecycle lc, string state, string verb)
+        {
+            if (lc.EditableIn.Count == 0) return;
+            var role = RoleName(cmd.Connection, caller);
+            if (role == null || !lc.EditableIn.TryGetValue(role, out var states)) return;
+            if (states.Contains("*") || states.Contains(state ?? "")) return;
+            throw new DataGuardException($"This {table} record is {state}: your role ({role}) can only {verb} it while it is {string.Join(" or ", states)}.", 409);
+        }
 
         static void CheckTransition(MySqlCommand cmd, Caller caller, string table, Lifecycle lc, string from, string to, object id, Dictionary<string, object> current)
         {

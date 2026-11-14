@@ -146,7 +146,7 @@ internal static class UiConfigTools
               child tables of listed ones stay reachable). The API is still governed by permissions + the rules above.
           "openByRole": { "Client": ["documents"] }
               Extra table pages the role may open (e.g. links from custom screens) without adding them to its sidebar.
-          "lifecycles": { "cases": { "column": "status", "initial": ["draft"], "frozen": ["closed"],
+          "lifecycles": { "cases": { "column": "status", "initial": ["draft"], "frozen": ["closed"], "editableIn": { "Requester": ["draft"] },
               "transitions": [ { "from": "draft", "to": "submitted", "roles": ["*"], "actors": ["human"] },
                                { "from": "qa", "to": "delivered", "roles": ["Manager"],
                                  "requires": [ { "table": "approvals", "link": "case_id", "where": { "status": "approved" },
@@ -164,7 +164,10 @@ internal static class UiConfigTools
               separation of duties: columns holding the person who may not do this step (a users id or login name, or
               { "column": "requested_by_id", "table": "members", "userColumn": "user_id" } for a member FK); applies to
               administrators too. "adminBypass" (per lifecycle or per step): true (default), "platform" (only platform
-              admins, never tenant-bound ones) or false (admins need a listed role). Frozen states lock the record. History rows, timestamps and SLA
+              admins, never tenant-bound ones) or false (admins need a listed role). Frozen states lock the record for everyone;
+              "editableIn" locks it per role: a listed role may change or delete a record only in those states (here a
+              Requester edits and submits drafts, then can't touch the submitted case; other roles keep their access, and
+              listed steps still apply). History rows, timestamps and SLA
               deadline rows are written automatically in the same transaction.
           "validations": { "customer_invoices": {
               "contact_email": { "format": "email" }, "website": { "format": "url" }, "phone": { "format": "phone" },
