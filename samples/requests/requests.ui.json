@@ -1,0 +1,334 @@
+{
+  "appName": "Requests",
+  "tagline": "Ask, approve, done. Every step on record.",
+  "theme": {
+    "primary": "#3949ab",
+    "secondary": "#00897b"
+  },
+  "menu": [
+    {
+      "group": "Requests",
+      "items": [
+        "requests",
+        "request_status_history"
+      ]
+    },
+    {
+      "group": "People",
+      "items": [
+        "employees",
+        "departments"
+      ]
+    }
+  ],
+  "roles": {
+    "Employee": {
+      "requests": "cru",
+      "request_status_history": "r",
+      "employees": "r",
+      "departments": "r"
+    },
+    "Manager": {
+      "*": "cru",
+      "request_status_history": "r"
+    }
+  },
+  "rowScopes": [
+    {
+      "name": "own",
+      "roles": [
+        "Employee"
+      ],
+      "column": "employee_id",
+      "tables": [
+        "requests",
+        "request_status_history"
+      ],
+      "userValue": {
+        "table": "employees",
+        "match": "login_username",
+        "column": "employee_id"
+      }
+    }
+  ],
+  "lifecycles": {
+    "requests": {
+      "column": "status",
+      "initial": [
+        "Draft"
+      ],
+      "frozen": [
+        "Approved",
+        "Rejected"
+      ],
+      "editableIn": {
+        "Employee": [
+          "Draft"
+        ]
+      },
+      "history": {
+        "table": "request_status_history",
+        "link": "request_id",
+        "from": "old_status",
+        "to": "new_status",
+        "actor": "changed_by_type",
+        "reason": "changed_by"
+      },
+      "timestamps": {
+        "Approved": "decided_at",
+        "Rejected": "decided_at"
+      },
+      "transitions": [
+        {
+          "from": "Draft",
+          "to": "Submitted",
+          "roles": [
+            "Employee",
+            "Manager"
+          ],
+          "actors": [
+            "human"
+          ]
+        },
+        {
+          "from": "Submitted",
+          "to": [
+            "Approved",
+            "Rejected"
+          ],
+          "roles": [
+            "Manager"
+          ],
+          "actors": [
+            "human"
+          ]
+        }
+      ]
+    }
+  },
+  "numbering": {
+    "requests": {
+      "column": "request_number",
+      "pattern": "REQ-{yyyy}-{seq:5}"
+    }
+  },
+  "notifications": [
+    {
+      "table": "requests",
+      "when": {
+        "to": "Submitted"
+      },
+      "notify": [
+        "role:Manager"
+      ],
+      "title": "{request_number} needs your decision: {title}",
+      "channels": [
+        "inApp",
+        "email"
+      ]
+    },
+    {
+      "table": "requests",
+      "when": {
+        "to": [
+          "Approved",
+          "Rejected"
+        ]
+      },
+      "notify": [
+        "creator"
+      ],
+      "title": "Your request {request_number} was {status}",
+      "channels": [
+        "inApp",
+        "email"
+      ]
+    }
+  ],
+  "dashboard": {
+    "cards": [
+      {
+        "table": "requests",
+        "label": "Waiting for a decision",
+        "where": {
+          "status": "Submitted"
+        }
+      },
+      {
+        "table": "requests",
+        "label": "Approved",
+        "where": {
+          "status": "Approved"
+        }
+      },
+      {
+        "table": "requests",
+        "label": "Drafts",
+        "where": {
+          "status": "Draft"
+        }
+      }
+    ]
+  },
+  "tables": {
+    "requests": {
+      "label": "Requests",
+      "singular": "Request",
+      "icon": "assignment",
+      "displayField": "request_number",
+      "listColumns": [
+        "request_number",
+        "title",
+        "request_type",
+        "amount",
+        "employee_id",
+        "status",
+        "needed_by"
+      ],
+      "formFields": [
+        "title",
+        "request_type",
+        "amount",
+        "needed_by",
+        "details",
+        "employee_id",
+        "status",
+        "decision_note"
+      ],
+      "children": [
+        "request_status_history"
+      ],
+      "defaultSort": "request_id|DESC",
+      "fields": {
+        "request_number": {
+          "label": "Request",
+          "readOnly": true
+        },
+        "request_type": {
+          "label": "Type",
+          "widget": "select",
+          "options": [
+            "Purchase",
+            "Equipment",
+            "Travel",
+            "Time off"
+          ],
+          "colors": {
+            "Purchase": "info",
+            "Equipment": "secondary",
+            "Travel": "warning",
+            "Time off": "default"
+          }
+        },
+        "amount": {
+          "label": "Amount",
+          "widget": "currency",
+          "currencyCode": "USD"
+        },
+        "employee_id": {
+          "label": "Employee"
+        },
+        "status": {
+          "label": "Status",
+          "widget": "select",
+          "options": [
+            "Draft",
+            "Submitted",
+            "Approved",
+            "Rejected"
+          ],
+          "colors": {
+            "Draft": "default",
+            "Submitted": "info",
+            "Approved": "success",
+            "Rejected": "error"
+          }
+        },
+        "decision_note": {
+          "label": "Decision note"
+        },
+        "decided_at": {
+          "label": "Decided at",
+          "readOnly": true
+        },
+        "details": {
+          "label": "Details",
+          "widget": "textarea"
+        }
+      }
+    },
+    "request_status_history": {
+      "label": "Status history",
+      "singular": "Status change",
+      "icon": "history",
+      "listColumns": [
+        "request_id",
+        "old_status",
+        "new_status",
+        "changed_by",
+        "createdAt"
+      ],
+      "fields": {
+        "old_status": {
+          "label": "From",
+          "widget": "select",
+          "options": [
+            "Draft",
+            "Submitted",
+            "Approved",
+            "Rejected"
+          ],
+          "colors": {
+            "Draft": "default",
+            "Submitted": "info",
+            "Approved": "success",
+            "Rejected": "error"
+          }
+        },
+        "new_status": {
+          "label": "To",
+          "widget": "select",
+          "options": [
+            "Draft",
+            "Submitted",
+            "Approved",
+            "Rejected"
+          ],
+          "colors": {
+            "Draft": "default",
+            "Submitted": "info",
+            "Approved": "success",
+            "Rejected": "error"
+          }
+        },
+        "changed_by": {
+          "label": "Who"
+        },
+        "changed_by_type": {
+          "label": "Actor"
+        },
+        "createdAt": {
+          "label": "When"
+        }
+      }
+    },
+    "employees": {
+      "label": "Employees",
+      "singular": "Employee",
+      "icon": "people",
+      "displayField": "full_name",
+      "listColumns": [
+        "full_name",
+        "email",
+        "department_id",
+        "login_username"
+      ]
+    },
+    "departments": {
+      "label": "Departments",
+      "singular": "Department",
+      "icon": "business",
+      "displayField": "department_name"
+    }
+  }
+}

@@ -97,6 +97,35 @@
     .feature-copy p { margin: 0; color: var(--muted); font-size: 1rem; line-height: 1.65; }
     .feature .shot { flex: 999 1 560px; min-width: 0; }
 
+    /* Walkthrough: prompt → plan → approval → record */
+    .walk { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+    .walk-step { display: flex; flex-direction: column; gap: 10px; padding: 24px; border: 1px solid var(--line); border-radius: 14px; background: var(--paper); }
+    .walk-step .step-num { margin: 0; }
+    .walk-step h3 { margin: 0; font-size: 1.15rem; font-weight: 600; letter-spacing: -.01em; }
+    .walk-step > p { margin: 0; color: var(--muted); font-size: .94rem; }
+    .walk-step .shot, .walk-step .prompt-box { margin: 8px 0 0; }
+    .walk-step .prompt-box pre { font-size: .86rem; }
+
+    /* Where it runs: comparison */
+    .compare-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; }
+    .compare { width: 100%; min-width: 720px; border-collapse: collapse; font-size: .95rem; }
+    .compare th, .compare td { padding: 16px 20px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    .compare tr:last-child th, .compare tr:last-child td { border-bottom: 0; }
+    .compare thead th { color: var(--ink); font-weight: 600; font-size: 1.05rem; background: var(--paper); }
+    .compare tbody th { width: 17%; color: var(--faint); font-weight: 500; }
+    .compare td { color: var(--soft); width: 27.6%; }
+    .compare .featured { background: rgba(122,162,255,.06); }
+    .compare thead .featured { color: var(--accent); }
+    .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+    /* Inline copy (Get started) */
+    .copy-inline { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; vertical-align: middle; }
+    .copy-inline code { overflow-wrap: anywhere; }
+    .copy-inline .copy-button { flex: none; padding: 3px 9px; border: 1px solid var(--line-strong); border-radius: 6px; background: var(--raised); color: var(--soft); font-size: .78rem; cursor: pointer; }
+    .copy-inline .copy-button:hover { color: var(--ink); border-color: #3a3e46; }
+    .needs { margin: 0 0 20px; padding: 14px 18px; border: 1px solid var(--line-strong); border-radius: 12px; background: var(--raised); color: var(--soft); }
+    .needs strong { color: var(--ink); font-weight: 600; }
+
     /* Two tiles */
     .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; }
     .tile { display: flex; flex-direction: column; gap: 12px; overflow: hidden; padding: 32px; border: 1px solid var(--line); border-radius: 14px; background: var(--paper); }
@@ -198,6 +227,7 @@
       .section { padding: 80px 0 0; }
       .feature { gap: 24px; margin-top: 56px; }
       .tiles { grid-template-columns: 1fr; }
+      .walk { grid-template-columns: 1fr; }
       .industry-grid { grid-template-columns: 1fr; }
       .tile { padding: 24px; }
       .footer-row { align-items: flex-start; flex-direction: column; }

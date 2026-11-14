@@ -2,7 +2,7 @@
     document.addEventListener('click', async (event) => {
       const button = event.target.closest('.copy-button');
       if (!button) return;
-      const box = button.closest('.prompt-box');
+      const box = button.closest('.prompt-box, .copy-inline');
       const text = box?.querySelector('.copy-text')?.textContent.trim();
       const status = box?.querySelector('.copy-status');
       if (!text || !status) return;
