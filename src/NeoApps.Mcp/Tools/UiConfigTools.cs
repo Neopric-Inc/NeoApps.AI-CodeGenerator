@@ -73,7 +73,10 @@ internal static class UiConfigTools
           ],
           "dashboard": { "cards": [ { "table": "studies", "label": "Active studies" },          // row count
                                     { "table": "studies", "label": "Total budget", "sum": "budget_amount",  // or a total,
-                                      "where": { "status": "enrolling" }, "format": "currency", "currencyCode": "USD" } ], // optionally filtered
+                                      "where": { "status": "enrolling" }, "format": "currency", "currencyCode": "USD" }, // optionally filtered
+                                    { "table": "studies", "label": "Not closed", "where": { "status": { "notEqual": "closed" } } },
+                                    { "table": "studies", "label": "Approved this month", "where": { "approved_at": { "period": "month" } } } ],
+                                    // several cards may use one table; where = equals, { "notEqual": v }, or { "period": "month" } (UTC calendar month)
                          "recentTable": "documents" },
           "roles": {                                  // seeded when the database is created (c=create r=read u=update d=delete)
             "Coordinator": { "*": "r", "documents": "cru", "visits": "cru" },
