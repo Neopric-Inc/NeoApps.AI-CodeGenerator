@@ -185,7 +185,9 @@ internal static class UiConfigTools
               {id} placeholders. The person who made the change is never notified. Rows are written in the same transaction as
               the change. "email": each person adds their address under the bell; sent when the API has
               Notifications__Email__From plus Notifications__Email__AcsConnectionString or SmtpHost/SmtpUser/SmtpPassword
-              (environment only), with Notifications__AppUrl for the link. Retried up to 5 times.
+              (environment only), with Notifications__AppUrl for the link, or a relay that sends for the app
+              (Notifications__Relay__Url + Notifications__Relay__Token; NeoApps Cloud sets these, so apps hold no email key).
+              Retried up to 5 times.
           "validations": { "customer_invoices": {
               "contact_email": { "format": "email" }, "website": { "format": "url" }, "phone": { "format": "phone" },
               "invoice_number": { "pattern": "^INV-[0-9]{4,}$", "message": "Use INV- followed by digits" },

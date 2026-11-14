@@ -14,7 +14,9 @@ namespace nkv.MicroService.Utility
 {
     /// <summary>
     /// Sends the email part of notifications (rows with email_status 'pending'), up to 5 attempts each. Off unless configured,
-    /// with secrets from the environment, never from files:
+    /// with secrets from the environment, never from files. Either a relay (NeoApps Cloud sets these; the app holds no email key):
+    ///   Notifications__Relay__Url / Notifications__Relay__Token   POST {to, title, path}; the relay owns sender and template
+    /// or the app's own sender:
     ///   Notifications__Email__From             sender address (required)
     ///   Notifications__Email__AcsConnectionString  Azure Communication Services ("endpoint=...;accesskey=...") or
     ///   Notifications__Email__SmtpHost / SmtpPort (587) / SmtpUser / SmtpPassword
@@ -24,7 +26,7 @@ namespace nkv.MicroService.Utility
     {
         static Timer _timer;
         static int _busy;
-        static string _from, _acs, _smtpHost, _smtpUser, _smtpPassword, _appUrl;
+        static string _from, _acs, _smtpHost, _smtpUser, _smtpPassword, _appUrl, _relayUrl, _relayToken;
         static int _smtpPort = 587;
         static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(20) };
         public static bool Enabled { get; private set; }
@@ -39,10 +41,14 @@ namespace nkv.MicroService.Utility
             _smtpPassword = cfg?["Notifications:Email:SmtpPassword"];
             if (int.TryParse(cfg?["Notifications:Email:SmtpPort"], out var port)) _smtpPort = port;
             _appUrl = cfg?["Notifications:AppUrl"]?.TrimEnd('/');
-            Enabled = !string.IsNullOrEmpty(_from) && (!string.IsNullOrEmpty(_acs) || !string.IsNullOrEmpty(_smtpHost));
+            _relayUrl = cfg?["Notifications:Relay:Url"];
+            _relayToken = cfg?["Notifications:Relay:Token"];
+            var relay = !string.IsNullOrEmpty(_relayUrl) && !string.IsNullOrEmpty(_relayToken);
+            if (!relay) _relayUrl = null;
+            Enabled = relay || (!string.IsNullOrEmpty(_from) && (!string.IsNullOrEmpty(_acs) || !string.IsNullOrEmpty(_smtpHost)));
             if (!Enabled || _timer != null) return;
             _timer = new Timer(_ => SendPending(), null, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(15));
-            Console.WriteLine($"Notifications: email on via {(string.IsNullOrEmpty(_acs) ? "SMTP" : "Azure Communication Services")}.");
+            Console.WriteLine($"Notifications: email on via {(_relayUrl != null ? "the NeoApps relay" : string.IsNullOrEmpty(_acs) ? "SMTP" : "Azure Communication Services")}.");
         }
 
         public static int SendPending()
@@ -62,7 +68,12 @@ namespace nkv.MicroService.Utility
                 foreach (var row in rows)
                 {
                     string error = null;
-                    try { Send(row.to, row.title, Body(row.title, row.table, row.record)); sent++; Sent++; }
+                    try
+                    {
+                        if (_relayUrl != null) Relay(row.to, row.title, row.table, row.record);
+                        else Send(row.to, row.title, Body(row.title, row.table, row.record));
+                        sent++; Sent++;
+                    }
                     catch (Exception ex) { error = ex.Message.Length > 450 ? ex.Message[..450] : ex.Message; Failed++; }
                     using var u = new MySqlCommand(error == null
                         ? "UPDATE user_notifications SET email_status = 'sent', email_error = NULL WHERE notification_id = @id"
@@ -87,6 +98,20 @@ namespace nkv.MicroService.Utility
             var t = WebUtility.HtmlEncode(title);
             return $"<p style=\"font:15px sans-serif\">{t}</p>" + (link == null ? "" : $"<p style=\"font:15px sans-serif\"><a href=\"{link}\">Open it</a></p>")
                  + "<p style=\"font:12px sans-serif;color:#666\">You get this because email notifications are on. Turn them off from the bell in the app.</p>";
+        }
+
+        /// <summary>Hands the email to the relay: only the recipient, the title and the record's path inside the app.</summary>
+        static void Relay(string to, string title, string table, string record)
+        {
+            var path = table != null && record != null && System.Text.RegularExpressions.Regex.IsMatch(table, "^[A-Za-z0-9_]{1,64}$")
+                && System.Text.RegularExpressions.Regex.IsMatch(record, "^[A-Za-z0-9_-]{1,64}$") ? $"/r/{table}/{record}" : null;
+            using var req = new HttpRequestMessage(HttpMethod.Post, _relayUrl)
+            {
+                Content = new StringContent(JsonSerializer.Serialize(new { to, title, path }), Encoding.UTF8, "application/json"),
+            };
+            req.Headers.TryAddWithoutValidation("Authorization", "Bearer " + _relayToken);
+            using var res = Http.Send(req);
+            if (!res.IsSuccessStatusCode) throw new InvalidOperationException($"Relay {(int)res.StatusCode}: {res.Content.ReadAsStringAsync().Result}");
         }
 
         static void Send(string to, string subject, string html)
