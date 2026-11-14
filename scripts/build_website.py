@@ -45,6 +45,10 @@ NAV = [
         ("use-cases.html#professional", "Accounting and professional services"),
         ("use-cases.html#field", "Field operations and compliance"),
         ("use-cases.html#education", "Education"),
+        ("use-cases.html#insurance", "Insurance"),
+        ("use-cases.html#property", "Property and real estate"),
+        ("use-cases.html#public", "Nonprofit and government"),
+        ("use-cases.html#manufacturing", "Manufacturing and quality"),
         ("use-cases.html#prompt-library", "Prompt library"),
     ]),
     ("pricing.html", "Pricing", None),
@@ -155,6 +159,8 @@ INDUSTRIES = [
     ]),
     ("legal", "Legal", [
         ("Legal intake and case portal", "Personal injury, medical assessments and legal aid: intake, documents, deadlines."),
+        ("Contract review and approvals", "Requests, versions and sign-off, with AI answers about clauses."),
+        ("Matter and deadline tracker", "Matters, tasks, court dates and who's on each."),
     ]),
     ("professional", "Accounting and professional services", [
         ("Audit engagements", "Client engagements from planning to sign-off, a client document portal, AI-drafted findings."),
@@ -172,6 +178,28 @@ INDUSTRIES = [
     ]),
     ("education", "Education", [
         ("Student intake and support", "Admissions, wellbeing, accessibility and support cases."),
+        ("Course and instructor scheduling", "Courses, sections, rooms and instructors."),
+        ("Scholarship and bursary applications", "Apply, review, score and award."),
+    ]),
+    ("insurance", "Insurance", [
+        ("Claims intake", "Customer portal, documents, adjuster review and payout approval. Demo available on request."),
+        ("Policy endorsements", "Change requests with review and approval."),
+        ("Broker submissions", "Quotes, documents and status in one place."),
+    ]),
+    ("property", "Property and real estate", [
+        ("Maintenance requests", "Tenant portal, work orders and vendor assignment."),
+        ("Lease tracking", "Units, tenants, renewals and rent changes."),
+        ("Unit inspections", "Move-in and move-out checklists with photos."),
+    ]),
+    ("public", "Nonprofit and government", [
+        ("Case management", "Clients, services and follow-ups, with privacy by role."),
+        ("Volunteer coordination", "People, shifts and hours."),
+        ("Permit applications", "Submit, review, approve and issue a permit number."),
+    ]),
+    ("manufacturing", "Manufacturing and quality", [
+        ("Non-conformance and corrective action", "Defect, root cause, fix and verification."),
+        ("Equipment maintenance", "Assets, schedules and work logs."),
+        ("Supplier quality", "Audits, scores and corrective actions."),
     ]),
 ]
 
