@@ -5,13 +5,21 @@ import RadioButtonUncheckedIcon from "@mui/icons-material/RadioButtonUnchecked";
 import { ResolvedField } from "./types";
 
 /** The API returns dates as "MM/dd/yyyy HH:mm:ss". Returns a Date or null. */
-export function parseApiDate(v: any): Date | null {
+/**
+ * Reads a date from the API. The server stores times in UTC without a zone suffix, so pass utc=true for date-and-time
+ * values: they are then shown in the viewer's own time zone. Plain dates (utc=false) stay on their calendar day.
+ */
+export function parseApiDate(v: any, utc = false): Date | null {
   if (!v) return null;
   if (v instanceof Date) return v;
   const s = String(v);
   const m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?/.exec(s);
-  if (m) return new Date(+m[3], +m[1] - 1, +m[2], +(m[4] || 0), +(m[5] || 0), +(m[6] || 0));
-  const d = new Date(s);
+  if (m) {
+    const parts = [+m[3], +m[1] - 1, +m[2], +(m[4] || 0), +(m[5] || 0), +(m[6] || 0)] as const;
+    return utc ? new Date(Date.UTC(...parts)) : new Date(...parts);
+  }
+  const naive = /^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(:\d{2}(\.\d+)?)?$/.test(s);
+  const d = new Date(utc && naive ? s.replace(" ", "T") + "Z" : s);
   return isNaN(d.getTime()) ? null : d;
 }
 
@@ -21,11 +29,17 @@ export const toDateInput = (v: any) => {
   return d ? `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` : "";
 };
 export const toDateTimeInput = (v: any) => {
-  const d = parseApiDate(v);
+  const d = parseApiDate(v, true);
   return d ? `${toDateInput(d)}T${pad(d.getHours())}:${pad(d.getMinutes())}` : "";
 };
 /** Value the API accepts for DATE/DATETIME columns. */
 export const toApiDate = (v: string) => (v ? (v.length === 10 ? `${v}T00:00:00` : v.length === 16 ? `${v}:00` : v) : null);
+/** A date-and-time the user typed (their local time, "YYYY-MM-DDTHH:MM") as the UTC value the API stores. */
+export const toApiDateTime = (v: string) => {
+  if (!v) return null;
+  const d = new Date(v.length === 16 ? `${v}:00` : v);
+  return isNaN(d.getTime()) ? toApiDate(v) : d.toISOString().slice(0, 19);
+};
 
 const STATUS_COLORS: Record<string, any> = {
   active: "success", enrolling: "success", completed: "success", done: "success", approved: "success", connected: "success", current: "success", open: "info",
@@ -56,7 +70,7 @@ export function renderValue(field: ResolvedField | undefined, value: any, refLab
       return d ? d.toLocaleDateString() : String(value);
     }
     case "datetime": {
-      const d = parseApiDate(value);
+      const d = parseApiDate(value, true);
       return d ? d.toLocaleString([], { dateStyle: "medium", timeStyle: "short" } as any) : String(value);
     }
     case "currency":
