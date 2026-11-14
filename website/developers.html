@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f7f8fa">
+  <meta name="description" content="Open-source generator: MySQL schema and UI config to a .NET 10 API and React admin UI, with an MCP server and CLI.">
+  <title>Developers · NeoApps.AI</title>
+  <link rel="stylesheet" href="assets/site.css">
+  <style>
+    .dropdown { position: relative; }
+    .dropdown > button { background: none; border: 0; font: inherit; color: inherit; cursor: pointer; padding: 6px 0; }
+    .dropdown-menu { display: none; position: absolute; top: 100%; left: -14px; min-width: 250px; padding: 8px;
+      background: var(--paper); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 12px 30px rgba(23,33,43,.10); z-index: 20; }
+    .dropdown:hover .dropdown-menu, .dropdown:focus-within .dropdown-menu { display: block; }
+    .dropdown-menu a { display: block; padding: 8px 10px; border-radius: 8px; color: var(--ink); }
+    .dropdown-menu a:hover { background: var(--wash); }
+    .nav-links a[aria-current="page"], .dropdown > button[aria-current="page"] { color: var(--ink); font-weight: 650; }
+    .includes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+    .include { background: var(--paper); border: 1px solid var(--line); border-radius: 14px; padding: 18px; }
+    .include h3 { margin: 0 0 6px; font-size: 1rem; }
+    .include p { margin: 0; color: var(--muted); font-size: .9rem; }
+    .industry { margin: 0 0 34px; }
+    .industry h2 { font-size: 1.5rem; margin: 0 0 14px; }
+    .faq details { border-bottom: 1px solid var(--line); padding: 14px 0; }
+    .faq summary { cursor: pointer; font-weight: 650; }
+    .faq p { color: var(--muted); margin: 10px 0 0; }
+    .connect { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .connect article { background: var(--paper); border: 1px solid var(--line); border-radius: 16px; padding: 22px; }
+    .connect h3 { margin: 0 0 10px; }
+    .connect ol { margin: 0; padding-left: 20px; color: var(--muted); }
+    .connect li { margin: 6px 0; }
+    .price { font-size: 2rem; font-weight: 750; margin: 6px 0; }
+    @media (max-width: 900px) { .includes, .connect { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 600px) { .includes, .connect { grid-template-columns: 1fr; } .dropdown { display: none; } }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <nav class="nav wrap" aria-label="Main navigation">
+      <a class="brand" href="index.html" aria-label="NeoApps.AI home"><span class="brand-mark">N</span>NeoApps.AI</a>
+      <div class="nav-links"><a href="index.html">Home</a><div class="dropdown"><button type="button" onclick="location.href='use-cases.html'">Use cases ▾</button><div class="dropdown-menu"><a href="use-cases.html#healthcare">Healthcare and research</a><a href="use-cases.html#legal">Legal</a><a href="use-cases.html#professional">Accounting and professional services</a><a href="use-cases.html#field">Field operations and compliance</a><a href="use-cases.html#education">Education</a><a href="use-cases.html#prompt-library">Prompt library</a></div></div><a href="pricing.html">Pricing</a><div class="dropdown"><button type="button" aria-current="page" onclick="location.href='developers.html'">Developers ▾</button><div class="dropdown-menu"><a href="developers.html#open-source">Open source</a><a href="developers.html#local">Run it locally</a><a href="developers.html#rules">Data rules</a><a href="https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator">GitHub ↗</a></div></div><a class="button small" href="get-started.html">Get started</a></div>
+    </nav>
+  </header>
+  <main id="top">
+    <section class="section white" id="open-source">
+      <div class="wrap">
+        <div class="section-heading">
+          <div class="kicker">Developers</div>
+          <h2>Open source. Real stack. No lock-in.</h2>
+          <p>NeoApps turns a MySQL schema and a UI config into a full app. Two years open source, built on 15 years of ERP work.</p>
+        </div>
+        <div class="includes"><article class="include"><h3>.NET 10 API</h3><p>Generated controllers, repositories, JWT auth and Swagger.</p></article><article class="include"><h3>React admin UI</h3><p>React 19 and MUI, driven by schema.json and ui.config.json.</p></article><article class="include"><h3>MySQL, Redis, RabbitMQ</h3><p>Background jobs, approvals and events, out of the box.</p></article><article class="include"><h3>MCP server and CLI</h3><p>Every operation as a tool for Claude, ChatGPT, Codex and others.</p></article></div>
+      </div>
+    </section>
+    <section class="section" id="local">
+      <div class="wrap">
+        <div class="section-heading">
+          <div class="kicker">Run it locally</div>
+          <h2>One command to install.</h2>
+          <p>Needs Docker. Registers the MCP server with Claude Code and Claude Desktop and prints the config for Codex and others.</p>
+        </div>
+        <div class="prompt-box" style="max-width:860px"><pre class="copy-text">curl -fsSL https://raw.githubusercontent.com/Neopric-Inc/NeoApps.AI-CodeGenerator/main/install.sh | bash</pre><div class="copy-row"><span class="copy-status" aria-live="polite"></span><button class="button secondary small copy-button" type="button">Copy</button></div></div>
+        <p style="margin:16px 0 0">Then ask your agent to build an app, or use the CLI: <code>neoapps new MyApp --schema schema.sql --ui ui.config.json --deploy</code>. <a class="text-link" href="https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator#coding-agents-mcp">Setup guide ↗</a></p>
+      </div>
+    </section>
+    <section class="section white" id="rules">
+      <div class="wrap">
+        <div class="section-heading">
+          <div class="kicker">Data rules</div>
+          <h2>Business rules are config, not code.</h2>
+          <p>The API enforces them on every query, for people, AI and integrations alike.</p>
+        </div>
+        <div class="includes"><article class="include"><h3>Tenancy and row scopes</h3><p>Customer portals: each customer sees only their own rows.</p></article><article class="include"><h3>Lifecycles</h3><p>Status steps, who may take them, and per-role edit locks.</p></article><article class="include"><h3>Validations and numbering</h3><p>Formats, ranges, date order, totals; INV-2026-00001.</p></article><article class="include"><h3>Audit, outbox, limits</h3><p>Change history, domain events and plan limits.</p></article><article class="include"><h3>Migrations keep data</h3><p>Schema changes become reviewed FluentMigrator migrations.</p></article><article class="include"><h3>Background jobs</h3><p>Long work and approvals on a RabbitMQ worker.</p></article><article class="include"><h3>AI workflows</h3><p>Document Q&amp;A, ask-your-data and AI-drafted records with approval.</p></article><article class="include"><h3>Local models</h3><p>Any OpenAI-compatible endpoint, e.g. Ollama or vLLM.</p></article></div>
+      </div>
+    </section>
+    <section class="section" id="build-yourself">
+      <div class="wrap">
+        <div class="section-heading">
+          <div class="kicker">Prompt</div>
+          <h2>Build and host it yourself.</h2>
+          
+        </div>
+        <div style="max-width:860px"><div class="prompt-box"><pre class="copy-text">I want to build [describe my business app]. Ask me about users, processes, data and permissions. Check the NeoApps schema guidelines and my environment. Show me a plan and wait for my approval. Then generate, build and run the app locally with the NeoApps tools, keep the source in my project, and show me how to host it myself.</pre><div class="copy-row"><span class="copy-status" aria-live="polite"></span><button class="button secondary small copy-button" type="button">Copy prompt</button></div></div></div>
+        <p style="margin:16px 0 0"><a class="button secondary" href="https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator">View on GitHub ↗</a></p>
+      </div>
+    </section>
+
+  </main>
+  <footer>
+    <div class="wrap footer-row">
+      <a class="brand" href="index.html"><span class="brand-mark">N</span>NeoApps.AI</a>
+      <span>Business apps you own. Built in Claude, ChatGPT or Codex.</span>
+      <div class="footer-links"><a href="get-started.html">Get started</a><a href="pricing.html">Pricing</a><a href="developers.html">Developers</a><a href="https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator">GitHub</a><a href="mailto:info@neopric.com">Contact</a></div>
+    </div>
+  </footer>
+  <script src="assets/site.js"></script>
+</body>
+</html>
