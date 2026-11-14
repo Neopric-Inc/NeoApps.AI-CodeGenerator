@@ -58,6 +58,8 @@ namespace nkv.MicroService.Utility
         {
             switch (filterConditionEnum)
             {
+                case FilterConditionEnum.NotEqual:
+                    return "<>";
                 case FilterConditionEnum.Equals:
                     return "=";
                 case FilterConditionEnum.Contains:

@@ -118,8 +118,8 @@ export const Customize: React.FC = () => {
               <TextField label="Primary color" type="color" sx={{ width: 160 }} value={draft.theme?.primary || "#3b5bdb"} onChange={(e) => update((d) => { d.theme = { ...(d.theme || {}), primary: e.target.value }; })} />
               <TextField label="Secondary color" type="color" sx={{ width: 160 }} value={draft.theme?.secondary || "#0ca678"} onChange={(e) => update((d) => { d.theme = { ...(d.theme || {}), secondary: e.target.value }; })} />
             </Box>
-            <TextField select label="Dashboard cards" value={(draft.dashboard?.cards || []).map((c) => c.table)} helperText="Leave empty to show the first eight menu items."
-              onChange={(e) => update((d) => { d.dashboard = { ...(d.dashboard || {}), cards: (e.target.value as unknown as string[]).map((t) => ({ table: t })) }; })}
+            <TextField select label="Dashboard cards" value={Array.from(new Set((draft.dashboard?.cards || []).map((c) => c.table)))} helperText="Leave empty to show the first eight menu items."
+              onChange={(e) => update((d) => { d.dashboard = { ...(d.dashboard || {}), cards: (e.target.value as unknown as string[]).flatMap((table) => { const existing = d.dashboard?.cards?.filter((card) => card.table === table); return existing?.length ? existing : [{ table }]; }) }; })}
               slotProps={{
                 select: { multiple: true }
               }}>
