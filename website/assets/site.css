@@ -106,6 +106,77 @@
     .walk-step .shot, .walk-step .prompt-box { margin: 8px 0 0; }
     .walk-step .prompt-box pre { font-size: .86rem; }
 
+    /* Product mockups (HTML/CSS illustrations, sample data) */
+    .mock { position: relative; overflow: hidden; border: 1px solid #262a31; border-radius: 12px; background: linear-gradient(180deg, #16181d 0%, #121418 100%); box-shadow: 0 24px 60px -30px rgba(0,0,0,.8), inset 0 1px 0 rgba(255,255,255,.04); font-size: .86rem; color: var(--soft); text-align: left; }
+    .mock::before { content: ""; position: absolute; inset: 0 0 auto; height: 1px; background: linear-gradient(90deg, transparent, rgba(122,162,255,.5), transparent); }
+    .mock-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 11px 16px; border-bottom: 1px solid #23262c; color: var(--faint); font: .76rem/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .mock-x { font: 1rem/1 Inter, sans-serif; }
+    .mock-body { display: flex; flex-direction: column; gap: 10px; padding: 16px; }
+    .mock-title { color: var(--ink); font-weight: 600; font-size: .98rem; }
+    .mock-kv { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-bottom: 1px dashed #24272d; }
+    .mock-kv span { color: var(--faint); }
+    .mock-kv b { color: var(--ink); font-weight: 500; text-align: right; }
+    .pill { display: inline-flex; align-items: center; padding: 2px 9px; border: 1px solid #343842; border-radius: 999px; color: var(--soft); font: 500 .74rem/1.5 Inter, sans-serif; white-space: nowrap; }
+    .pill.info { border-color: rgba(122,162,255,.45); background: rgba(122,162,255,.12); color: #b9ccff; }
+    .pill.ok { border-color: rgba(94,230,176,.4); background: rgba(94,230,176,.12); color: #9ff0cf; }
+    .pill.warn { border-color: rgba(245,183,107,.45); background: rgba(245,183,107,.12); color: #f8d3a4; }
+    .mock-steps { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 4px 0; }
+    .mock-steps i { width: 18px; height: 1px; background: #3a3e46; }
+    .mock-log { display: flex; flex-direction: column; gap: 6px; margin: 0; padding: 10px 12px; border-radius: 9px; background: #0f1013; list-style: none; font-size: .8rem; }
+    .mock-log b { color: var(--ink); font-weight: 600; }
+    .mock-log em { float: right; margin-left: 10px; color: var(--faint); font-style: normal; }
+    .mock-quote { padding: 10px 12px; border: 1px solid rgba(122,162,255,.3); border-radius: 9px; background: rgba(122,162,255,.08); color: #d4e0ff; }
+    .mock-field { position: relative; display: flex; flex-direction: column; gap: 4px; padding: 8px 12px; border: 1px solid #2c3037; border-radius: 9px; background: #0f1013; }
+    .mock-field span { color: var(--faint); font-size: .72rem; }
+    .mock-field b { overflow: hidden; color: var(--ink); font: 500 .86rem/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; text-overflow: ellipsis; white-space: nowrap; }
+    .mock-field.focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(122,162,255,.18); }
+    .mock-callout { position: absolute; top: -11px; right: 12px; padding: 1px 8px; border-radius: 999px; background: var(--accent); color: var(--accent-ink); font: 600 .7rem/1.6 Inter, sans-serif; font-style: normal; }
+    .mock-actions { display: flex; justify-content: flex-end; gap: 8px; }
+    .mock-btn { padding: 6px 14px; border-radius: 8px; background: var(--accent); color: var(--accent-ink); font-weight: 600; font-size: .8rem; }
+    .mock-btn.ghost { background: transparent; color: var(--soft); }
+    .mock-foot { margin: 0; color: var(--faint); font-size: .76rem; }
+    .mock-check { display: flex; flex-direction: column; gap: 8px; margin: 0; padding: 0; list-style: none; }
+    .mock-check li { display: flex; align-items: center; gap: 10px; color: var(--ink); }
+    .mock-check svg, .mock-check li > span { display: grid; place-items: center; flex: none; width: 18px; height: 18px; border-radius: 5px; }
+    .mock-check .done svg { padding: 2px; background: rgba(94,230,176,.16); color: #5ee6b0; }
+    .mock-check .fail > span { background: rgba(245,183,107,.18); color: #f5b76b; font-weight: 700; font-size: .75rem; }
+    .mock-photos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .mock-photos span { aspect-ratio: 4 / 3; border: 1px solid #2a2d33; border-radius: 8px; background: linear-gradient(135deg, #1d2633, #12161d 60%), #15181d; }
+    .mock-photos span:nth-child(2) { background: linear-gradient(160deg, #262119, #14130f 65%); }
+    .mock-photos span:nth-child(3) { background: linear-gradient(120deg, #1a2420, #111614 60%); }
+
+    /* Use cases: featured */
+    .featured-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+    .featured-card { display: flex; flex-direction: column; gap: 10px; padding: 20px; border: 1px solid var(--line); border-radius: 14px; background: var(--paper); }
+    .featured-card .mock { margin-bottom: 8px; }
+    .featured-card h3 { margin: 4px 0 0; font-size: 1.15rem; font-weight: 600; }
+    .featured-card p { margin: 0; color: var(--muted); font-size: .94rem; }
+    .featured-card .text-link { margin-top: auto; font-size: .92rem; }
+
+    /* Get started: illustration */
+    .connect-visual { display: flex; flex-wrap: wrap; align-items: center; gap: 40px; margin: 0 0 24px; padding: 32px; border: 1px solid var(--line); border-radius: 14px; background: radial-gradient(120% 140% at 100% 0%, rgba(122,162,255,.10), transparent 55%), var(--paper); }
+    .connect-copy { flex: 1 1 260px; min-width: 0; }
+    .connect-copy h3 { margin: 0 0 10px; font-size: 1.4rem; font-weight: 600; letter-spacing: -.02em; }
+    .connect-copy p { margin: 0; color: var(--muted); }
+    .connect-visual .mock { flex: 1 1 380px; min-width: 0; max-width: 520px; }
+
+    /* Developers: architecture */
+    .arch { display: flex; flex-wrap: wrap; align-items: stretch; gap: 14px; }
+    .arch-col { display: flex; flex-direction: column; gap: 10px; flex: 0 1 200px; }
+    .arch-zone { flex: 1 1 640px; display: flex; flex-direction: column; gap: 10px; padding: 16px; border: 1px dashed #3a3e46; border-radius: 14px; background: rgba(255,255,255,.015); }
+    .arch-label { color: var(--faint); font-size: .76rem; letter-spacing: .06em; text-transform: uppercase; }
+    .arch-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+    .arch-box { display: flex; flex-direction: column; gap: 2px; padding: 14px 16px; border: 1px solid #2a2d33; border-radius: 10px; background: #14161a; }
+    .arch-row > .arch-box { flex: 1 1 150px; }
+    .arch-box b { color: var(--ink); font-weight: 600; }
+    .arch-box span { color: var(--faint); font-size: .84rem; }
+    .arch-box.accent { border-color: rgba(122,162,255,.55); background: rgba(122,162,255,.08); }
+    .arch-stack { display: flex; flex-direction: column; gap: 8px; flex: 1 1 180px; }
+    .arch-arrow { position: relative; display: grid; place-items: center; min-width: 54px; align-self: center; color: var(--faint); font: .7rem ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .arch-arrow::before { content: ""; width: 100%; height: 1px; background: #3a3e46; }
+    .arch-arrow::after { content: ""; position: absolute; right: 0; top: 50%; width: 6px; height: 6px; border-top: 1px solid #5a5f69; border-right: 1px solid #5a5f69; transform: translateY(-50%) rotate(45deg); }
+    .arch-arrow span { position: absolute; top: -16px; }
+
     /* Where it runs: comparison */
     .compare-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; }
     .compare { width: 100%; min-width: 720px; border-collapse: collapse; font-size: .95rem; }
@@ -214,6 +285,7 @@
 
     @media (max-width: 900px) {
       .video-grid { grid-template-columns: 1fr; }
+      .featured-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .industry-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .prompt-library-grid, .library-tools { grid-template-columns: 1fr; }
     }
@@ -228,6 +300,13 @@
       .feature { gap: 24px; margin-top: 56px; }
       .tiles { grid-template-columns: 1fr; }
       .walk { grid-template-columns: 1fr; }
+      .featured-grid { grid-template-columns: 1fr; }
+      .connect-visual { padding: 20px; gap: 24px; }
+      .arch-col { flex: 1 1 100%; }
+      .arch-arrow { min-width: 100%; height: 24px; }
+      .arch-arrow::before { width: 1px; height: 100%; }
+      .arch-arrow::after { right: auto; top: auto; bottom: 0; transform: rotate(135deg); }
+      .arch-arrow span { top: 4px; left: calc(50% + 8px); }
       .industry-grid { grid-template-columns: 1fr; }
       .tile { padding: 24px; }
       .footer-row { align-items: flex-start; flex-direction: column; }
