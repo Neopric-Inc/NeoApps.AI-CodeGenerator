@@ -153,7 +153,8 @@ internal static class UiConfigTools
                                                  "message": "needs an approval" } ],
                                  "forbids": [ { "table": "qa_items", "link": "case_id", "where": { "result": "failed" },
                                                 "message": "QA has failed items" } ],
-                                 "distinctFrom": ["requested_by"], "adminBypass": false } ],
+                                 "distinctFrom": ["requested_by"], "adminBypass": false,
+                                 "signature": { "meaning": "I approve this case for delivery.", "by": "approved_by", "at": "approved_at" } } ],
               "history": { "table": "case_status_history", "link": "case_id", "from": "old_status", "to": "new_status", "actor": "changed_by_type" },
               "timestamps": { "delivered": "delivered_at" },
               "sla": { "table": "case_deadlines", "link": "case_id", "type": "deadline_type", "due": "due_at", "met": "met_at",
@@ -167,7 +168,11 @@ internal static class UiConfigTools
               admins, never tenant-bound ones) or false (admins need a listed role). Frozen states lock the record for everyone;
               "editableIn" locks it per role: a listed role may change or delete a record only in those states (here a
               Requester edits and submits drafts, then can't touch the submitted case; other roles keep their access, and
-              listed steps still apply). History rows, timestamps and SLA
+              listed steps still apply). "signature" (true, a statement, or { "meaning", "by", "at" }): an electronic
+              signature for regulated sign-offs: the person re-enters their password (wrong ones count toward lockout; admins
+              too; never the AI or a job), and the signer, UTC time and statement go to the history reason and the audit log
+              ("by"/"at": optional columns stamped on the record). The admin UI asks for the password automatically.
+              History rows, timestamps and SLA
               deadline rows are written automatically in the same transaction.
           "validations": { "customer_invoices": {
               "contact_email": { "format": "email" }, "website": { "format": "url" }, "phone": { "format": "phone" },
