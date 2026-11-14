@@ -56,7 +56,7 @@ const ChildList: React.FC<{ child: ResolvedTable; fk: string; parentId: any }> =
 
 export const RecordPage: React.FC = () => {
   const { table: name = "", id = "" } = useParams();
-  const { tables, can, canOpen, ai } = useApp();
+  const { tables, can, canOpen, canChangeRecord, ai } = useApp();
   const navigate = useNavigate();
   const table = tables[name];
   const [record, setRecord] = useState<Record<string, any> | null>(null);
@@ -113,8 +113,8 @@ export const RecordPage: React.FC = () => {
         {ai?.enabled && <WorkflowButtons workflows={ai.workflows.filter((w) => w.table === name)} recordId={id} record={record} onApplied={() => setBump((b) => b + 1)} />}
         {ai?.enabled && <Button variant="outlined" startIcon={<AutoAwesome />} onClick={() => navigate(`/assistant?table=${name}&id=${encodeURIComponent(id)}`)}>Ask AI</Button>}
         {extensions.recordActions && record && React.createElement(extensions.recordActions, { table: name, record, onChanged: () => setBump((b) => b + 1) })}
-        {can(name, "update") && <Button variant="outlined" startIcon={<EditOutlined />} onClick={() => setEditing(true)}>Edit</Button>}
-        {can(name, "delete") && <Button color="error" startIcon={<DeleteOutline />} onClick={() => del.ask(record)}>Delete</Button>}
+        {canChangeRecord(name, record, "update") && <Button variant="outlined" startIcon={<EditOutlined />} onClick={() => setEditing(true)}>Edit</Button>}
+        {canChangeRecord(name, record, "delete") && <Button color="error" startIcon={<DeleteOutline />} onClick={() => del.ask(record)}>Delete</Button>}
       </Box>
       <Paper variant="outlined" sx={{ borderRadius: 2, p: 2.5, mb: 3 }}>
         <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr", lg: "1fr 1fr 1fr" }, gap: 2.5 }}>

@@ -23,12 +23,15 @@ interface Props {
   onOpen?: (row: Record<string, any>) => void;
   onEdit?: (row: Record<string, any>) => void;
   onDelete?: (row: Record<string, any>) => void;
+  /** Per-row checks (lifecycle locks): a row's Edit/Delete icons show only when these allow it. */
+  canEdit?: (row: Record<string, any>) => boolean;
+  canDelete?: (row: Record<string, any>) => boolean;
   emptyText?: string;
   dense?: boolean;
 }
 
 export const DataTable: React.FC<Props> = ({
-  table, columns, rows, total, loading, page, pageSize, sort, labelFor, onPage, onSort, onOpen, onEdit, onDelete, emptyText, dense,
+  table, columns, rows, total, loading, page, pageSize, sort, labelFor, onPage, onSort, onOpen, onEdit, onDelete, canEdit, canDelete, emptyText, dense,
 }) => (
   <Box>
     <TableContainer>
@@ -67,8 +70,8 @@ export const DataTable: React.FC<Props> = ({
               ))}
               {(onEdit || onDelete) && (
                 <TableCell align="right" onClick={(e) => e.stopPropagation()}>
-                  {onEdit && <Tooltip title="Edit"><IconButton size="small" onClick={() => onEdit(r)}><EditOutlined fontSize="small" /></IconButton></Tooltip>}
-                  {onDelete && <Tooltip title="Delete"><IconButton size="small" onClick={() => onDelete(r)}><DeleteOutline fontSize="small" /></IconButton></Tooltip>}
+                  {onEdit && (!canEdit || canEdit(r)) && <Tooltip title="Edit"><IconButton size="small" onClick={() => onEdit(r)}><EditOutlined fontSize="small" /></IconButton></Tooltip>}
+                  {onDelete && (!canDelete || canDelete(r)) && <Tooltip title="Delete"><IconButton size="small" onClick={() => onDelete(r)}><DeleteOutline fontSize="small" /></IconButton></Tooltip>}
                 </TableCell>
               )}
             </TableRow>
