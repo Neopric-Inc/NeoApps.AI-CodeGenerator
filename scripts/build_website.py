@@ -193,6 +193,8 @@ INDUSTRIES = [
     ]),
 ]
 
+REQ_PROMPT = "Build me a Requests app. Employees submit purchase, equipment, travel and time-off requests. Managers approve or reject them with a note. Employees only see their own requests. Keep a history of every step, and notify the manager when something is submitted and the employee when it's decided."
+
 CLOUD_PROMPT = ("Use the NeoApps connector. I want to build [describe your business app]. Ask me about users, data, approvals and "
                 "permissions, then show me the preview and wait for my review. After I approve, publish it, check it's live and give me "
                 "the link. Never ask me for passwords, card numbers or API keys in this chat.")
@@ -221,11 +223,32 @@ home = """    <section class="hero">
         <div class="works-row"><span>Claude</span><span>Claude Desktop</span><span>ChatGPT</span><span>Codex</span></div>
       </div>
     </section>
-""" + section("how-it-works", "How it works", "From a description to a live app. Same day.", None,
-    '        <div class="steps">'
-    '<article class="step"><div class="step-num">01</div><h3>Describe it</h3><p>Who uses it, what it tracks, who approves. Plain words in your assistant.</p></article>'
-    '<article class="step"><div class="step-num">02</div><h3>Review the plan</h3><p>See every screen, field and permission before anything is built.</p></article>'
-    '<article class="step"><div class="step-num">03</div><h3>Publish</h3><p>Your team signs in. Need a change later? Ask. Your data stays.</p></article></div>') \
+""" + section("how-it-works", "How it works", "From a prompt to an approved request. Same day.",
+    "Real screens from the Requests sample: an employee asks, a manager decides, the app keeps the record.",
+    '''        <div class="walk">
+          <article class="walk-step"><div class="step-num">01</div><h3>Describe it in your assistant</h3>
+            ''' + prompt_box(REQ_PROMPT) + '''</article>
+          <article class="walk-step"><div class="step-num">02</div><h3>Review the plan before it's built</h3><p>Who can do what, the steps a request moves through, who gets told.</p>
+            <div class="shot"><img src="assets/img/req-plan.webp" width="1390" height="380" loading="lazy" alt="The plan preview: who can do what, the request steps, and the notification rules"></div></article>
+          <article class="walk-step"><div class="step-num">03</div><h3>The manager approves in the app</h3><p>Marcus is told a request needs him. He approves it with a note.</p>
+            <div class="shot"><img src="assets/img/req-approve.webp" width="1600" height="1000" loading="lazy" alt="A manager approving a request with a decision note"></div></article>
+          <article class="walk-step"><div class="step-num">04</div><h3>Every step is on record</h3><p>Who submitted, who approved, and when. Emma is told it's approved.</p>
+            <div class="shot"><img src="assets/img/req-history.webp" width="1600" height="1000" loading="lazy" alt="The request's status history: drafted and submitted by Emma, approved by Marcus"></div></article>
+        </div>
+        <p style="margin:20px 0 0"><a class="text-link" href="#proof">Watch a full build: ClaimKit, live in four hours →</a></p>''') \
++ section("own", "Where it runs", "Run it where your data must live. Leave whenever you want.", None,
+    '''        <div class="compare-wrap"><table class="compare">
+          <thead><tr><th scope="col"><span class="sr-only">Question</span></th><th scope="col">Our cloud</th><th scope="col" class="featured">Your cloud</th><th scope="col">Your machine</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Who runs it</th><td>NeoApps, on Microsoft Azure in the US</td><td class="featured">Your Azure, AWS or Google Cloud account. We set it up and hand it over.</td><td>You, on your own servers</td></tr>
+            <tr><th scope="row">Your app's code</th><td>Yes, anytime. Ask your assistant for your app's plan and build it with the open-source generator.</td><td class="featured">Yours</td><td>Yours</td></tr>
+            <tr><th scope="row">Your records</th><td>Export any list to CSV</td><td class="featured">In your own database</td><td>In your own database</td></tr>
+            <tr><th scope="row">Price</th><td>From US$49/month</td><td class="featured">One-time, from US$10,000</td><td>Free, open source</td></tr>
+            <tr><th scope="row"></th><td><a class="text-link" href="get-started.html">Start building</a></td><td class="featured"><a class="text-link" href="mailto:info@neopric.com?subject=NeoApps%20deploy%20in%20our%20cloud">Talk to us</a></td><td><a class="text-link" href="developers.html">Developer setup</a></td></tr>
+          </tbody>
+        </table></div>
+        <ul class="trust" aria-label="In place today"><li>Encrypted in transit and at rest</li><li>Roles enforced on the server</li><li>Audit trail</li><li>Password re-entry for sign-offs</li><li>We never train on your data</li><li>Open source</li></ul>
+        <p class="fine">SOC 2 and HIPAA are not certified yet. <a class="text-link" href="pricing.html#faq">Read the FAQ</a></p>''') \
 + section("rules", "Production grade", "Your rules, enforced on the server.", "Not hidden buttons. Every request is checked, for every person, every time.",
     '''        <div class="feature">
           <div class="feature-copy"><h3>Sign-offs that hold up.</h3><p>The partner re-enters their password to sign. Their name, the time and the statement go in the audit log. Admins can't skip it. The AI can't sign.</p></div>
@@ -251,14 +274,6 @@ home = """    <section class="hero">
     '        <div class="video-grid"><div class="video-frame"><iframe src="https://www.youtube-nocookie.com/embed/MD_jAxglA_Y?rel=0" title="ClaimKit walkthrough" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div>'
     '<div class="video-copy"><p>Our team built ClaimKit, a full client portal for R&amp;D tax-credit consultants, with a coding agent and NeoApps in about four hours. A typical agency build takes five to six months.</p>'
     '<p>The expert still decides. The app does the intake, documents and evidence.</p></div></div>') \
-+ section("own", "Where it runs", "Run it where your data must live.", None,
-    '''        <div class="paths">
-          <article class="path-card"><h3>Our cloud</h3><p>Hosting, database and sign-in included. Microsoft Azure, United States. Encrypted in transit and at rest.</p><p class="note">From US$49/month</p></article>
-          <article class="path-card featured"><h3>Your cloud</h3><p>We set it up in your Azure, AWS or Google Cloud account, inside the controls you already have, and hand it over.</p><p class="note">One-time, from US$10,000</p></article>
-          <article class="path-card"><h3>Your machine</h3><p>Open source. Build and run it yourself. The code, data and servers are all yours.</p><p class="note">Free</p></article>
-        </div>
-        <ul class="trust" aria-label="In place today"><li>Encrypted in transit and at rest</li><li>Roles enforced on the server</li><li>Audit trail</li><li>Password re-entry for sign-offs</li><li>We never train on your data</li><li>Open source</li></ul>
-        <p class="fine">SOC 2 and HIPAA are not certified yet. <a class="text-link" href="pricing.html#faq">Read the FAQ</a></p>''') \
 + """    <section class="cta">
       <div class="wrap">
         <h2>Replace one spreadsheet this week.</h2>
@@ -307,13 +322,19 @@ page("use-cases.html", "Use cases · NeoApps.AI", "Business apps for healthcare,
      scripts=("assets/prompts.js", "assets/site.js"))
 
 # ---------------------------------------------------------------- Get started
+def copy_inline(text):
+    return (f'<span class="copy-inline"><code class="copy-text">{text}</code>'
+            f'<button class="copy-button" type="button" aria-label="Copy {text}">Copy</button><span class="copy-status sr-only" aria-live="polite"></span></span>')
+
+
 gs = section("connect", "Get started", "Connect once. Then just describe your app.", "Pick the assistant you already use.",
-    f"""        <div class="connect">
-          <article><h3>Claude</h3><ol><li>Open the Claude desktop app: Settings → Connectors → Add custom connector.</li><li>Paste <code>{CLOUD_URL}</code></li><li>Click Connect and sign in to NeoApps. It also works in the Claude mobile app.</li></ol></article>
-          <article><h3>ChatGPT</h3><ol><li>Settings → Apps &amp; Connectors → Advanced settings: turn on Developer mode.</li><li>Choose Create and paste <code>{CLOUD_URL}</code></li><li>Sign in to NeoApps when asked.</li></ol></article>
-          <article><h3>Codex</h3><ol><li>Run <code>codex mcp add neoapps --url {CLOUD_URL}</code></li><li>Sign in to NeoApps when asked.</li></ol></article>
+    f"""        <p class="needs"><strong>You'll need:</strong> a NeoApps account and a card for the plan (promo codes go in at checkout). Connecting opens a NeoApps page where you sign up or sign in.</p>
+        <div class="connect">
+          <article><h3>Claude</h3><ol><li>Open the Claude desktop app: Settings → Connectors → Add custom connector.</li><li>Paste {copy_inline(CLOUD_URL)}</li><li>Click Connect and sign in to NeoApps. It also works in the Claude mobile app.</li></ol></article>
+          <article><h3>ChatGPT</h3><ol><li>Settings → Apps &amp; Connectors → Advanced settings: turn on Developer mode.</li><li>Choose Create and paste {copy_inline(CLOUD_URL)}</li><li>Sign in to NeoApps when asked.</li></ol></article>
+          <article><h3>Codex</h3><ol><li>Run {copy_inline("codex mcp add neoapps --url " + CLOUD_URL)}</li><li>Sign in to NeoApps when asked.</li></ol></article>
         </div>
-        <p style="margin:18px 0 0;color:var(--muted)">First time: create your NeoApps account and pick a plan. A card is required; promo codes go in at checkout.</p>""", white=True) \
+""", white=True) \
 + section("prompt", "Then", "Paste this and describe your business.", None, f'        <div style="max-width:860px">{prompt_box(CLOUD_PROMPT)}</div>') \
 + section("after", "After it's live", "Invite people. Add AI. Keep improving.", None,
     '        <div class="steps">'
