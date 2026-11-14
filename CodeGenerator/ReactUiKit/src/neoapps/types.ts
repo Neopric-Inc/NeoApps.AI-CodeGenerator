@@ -71,8 +71,8 @@ export interface DashboardCard {
   label?: string;
   /** Show the sum of this column instead of a row count. */
   sum?: string;
-  /** Only count/sum rows where column equals value. */
-  where?: Record<string, any>;
+  /** Filter by equality, inequality, or the current UTC calendar month. */
+  where?: Record<string, string | number | boolean | { notEqual: string | number | boolean } | { period: "month" }>;
   format?: "currency" | "number";
   currencyCode?: string;
 }

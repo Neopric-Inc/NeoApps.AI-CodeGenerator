@@ -29,5 +29,6 @@ namespace nkv.MicroService.Utility
         Equals = 5,
         GreaterThanEqual = 6,
         LessThanEqual = 7,
+        NotEqual = 8,
     }
 }

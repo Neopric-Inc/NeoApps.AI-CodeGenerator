@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Box, Card, CardActionArea, CardContent, Paper, Skeleton, Typography } from "@mui/material";
-import { api, listRecords } from "./api";
+import { api, listRecords, type Page } from "./api";
+import type { DashboardCard } from "./types";
 import { formatMoney } from "./format";
 import { useApp } from "./AppContext";
 import { DataTable } from "./DataTable";
@@ -9,31 +10,64 @@ import { Icon } from "./icons";
 import { useReferences } from "./useReferences";
 import { extensions } from "../custom";
 
+async function loadCard(card: DashboardCard): Promise<number> {
+  const now = new Date();
+  const monthStart = (offset: number) =>
+    new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + offset, 1)).toISOString().slice(0, 10);
+  const where = Object.entries(card.where || {}).flatMap(([columnName, value]) => {
+    const filter = (columnCondition: number, columnValue: string) => ({ columnName, columnCondition, columnValue });
+    if (typeof value === "object" && value !== null) {
+      if ("notEqual" in value) return [filter(8, String(value.notEqual))];
+      if (value.period === "month") return [filter(6, monthStart(0)), filter(4, monthStart(1))];
+      throw new Error("Unsupported dashboard filter");
+    }
+    return [filter(5, String(value))];
+  });
+  const size = card.sum ? 200 : 1;
+  const load = async (page: number): Promise<Page> => {
+    if (!where.length) return listRecords(card.table, page, size);
+    const response = await api("POST", `${card.table}/filter?page=${page}&itemsPerPage=${size}`, where);
+    return { records: response?.document?.records || [], total: response?.code === 1 ? response.document?.totalRecords || 0 : 0 };
+  };
+  const first = await load(1);
+  if (!card.sum) return first.total;
+  const sumColumn = card.sum;
+  const sum = (data: Page) => data.records.reduce((total, row) => total + (Number(row[sumColumn]) || 0), 0);
+  let total = sum(first);
+  for (let page = 2; page <= Math.ceil(first.total / size); page++) total += sum(await load(page));
+  return total;
+}
+
 export const Dashboard: React.FC = () => {
   const { config, schema, menu, tables, me } = useApp();
   const navigate = useNavigate();
-  const readable = menu.flatMap((g) => g.items);
-  const cards = (config.dashboard?.cards?.length ? config.dashboard.cards.map((c) => c.table) : readable.slice(0, 8)).filter((t) => readable.includes(t));
-  const cardCfg = (t: string) => (config.dashboard?.cards || []).find((c) => c.table === t);
-  const [counts, setCounts] = useState<Record<string, number | null>>({});
-  const recentName = config.dashboard?.recentTable && readable.includes(config.dashboard.recentTable) ? config.dashboard.recentTable : cards[0];
+  const cards = useMemo(() => {
+    const readable = menu.flatMap((group) => group.items);
+    const configured: DashboardCard[] = config.dashboard?.cards?.length
+      ? config.dashboard.cards
+      : readable.slice(0, 8).map((table) => ({ table }));
+    return configured.filter(({ table }) => readable.includes(table));
+  }, [config.dashboard?.cards, menu]);
+  const [counts, setCounts] = useState<(number | null | undefined)[]>([]);
+  const recentName = config.dashboard?.recentTable && menu.some((group) => group.items.includes(config.dashboard!.recentTable!))
+    ? config.dashboard.recentTable
+    : cards[0]?.table;
   const recent = recentName ? tables[recentName] : undefined;
   const [recentRows, setRecentRows] = useState<Record<string, any>[]>([]);
   const [loadingRecent, setLoadingRecent] = useState(true);
   const { labelFor } = useReferences(recent);
 
   useEffect(() => {
-    cards.forEach((t) => {
-      const cfg = cardCfg(t);
-      const where = Object.entries(cfg?.where || {}).map(([k, v]) => ({ columnName: k, columnCondition: 5, columnValue: String(v) }));
-      const load: Promise<{ records: any[]; total: number }> = where.length
-        ? api<any>("POST", `${t}/filter?page=1&itemsPerPage=${cfg?.sum ? 100000 : 1}`, where).then((r) => ({ records: r?.document?.records || [], total: r?.code === 1 ? r.document?.totalRecords || 0 : 0 }))
-        : listRecords(t, 1, cfg?.sum ? 100000 : 1);
-      load.then((p) => setCounts((c) => ({ ...c, [t]: cfg?.sum ? p.records.reduce((s, r) => s + (Number(r[cfg.sum!]) || 0), 0) : p.total })))
-        .catch(() => setCounts((c) => ({ ...c, [t]: null })));
+    let active = true;
+    setCounts([]);
+    cards.forEach((card, index) => {
+      const save = (value: number | null) => {
+        if (active) setCounts((previous) => Object.assign([...previous], { [index]: value }));
+      };
+      loadCard(card).then(save, () => save(null));
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cards.join(",")]);
+    return () => { active = false; };
+  }, [cards, me]);
 
   useEffect(() => {
     if (!recent) return;
@@ -41,12 +75,10 @@ export const Dashboard: React.FC = () => {
     listRecords(recent.name, 1, 5, "modifiedAt|DESC").then((p) => setRecentRows(p.records)).catch(() => setRecentRows([])).finally(() => setLoadingRecent(false));
   }, [recent]);
 
-  const display = (t: string) => {
-    const v = counts[t]; const cfg = cardCfg(t);
-    if (v === null || v === undefined) return "—";
-    return cfg?.format === "currency" ? formatMoney(v, cfg.currencyCode || "INR") : v.toLocaleString();
+  const display = (value: number | null, card: DashboardCard) => {
+    if (value === null) return "—";
+    return card.format === "currency" ? formatMoney(value, card.currencyCode || "INR") : value.toLocaleString();
   };
-  const labelOf = (t: string) => (config.dashboard?.cards || []).find((c) => c.table === t)?.label || tables[t]?.label;
 
   return (
     <Box>
@@ -60,17 +92,17 @@ export const Dashboard: React.FC = () => {
         }}>{config.tagline || `Here's what's happening in ${config.appName || schema.app}.`}</Typography>
       {extensions.dashboardTop && React.createElement(extensions.dashboardTop)}
       <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr 1fr", md: "repeat(4, 1fr)" }, gap: 2, mb: 3 }}>
-        {cards.map((t) => (
-          <Card key={t} variant="outlined" sx={{ borderRadius: 2 }}>
-            <CardActionArea onClick={() => navigate(`/r/${t}`)}>
+        {cards.map((card, index) => (
+          <Card key={index} variant="outlined" sx={{ borderRadius: 2 }}>
+            <CardActionArea onClick={() => navigate(`/r/${card.table}`)}>
               <CardContent>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1, color: "text.secondary", mb: 1 }}>
-                  <Icon name={tables[t].icon} />
-                  <Typography variant="body2" noWrap>{labelOf(t)}</Typography>
+                  <Icon name={tables[card.table].icon} />
+                  <Typography variant="body2" noWrap>{card.label || tables[card.table].label}</Typography>
                 </Box>
-                {counts[t] === undefined ? <Skeleton width={48} height={40} /> : <Typography variant="h4" sx={{
+                {counts[index] === undefined ? <Skeleton width={48} height={40} /> : <Typography variant="h4" sx={{
                   fontWeight: 700
-                }}>{display(t)}</Typography>}
+                }}>{display(counts[index] ?? null, card)}</Typography>}
               </CardContent>
             </CardActionArea>
           </Card>
