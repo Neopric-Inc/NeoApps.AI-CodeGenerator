@@ -291,15 +291,29 @@ pr = section("plans", "Pricing", "Simple pricing. Your data and code stay yours.
         </div>
         <p style="margin:18px 0 0;color:var(--muted)">AI inside your apps runs on your own Anthropic or OpenAI-compatible key, billed by them. Your Claude, ChatGPT or Codex plan is separate. Data is hosted in the US.</p>
         <p style="margin:8px 0 0;color:var(--muted)">Need it built for you? <a class="text-link" href="mailto:info@neopric.com?subject=NeoApps%20custom%20build">Talk to us</a> about custom apps, hosting and support.</p>""", white=True) \
++ section("adopt", "How teams adopt", "Start small. Grow when it sticks.", None,
+    '        <ol style="max-width:820px;margin:0;padding-left:20px;line-height:1.9">'
+    '<li><b>One team, one workflow.</b> Replace a spreadsheet in a day.</li>'
+    '<li><b>Invite the team.</b> Set who sees and changes what.</li>'
+    '<li><b>Add the next workflow</b> once the first one sticks.</li></ol>') \
 + section("faq", "FAQ", "Questions people ask.", None, '        <div class="faq" style="max-width:820px">' + "".join(
     f"<details><summary>{q}</summary><p>{a}</p></details>" for q, a in [
         ("Do I need to code?", "No. You describe your business in Claude, ChatGPT or Codex. You review a preview and approve it."),
         ("Is it a prototype or a real app?", "A real app: sign-in, roles, data rules enforced on the server, and an audit trail. Teams run their business on it."),
-        ("Do I lose data when I change the app?", "No. Changes keep your data. If a change would delete something, you're asked first."),
+        ("How fast is it live?", "Usually the same day. Describe it, approve the preview, publish."),
+        ("Do I lose data when I change the app?", "No. Ask your assistant for the change and your data stays. If a change would delete something, you're asked first."),
         ("Who sees what?", "You decide by role. Customers can see only their own records. The server enforces it, not just the screen."),
-        ("What does AI cost?", "Nothing from us. AI runs on your own key, so you pay your AI provider for what you use."),
-        ("Can I take the code?", "Yes. It's open source. Run it yourself any time."),
-        ("What if I cancel?", "Your apps stay available for 30 days, then they're closed with a final backup."),
+        ("Where is my data?", "Microsoft Azure, United States. Encrypted in transit (HTTPS) and at rest."),
+        ("Is it secure enough for regulated work?", "Role-based access enforced on the server, an audit trail, encryption and US hosting are in place today. SOC 2 and HIPAA are not certified yet. Need them now? Run it in your own cloud (below)."),
+        ("Does AI train on my data?", "No. AI is off until you turn it on. Then it runs on your own AI provider and key, under your provider's terms. We never train on your data."),
+        ("What does AI cost?", "Nothing from us. You pay your AI provider for what you use."),
+        ("Who owns my data?", "You do. Want everything in your own hands? Build and run the app on your own machine. It's open source: the code, data and servers are all yours."),
+        ("Can you deploy it in our cloud?", "Yes. We set it up in your own Azure, AWS or Google Cloud account, inside the security and compliance controls you already have, and hand it over. One-time service, starting at US$10,000. <a class=\"text-link\" href=\"mailto:info@neopric.com?subject=NeoApps%20deploy%20in%20our%20cloud\">Contact us</a>"),
+        ("Can I bring my spreadsheet?", "Yes. Give it to your assistant and it loads the rows when it builds your app."),
+        ("Does it work on phones?", "Yes. Open the app's link and tap Add to Home Screen. On desktop, click Install."),
+        ("Can I use my own domain?", "Not yet. Your app gets a neoapps.ai address for now."),
+        ("What can't it do?", "It's for business records and workflows. It isn't for games, design tools or heavy number-crunching."),
+        ("What if I cancel?", "Your apps stay available for 30 days so you can take your data with you. Then they're closed."),
     ]) + "</div>")
 page("pricing.html", "Pricing · NeoApps.AI", "NeoApps Cloud from US$49/month for one app, US$149/month for up to three. Free and open source to self-host.", pr)
 
