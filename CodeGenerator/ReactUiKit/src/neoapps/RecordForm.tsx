@@ -4,7 +4,7 @@ import {
   FormControlLabel, InputAdornment, MenuItem, TextField,
 } from "@mui/material";
 import { createRecord, updateRecord } from "./api";
-import { currencySymbol, renderValue, toApiDate, toDateInput, toDateTimeInput } from "./format";
+import { currencySymbol, renderValue, toApiDate, toApiDateTime, toDateInput, toDateTimeInput } from "./format";
 import { FieldRule, ResolvedField, ResolvedTable } from "./types";
 import { useApp } from "./AppContext";
 import { invalidateReferences, useReferences } from "./useReferences";
@@ -125,7 +125,8 @@ export const RecordForm: React.FC<Props> = ({ table, record, defaults, open, onC
     for (const f of fields) {
       const v = values[f.name];
       const numeric = ["int", "bigint", "smallint", "mediumint", "tinyint", "decimal", "float", "double", "year"].includes(f.column.dataType);
-      if (f.widget === "date" || f.widget === "datetime") out[f.name] = toApiDate(v);
+      if (f.widget === "date") out[f.name] = toApiDate(v);
+      else if (f.widget === "datetime") out[f.name] = toApiDateTime(v);
       else if (f.widget === "checkbox") out[f.name] = v ? 1 : 0;
       else if (v === "" || v === undefined) {
         const d = columnDefault(f);
@@ -136,7 +137,7 @@ export const RecordForm: React.FC<Props> = ({ table, record, defaults, open, onC
     // Dates the user didn't touch are sent back in API format, not the display format.
     for (const [k, f] of Object.entries(table.fields)) {
       if ((f.widget === "date" || f.widget === "datetime") && editing && !table.formFields.includes(k)) {
-        out[k] = toApiDate(f.widget === "date" ? toDateInput(out[k]) : toDateTimeInput(out[k]));
+        out[k] = f.widget === "date" ? toApiDate(toDateInput(out[k])) : toApiDateTime(toDateTimeInput(out[k]));
       }
     }
     return out;

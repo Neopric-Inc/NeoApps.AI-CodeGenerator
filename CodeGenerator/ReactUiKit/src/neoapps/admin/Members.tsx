@@ -133,7 +133,7 @@ export const Members: React.FC = () => {
                   </TableCell>
                 ) : me?.tenancy ? <TableCell>{m.tenant_assigned === false ? <Chip size="small" color="warning" label="Unassigned" /> : tenantLabel(m.tenant_id)}</TableCell> : null}
                 <TableCell><Switch checked={m.isActive === 1} disabled={m.is_you} onChange={(e) => update(m, { isActive: e.target.checked ? 1 : 0 })} /></TableCell>
-                <TableCell>{parseApiDate(m.createdAt)?.toLocaleDateString() || "—"}</TableCell>
+                <TableCell>{parseApiDate(m.createdAt, true)?.toLocaleDateString() || "—"}</TableCell>
               </TableRow>
             ))}
           </TableBody>

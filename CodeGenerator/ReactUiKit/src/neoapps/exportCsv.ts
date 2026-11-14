@@ -33,7 +33,7 @@ export async function exportCsv(table: ResolvedTable, orderBy: string | undefine
     const v = r[c];
     if (f?.column.references && v != null) return cell(labelFor(c, v) ?? v);
     if (f && (f.widget === "date" || f.widget === "datetime")) {
-      const d = parseApiDate(v);
+      const d = parseApiDate(v, f.widget === "datetime");
       return cell(d ? (f.widget === "date" ? d.toISOString().slice(0, 10) : d.toISOString()) : v);
     }
     return cell(v);
