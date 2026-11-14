@@ -121,7 +121,7 @@ Login: `POST /v1/api/Token {"username","password"}` → `document.accessToken`. 
 The web UI never holds the token: `/Token` also sets an HttpOnly `neoapps_session` cookie (requests with the
 `X-NeoApps-Client` header get no token in the body; cookie-authenticated writes need that header). With `--deploy` the UI
 calls the API on its own origin (nginx proxies `/v1/api/`) and the API port is published on 127.0.0.1 only.
-Rows are owner-scoped (`createdBy`/`modifiedBy` hold the workspace owner), so seed rows inserted with another `createdBy` won't show up.
+Rows are owner-scoped (`createdBy`/`modifiedBy` hold the workspace owner); sample rows in schema.sql are assigned to the owner when the database is first set up, whatever `createdBy` they were written with.
 Who really created or last changed a row is in `created_by_user`/`modified_by_user` (`<user> via AI` for AI writes, `system` for jobs):
 added to every app table automatically and stamped by DataGuard on every write, so don't put them in schema.sql.
 
