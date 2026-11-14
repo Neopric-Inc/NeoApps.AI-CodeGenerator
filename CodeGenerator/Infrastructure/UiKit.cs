@@ -63,10 +63,93 @@ public static class UiKit
         var config = LoadConfig(uiConfigPath) ?? new JsonObject();
         config["appName"] ??= Humanize(appName);
         File.WriteAllText(Path.Combine(publicDir, "ui.config.json"), config.ToJsonString(Pretty));
+        WritePwa(generatorRoot, publicDir, config);
         // The API reads the "ai" section (assistant instructions, tools, workflows) from its own copy.
         var apiDir = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(frontendDir).TrimEnd('/', '\\'))!, "DotNet_Output", "solution", appName, appName + ".API");
         if (Directory.Exists(apiDir)) File.WriteAllText(Path.Combine(apiDir, "ui.config.json"), config.ToJsonString(Pretty));
         Console.WriteLine($"UI kit installed (schema.json, ui.config.json{(uiConfigPath != null ? " from " + uiConfigPath : "")}).");
+    }
+
+    /// <summary>
+    /// Makes the app installable (desktop, Android, iPhone home screen): manifest.json named and coloured from
+    /// ui.config.json, generated icons (SVG with the app's initials + solid PNGs), and the service worker
+    /// (ReactUiKit/pwa/sw.js: caches the app shell only; API calls always go to the network).
+    /// </summary>
+    static void WritePwa(string generatorRoot, string publicDir, JsonObject config)
+    {
+        var name = config["appName"]?.GetValue<string>() ?? "App";
+        var color = config["theme"]?["primary"]?.GetValue<string>() is { } c && System.Text.RegularExpressions.Regex.IsMatch(c, "^#[0-9a-fA-F]{6}$") ? c : "#3b5bdb";
+        var words = name.Split(new[] { ' ', '-', '_' }, StringSplitOptions.RemoveEmptyEntries);
+        var initials = string.Concat(words.Take(2).Select(w => char.ToUpperInvariant(w[0])));
+        if (initials.Length == 1 && words[0].Length > 1) initials += char.ToLowerInvariant(words[0][1]);
+        var manifest = new JsonObject
+        {
+            ["name"] = name,
+            ["short_name"] = name.Length > 12 ? (words.Length > 0 ? words[0] : name)[..Math.Min(12, (words.Length > 0 ? words[0] : name).Length)] : name,
+            ["description"] = config["tagline"]?.GetValue<string>() ?? name,
+            ["start_url"] = "/",
+            ["scope"] = "/",
+            ["display"] = "standalone",
+            ["background_color"] = "#ffffff",
+            ["theme_color"] = color,
+            ["icons"] = new JsonArray(
+                new JsonObject { ["src"] = "/icon.svg", ["sizes"] = "any", ["type"] = "image/svg+xml" },
+                new JsonObject { ["src"] = "/icon-192.png", ["sizes"] = "192x192", ["type"] = "image/png" },
+                new JsonObject { ["src"] = "/icon-512.png", ["sizes"] = "512x512", ["type"] = "image/png" },
+                new JsonObject { ["src"] = "/icon-512.png", ["sizes"] = "512x512", ["type"] = "image/png", ["purpose"] = "maskable" }),
+        };
+        File.WriteAllText(Path.Combine(publicDir, "manifest.json"), manifest.ToJsonString(Pretty));
+        File.WriteAllText(Path.Combine(publicDir, "icon.svg"),
+            $"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 512 512\"><rect width=\"512\" height=\"512\" rx=\"112\" fill=\"{color}\"/>" +
+            $"<text x=\"256\" y=\"256\" dy=\".35em\" text-anchor=\"middle\" font-family=\"Inter, Segoe UI, Arial, sans-serif\" font-size=\"220\" font-weight=\"700\" fill=\"#fff\">{System.Net.WebUtility.HtmlEncode(initials)}</text></svg>");
+        var (r, g, b) = (Convert.ToByte(color[1..3], 16), Convert.ToByte(color[3..5], 16), Convert.ToByte(color[5..7], 16));
+        foreach (var (file, size) in new[] { ("icon-192.png", 192), ("icon-512.png", 512), ("apple-touch-icon.png", 180) })
+            File.WriteAllBytes(Path.Combine(publicDir, file), SolidPng(size, r, g, b));
+        var sw = Path.Combine(generatorRoot, "ReactUiKit", "pwa", "sw.js");
+        if (File.Exists(sw)) File.Copy(sw, Path.Combine(publicDir, "sw.js"), true);
+    }
+
+    /// <summary>A square PNG of one colour (no image library needed).</summary>
+    static byte[] SolidPng(int size, byte r, byte g, byte b)
+    {
+        var raw = new byte[size * (size * 3 + 1)];
+        for (var y = 0; y < size; y++)
+        {
+            var row = y * (size * 3 + 1);
+            for (var x = 0; x < size; x++) { raw[row + 1 + x * 3] = r; raw[row + 2 + x * 3] = g; raw[row + 3 + x * 3] = b; }
+        }
+        using var zipped = new MemoryStream();
+        using (var z = new System.IO.Compression.ZLibStream(zipped, System.IO.Compression.CompressionLevel.Optimal, true)) z.Write(raw);
+        using var png = new MemoryStream();
+        png.Write(new byte[] { 137, 80, 78, 71, 13, 10, 26, 10 });
+        void Chunk(string type, byte[] data)
+        {
+            var len = BitConverter.GetBytes(data.Length); if (BitConverter.IsLittleEndian) Array.Reverse(len);
+            png.Write(len);
+            var td = System.Text.Encoding.ASCII.GetBytes(type).Concat(data).ToArray();
+            png.Write(td);
+            var crc = BitConverter.GetBytes(Crc32(td)); if (BitConverter.IsLittleEndian) Array.Reverse(crc);
+            png.Write(crc);
+        }
+        var ihdr = new byte[13];
+        var s = BitConverter.GetBytes(size); if (BitConverter.IsLittleEndian) Array.Reverse(s);
+        Array.Copy(s, 0, ihdr, 0, 4); Array.Copy(s, 0, ihdr, 4, 4);
+        ihdr[8] = 8; ihdr[9] = 2; // 8-bit RGB
+        Chunk("IHDR", ihdr);
+        Chunk("IDAT", zipped.ToArray());
+        Chunk("IEND", Array.Empty<byte>());
+        return png.ToArray();
+    }
+
+    static uint Crc32(byte[] data)
+    {
+        var crc = 0xFFFFFFFFu;
+        foreach (var d in data)
+        {
+            crc ^= d;
+            for (var k = 0; k < 8; k++) crc = (crc & 1) != 0 ? 0xEDB88320u ^ (crc >> 1) : crc >> 1;
+        }
+        return ~crc;
     }
 
     public static JsonObject LoadConfig(string path)
