@@ -1,7 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { api } from "./api";
 import { aiStatus, AiStatus } from "./ai/aiApi";
-import { mergeConfig, resolveAll, resolveMenu } from "./config";
+import { effectiveSaved, mergeConfig, resolveAll, resolveMenu } from "./config";
 import { AppSchema, Me, MenuGroup, Permission, ResolvedTable, UiConfig } from "./types";
 
 interface AppState {
@@ -75,7 +75,7 @@ export const AppProvider: React.FC<{ children?: React.ReactNode }> = ({ children
     refreshSession();
   }, [refreshSession]);
 
-  const baseConfig = useMemo(() => mergeConfig(fileConfig, serverConfig), [fileConfig, serverConfig]);
+  const baseConfig = useMemo(() => mergeConfig(fileConfig, effectiveSaved(fileConfig, serverConfig)), [fileConfig, serverConfig]);
   const config = useMemo(() => (preview ? mergeConfig(preview) : baseConfig), [baseConfig, preview]);
   const tables = useMemo(() => {
     const all = resolveAll(schema, config);
@@ -142,10 +142,12 @@ export const AppProvider: React.FC<{ children?: React.ReactNode }> = ({ children
   );
 
   const saveConfig = useCallback(async (cfg: UiConfig) => {
-    await api("PUT", "Access/ui-config", cfg);
-    setServerConfig(cfg);
+    // remember which published config this was saved against, so a later publish still shows (effectiveSaved)
+    const saved = { ...cfg, _base: fileConfig } as UiConfig;
+    await api("PUT", "Access/ui-config", saved);
+    setServerConfig(saved);
     setPreview(null);
-  }, []);
+  }, [fileConfig]);
 
   const logout = useCallback(() => {
     api("POST", "Access/logout").catch(() => undefined); // end the session on the server too
