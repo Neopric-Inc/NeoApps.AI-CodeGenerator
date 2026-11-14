@@ -78,7 +78,7 @@ export const ResourcePage: React.FC = () => {
 
 const TablePage: React.FC = () => {
   const { table: name = "" } = useParams();
-  const { tables, can, canOpen, ai } = useApp();
+  const { tables, can, canOpen, canChangeRecord, ai } = useApp();
   const navigate = useNavigate();
   const table = tables[name];
   const [rows, setRows] = useState<Record<string, any>[]>([]);
@@ -167,6 +167,8 @@ const TablePage: React.FC = () => {
           onOpen={(r) => navigate(`/r/${name}/${r[table.primaryKey]}`)}
           onEdit={can(name, "update") ? (r) => setEditing(r) : undefined}
           onDelete={can(name, "delete") ? (r) => del.ask(r) : undefined}
+          canEdit={(r) => canChangeRecord(name, r, "update")}
+          canDelete={(r) => canChangeRecord(name, r, "delete")}
           emptyText={query ? `No ${table.label.toLowerCase()} match "${query}".` : undefined}
         />
       </Paper>

@@ -18,6 +18,9 @@ interface AppState {
   ai: AiStatus | null;
   can: (table: string, action: keyof Permission) => boolean;
   canOpen: (table: string) => boolean;
+  /** Whether this user may edit/delete this record: the role permission plus the table's lifecycle locks
+   *  (frozen states for everyone, "editableIn" states per role). The API enforces the same rules. */
+  canChangeRecord: (table: string, record: Record<string, any> | null | undefined, action: "update" | "delete") => boolean;
   refreshSession: () => Promise<void>;
   saveConfig: (cfg: UiConfig) => Promise<void>;
   previewConfig: (cfg: UiConfig | null) => void;
@@ -124,6 +127,20 @@ export const AppProvider: React.FC<{ children?: React.ReactNode }> = ({ children
     [can, me, config, tables]
   );
 
+  const canChangeRecord = useCallback(
+    (table: string, record: Record<string, any> | null | undefined, action: "update" | "delete") => {
+      if (!can(table, action)) return false;
+      const lc = (config as any).lifecycles?.[table] as { column?: string; frozen?: string[]; editableIn?: Record<string, string[]> } | undefined;
+      if (!lc || !record) return true;
+      const state = String(record[lc.column || "status"] ?? "");
+      if (action === "update" && (lc.frozen || []).some((s) => s.toLowerCase() === state.toLowerCase())) return false;
+      const allowed = me?.role_name ? lc.editableIn?.[me.role_name] : undefined;
+      if (allowed && !allowed.includes("*") && !allowed.some((s) => s.toLowerCase() === state.toLowerCase())) return false;
+      return true;
+    },
+    [can, config, me]
+  );
+
   const saveConfig = useCallback(async (cfg: UiConfig) => {
     await api("PUT", "Access/ui-config", cfg);
     setServerConfig(cfg);
@@ -136,7 +153,7 @@ export const AppProvider: React.FC<{ children?: React.ReactNode }> = ({ children
   }, []);
 
   const value: AppState = {
-    loading, error, schema, config, baseConfig, tables, menu, me, ai, can, canOpen, refreshSession, saveConfig,
+    loading, error, schema, config, baseConfig, tables, menu, me, ai, can, canOpen, canChangeRecord, refreshSession, saveConfig,
     previewConfig: setPreview, logout,
   };
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
