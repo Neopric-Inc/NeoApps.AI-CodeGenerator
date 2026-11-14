@@ -1322,6 +1322,7 @@ WHERE r.role_name = 'Administrator';
                             command.ExecuteNonQuery();
                         }
                         UiKit.SeedRoles(connection, adminUsername, UiConfigPath);
+                        UiKit.ClaimSeedRows(connection, adminUsername);
                     }
                     MasterCredentialModel masterCredentialModel = new MasterCredentialModel()
                     {

@@ -284,7 +284,17 @@ namespace nkv.MicroService.Utility
             if (im != null && !isSoftDelete)
                 foreach (var col in im)
                     if (values.TryGetValue(col, out var v) && !SameValue(v, current.GetValueOrDefault(col)))
+                    {
+                        // a full-record update that leaves a read-only column empty (an API caller or an AI tool that
+                        // omitted the automatic number) keeps the stored value instead of failing
+                        if ((v == null || v is DBNull || (v is string sv && sv.Length == 0)) && current.GetValueOrDefault(col) is { } kept && kept is not DBNull
+                            && KeepValue(cmd, col, kept))
+                        {
+                            values[col] = kept;
+                            continue;
+                        }
                         throw new DataGuardException($"{table}.{col} is read-only once created.", 409);
+                    }
             var changes = values.Where(kv => !kv.Key.Equals("modifiedat", StringComparison.OrdinalIgnoreCase) && !kv.Key.Equals("modifiedby", StringComparison.OrdinalIgnoreCase)
                                              && current.ContainsKey(kv.Key) && !SameValue(kv.Value, current[kv.Key]))
                                 .ToDictionary(kv => kv.Key, kv => kv.Value, StringComparer.OrdinalIgnoreCase);
@@ -545,6 +555,15 @@ namespace nkv.MicroService.Utility
         }
 
         // ------------------------------------------------------------------ helpers
+
+        /// <summary>Rebinds the parameter assigned to <paramref name="col"/> in an UPDATE's SET list; false when it isn't a parameter.</summary>
+        static bool KeepValue(MySqlCommand cmd, string col, object value)
+        {
+            var m = Regex.Match(cmd.CommandText, $@"\bSET\b.*?`?\b{Regex.Escape(col)}\b`?\s*=\s*(@\w+)", RegexOptions.IgnoreCase | RegexOptions.Singleline);
+            if (!m.Success || !cmd.Parameters.Contains(m.Groups[1].Value)) return false;
+            cmd.Parameters[m.Groups[1].Value].Value = value;
+            return true;
+        }
 
         static object KeyValue(MySqlCommand cmd, string table, Dictionary<string, object> values)
         {
