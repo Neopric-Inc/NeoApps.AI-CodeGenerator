@@ -4,589 +4,127 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#f7f8fa">
-  <meta name="description" content="Own your intelligence, workflows and apps. Build with Codex or ChatGPT and NeoApps.AI, then deploy and share your software.">
-  <title>NeoApps.AI — Your workflow. Your apps.</title>
+  <meta name="description" content="Describe your process in Claude, ChatGPT or Codex and get a production business app with logins, approvals, audit trail and AI.">
+  <title>NeoApps.AI: describe your process, get a working business app</title>
+  <link rel="stylesheet" href="assets/site.css">
   <style>
-    :root {
-      color-scheme: light;
-      --ink: #17212b;
-      --muted: #5f6b78;
-      --line: #dfe5e9;
-      --paper: #ffffff;
-      --wash: #f7f8fa;
-      --blue: #2864dc;
-      --blue-dark: #1948a8;
-      --mint: #d8f3e9;
-      --radius: 18px;
-      --shadow: 0 14px 40px rgba(30, 49, 69, .07);
-    }
-    * { box-sizing: border-box; }
-    html { scroll-behavior: smooth; }
-    body {
-      margin: 0;
-      background: var(--wash);
-      color: var(--ink);
-      font: 16px/1.6 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    }
-    a { color: inherit; }
-    button { font: inherit; }
-    .wrap { width: min(1120px, calc(100% - 40px)); margin-inline: auto; }
-    .topbar { border-bottom: 1px solid var(--line); background: rgba(255,255,255,.84); }
-    .nav { min-height: 72px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
-    .brand { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; font-weight: 760; letter-spacing: -.04em; font-size: 1.12rem; }
-    .brand-mark { width: 29px; height: 29px; display: grid; place-items: center; border-radius: 9px; color: #fff; background: var(--blue); font-size: .86rem; font-weight: 800; }
-    .nav-links { display: flex; align-items: center; gap: 27px; color: var(--muted); font-size: .9rem; }
-    .nav-links a { text-decoration: none; }
-    .nav-links a:hover, .text-link:hover { color: var(--blue); }
-    .button { display: inline-flex; justify-content: center; align-items: center; gap: 9px; border: 1px solid transparent; border-radius: 10px; padding: 11px 16px; background: var(--blue); color: white; text-decoration: none; font-weight: 700; font-size: .93rem; transition: .18s ease; }
-    .button:hover { background: var(--blue-dark); transform: translateY(-1px); }
-    .button.secondary { background: white; border-color: var(--line); color: var(--ink); }
-    .button.secondary:hover { border-color: #aab7c4; background: #fbfcfd; }
-    .button.small { padding: 8px 12px; font-size: .82rem; }
-    .hero { padding: 88px 0 76px; }
-    .hero-grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(270px, .8fr); align-items: center; gap: 56px; }
-    .eyebrow { display: inline-flex; align-items: center; gap: 8px; color: var(--blue-dark); background: #e9f0ff; border-radius: 99px; padding: 6px 11px; font-weight: 700; font-size: .78rem; letter-spacing: .015em; }
-    .dot { width: 7px; height: 7px; border-radius: 50%; background: #27a678; }
-    h1, h2, h3, p { margin-top: 0; }
-    h1 { max-width: 720px; margin: 18px 0 18px; font-size: clamp(2.7rem, 6vw, 4.9rem); line-height: 1.03; letter-spacing: -.065em; }
-    .hero p { max-width: 650px; color: var(--muted); font-size: 1.15rem; }
-    .hero-actions { display: flex; flex-wrap: wrap; gap: 11px; margin-top: 28px; }
-    .hero-note { margin-top: 18px; color: #73808b; font-size: .85rem !important; }
-    .terminal { overflow: hidden; border: 1px solid #293746; border-radius: 16px; background: #111b25; box-shadow: 0 24px 55px rgba(23, 33, 43, .2); color: #e6edf3; transform: rotate(1deg); }
-    .terminal-head { display: flex; align-items: center; gap: 7px; padding: 13px 16px; border-bottom: 1px solid #263441; color: #a9b7c4; font: .77rem/1.2 ui-monospace, SFMono-Regular, Menlo, monospace; }
-    .terminal-head span { width: 8px; height: 8px; border-radius: 50%; background: #677687; }
-    .terminal-head span:first-child { background: #f4776e; }
-    .terminal-head span:nth-child(2) { background: #f3c45e; }
-    .terminal-head span:nth-child(3) { background: #56c792; margin-right: 7px; }
-    .terminal-body { padding: 21px 22px 24px; font: .83rem/1.9 ui-monospace, SFMono-Regular, Menlo, monospace; }
-    .prompt { color: #7bc7a4; }
-    .term-muted { color: #8da0af; }
-    .term-blue { color: #8bb5ff; }
-    .section { padding: 78px 0; }
-    .section.white { background: var(--paper); border-block: 1px solid var(--line); }
-    .section-heading { max-width: 690px; margin-bottom: 34px; }
-    .kicker { margin-bottom: 9px; color: var(--blue); font-size: .77rem; font-weight: 800; text-transform: uppercase; letter-spacing: .11em; }
-    h2 { margin-bottom: 12px; font-size: clamp(2rem, 3.3vw, 2.9rem); line-height: 1.1; letter-spacing: -.05em; }
-    .section-heading p { color: var(--muted); font-size: 1.02rem; }
-    .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; }
-    .step, .usecase, .path-card, .tool-card { border: 1px solid var(--line); border-radius: var(--radius); background: var(--paper); }
-    .step { padding: 21px; }
-    .step-status { display: inline-block; margin: -2px 0 9px; border-radius: 99px; padding: 3px 8px; background: #edf3ff; color: #315b9e; font-size: .68rem; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; }
-    .step-status.planned { background: #fff3dd; color: #8a5c08; }
-    .step-num { display: grid; place-items: center; width: 34px; height: 34px; margin-bottom: 18px; border-radius: 10px; background: #edf3ff; color: var(--blue); font-weight: 800; font-size: .84rem; }
-    .step h3, .tool-card h3 { margin-bottom: 7px; font-size: 1rem; letter-spacing: -.02em; }
-    .step p, .tool-card p { margin: 0; color: var(--muted); font-size: .9rem; }
-    .stack-row { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 24px; }
-    .tag { border: 1px solid var(--line); border-radius: 99px; padding: 6px 11px; background: #fff; color: #465361; font-size: .8rem; font-weight: 650; }
-    .paths { display: grid; grid-template-columns: repeat(3, 1fr); gap: 17px; align-items: stretch; }
-    .path-card { padding: 23px; display: flex; flex-direction: column; box-shadow: var(--shadow); }
-    .path-card.featured { border-color: #9eb9f2; box-shadow: 0 18px 44px rgba(40,100,220,.11); }
-    .path-label { margin-bottom: 12px; color: var(--blue); font-size: .76rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
-    .path-card h3 { margin-bottom: 8px; font-size: 1.28rem; line-height: 1.2; letter-spacing: -.035em; }
-    .path-card > p { min-height: 68px; margin-bottom: 17px; color: var(--muted); font-size: .91rem; }
-    .prompt-box { position: relative; flex: 1; margin-bottom: 16px; border: 1px solid #d9e1e8; border-radius: 12px; background: #f6f8fa; }
-    .prompt-box pre { margin: 0; padding: 15px; color: #354352; white-space: pre-wrap; overflow-wrap: anywhere; font: .76rem/1.65 ui-monospace, SFMono-Regular, Menlo, monospace; }
-    .copy-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 0 12px 12px; }
-    .copy-status { color: #58806c; font-size: .73rem; }
-    .path-card .button { width: 100%; margin-top: 2px; }
-    .path-foot { margin: 11px 0 0 !important; color: #75818d !important; font-size: .76rem !important; min-height: 0 !important; }
-    .price-note { margin: -2px 0 14px; padding: 13px 15px; border: 1px solid #bfd1f5; border-radius: 12px; background: #f0f5ff; color: #344358; font-size: .82rem; line-height: 1.5; }
-    .price-note span { color: var(--blue-dark); font-size: 1.2rem; font-weight: 800; letter-spacing: -.04em; }
-    .price-note small { display: block; margin-top: 4px; color: var(--muted); font-size: .76rem; }
-    .cloud-flow { margin: 0 0 15px; padding: 13px 15px; border-radius: 12px; background: #f6f8fa; color: #465361; font-size: .82rem; }
-    .cloud-flow strong { color: var(--ink); }
-    .cloud-flow ol { margin: 7px 0 0; padding-left: 20px; }
-    .cloud-flow li + li { margin-top: 4px; }
-    .video-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(280px, .85fr); align-items: center; gap: 30px; }
-    .video-frame { overflow: hidden; aspect-ratio: 16 / 9; border-radius: 16px; background: #111b25; box-shadow: var(--shadow); }
-    .video-frame iframe { width: 100%; height: 100%; border: 0; }
-    .video-copy h3 { margin: 10px 0; font-size: 1.35rem; letter-spacing: -.035em; }
-    .video-copy p { color: var(--muted); font-size: .93rem; }
-    .status-note { margin-top: 16px; border-left: 3px solid #e5ad43; padding: 10px 13px; background: #fff8ea; color: #6c5529; font-size: .82rem; }
-    .setup-note { margin-top: 18px; padding: 16px 18px; border: 1px solid #c7d7f4; border-radius: 13px; background: #f2f6ff; color: #364960; font-size: .88rem; }
-    .setup-note p:last-child { margin-bottom: 0; }
-    .founder-frame, .claimkit-proof { margin-top: 23px; padding: 23px; border: 1px solid var(--line); border-radius: 16px; background: #fff; box-shadow: var(--shadow); }
-    .founder-frame p:last-child, .claimkit-proof p:last-child { margin-bottom: 0; }
-    .founder-frame .kicker, .claimkit-proof .kicker { margin-bottom: 7px; }
-    .claimkit-proof { border-color: #bfd1f5; background: #f5f8ff; }
-    .claimkit-proof h3 { margin: 0 0 9px; font-size: 1.2rem; letter-spacing: -.03em; }
-    .claimkit-proof p, .founder-frame p { color: #465361; font-size: .93rem; }
-    .founder-note { margin-top: 18px; color: var(--muted); font-size: .89rem; }
-    .tools-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
-    .tool-card { padding: 20px; }
-    .tool-icon { display: grid; place-items: center; width: 35px; height: 35px; margin-bottom: 15px; border-radius: 10px; background: var(--mint); color: #167953; font-weight: 800; }
-    .tool-card code { color: #415269; font-size: .78rem; }
-    .usecases { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
-    .usecase { padding: 17px; }
-    .usecase .emoji { display: block; margin-bottom: 9px; font-size: 1.28rem; }
-    .usecase h3 { margin-bottom: 5px; font-size: .95rem; }
-    .usecase p { margin: 0; color: var(--muted); font-size: .82rem; }
-    .library-tools { display: grid; grid-template-columns: minmax(0, 1fr) 250px; gap: 12px; margin: 0 0 22px; }
-    .library-tools input, .library-tools select { width: 100%; min-height: 46px; padding: 10px 13px; border: 1px solid var(--line); border-radius: 10px; background: #fff; color: var(--ink); font: inherit; }
-    .library-meta { display: flex; justify-content: space-between; gap: 14px; margin: 0 0 15px; color: var(--muted); font-size: .85rem; }
-    .prompt-library-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 13px; align-items: start; }
-    .prompt-card { min-width: 0; padding: 17px; border: 1px solid var(--line); border-radius: 14px; background: #fff; box-shadow: 0 5px 18px rgba(30,49,69,.035); }
-    .prompt-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
-    .prompt-card h3 { margin: 0 0 5px; font-size: 1rem; letter-spacing: -.02em; }
-    .prompt-category { display: inline-block; margin: 0 0 8px; color: var(--blue-dark); font-size: .68rem; font-weight: 800; text-transform: uppercase; letter-spacing: .07em; }
-    .prompt-card p { margin: 0 0 12px; color: var(--muted); font-size: .84rem; }
-    .prompt-card details { border-top: 1px solid #edf0f3; padding-top: 10px; }
-    .prompt-card summary { color: #40556c; cursor: pointer; font-size: .8rem; font-weight: 700; }
-    .prompt-card pre { max-height: 300px; overflow: auto; margin: 10px 0; padding: 12px; border-radius: 9px; background: #f6f8fa; color: #354352; white-space: pre-wrap; overflow-wrap: anywhere; font: .73rem/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; }
-    .prompt-card .copy-row { padding: 3px 0 0; }
-    .empty-state { grid-column: 1/-1; padding: 30px; border: 1px dashed #bac6d0; border-radius: 14px; color: var(--muted); text-align: center; }
-    .cta-band { padding: 35px; border-radius: 20px; background: #162331; color: white; display: flex; align-items: center; justify-content: space-between; gap: 28px; }
-    .cta-band h2 { max-width: 590px; margin-bottom: 9px; font-size: clamp(1.7rem, 3vw, 2.45rem); }
-    .cta-band p { max-width: 570px; margin: 0; color: #bdc8d2; }
-    .cta-band .button { flex: 0 0 auto; background: white; color: #18232d; }
-    footer { padding: 28px 0; color: #788591; font-size: .82rem; }
-    .footer-row { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
-    .footer-links { display: flex; gap: 18px; }
-    .footer-links a { text-decoration: none; }
-    .text-link { color: var(--blue); text-decoration: none; font-weight: 700; }
-    @media (max-width: 900px) {
-      .hero-grid { grid-template-columns: 1fr; gap: 34px; }
-      .terminal { max-width: 560px; transform: none; }
-      .steps { grid-template-columns: repeat(2, 1fr); }
-      .paths { grid-template-columns: 1fr; }
-      .path-card > p { min-height: 0; }
-      .tools-grid { grid-template-columns: repeat(2, 1fr); }
-      .usecases { grid-template-columns: repeat(2, 1fr); }
-      .video-grid { grid-template-columns: 1fr; }
-      .prompt-library-grid { grid-template-columns: 1fr; }
-      .library-tools { grid-template-columns: 1fr; }
-    }
-    @media (max-width: 600px) {
-      .wrap { width: min(100% - 28px, 1120px); }
-      .nav { min-height: 62px; }
-      .nav-links { gap: 14px; }
-      .nav-links a:not(.button) { display: none; }
-      .hero { padding: 63px 0 55px; }
-      .hero-grid { gap: 27px; }
-      .hero p { font-size: 1rem; }
-      .section { padding: 57px 0; }
-      .steps, .tools-grid { grid-template-columns: 1fr; }
-      .cta-band { padding: 25px; align-items: flex-start; flex-direction: column; }
-      .footer-row { align-items: flex-start; flex-direction: column; }
-      .footer-links { flex-wrap: wrap; }
-    }
+    .dropdown { position: relative; }
+    .dropdown > button { background: none; border: 0; font: inherit; color: inherit; cursor: pointer; padding: 6px 0; }
+    .dropdown-menu { display: none; position: absolute; top: 100%; left: -14px; min-width: 250px; padding: 8px;
+      background: var(--paper); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 12px 30px rgba(23,33,43,.10); z-index: 20; }
+    .dropdown:hover .dropdown-menu, .dropdown:focus-within .dropdown-menu { display: block; }
+    .dropdown-menu a { display: block; padding: 8px 10px; border-radius: 8px; color: var(--ink); }
+    .dropdown-menu a:hover { background: var(--wash); }
+    .nav-links a[aria-current="page"], .dropdown > button[aria-current="page"] { color: var(--ink); font-weight: 650; }
+    .includes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+    .include { background: var(--paper); border: 1px solid var(--line); border-radius: 14px; padding: 18px; }
+    .include h3 { margin: 0 0 6px; font-size: 1rem; }
+    .include p { margin: 0; color: var(--muted); font-size: .9rem; }
+    .industry { margin: 0 0 34px; }
+    .industry h2 { font-size: 1.5rem; margin: 0 0 14px; }
+    .faq details { border-bottom: 1px solid var(--line); padding: 14px 0; }
+    .faq summary { cursor: pointer; font-weight: 650; }
+    .faq p { color: var(--muted); margin: 10px 0 0; }
+    .connect { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .connect article { background: var(--paper); border: 1px solid var(--line); border-radius: 16px; padding: 22px; }
+    .connect h3 { margin: 0 0 10px; }
+    .connect ol { margin: 0; padding-left: 20px; color: var(--muted); }
+    .connect li { margin: 6px 0; }
+    .price { font-size: 2rem; font-weight: 750; margin: 6px 0; }
+    @media (max-width: 900px) { .includes, .connect { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 600px) { .includes, .connect { grid-template-columns: 1fr; } .dropdown { display: none; } }
   </style>
 </head>
 <body>
   <header class="topbar">
     <nav class="nav wrap" aria-label="Main navigation">
-      <a class="brand" href="#top" aria-label="NeoApps.AI home"><span class="brand-mark">N</span>NeoApps.AI</a>
-      <div class="nav-links">
-        <a href="#how-it-works">How it works</a>
-        <a href="#claimkit-demo">ClaimKit demo</a>
-        <a href="#use-cases">Use cases</a>
-        <a href="#prompt-library">Prompt library</a>
-        <a href="#ways-to-work">Get started</a>
-        <a class="button small" href="https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator">View on GitHub <span aria-hidden="true">↗</span></a>
-      </div>
+      <a class="brand" href="index.html" aria-label="NeoApps.AI home"><span class="brand-mark">N</span>NeoApps.AI</a>
+      <div class="nav-links"><a href="index.html" aria-current="page">Home</a><div class="dropdown"><button type="button" onclick="location.href='use-cases.html'">Use cases ▾</button><div class="dropdown-menu"><a href="use-cases.html#healthcare">Healthcare and research</a><a href="use-cases.html#legal">Legal</a><a href="use-cases.html#professional">Accounting and professional services</a><a href="use-cases.html#field">Field operations and compliance</a><a href="use-cases.html#education">Education</a><a href="use-cases.html#prompt-library">Prompt library</a></div></div><a href="pricing.html">Pricing</a><div class="dropdown"><button type="button" onclick="location.href='developers.html'">Developers ▾</button><div class="dropdown-menu"><a href="developers.html#open-source">Open source</a><a href="developers.html#local">Run it locally</a><a href="developers.html#rules">Data rules</a><a href="https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator">GitHub ↗</a></div></div><a class="button small" href="get-started.html">Get started</a></div>
     </nav>
   </header>
-
   <main id="top">
     <section class="hero">
       <div class="wrap hero-grid">
         <div>
-          <span class="eyebrow"><span class="dot"></span> Build with Codex or ChatGPT · Deploy with NeoApps</span>
-          <h1>Your business.<br>Your intelligence.<br>Your software.</h1>
-          <p>Describe what your business needs in Codex, ChatGPT or another connected MCP client. Build AI workers, automate workflows and create full-stack apps you own—then deploy and share them with NeoApps.AI.</p>
+          <span class="eyebrow"><span class="dot"></span> Works in Claude, ChatGPT and Codex</span>
+          <h1>Describe your process.<br>Get a working business app.</h1>
+          <p>Logins, roles, approvals, audit trail and AI, built from a conversation. Live the same day. Change it any time; your data stays.</p>
           <div class="hero-actions">
-            <a class="button" href="#ways-to-work">Build your own app <span aria-hidden="true">↓</span></a>
-            <a class="button secondary" href="#prompt-library">Browse the prompt library <span aria-hidden="true">↓</span></a>
-            <a class="button secondary" href="https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator">Explore the open-source generator <span aria-hidden="true">↗</span></a>
+            <a class="button" href="get-started.html">Start building</a>
+            <a class="button secondary" href="use-cases.html">See use cases</a>
           </div>
-          <p class="hero-note">Generated stack: .NET Web API + React admin UI · Build locally with Docker</p>
+          <p class="hero-note">Production apps, not prototypes. Open source. You own the code.</p>
         </div>
-        <div class="terminal" aria-label="Example prompt and app generation workflow">
-          <div class="terminal-head"><span></span><span></span><span></span> codex · neoapps</div>
+        <div class="terminal" aria-label="Example conversation">
+          <div class="terminal-head"><span></span><span></span><span></span> claude · neoapps</div>
           <div class="terminal-body">
             <div><span class="prompt">you &gt;</span> Build a client portal for my firm</div>
-            <div class="term-muted">Clarifying users, records and approvals…</div>
-            <div class="term-blue">App + workflow + AI worker proposed</div>
-            <div class="term-muted">Review → Choose a path → Build → Deploy → Share</div>
-            <div><span class="prompt">neoapps &gt;</span> Your business, running on your rules.</div>
+            <div class="term-muted">Who uses it? What needs approval?</div>
+            <div class="term-blue">Preview: 6 screens, 4 roles, 2 approvals</div>
+            <div class="term-muted">Approved → publishing…</div>
+            <div><span class="prompt">neoapps &gt;</span> Live at yourfirm.us.neoapps.ai</div>
           </div>
         </div>
       </div>
     </section>
-
-    <section class="section white" id="why-neoapps">
-      <div class="wrap">
-        <div class="section-heading">
-          <div class="kicker">Why NeoApps.AI</div>
-          <h2>Building got faster. Carrying the software forward still takes work.</h2>
-          <p>Coding agents can now build full-stack apps and agents. The trade-off is that every change still needs the right business context, code review, and testing. When a project starts from scratch each time, repeated context and token costs can add up—and some generated code gets replaced instead of becoming a lasting product.</p>
-        </div>
-        <div class="tools-grid">
-          <article class="tool-card"><div class="tool-icon">↻</div><h3>Context has a cost</h3><p>The model needs to understand your app, customer feedback, rules, and prior decisions. In our experience, repeated changes to a large codebase can increase token use while developers still review and approve the result.</p></article>
-          <article class="tool-card"><div class="tool-icon">▦</div><h3>Good scaffolding still matters</h3><p>Traditional generators and standard application structures remain useful. NeoApps combines a known .NET API, React UI, database schema, and workflows with AI that can help create and evolve the application.</p></article>
-          <article class="tool-card"><div class="tool-icon">⌂</div><h3>You choose where it runs</h3><p>Use the open-source generator locally, deploy through NeoApps Cloud, or run the app on infrastructure you manage. The generated code stays available for your team to inspect and extend.</p></article>
-        </div>
-        <div class="founder-frame">
-          <div class="kicker">Our experience</div>
-          <p>We have spent thousands of dollars building scalable applications and maintaining them. The first build is no longer the only challenge: a small customer request can mean reloading a lot of context, spending more tokens, and asking a developer to review code again. Our approach is to keep a durable application structure and use AI to help plan and apply changes to it, so the software can grow instead of being thrown away.</p>
-          <p>Frontier models are improving quickly. In our experience, customers still carry the work of supplying business context, managing repeated token use, and reviewing changes. We believe a proven generator approach—structured schemas and familiar application patterns—can make that work more reusable.</p>
-          <p><strong>Where we fit:</strong> Platforms such as <a href="https://replit.com/products/agent" target="_blank" rel="noopener">Replit Agent</a>, <a href="https://lovable.dev/build" target="_blank" rel="noopener">Lovable</a>, and <a href="https://emergent.sh/about-us" target="_blank" rel="noopener">Emergent</a> show how far prompt-driven app creation has come. NeoApps.AI focuses on business applications: structured data, roles and permissions, approvals, audit trails, long-running workflows, and reusable AI agents alongside the app.</p>
-          <p>NeoApps.AI has been open source for more than two years, built from our 15-plus years of ERP development experience. GitHub stars are not the measure we care about most; the question is whether a team can inspect the code, build a useful application, and keep evolving it.</p>
-        </div>
-        <p class="founder-note"><strong>For teams with tighter controls:</strong> open source makes the code available for review and self-hosting, but it does not certify a deployment as compliant. The generated app can use an OpenAI-compatible model endpoint; a team may configure a local Qwen model served through a compatible runtime such as Ollama or vLLM, then validate that setup against its own security and compliance requirements.</p>
-      </div>
-    </section>
-
     <section class="section white" id="how-it-works">
       <div class="wrap">
         <div class="section-heading">
           <div class="kicker">How it works</div>
-          <h2>Explain what you need. Make it yours.</h2>
-          <p>Use Codex, ChatGPT or another connected MCP client as the conversational builder. NeoApps is growing from an open-source app generator into a connected home for your business knowledge, AI workers, workflows and apps.</p>
+          <h2>Four steps. No code.</h2>
+          
         </div>
-        <div class="steps">
-          <article class="step"><div class="step-num">01</div><span class="step-status">Codex / ChatGPT MCP</span><h3>Describe the work</h3><p>Explain your users, processes, data and approvals. Your connected coding assistant asks questions to turn the idea into requirements.</p></article>
-          <article class="step"><div class="step-num">02</div><span class="step-status">Review first</span><h3>Approve the blueprint</h3><p>Review the proposed data model, screens, roles and workflow before generation begins.</p></article>
-          <article class="step"><div class="step-num">03</div><span class="step-status">Choose your route</span><h3>Build locally or with Cloud</h3><p>Use the repository MCP to generate and run the source locally, or connect the hosted MCP for managed generation and deployment.</p></article>
-          <article class="step"><div class="step-num">04</div><span class="step-status">NeoApps Cloud</span><h3>Activate, deploy and share</h3><p>For managed deployment, choose the one-app or three-app plan at checkout (promo codes are entered there; a card is still required). NeoApps generates and deploys the app after activation.</p></article>
-        </div>
-        <div class="stack-row" aria-label="Technology stack"><span class="tag">.NET API</span><span class="tag">React UI</span><span class="tag">MySQL</span><span class="tag">Docker</span><span class="tag">MCP</span><span class="tag">Your Git repository</span></div>
+        <div class="steps"><article class="step"><div class="step-num">01</div><h3>Connect</h3><p>Add NeoApps to Claude, ChatGPT or Codex. One link.</p></article><article class="step"><div class="step-num">02</div><h3>Describe</h3><p>Explain your process. Your assistant asks the right questions.</p></article><article class="step"><div class="step-num">03</div><h3>Review</h3><p>See every screen, field and permission before anything is built.</p></article><article class="step"><div class="step-num">04</div><h3>Publish</h3><p>It goes live. Invite your team and customers.</p></article></div>
       </div>
     </section>
-
-    <section class="section" id="claimkit-demo">
+    <section class="section" id="includes">
       <div class="wrap">
         <div class="section-heading">
-          <div class="kicker">Example: ClaimKit</div>
-          <h2>From a consultant’s process to a client-ready SaaS.</h2>
-          <p>SR&amp;ED consultants manage complex client intake, project evidence and claim preparation. ClaimKit is a concrete example of expertise turned into software—and the first full-stack application we built and deployed with this workflow.</p>
+          <div class="kicker">What you get</div>
+          <h2>Every app is production grade.</h2>
+          <p>The parts business software needs, enforced on the server, in every app.</p>
         </div>
-        <div class="video-grid">
-          <div class="video-frame"><iframe src="https://www.youtube-nocookie.com/embed/MD_jAxglA_Y?rel=0" title="ClaimKit walkthrough for SR&ED consultants" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div>
-          <div class="video-copy">
-            <div class="kicker">Product walkthrough · 8 min</div>
-            <h3>See the ClaimKit experience</h3>
-            <p>This video walks through how ClaimKit takes an SR&amp;ED/R&amp;D tax credit claim from client documents toward an audit-ready filing. Use the prompt below to build a similar app with Codex or ChatGPT, then deploy it to NeoApps Cloud after review.</p>
-            <a class="text-link" href="https://youtu.be/MD_jAxglA_Y" target="_blank" rel="noopener">Watch on YouTube ↗</a>
-          </div>
-        </div>
-        <div class="claimkit-proof">
-          <div class="kicker">A result from our own work</div>
-          <h3>ClaimKit: from years of SR&amp;ED experience to a deployed app in about four hours.</h3>
-          <p>Our work over several years on R&amp;D claims showed us how much time it takes to collect expenses, wages, timesheets, project evidence, and review a claim's potential eligibility. We wanted an application for that process. Using the NeoApps.AI Code Generator with a coding agent, our team generated the full-stack ClaimKit app from scratch, had the agent run its checks, and deployed it in about four hours. We then evaluated it against past claims and were impressed with the results.</p>
-          <p>The expert still matters. ClaimKit is meant to speed up intake, documentation, and evidence-backed review—not replace a consultant's judgment or make an official eligibility decision. In our estimate, a conventional agency project of this kind can take five to six months to reach an MVP, with significant development and AI costs along the way. Four hours is our experience with this build, not a delivery-time guarantee for every application.</p>
-        </div>
-        <div class="section-heading" style="margin:36px 0 18px">
-          <div class="kicker">A creator journey to demonstrate</div>
-          <h2 style="font-size:1.8rem">Build ClaimKit with Codex or ChatGPT.</h2>
-          <p>Start with the process, not a blank code editor. For managed deployment, add the NeoApps connector in Codex or ChatGPT, review the app plan, then choose a plan at checkout before Cloud generates and deploys the app. For a local build, use the repository MCP and keep the generated source in your Git project.</p>
-        </div>
-        <div class="prompt-box" style="max-width:900px;margin-bottom:15px"><pre class="copy-text">Build ClaimKit, a multi-tenant SaaS for SR&amp;ED consultants. Help firms onboard clients, collect project details and evidence, track deadlines, and review claim packages with clients. First interview me about our real workflow, roles, data, approvals, and reports. Use the NeoApps connector connected to this assistant. Inspect its available tools and show me the app plan, then wait for my review. Explain the one-app and three-app hosting plans, the available region, and any runtime model costs. After I approve and my plan is active, publish the app through NeoApps Cloud, verify its status, and return the live URL. Never ask me for passwords, card numbers or API keys in this chat. Report what was actually completed and flag unsupported capabilities; do not assume integrations or service features.</pre><div class="copy-row"><span class="copy-status" aria-live="polite"></span><button class="button secondary small copy-button" type="button">Copy prompt</button></div></div>
-        <div class="status-note"><strong>Hosted deployment flow:</strong> In Codex, run <code>codex mcp add neoapps --url https://cloud.neoapps.ai/mcp</code>. In ChatGPT, turn on Developer mode (Settings → Apps &amp; Connectors → Advanced settings), then choose Create and paste <code>https://cloud.neoapps.ai/mcp</code>. Connecting opens a NeoApps page where you create your account and choose the one-app or three-app plan (enter a promo code at checkout if you have one; a card is still required). Then ask the assistant to use NeoApps and paste your app idea. The app is generated and deployed after you approve the preview. The separate local generator flow remains available in the <a href="https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator/blob/main/docs/CLOUD.md" target="_blank" rel="noopener">Cloud guide ↗</a></div>
+        <div class="includes"><article class="include"><h3>Sign-in and roles</h3><p>Your team and your customers each get the right access.</p></article><article class="include"><h3>People see only their own</h3><p>Customers see their records. Staff see their work.</p></article><article class="include"><h3>Approvals that lock</h3><p>Submitted means submitted. Only approvers change it.</p></article><article class="include"><h3>Audit trail</h3><p>Who changed what, and when. Every time.</p></article><article class="include"><h3>Automatic numbers</h3><p>INV-2026-00001, by the rules you set.</p></article><article class="include"><h3>Dashboard</h3><p>The numbers you run the business on.</p></article><article class="include"><h3>AI that drafts</h3><p>It reads documents and proposes. People approve.</p></article><article class="include"><h3>Changes keep your data</h3><p>Add a field or a step. Nothing is lost.</p></article></div>
       </div>
     </section>
-
-    <section class="section" id="platform">
+    <section class="section white" id="industries">
       <div class="wrap">
         <div class="section-heading">
-          <div class="kicker">One connected platform</div>
-          <h2>Own your intelligence. Own your workflows. Own your apps.</h2>
-          <p>Your business knowledge can power the people, processes and software you build. These capabilities describe the NeoApps platform direction; today’s open-source foundation is the app generator and MCP workflow.</p>
+          <div class="kicker">Use cases</div>
+          <h2>Built for real businesses.</h2>
+          
         </div>
-        <div class="tools-grid">
-          <article class="tool-card"><div class="tool-icon">◎</div><h3>Company intelligence</h3><p>Bring together your SOPs, policies, documents and expertise. Apply access rules to the knowledge your agents can use.</p></article>
-          <article class="tool-card"><div class="tool-icon">✳</div><h3>AI workers</h3><p>Create focused agents with their own instructions, tools, knowledge, permissions and approval requirements.</p></article>
-          <article class="tool-card"><div class="tool-icon">↗</div><h3>Business workflows</h3><p>Connect triggers, decisions, actions and human approvals into repeatable processes.</p></article>
-          <article class="tool-card"><div class="tool-icon">▦</div><h3>Full-stack applications</h3><p>Build accounting apps, custom CRMs, ERPs, client portals and complete SaaS products around your process.</p></article>
-          <article class="tool-card"><div class="tool-icon">↥</div><h3>Deploy and share</h3><p>Deploy to the US region today; Canada is planned. Each app stays in its region on later deployments; share its live URL with colleagues or customers.</p></article>
-          <article class="tool-card"><div class="tool-icon">⌘</div><h3>Your code, your control</h3><p>Start from an open-source foundation. Keep your app in your Git repository and choose how to extend it.</p></article>
-          <article class="tool-card"><div class="tool-icon">↻</div><h3>Evolve the same app</h3><p>Respond to customer feedback with structured schema and workflow changes. Use supported migrations to preserve existing data; review code changes before shipping. A focused app can grow into modular ERP and long-running workflows as requirements expand.</p></article>
-        </div>
-        <p style="margin:20px 0 0;color:var(--muted);font-size:.86rem"><strong>Available today:</strong> open-source full-stack generation, local development and NeoApps Cloud deployment via the repo MCP/CLI or the hosted NeoApps connector. <strong>Product direction:</strong> a unified intelligence, agent and workflow studio.</p>
+        <div class="includes"><article class="include"><h3>Healthcare and research</h3><p>Clinics, physiotherapy and clinical research intake, with forms, documents and consent.</p></article><article class="include"><h3>Legal</h3><p>Personal injury, medical assessments and legal aid: intake, documents, deadlines.</p></article><article class="include"><h3>Accounting and professional services</h3><p>Client engagements from planning to sign-off, a client document portal, AI-drafted findings.</p></article><article class="include"><h3>Field operations and compliance</h3><p>Dispatch, work orders, technicians, equipment, inventory and invoices.</p></article><article class="include"><h3>Education</h3><p>Admissions, wellbeing, accessibility and support cases.</p></article></div>
+        <p style="margin:20px 0 0"><a class="text-link" href="use-cases.html">All use cases and ready-made prompts →</a></p>
       </div>
     </section>
-
-    <section class="section" id="ways-to-work">
+    <section class="section" id="proof">
       <div class="wrap">
         <div class="section-heading">
-          <div class="kicker">Pick your path</div>
-          <h2>Build it yourself. Share it. Or bring us in.</h2>
-          <p>Use Codex or ChatGPT and the open-source generator on your own, deploy to NeoApps Cloud, or ask NeoApps to scope a custom build and support engagement.</p>
+          <div class="kicker">Proof</div>
+          <h2>ClaimKit: years of R&D tax-credit expertise, live in four hours.</h2>
+          
         </div>
-        <div class="paths">
-          <article class="path-card">
-            <div class="path-label">01 · Build it yourself</div>
-            <h3>Build and host it yourself</h3>
-            <p>Use Codex or another MCP client with the NeoApps MCP server. Keep the source and deploy on infrastructure you choose; configure a local model endpoint when your selected runtime supports it.</p>
-            <div class="prompt-box"><pre class="copy-text">I want to build [describe my business app or AI worker]. Start by asking questions about users, processes, data and permissions. Check the NeoApps.AI schema and environment guidance. Show me a proposed plan and wait for my approval. Then use the available NeoApps tools to generate, build and run the app locally. Keep the source code in my project, explain how I can customize it, and show me options for hosting it myself. If I want to use a local model, check whether the app supports an OpenAI-compatible endpoint and explain how to configure my chosen Qwen model/runtime without sending prompts to an external provider.</pre><div class="copy-row"><span class="copy-status" aria-live="polite"></span><button class="button secondary small copy-button" type="button">Copy prompt</button></div></div>
-            <a class="button secondary" href="https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator">Open GitHub setup guide <span aria-hidden="true">↗</span></a>
-            <p class="path-foot">Use your own development environment and hosting setup.</p>
-          </article>
-
-          <article class="path-card featured">
-            <div class="path-label">02 · Get deployment help</div>
-            <h3>Build and deploy with NeoApps Cloud</h3>
-            <p>Add the NeoApps connector in Codex or ChatGPT, create your account and choose a plan, then describe the app. Nothing to install.</p>
-            <div class="price-note"><strong>NeoApps Cloud hosting</strong><br><span>US$49/month</span> · 1 hosted app<br><span>US$149/month</span> · up to 3 apps<br><small>Both include hosting and a database. Your Codex or ChatGPT plan is separate. AI features inside an app use your own model API key, added on a secure NeoApps page (never in a chat).</small></div>
-            <div class="cloud-flow"><strong>Managed deployment in three steps</strong><ol><li>Codex: <code>codex mcp add neoapps --url https://cloud.neoapps.ai/mcp</code>. ChatGPT: Settings → Apps &amp; Connectors → Create → <code>https://cloud.neoapps.ai/mcp</code> (Developer mode on).</li><li>Sign in when asked: create your NeoApps account and choose the one-app or three-app plan (promo codes go in at checkout; a card is still required).</li><li>Ask the assistant to use NeoApps and describe your app. Approve the preview and it goes live.</li></ol></div>
-            <div class="prompt-box"><pre class="copy-text">Use the NeoApps connector connected to this assistant. I want to build [describe my business app]. Ask questions about users, processes, data and permissions, then show me the preview and wait for my review. Explain the US$49/month one-app plan and the US$149/month plan for up to three apps; both include hosting and a database. Explain any runtime model/API costs. After I approve, publish the app, verify its status and give me the live URL. Never ask me for passwords, card numbers or API keys in this chat.</pre><div class="copy-row"><span class="copy-status" aria-live="polite"></span><button class="button secondary small copy-button" type="button">Copy prompt</button></div></div>
-            <a class="button" href="https://cloud.neoapps.ai/v1/api/cloud/connect?billing=1" target="_blank" rel="noopener">Create a NeoApps Cloud account <span aria-hidden="true">↗</span></a>
-            <p class="path-foot">Need a promo code? <a href="mailto:info@neopric.com?subject=NeoApps.AI%20promo%20code">Contact the NeoApps team</a>. Enter it at checkout; a card is still required.</p>
-          </article>
-
-          <article class="path-card">
-            <div class="path-label">03 · Build a custom solution</div>
-            <h3>Build and operate a custom solution</h3>
-            <p>Work with us on a tailored product, deploy it for your customers, or add experienced builders to your team.</p>
-            <div class="prompt-box"><pre class="copy-text">I want to turn [describe my process or expertise] into software for my business and customers. Help me outline the custom application, agents, workflows and integrations I need. I may need NeoApps to build the solution, deploy and host it, maintain and support it, or provide experienced resources to work alongside my firm. Please prepare a discovery agenda and a proposal covering scope, timeline, ownership, deployment, maintenance and pricing.</pre><div class="copy-row"><span class="copy-status" aria-live="polite"></span><button class="button secondary small copy-button" type="button">Copy prompt</button></div></div>
-            <a class="button secondary" href="mailto:info@neopric.com?subject=NeoApps.AI%20custom%20build%20and%20services">Discuss a custom engagement <span aria-hidden="true">↗</span></a>
-            <p class="path-foot">Custom apps, deployment, support, maintenance and team resources. Have an idea you want to build and own? Contact me; I’ll personally help you scope and build it.</p>
-          </article>
-        </div>
+        <div class="video-grid"><div class="video-frame"><iframe src="https://www.youtube-nocookie.com/embed/MD_jAxglA_Y?rel=0" title="ClaimKit walkthrough" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div><div class="video-copy"><p>Our team built ClaimKit, a full client portal for R&amp;D tax-credit consultants, with a coding agent and NeoApps in about four hours. A typical agency build takes five to six months.</p><p>The expert still decides. The app does the intake, documents and evidence.</p></div></div>
       </div>
     </section>
-
-    <section class="section white" id="mcp-tools">
-      <div class="wrap">
-        <div class="section-heading">
-          <div class="kicker">MCP tools</div>
-          <h2>Choose hosted generation or a local build.</h2>
-          <p>For managed deployment, add the NeoApps Cloud connector in Codex or ChatGPT and choose a plan; the app is generated and deployed on NeoApps servers. For self-managed development, use the repository MCP to generate and run the source locally.</p>
-        </div>
-        <div class="tools-grid">
-          <article class="tool-card"><div class="tool-icon">⌕</div><h3>Check and plan</h3><p>Review schema guidance, check your environment and preview an application plan before generation.</p></article>
-          <article class="tool-card"><div class="tool-icon">＋</div><h3>Generate and evolve</h3><p>Create a full-stack app, change requirements, manage migrations and regenerate the frontend.</p></article>
-          <article class="tool-card"><div class="tool-icon">▶</div><h3>Build and inspect</h3><p>Run locally, review status and logs, and keep developing in your codebase with Codex.</p></article>
-        </div>
-        <div class="setup-note">
-          <p><strong>Local generator:</strong> follow the repository setup guide to install and connect its MCP server. It prints the configuration for Codex and other MCP clients. Use this route to generate and run source code on your own machine and host it on infrastructure you choose. <a class="text-link" href="https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator#coding-agents-mcp" target="_blank" rel="noopener">View local MCP setup ↗</a></p>
-          <p><strong>Hosted NeoApps Cloud:</strong> In Codex, run <code>codex mcp add neoapps --url https://cloud.neoapps.ai/mcp</code>. In ChatGPT, turn on Developer mode, then Settings → Apps &amp; Connectors → Create and paste <code>https://cloud.neoapps.ai/mcp</code>. Sign in to create your account and choose the one-app or three-app plan (promo codes are entered at checkout; a card is still required). Tell the assistant to use NeoApps and describe your app. Other MCP clients work too if they support remote connectors with OAuth sign-in.</p>
-        </div>
-        <p style="margin:20px 0 0;color:var(--muted);font-size:.86rem">See the repository for MCP setup and the current tool reference. <a class="text-link" href="https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator">View documentation ↗</a></p>
-      </div>
-    </section>
-
-    <section class="section" id="use-cases">
-      <div class="wrap">
-        <div class="section-heading">
-          <div class="kicker">What can you build?</div>
-          <h2>Turn your expertise into an app.</h2>
-          <p>Build tools for your own team, or package your know-how into software that customers can use and pay for.</p>
-        </div>
-        <div class="usecases">
-          <article class="usecase"><span class="emoji" aria-hidden="true">✚</span><h3>Patient Intake Portal</h3><p>Clinic, MSK, mental health and clinical research intake.</p></article>
-          <article class="usecase"><span class="emoji" aria-hidden="true">§</span><h3>Legal Intake &amp; Case Portal</h3><p>Personal injury, IME and legal aid matter workflows.</p></article>
-          <article class="usecase"><span class="emoji" aria-hidden="true">⌖</span><h3>Engineering Assessment Portal</h3><p>Transport design review, asset inspection and safety audits.</p></article>
-          <article class="usecase"><span class="emoji" aria-hidden="true">◈</span><h3>SR&amp;ED Documentation App</h3><p>Software, manufacturing R&amp;D and consultant multi-client claims.</p></article>
-          <article class="usecase"><span class="emoji" aria-hidden="true">▤</span><h3>Personal Finance App</h3><p>Personal financial health, advisor and credit-union wellness.</p></article>
-          <article class="usecase"><span class="emoji" aria-hidden="true">⚙</span><h3>Field Inspection App</h3><p>Quality checks, maintenance and construction safety inspections.</p></article>
-          <article class="usecase"><span class="emoji" aria-hidden="true">⌘</span><h3>Research Data Collection</h3><p>Structured study data, participant records and review status.</p></article>
-          <article class="usecase"><span class="emoji" aria-hidden="true">♡</span><h3>Mental Health Intake &amp; Monitoring</h3><p>Private-practice and university counseling workflows.</p></article>
-          <article class="usecase"><span class="emoji" aria-hidden="true">⌂</span><h3>Grant Application Portal</h3><p>Government innovation and foundation application reviews.</p></article>
-          <article class="usecase"><span class="emoji" aria-hidden="true">✓</span><h3>Compliance Audit Workflow</h3><p>Regulatory inspections, evidence, findings and corrective actions.</p></article>
-          <article class="usecase"><span class="emoji" aria-hidden="true">⇄</span><h3>Vendor Qualification App</h3><p>Manufacturing supplier onboarding and supply-chain reviews.</p></article>
-          <article class="usecase"><span class="emoji" aria-hidden="true">▧</span><h3>Student Intake &amp; Support Portal</h3><p>Admissions, wellbeing, accessibility and student support.</p></article>
-          <article class="usecase"><span class="emoji" aria-hidden="true">⌁</span><h3>FieldOps 360</h3><p>Dispatch, work orders, technicians, equipment, inventory and invoices.</p></article>
-        </div>
-        <p style="margin:20px 0 0;color:var(--muted);font-size:.88rem">Every featured scenario has a copy-ready prompt below, alongside repository app ideas, agent concepts and the wider platform vision.</p>
-      </div>
-    </section>
-
-    <section class="section white" id="prompt-library">
-      <div class="wrap">
-        <div class="section-heading">
-          <div class="kicker">Prompt library</div>
-          <h2>Start with a real use case.</h2>
-          <p>Choose a prompt, copy it into Codex, ChatGPT or another connected MCP client, and refine it through questions. Each prompt asks the assistant to inspect the available repository or Cloud MCP tools before it makes a blueprint or builds. The ideas draw from the <a class="text-link" href="https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator/tree/main/docs/app-ideas" target="_blank" rel="noopener">repository app-ideas docs ↗</a>.</p>
-        </div>
-        <div class="library-tools" role="search">
-          <input id="prompt-search" type="search" placeholder="Search apps, agents, industries or workflows…" aria-label="Search prompt library">
-          <select id="prompt-category" aria-label="Filter prompt category">
-            <option value="all">All categories</option>
-            <option value="catalog">NeoApps app catalog</option>
-            <option value="industry">Industry scenarios</option>
-            <option value="repo">Repository app ideas</option>
-            <option value="agent">Advanced agents</option>
-            <option value="platform">Platform and SaaS ideas</option>
-            <option value="studio">Agent Studio and R&amp;D</option>
-            <option value="samples">Repository sample apps</option>
-          </select>
-        </div>
-        <div class="library-meta"><span id="prompt-count" aria-live="polite"></span><span>Copy any prompt; shared build instructions are included.</span></div>
-        <div class="prompt-library-grid" id="prompt-grid"></div>
-      </div>
-    </section>
-
     <section class="section white">
       <div class="wrap">
         <div class="cta-band">
-          <div><h2>Your workflow. Your apps.</h2><p>Build it yourself with Codex or ChatGPT, share it with your customers, or ask NeoApps to scope hosting and ongoing support.</p></div>
-          <a class="button" href="#ways-to-work">Choose your path <span aria-hidden="true">↑</span></a>
+          <div><h2>Your process. Your app.</h2><p>Start free with the open source, or go live on NeoApps Cloud from US$49/month.</p></div>
+          <a class="button" href="get-started.html">Start building</a>
         </div>
       </div>
     </section>
-  </main>
 
+  </main>
   <footer>
     <div class="wrap footer-row">
-      <a class="brand" href="#top"><span class="brand-mark">N</span>NeoApps.AI</a>
-      <span>Build an app you can inspect, customize and run.</span>
-      <div class="footer-links"><a href="https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator">GitHub</a><a href="mailto:info@neopric.com">Contact</a><a href="#top">Back to top ↑</a></div>
+      <a class="brand" href="index.html"><span class="brand-mark">N</span>NeoApps.AI</a>
+      <span>Business apps you own. Built in Claude, ChatGPT or Codex.</span>
+      <div class="footer-links"><a href="get-started.html">Get started</a><a href="pricing.html">Pricing</a><a href="developers.html">Developers</a><a href="https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator">GitHub</a><a href="mailto:info@neopric.com">Contact</a></div>
     </div>
   </footer>
-  <script>
-    const promptLabels = {
-      catalog: 'NeoApps app catalog', industry: 'Industry scenarios', repo: 'Repository app ideas',
-      agent: 'Advanced agents', platform: 'Platform and SaaS ideas', studio: 'Agent Studio and R&D', samples: 'Repository sample apps'
-    };
-    const sharedBuildInstructions = `\n\nShared build instructions: Inspect the NeoApps repository, README, and relevant docs/ files if they are available; if only the hosted Cloud MCP is connected, inspect its available tools and Cloud guidance instead. Ask me focused discovery questions, then show a blueprint covering roles, data, screens, workflows, permissions, integrations, acceptance checks, and risks; wait for my approval before generating. Use the repository's supported stack and preserve existing data and migration safety when working locally. Enforce permissions in the backend, use synthetic demo data, and record important changes. Treat AI output as advisory, cite source documents for extracted facts, and require authorized human approval for consequential decisions or external actions. Do not invent platform features or integrations: mock unavailable connections and list them as follow-up work. Ask whether I want a local/self-hosted build or managed NeoApps Cloud. For local builds, build and show the app locally first. For managed deployment, guide me to add the connector https://cloud.neoapps.ai/mcp (Codex: codex mcp add neoapps --url https://cloud.neoapps.ai/mcp; ChatGPT: Settings → Apps & Connectors → Create, with Developer mode on) and create my account there, explain the US$49/month one-app and US$149/month three-app plans (hosting and database included), and wait for my approval and an active plan before publishing. Use the region the service offers (US today), verify the returned status, and share the actual app URL. Never ask me for passwords, card numbers or API keys in this chat; AI keys are added on the NeoApps AI settings page. Keep source and application definitions in my Git repository where the selected flow supports it; explain runtime model/API charges separately.`;
-    const prompts = [];
-    const addPrompt = (category, title, summary, prompt) => prompts.push({ category, title, summary, prompt });
-
-    // Live NeoApps.AI app library: one prompt for each of the 12 listed applications.
-    addPrompt('catalog', 'Patient Intake Portal', 'Clinic, MSK, mental health, referral and research intake workflows.', `Build a patient intake portal for a clinic. Include configurable intake forms, referral and patient records, consent, document uploads, assessment status, clinician review, follow-up tasks, and a patient-facing status view. Support musculoskeletal, mental health, and clinical research intake as configurable workflows. Define patient, clinician, intake coordinator, and administrator access. Use fictional data and make clinical decisions remain with qualified staff.`);
-    addPrompt('catalog', 'Legal Intake & Case Portal', 'Matter intake for personal injury, IME and legal aid teams.', `Build a secure legal intake and case portal for a small firm. Include prospective-client intake, matter types for personal injury, independent medical examinations, and legal aid, conflict-check status, document collection, assigned staff, matter timeline, deadlines, client updates, and review queues. Separate each firm's workspace and restrict client access to their own matter. Keep legal advice and case decisions under lawyer review.`);
-    addPrompt('catalog', 'Engineering Assessment Portal', 'Transport design reviews, asset-condition inspections and safety audits.', `Build an engineering assessment portal for infrastructure teams. Support transport design submissions, reviewer assignments, structured technical comments, document versions, field asset-condition inspections, safety-audit findings, corrective actions, and sign-off history. Let teams configure assessment criteria and attach evidence to findings. Distinguish AI-generated summaries from engineer-approved conclusions.`);
-    addPrompt('catalog', 'SR&ED Documentation App', 'Software and manufacturing R&D evidence, including consultant multi-client work.', `Build an SR&ED documentation app for consultants and client firms. Manage organizations, tax years, projects, technical uncertainties, work activities, staff time, costs, supporting documents, evidence requests, review comments, and claim readiness. Support software-company and manufacturing-process R&D workflows, with consultants managing separate client workspaces. Keep extracted facts linked to source documents and require an expert to approve claim content.`);
-    addPrompt('catalog', 'Personal Finance App', 'Personal financial health, advisor workspaces and credit-union wellness.', `Build a personal finance application for individuals, financial advisors, or a credit-union wellness program. Track accounts, income, spending categories, budgets, savings goals, cash flow, and user-entered financial milestones. Provide clear summaries and configurable reminders. Do not connect to banks unless a supported integration is confirmed; do not present investment, lending, or financial advice as authoritative.`);
-    addPrompt('catalog', 'Field Inspection App', 'Quality checks, predictive-maintenance records and construction safety inspections.', `Build a mobile-friendly field inspection app for quality control, equipment maintenance, and construction safety. Include configurable checklists, sites and assets, assigned inspectors, photos and notes, severity-ranked findings, corrective actions, due dates, repeat inspections, and an auditable history. Work offline only if the current platform supports it; otherwise explain the limitation and provide a clear online workflow.`);
-    addPrompt('catalog', 'Research Data Collection Tool', 'Structured study forms, participant tracking and reviewable data exports.', `Build a research data collection tool for a university study team. Support studies, protocols, participant codes, consent status, visits, configurable forms, validation rules, data-review queues, corrections, and controlled exports. Separate identifying information from research records where practical, restrict access by study role, and keep a change history. Use synthetic data and document any privacy controls the platform does not provide.`);
-    addPrompt('catalog', 'Mental Health Intake & Monitoring', 'Private-practice and university counseling intake and follow-up.', `Build a mental health intake and monitoring portal for a private practice or university counseling service. Include consent, referral source, intake forms, appointment and follow-up status, staff notes, configurable check-ins, risk-escalation tasks, and a client-facing portal. Minimize sensitive data, enforce strict role access, and do not diagnose, recommend treatment, or make crisis decisions; route those matters to qualified staff using the organization's approved process.`);
-    addPrompt('catalog', 'Grant Application Portal', 'Government innovation and foundation application intake and review.', `Build a grant application portal for a government innovation program or foundation. Let applicants save applications, upload evidence, see missing items and status, and receive requests for clarification. Give reviewers configurable criteria, scoring notes, conflict declarations, assignment queues, panel decisions, approval records, and award reporting. Keep eligibility and funding decisions with authorized reviewers; make criteria configurable rather than assuming a program's rules.`);
-    addPrompt('catalog', 'Compliance Audit Workflow', 'Regulatory inspections, evidence, findings and corrective-action follow-up.', `Build a compliance audit workflow for a regulated organization. Create audit programs, requirement libraries, schedules, checklists, evidence records, findings, severity, corrective-action owners, due dates, approvals, and closure verification. Include an audit trail and dashboards for overdue items. Keep regulatory requirements configurable and require qualified reviewers to approve findings and compliance status.`);
-    addPrompt('catalog', 'Vendor Qualification App', 'Manufacturing supplier onboarding and supply-chain qualification.', `Build a vendor qualification app for a manufacturer. Manage supplier profiles, locations, product categories, onboarding questionnaires, certifications, insurance documents, risk-review notes, approvals, renewal dates, corrective actions, and qualification status. Support separate internal roles for procurement, quality, and approvers. Do not invent supplier-risk scores; make review criteria visible and decisions human-approved.`);
-    addPrompt('catalog', 'Student Intake & Support Portal', 'Admissions, wellbeing, accessibility and student-service requests.', `Build a student intake and support portal for a college or university. Support admissions and service requests, accessibility accommodation intake, wellbeing referrals, document checklists, assigned advisors, private notes, follow-up tasks, and student-visible status. Separate sensitive counseling information from general academic records and restrict access by role. Keep accommodations and support decisions with authorized staff.`);
-
-    // Additional use cases represented across NeoApps.AI industry pages and examples.
-    addPrompt('industry', 'Loan & Credit Assessment Workflow', 'Collect applications and evidence for human underwriting review.', `Build a loan and credit assessment workflow for a community lender. Track applicants, applications, requested products, required documents, verification steps, reviewer assignments, conditions, decisions, and customer communications. Make the lender's criteria configurable and keep scoring transparent. Do not make credit decisions automatically; require an authorized underwriter to approve or decline and keep a decision audit trail.`);
-    addPrompt('industry', 'Contract Review Workspace', 'Organize contracts, extracted obligations, review comments and approvals.', `Build a contract review workspace for an in-house legal team. Track counterparties, contract versions, key dates, clauses, obligations, owners, renewal reminders, review comments, and approval status. If document extraction is available, link each extracted term to its source page and require a lawyer to verify it. Do not provide legal advice or change a signed contract automatically.`);
-    addPrompt('industry', 'Benefits & Services Navigator', 'Help applicants and caseworkers organize services, documents and renewals.', `Build a benefits and services navigator for a community organization. Maintain a configurable directory of programs, applicant and household profiles, application checklists, supporting documents, referrals, follow-ups, and renewal reminders. Give caseworkers a workload view and let applicants see only their own status. Present requirements as program information, not a final eligibility decision; a caseworker confirms eligibility and submission.`);
-    addPrompt('industry', 'Regulatory Inspection Management', 'Plan inspections, record evidence and track official corrective actions.', `Build a regulatory inspection management app for an inspection team. Configure inspection types, jurisdictions, sites, schedules, inspectors, checklists, evidence, findings, notices, response deadlines, appeals, and closure approvals. Preserve the official record and restrict decision authority to designated officials. Keep regulations and templates versioned and administrator-maintained.`);
-    addPrompt('industry', 'Canadian Algorithmic Impact Assessment (AIA)', 'Track the AIA questionnaire, evidence, mitigation and responsible approvals.', `Build a Canadian Algorithmic Impact Assessment workspace for a public-sector team. Organize AI system profiles, assessment questionnaire versions, answer owners, evidence links, impact categories, mitigation actions, review comments, approvals, and reassessment dates. Make scoring and guidance configurable to the team's official framework version. Do not claim an official determination; retain human accountability and a traceable assessment history.`);
-    addPrompt('industry', 'Engineering Data Intelligence', 'Connect project records and field measurements to reviewable insights.', `Build an engineering data intelligence portal for a consulting firm. Organize projects, assets, drawings, inspection measurements, design submissions, issues, source documents, and expert-reviewed insights. Let teams search by project and asset, compare observations over time, and route anomalies for review. Cite source records for generated summaries and do not treat an AI observation as an engineering conclusion.`);
-    addPrompt('industry', 'Manufacturing Safety Management', 'Manage hazards, incidents, inspections, training and corrective action.', `Build a manufacturing safety management app. Track facilities, production areas, hazards, near misses, incidents, inspections, training completion, corrective actions, owners, and deadlines. Provide role-specific dashboards and trend reports with configurable classifications. Protect worker information, preserve incident history, and require safety professionals to approve severity and closure decisions.`);
-    addPrompt('industry', 'FieldOps 360 Field Service SaaS', 'Complete HVAC and electrical service operations from dispatch through invoicing.', `Build FieldOps 360, a field-service management SaaS for an HVAC and electrical maintenance company. Support System Administrator, Operations Manager, Dispatcher, Field Technician, Inventory Manager, and Accountant roles. Include dashboards, customers and service locations, equipment, work orders, dispatch calendar with conflict detection, mobile technician checklists and sign-off, inventory and parts transactions, estimates, invoices, recurring maintenance, and operational reports. Enforce the lifecycle Draft → Scheduled → Assigned → In Progress → Completed → Invoiced. Every work order belongs to a customer and location; technicians see only assigned jobs; prevent invoicing incomplete work and negative inventory unless an authorized override is recorded. Enforce permissions in the backend and preserve change history.`);
-
-    // The six incremental application ideas in docs/app-ideas/neoapps-buildable-application-ideas.md.
-    addPrompt('repo', 'AI-Assisted Case Review Workbench', 'Assign cases, cite evidence, review findings and approve reports.', `Build an AI-assisted case review workbench. Manage clients, cases, source documents, assignments, evidence references, reviewer findings, corrections, expert approvals, and exportable reports. Let AI draft summaries only from available documents and link each finding to its source. Keep expert approval explicit and record who changed or approved each finding.`);
-    addPrompt('repo', 'Benefits Application Organizer', 'A workflow organizer for applicants and caseworkers, not an eligibility authority.', `Build a benefits application organizer for applicants and caseworkers. Maintain applicant and household profiles, configurable program checklists, applications, documents, verification tasks, missing-information requests, status history, renewals, and caseworker dashboards. Applicants can see only their own applications. This is an organizer, not an official eligibility or submission service; a human caseworker verifies requirements and decisions.`);
-    addPrompt('repo', 'Permit & Inspection Tracker', 'Follow permit applications from completeness review through inspection.', `Build a permit and inspection tracker for a small municipality. Link applicants and properties to permit applications, required documents, completeness checks, assigned reviewers, comments, correction requests, inspections, decisions, and aging dashboards. Use configurable requirements and roles. Only authorized municipal staff can issue official decisions; keep every status change and review note auditable.`);
-    addPrompt('repo', 'Private Knowledge & Workflow Portal', 'Share approved internal knowledge with access-aware questions and approvals.', `Build a private knowledge and workflow portal for company departments. Organize document collections, owners, access policies, review dates, requests, workflow runs, approvals, and an audit log. If AI question answering exists, restrict retrieval to the user's permissions and cite source documents; otherwise build the governed content and request workflow first. Do not claim air-gapped operation or formal certification without evidence.`);
-    addPrompt('repo', 'Procurement & Supplier Tracker', 'Track purchase requests, approvals, suppliers, orders and delivery status.', `Build a procurement and supplier tracker for an operations team. Manage materials, suppliers, purchase requests, approval steps, purchase orders, delivery dates, shortages, receipts, and status dashboards. Prevent unauthorized purchases and preserve change history. Keep ERP connections, supplier communications, risk scoring, and automated ordering as clearly labeled integrations unless current tools support them.`);
-    addPrompt('repo', 'AI Workflow Evaluation Hub', 'Compare workflow versions against approved examples before a human releases changes.', `Build an AI workflow evaluation hub. Store workflow versions, approved reference examples, run outputs, human corrections, evaluation criteria, scorecards, release approvals, and rollback history. Compare a candidate version with the approved baseline and show failures and trade-offs. Never train or change a production workflow automatically; a named owner must approve each release.`);
-
-    // The four advanced agent ideas in docs/app-ideas/neoapps-advanced-agent-application-ideas.md.
-    addPrompt('agent', 'AI Case Investigation Agent', 'Plan bounded investigations and maintain a source-linked evidence ledger.', `Build an AI case investigation agent on top of a case workspace. Inspect the current repository for document retrieval, tool permissions, workflow execution, and durable job support. Let the agent propose an investigation plan, query only approved sources, record citations and contradictions in an evidence ledger, and prepare findings for a human reviewer. Add bounded retries, timeouts, execution history, and approval states; never fabricate evidence.`);
-    addPrompt('agent', 'Autonomous Procurement Agent', 'Detect supply risks and prepare recommendations with purchase approval gates.', `Build an AI procurement agent that monitors authorized inventory and delivery data, identifies shortages or delays, compares approved supplier options, and drafts a recommendation or purchase request. Use a restricted tool registry, execution limits, and durable audit history. Require an authorized person to approve any purchase or supplier contact. If supplier or ERP APIs are unavailable, add mock adapters and document the integration contract.`);
-    addPrompt('agent', 'Multi-Agent Permit Review', 'Coordinate specialized review agents while preserving conflicts for a municipal officer.', `Build a multi-agent permit review workspace with Intake, Zoning Reference, Document Completeness, Cross-Document Consistency, and Coordinator roles. Give each agent isolated inputs and source-linked findings; show disagreements instead of hiding them. Add task states, timeouts, retries, and an evidence package. Agents are advisory: only an authorized municipal officer can issue an official decision.`);
-    addPrompt('agent', 'Self-Improving Workflow Agent', 'Use corrections to propose tested improvements, with approval and rollback.', `Build a controlled workflow improvement agent. Version prompts and workflow definitions, capture human corrections, maintain an approved evaluation dataset, generate candidate changes, and compare them with the current baseline. Show examples, scores, regressions, and a human release decision. Keep production unchanged until an authorized owner approves; support rollback and an audit history. Do not automatically train or deploy changes.`);
-
-    // The 17 platform concepts in the supplied NeoApps.AI strategy and prompt notes.
-    addPrompt('platform', 'Personal Intelligence OS', 'A private second brain for documents, preferences, projects and cited answers.', `Build a Personal Intelligence OS as a private second brain. Organize documents, notes, emails, and meeting transcripts; maintain editable memories for preferences, projects, decisions, and commitments; connect people and projects; and provide a searchable assistant that cites sources. Let me correct, export, and delete memories, and configure private workspaces and permissions. Do not silently retain or invent personal memories.`);
-    addPrompt('platform', 'Personal AI Chief of Staff', 'Briefings, priorities, meetings and follow-ups with approval before external actions.', `Build a Personal AI Chief of Staff for goals, projects, daily tasks, meetings, pending decisions, and commitments. Prepare daily and weekly briefings, identify overdue follow-ups, and suggest priorities using visible rules. Support calendar, email, and document integrations only when available. Ask before sending messages or making commitments; keep a decision history and persistent context I can edit.`);
-    addPrompt('platform', 'Company Intelligence OS', 'Permission-aware institutional memory with source-cited answers.', `Build a Company Intelligence OS for SOPs, policies, contracts, decisions, and department knowledge. Organize sources by department and project, track owner and version, flag stale or conflicting material, and answer questions with citations. Create spaces for Management, Finance, Sales, Operations, HR, and Support. Enforce source permissions on every query and maintain an auditable retrieval history; use multi-tenant boundaries where the current architecture supports them.`);
-    addPrompt('platform', 'Company SOP & Training Intelligence', 'Turn approved procedures into assigned learning, quizzes and competency tracking.', `Build an SOP and employee training platform. Manage versioned procedures, convert approved source documents into draft steps, create interactive training and quizzes, assign learning by role or department, track completion and competency, and capture manager approval. Include an AI trainer that answers from approved procedures with citations and flags knowledge gaps. Never replace or silently publish an approved SOP.`);
-    addPrompt('platform', 'AI Workforce Manager', 'Configure, monitor, pause and govern a company’s AI workers.', `Build an AI Workforce Manager to define workers with a name, job, instructions, skills, approved knowledge, tools, permissions, memory, triggers, workflows, limits, and approval rules. Show execution logs, handoffs, performance, and operating costs where supported. Allow administrators to pause, inspect, modify, or revoke a worker. Prevent access beyond granted permissions and label unsupported integrations clearly.`);
-    addPrompt('platform', 'AI Sales Development Employee', 'Research leads, draft outreach and update the CRM with human approval.', `Build an AI sales development workspace that researches prospects from approved sources, maintains lead profiles, scores configurable qualification criteria, drafts personalized outreach, schedules follow-ups, updates CRM records, and prepares call briefs and pipeline reports. Provide a manager-configured approval queue for every external message and log the source behind lead facts. Do not send outreach or change CRM data without authorized approval.`);
-    addPrompt('platform', 'AI Customer Support Department', 'Classify support work, answer from approved knowledge and escalate to people.', `Build an AI customer support department with shared approved knowledge, customer and account profiles, ticket intake, classification, priority, SLA timers, draft answers, human escalation, and billing, technical, and account-specialist queues. Add a customer-facing portal or chat only if supported. Require human approval for refunds, account closures, and other consequential actions. Cite the knowledge used and report unresolved or conflicting answers.`);
-    addPrompt('platform', 'Business Workflow OS', 'A versioned workflow builder for triggers, decisions, agents and approvals.', `Build a Business Workflow OS for event-based and scheduled triggers, conditional branches, human approvals, AI worker steps, documents, notifications, and supported API or MCP actions. Provide workflow versions, testing, retries, failure handling, execution history, audit events, and a visual run debugger. Start with a usable workflow designer and mark connectors the current platform does not support.`);
-    addPrompt('platform', 'Intelligent Business Operations Manager', 'Coordinate Finance, HR, Sales, Procurement and Operations through owned workflows.', `Build an Intelligent Business Operations Manager for Finance, HR, Sales, Procurement, and Operations. Track tasks and process owners, approval hierarchies, SLAs, deadlines, documents, vendors, customers, status updates, exceptions, and management dashboards. Let administrators configure procedures without code where practical. Give every process an owner, state, history, escalation rule, and human approval for consequential actions.`);
-    addPrompt('platform', 'Accounting SaaS', 'Multi-tenant books, invoicing, expenses and reports with double-entry controls.', `Build a multi-tenant accounting SaaS for small businesses and accounting firms. Include customers, vendors, chart of accounts, invoices, recurring billing, expenses, bank-import staging, payables, receivables, tax settings, documents, approvals, and financial reports. Use balanced double-entry journal entries, immutable posted transactions, period controls, role permissions, audit logs, and organization boundaries. If any accounting or payment integration is unavailable, create a reviewable import workflow instead.`);
-    addPrompt('platform', 'Custom CRM SaaS', 'Configurable pipelines, fields, customer portals and sales insights.', `Build a configurable multi-tenant CRM SaaS. Manage contacts, companies, leads, deals, pipelines, custom fields, tasks, activities, customer portals, reports, permissions, imports, and subscriptions. Let each organization configure fields, stages, dashboards, and workflow rules. Add an AI sales assistant that uses authorized customer history and suggests cited next steps; keep external messages and record changes approval-gated.`);
-    addPrompt('platform', 'Modular ERP SaaS', 'Enable business modules per organization over a shared operational data model.', `Build a modular ERP SaaS for small and medium businesses. Provide optional Finance, Inventory, Procurement, Sales, Customer Management, HR, Projects, Assets, and Reporting modules, with per-module roles and configurable approvals over a consistent organization model. Let administrators enable modules per tenant. Preserve audit history and make integrations, multi-tenant controls, and subscription functions match actual repository capabilities.`);
-    addPrompt('platform', 'AI-Native Client Intake Portal', 'Branded forms, documents, consent and AI-prepared summaries for staff review.', `Build a configurable AI-native client intake SaaS with branded public and private portals, conditional forms, identity and contact details, document uploads, consent, extraction, missing-information checks, client notifications, and staff review queues. Generate structured intake summaries from submitted information and link extracted facts to source files. Support tenant isolation and retention settings only as implemented; require staff approval before decisions or submissions.`);
-    addPrompt('platform', 'SaaS App Marketplace', 'Let creators publish, price, brand and support reusable applications.', `Design a SaaS app marketplace for NeoApps creators. Support app listings, reusable templates, previews, free and paid plans, white-label settings, customer invitations, subscription and usage views, release notes, support, and version updates across customer instances. Separate app ownership and licensing from hosting charges and customer data access. First inspect current billing, provisioning, and deployment capabilities; mark missing marketplace services as a phased roadmap, not working features.`);
-    addPrompt('platform', 'Consultant-to-SaaS Platform', 'Package consulting expertise as branded apps for multiple independent clients.', `Build a consultant-to-SaaS workspace for agencies to productize their expertise. Include reusable industry templates, client onboarding, app customization, white-label settings, separate client workspaces, recurring billing records, usage analytics, support cases, release management, and distributed agents or workflows. Let consultants manage many customer instances while protecting tenant data. Confirm which billing, provisioning, and update features exist before promising them.`);
-    addPrompt('platform', 'Insurance Claims Intelligence Platform', 'Trace claim facts to evidence and keep coverage and payment decisions with adjusters.', `Build an insurance claims intelligence platform for adjusters, managers, administrators, and policyholders. Include claim registration, policy and customer records, document ingestion, evidence extraction with page citations, claim chronology, financial assessment, task assignment, customer communication, approvals, and status monitoring. Use approved policy knowledge, protect sensitive files, and require human validation for coverage decisions, reserves, and payments.`);
-    addPrompt('platform', 'AI Company Operating System', 'Bring company knowledge, AI workers, workflows and apps into one governed workspace.', `Create a phased AI Company Operating System with company intelligence, permissioned knowledge, institutional memory, AI workers, a workflow studio, full-stack application generation, deployment and sharing, and a business dashboard. Include department workspaces, worker tools and limits, approval gates, workflow execution history, app usage, and operating costs where supported. Begin with a capability map against this repository; ship a coherent MVP and label all unsupported pillars as future work.`);
-
-    // Related industry-specific product concepts supplied in the strategy notes.
-    addPrompt('industry', 'Medical Records Intelligence', 'Review clinical records with evidence-linked summaries for qualified clinicians.', `Build a medical records intelligence workspace for a clinical team. Organize patient records, document versions, review assignments, chronology, extracted facts with page references, missing-record requests, and clinician-approved summaries. Apply least-privilege access and use synthetic data in development. Do not diagnose, recommend treatment, or make care decisions; require qualified clinician review for every generated summary.`);
-    addPrompt('industry', 'Legal Case Intelligence', 'Create matter chronologies and document findings with traceable citations.', `Build a legal case intelligence workspace for lawyers and case teams. Manage matters, documents, source-linked extracted facts, chronology, entities, issues, assignments, review comments, and approved case summaries. Surface contradictions and missing evidence without deciding their legal significance. Keep privileged material access-controlled and require a lawyer to verify all AI outputs.`);
-    addPrompt('industry', 'Construction Project OS', 'Coordinate projects, contractors, work, documents, equipment and approvals.', `Build a Construction Project OS for owners, general contractors, subcontractors, and field teams. Track projects, sites, contractors, submittals, drawings, RFIs, work packages, equipment, safety inspections, change requests, schedules, approvals, and closeout documents. Enforce project-specific access and maintain versioned records. Begin with the workflows the generator can support and list integrations such as scheduling or accounting separately.`);
-    addPrompt('industry', 'Recruitment Intelligence', 'Manage candidates, job pipelines and structured human-reviewed screening.', `Build a recruitment intelligence platform for a hiring team. Manage job requisitions, candidate profiles, applications, interview stages, structured notes, skills evidence, scheduling tasks, and hiring decisions. Make evaluation criteria visible and configurable, protect candidate data, and require human review for screening and selection. Do not infer protected characteristics or automatically reject candidates.`);
-    addPrompt('industry', 'Real Estate Intelligence', 'Manage properties, maintenance, leasing workflows and tenant portals.', `Build a real estate intelligence app for property managers. Track properties, units, owners, tenants, leases, documents, maintenance requests, inspections, vendors, payments status, renewals, and tenant communications. Provide owner and tenant portals with strict record access. Do not send notices, charge payments, or make legal or credit decisions without authorized approval.`);
-    addPrompt('industry', 'Manufacturing Operations OS', 'Connect production, inventory, equipment, quality and maintenance workflows.', `Build a Manufacturing Operations OS for a mid-sized plant. Track facilities, production orders, work centers, materials, inventory movements, quality checks, equipment, downtime, maintenance, safety incidents, and shift handoffs. Provide dashboards for operations, quality, and maintenance with auditable changes. Start with structured workflows; expose ERP, machine telemetry, and predictive maintenance as integrations only if supported.`);
-    addPrompt('industry', 'Education Intelligence', 'Support student portals, learning services and governed institutional knowledge.', `Build an Education Intelligence portal for a school or university. Include student intake, service requests, accessibility workflows, advisor assignments, learning support resources, approved institutional knowledge, follow-up tasks, and student-visible status. Separate sensitive wellbeing records from routine academic data. AI answers must cite approved sources and escalate counseling, accommodation, or academic decisions to authorized staff.`);
-
-    // Agent Studio, Slack/meeting workflows, individual mini-agents and the supplied R&D idea.
-    addPrompt('studio', 'NeoApps Agent Studio', 'Describe, configure, test, share and monitor agents and their workflows.', `Design an Agent Studio that lets a user describe an agent in chat, then review its instructions, knowledge, tools, triggers, memory, permissions, execution limits, and approval rules. Provide visual workflow editing, simulation, tool-call inspection, version history, publishing targets, and run monitoring. Reuse one portable agent definition across channels where supported. Inspect the current codebase first and propose a staged implementation.`);
-    addPrompt('studio', 'Slack Customer Support Agent', 'Answer in a Slack thread from authorized company sources and escalate when needed.', `Build a customer-support agent for an authorized Slack workspace. On a support question, retrieve only knowledge the agent may access, use approved CRM and ticketing tools when available, draft a source-grounded reply in the thread, and route uncertain or sensitive issues to an employee. Define approved channels, email actions, permissions, escalation rules, and audit logs. Do not claim Slack, CRM, ticketing, or email integration exists unless a working connector is available; provide mock adapters otherwise.`);
-    addPrompt('studio', 'Meeting-to-Application Agent', 'Turn a consented meeting into requirements, an approved blueprint and a build.', `Build a Meeting-to-Application workflow. Use meeting audio or transcripts only when the meeting platform and participant consent allow it. Extract requirements, decisions, tasks, open questions, and an application specification; ask participants to resolve gaps; show a NeoApps blueprint; wait for approval; then invoke supported generation, report build results, and share a preview or deployed URL only after approval. Do not join, record, or publish meetings without explicit authorization.`);
-    addPrompt('studio', 'Meeting Summary Agent', 'Summarize an authorized transcript and track decisions, owners and follow-ups.', `Build a small meeting summary agent. Given an authorized transcript, produce a concise summary, decisions, unresolved questions, action items with named owners and due dates, and citations or timestamps when available. Let a human edit and approve the summary before sharing. Do not record meetings or send follow-ups without consent and explicit authorization.`);
-    addPrompt('studio', 'Email Drafting Agent', 'Sort and draft email replies from approved context; never send without review.', `Build an email drafting agent that classifies incoming messages, retrieves only approved company context, prepares a suggested reply, and flags missing information or sensitive requests. Show the message and sources to a human reviewer before sending. Do not send email, alter contacts, or make commitments unless an authorized user approves through a supported integration.`);
-    addPrompt('studio', 'Lead Qualifier Agent', 'Apply configurable qualification criteria and prepare reviewed CRM updates.', `Build a lead qualification agent that reads authorized lead details, applies configurable criteria, records evidence for each qualification signal, drafts a score and next-step recommendation, and prepares a CRM update for approval. Avoid unsupported demographic inference. Do not contact prospects or write to a CRM unless the user approves and the integration is available.`);
-    addPrompt('studio', 'Invoice Extraction Agent', 'Extract invoice fields with document citations and route mismatches for review.', `Build an invoice extraction agent for uploaded supplier invoices. Extract vendor, invoice number, dates, line items, tax, total, and purchase-order reference; cite page or region evidence where supported; flag mismatches and duplicate candidates; and prepare a payable record for staff review. Do not approve or pay invoices automatically. Keep original documents and extraction corrections auditable.`);
-    addPrompt('studio', 'Research Assistant Agent', 'Search approved sources, compare evidence and produce cited research notes.', `Build a research assistant agent for an internal research team. Search only authorized source collections, summarize findings with citations, distinguish evidence from inference, surface conflicting sources, and maintain a research question and notes workspace. Do not fabricate references or make high-impact decisions. Require a researcher to review findings before external sharing.`);
-    addPrompt('studio', 'HR Assistant Agent', 'Answer employee policy questions from approved HR sources and route private cases.', `Build an HR assistant agent that answers employee questions from current approved policies, cites the source and version, and routes uncertain or personal cases to HR. Let HR maintain content ownership, access controls, and escalation paths. Do not make hiring, discipline, compensation, or leave decisions; protect employee records and avoid exposing one employee's information to another.`);
-    addPrompt('studio', 'Follow-up Agent', 'Find overdue commitments and prepare reminders for human approval.', `Build a follow-up agent that monitors authorized tasks and meeting action items, identifies overdue commitments, groups them by owner and priority, and drafts reminder messages. Let users tune timing and exclusions. Keep task sources visible and require approval before sending messages or changing deadlines. Log actions and provide a pause control.`);
-    addPrompt('studio', 'Document Assistant Agent', 'Answer questions about approved documents with source-linked responses.', `Build a document assistant agent for an approved knowledge collection. Support document owners, versions, access policies, search, answers with page-level citations where available, and feedback when an answer is wrong or sources conflict. Check permissions before retrieval and never invent missing information. If document parsing or semantic search is not currently available, build the governed collection and clearly label the limitation.`);
-    addPrompt('studio', 'Autonomous Generator R&D Bench', 'Compare isolated generator changes against baseline apps and open a reviewable PR.', `Design a safe R&D benchmark for improving the NeoApps code generator. Separate the improvement branch from a stable benchmark environment, running locally or in a controlled hybrid setup where supported. Let an agent inspect the repository, state one testable hypothesis, make an isolated change, generate the same accounting, CRM, intake, and ERP benchmark apps with baseline and candidate versions, build and evaluate them against fixed quality, security, usability, performance, and cost rubrics, then produce a comparison report. Never merge or release automatically; open a GitHub pull request only after all configured gates pass and require human review. Record failures and regression results.`);
-
-    // Additional sample applications referenced in the repository README and examples.
-    addPrompt('samples', 'Dental Clinic OS', 'Coordinate patients, appointments, treatment plans and billing follow-up.', `Build a dental clinic operations app for administrators, dentists, hygienists, and patients. Include patient records, appointment schedules, treatment plans, procedures, consent, reminders, invoices, and follow-up tasks. Keep clinical notes role-restricted and use synthetic patient data. Confirm which scheduling, email, and payment integrations exist before using them; qualified clinicians remain responsible for care decisions.`);
-    addPrompt('samples', 'ConstructOS', 'Manage construction work, equipment, documents and field operations.', `Build ConstructOS, a construction operations app for project managers and field teams. Track projects, sites, crews, work orders, equipment, materials, safety checklists, documents, issues, and approvals. Provide a mobile-friendly field workflow and dashboards for overdue work and equipment. Use the existing generator's supported stack and separate real-time, offline, map, and accounting integrations as follow-up items if unavailable.`);
-    addPrompt('samples', 'ExpertOS', 'Turn a professional services firm’s repeatable expertise into client workflows.', `Build ExpertOS for a professional services firm. Capture service offerings, reusable playbooks, clients, matters or projects, deliverables, evidence, milestones, review steps, client portal access, and recurring follow-ups. Let experts turn approved process knowledge into templates and track work across separate customer spaces. Preserve consultant approval and keep client data isolated.`);
-    addPrompt('samples', 'SplitShare', 'Track shared expenses, participants, balances and settlement status.', `Build SplitShare, a shared expense tracking app. Manage groups, participants, expenses, contributors, split rules, balances, settlement records, comments, and exportable summaries. Support clear correction history and user-specific access. Do not initiate real payments; show settlement suggestions and let members confirm them through an authorized payment service if one is later integrated.`);
-    addPrompt('samples', 'BillFlow', 'Track customer onboarding and billing tasks with an AI-assisted operator.', `Build BillFlow, a billing and customer-onboarding workflow app. Manage customers, plans, invoices, onboarding steps, support tasks, approvals, and a status dashboard. Add an AI operator that can summarize a customer record and prepare next actions using approved data. Require human approval before changing billing or contacting a customer; use a mock billing adapter if no provider integration exists.`);
-    addPrompt('samples', 'Clinical Research Site', 'Coordinate study visits, participant records, forms and review queues.', `Build a clinical research site operations app. Manage studies, participant codes, visits, research forms, consent status, document requests, data queries, staff assignments, and review history. Protect identifying information and keep research records access-controlled. Use synthetic demo data, preserve source and correction history, and leave clinical judgments to qualified investigators.`);
-    addPrompt('samples', 'Todo App Generator Baseline', 'A small reference app for checking basic schema-to-UI generation.', `Use the repository's smallest todo-app sample as a generator baseline. Inspect its schema and generated files, then create a simple task app with owners, priorities, due dates, completion status, filters, and a compact dashboard. Preserve the project's conventions and use this build as a smoke benchmark for changes to schema, API, or React generation.`);
-    addPrompt('samples', 'Custom Background Job with Approval', 'Run a long task with progress, approval, resume, cancellation and history.', `Build a custom background job example that demonstrates a long-running business task. Include queued, running, awaiting-approval, completed, failed, and cancelled states; progress updates; durable history; authorized approve, reject, resume, and cancel actions; and safe retry behavior. Inspect existing NeoApps job patterns first and use the repository implementation rather than inventing another framework.`);
-    addPrompt('samples', 'Custom API Browser Job', 'Capture a Playwright run with screenshots, video and browser/network diagnostics.', `Build a custom browser-job example using the repository's existing Playwright patterns. Run an authorized browser flow against a local demo app, capture screenshots and video, and record console messages, failed requests, and network errors with progress updates. Restrict the job to approved URLs and test accounts; never capture real customer data or credentials. Store artifacts with the job record and show them in a reviewable job detail screen.`);
-
-    const escapeHTML = (value) => String(value).replace(/[&<>"']/g, (character) => ({
-      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-    }[character]));
-    const searchInput = document.getElementById('prompt-search');
-    const categorySelect = document.getElementById('prompt-category');
-    const promptGrid = document.getElementById('prompt-grid');
-    const promptCount = document.getElementById('prompt-count');
-
-    function renderPrompts() {
-      const query = searchInput.value.trim().toLowerCase();
-      const category = categorySelect.value;
-      const matches = prompts.filter((item) => {
-        const matchesCategory = category === 'all' || item.category === category;
-        const searchText = `${item.title} ${item.summary} ${item.prompt} ${promptLabels[item.category]}`.toLowerCase();
-        return matchesCategory && (!query || searchText.includes(query));
-      });
-      promptCount.textContent = `${matches.length} of ${prompts.length} prompts`;
-      promptGrid.innerHTML = matches.length ? matches.map((item) => {
-        const fullPrompt = `${item.prompt}${sharedBuildInstructions}`;
-        return `<article class="prompt-card">
-          <span class="prompt-category">${escapeHTML(promptLabels[item.category])}</span>
-          <h3>${escapeHTML(item.title)}</h3>
-          <p>${escapeHTML(item.summary)}</p>
-          <details><summary>Preview full prompt</summary>
-            <div class="prompt-box"><pre class="copy-text">${escapeHTML(fullPrompt)}</pre>
-              <div class="copy-row"><span class="copy-status" aria-live="polite"></span><button class="button secondary small copy-button" type="button">Copy prompt</button></div>
-            </div>
-          </details>
-        </article>`;
-      }).join('') : '<div class="empty-state">No prompts match that search. Try another term or choose “All categories”.</div>';
-    }
-
-    searchInput.addEventListener('input', renderPrompts);
-    categorySelect.addEventListener('change', renderPrompts);
-    renderPrompts();
-
-    document.addEventListener('click', async (event) => {
-      const button = event.target.closest('.copy-button');
-      if (!button) return;
-      const box = button.closest('.prompt-box');
-      const text = box?.querySelector('.copy-text')?.textContent.trim();
-      const status = box?.querySelector('.copy-status');
-      if (!text || !status) return;
-      button.dataset.defaultLabel ||= button.textContent.trim();
-      try {
-        await navigator.clipboard.writeText(text);
-        status.textContent = 'Copied';
-        button.textContent = 'Copied';
-        window.setTimeout(() => { status.textContent = ''; button.textContent = button.dataset.defaultLabel; }, 1800);
-      } catch {
-        status.textContent = 'Open the preview and select the prompt to copy.';
-      }
-    });
-  </script>
+  <script src="assets/site.js"></script>
 </body>
 </html>
