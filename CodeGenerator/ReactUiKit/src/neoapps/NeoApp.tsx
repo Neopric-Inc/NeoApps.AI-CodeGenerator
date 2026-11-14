@@ -10,10 +10,13 @@ import { Assistant } from "./ai/Assistant";
 import { JobsPage } from "./jobs/JobsPage";
 import { Dashboard } from "./Dashboard";
 import { Login } from "./Login";
+import { registerServiceWorker } from "./pwa";
 import { RecordPage } from "./RecordPage";
 import { ResourcePage } from "./ResourcePage";
 import { Shell } from "./Shell";
 import { extensions } from "../custom";
+
+registerServiceWorker();
 
 const Themed: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   const { config } = useApp();

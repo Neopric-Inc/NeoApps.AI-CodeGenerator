@@ -4274,11 +4274,13 @@ CREATE TABLE IF NOT EXISTS `workflow_trigger_conditions` (
                         $"server={server};port={port};username={username};password={password};database={databaseName};",
                         projectName, Program.UiConfigPath);
                     var dirs = Directory.GetFiles(des, "*.*", SearchOption.AllDirectories);
+                    var binary = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".png", ".jpg", ".jpeg", ".gif", ".ico", ".webp", ".woff", ".woff2", ".ttf", ".eot", ".zip" };
                     foreach (string fileName in dirs)
                     {
+                        if (binary.Contains(Path.GetExtension(fileName))) continue; // a text round-trip corrupts images (PWA icons)
                         string contents = File.ReadAllText(fileName);
-                        contents = contents.Replace("{projectName}", projectName);
-                        File.WriteAllText(fileName, contents);
+                        if (!contents.Contains("{projectName}")) continue;
+                        File.WriteAllText(fileName, contents.Replace("{projectName}", projectName));
                     }
                 }
             }
