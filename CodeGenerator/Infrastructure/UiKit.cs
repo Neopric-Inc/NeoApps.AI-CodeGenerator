@@ -80,8 +80,9 @@ public static class UiKit
         var name = config["appName"]?.GetValue<string>() ?? "App";
         var color = config["theme"]?["primary"]?.GetValue<string>() is { } c && System.Text.RegularExpressions.Regex.IsMatch(c, "^#[0-9a-fA-F]{6}$") ? c : "#3b5bdb";
         var words = name.Split(new[] { ' ', '-', '_' }, StringSplitOptions.RemoveEmptyEntries);
-        var initials = string.Concat(words.Take(2).Select(w => char.ToUpperInvariant(w[0])));
-        if (initials.Length == 1 && words[0].Length > 1) initials += char.ToLowerInvariant(words[0][1]);
+        // the same two letters as the sidebar logo (Shell.tsx), so the installed icon matches the app
+        var letters = new string(name.Where(char.IsAsciiLetter).ToArray());
+        var initials = letters.Length > 0 ? letters[..Math.Min(2, letters.Length)].ToUpperInvariant() : "A";
         var manifest = new JsonObject
         {
             ["name"] = name,
@@ -96,17 +97,59 @@ public static class UiKit
                 new JsonObject { ["src"] = "/icon.svg", ["sizes"] = "any", ["type"] = "image/svg+xml" },
                 new JsonObject { ["src"] = "/icon-192.png", ["sizes"] = "192x192", ["type"] = "image/png" },
                 new JsonObject { ["src"] = "/icon-512.png", ["sizes"] = "512x512", ["type"] = "image/png" },
-                new JsonObject { ["src"] = "/icon-512.png", ["sizes"] = "512x512", ["type"] = "image/png", ["purpose"] = "maskable" }),
+                new JsonObject { ["src"] = "/icon-maskable-512.png", ["sizes"] = "512x512", ["type"] = "image/png", ["purpose"] = "maskable" }),
         };
         File.WriteAllText(Path.Combine(publicDir, "manifest.json"), manifest.ToJsonString(Pretty));
         File.WriteAllText(Path.Combine(publicDir, "icon.svg"),
             $"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 512 512\"><rect width=\"512\" height=\"512\" rx=\"112\" fill=\"{color}\"/>" +
-            $"<text x=\"256\" y=\"256\" dy=\".35em\" text-anchor=\"middle\" font-family=\"Inter, Segoe UI, Arial, sans-serif\" font-size=\"220\" font-weight=\"700\" fill=\"#fff\">{System.Net.WebUtility.HtmlEncode(initials)}</text></svg>");
+            $"<text x=\"256\" y=\"256\" dy=\".35em\" text-anchor=\"middle\" font-family=\"Inter, Segoe UI, Arial, sans-serif\" font-size=\"{(initials.Length > 1 ? 205 : 266)}\" font-weight=\"600\" fill=\"{((0.2126 * Convert.ToByte(color[1..3], 16) + 0.7152 * Convert.ToByte(color[3..5], 16) + 0.0722 * Convert.ToByte(color[5..7], 16)) / 255 > 0.6 ? "#1d2330" : "#fff")}\">{System.Net.WebUtility.HtmlEncode(initials)}</text></svg>");
         var (r, g, b) = (Convert.ToByte(color[1..3], 16), Convert.ToByte(color[3..5], 16), Convert.ToByte(color[5..7], 16));
-        foreach (var (file, size) in new[] { ("icon-192.png", 192), ("icon-512.png", 512), ("apple-touch-icon.png", 180) })
-            File.WriteAllBytes(Path.Combine(publicDir, file), SolidPng(size, r, g, b));
+        var font = Path.Combine(generatorRoot, "ReactUiKit", "pwa", "Inter-SemiBold.ttf");
+        foreach (var (file, size, shape) in new[] { ("icon-192.png", 192, IconShape.Rounded), ("icon-512.png", 512, IconShape.Rounded),
+                     ("icon-maskable-512.png", 512, IconShape.Maskable), ("apple-touch-icon.png", 180, IconShape.Square), ("favicon-32.png", 32, IconShape.Rounded) })
+        {
+            byte[] png;
+            try { png = IconPng(size, initials, r, g, b, shape, font); }
+            catch (Exception ex) when (ex is DllNotFoundException or TypeInitializationException or IOException)
+            {
+                Console.WriteLine($"PWA icon {file}: drawing unavailable ({ex.GetType().Name}); using a plain colour square.");
+                png = SolidPng(size, r, g, b);
+            }
+            File.WriteAllBytes(Path.Combine(publicDir, file), png);
+        }
         var sw = Path.Combine(generatorRoot, "ReactUiKit", "pwa", "sw.js");
         if (File.Exists(sw)) File.Copy(sw, Path.Combine(publicDir, "sw.js"), true);
+    }
+
+    enum IconShape { Rounded, Square, Maskable }
+
+    /// <summary>
+    /// The app's icon: its letters (Inter SemiBold, bundled under its open font licence) on the theme colour, white or
+    /// dark text by contrast. Rounded for "any"; full-bleed with letters inside the 80% safe zone for "maskable"; full
+    /// square for iOS, which rounds the corners itself.
+    /// </summary>
+    static byte[] IconPng(int size, string text, byte r, byte g, byte b, IconShape shape, string fontPath)
+    {
+        using var surface = SkiaSharp.SKSurface.Create(new SkiaSharp.SKImageInfo(size, size, SkiaSharp.SKColorType.Rgba8888, SkiaSharp.SKAlphaType.Premul));
+        var canvas = surface.Canvas;
+        canvas.Clear(SkiaSharp.SKColors.Transparent);
+        var bg = new SkiaSharp.SKColor(r, g, b);
+        using (var fill = new SkiaSharp.SKPaint { Color = bg, IsAntialias = true })
+        {
+            if (shape == IconShape.Rounded) canvas.DrawRoundRect(new SkiaSharp.SKRect(0, 0, size, size), size * 0.22f, size * 0.22f, fill);
+            else canvas.DrawRect(0, 0, size, size, fill);
+        }
+        var luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+        using var typeface = File.Exists(fontPath) ? SkiaSharp.SKTypeface.FromFile(fontPath) : SkiaSharp.SKTypeface.Default;
+        var scale = shape == IconShape.Maskable ? 0.8f : 1f;
+        using var font = new SkiaSharp.SKFont(typeface, size * (text.Length > 1 ? 0.40f : 0.52f) * scale);
+        using var ink = new SkiaSharp.SKPaint { Color = luminance > 0.6 ? new SkiaSharp.SKColor(0x1d, 0x23, 0x30) : SkiaSharp.SKColors.White, IsAntialias = true };
+        var width = font.MeasureText(text);
+        font.GetFontMetrics(out var m);
+        canvas.DrawText(text, (size - width) / 2, size / 2f - (m.Ascent + m.Descent) / 2, SkiaSharp.SKTextAlign.Left, font, ink);
+        using var image = surface.Snapshot();
+        using var data = image.Encode(SkiaSharp.SKEncodedImageFormat.Png, 100);
+        return data.ToArray();
     }
 
     /// <summary>A square PNG of one colour (no image library needed).</summary>
