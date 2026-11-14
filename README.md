@@ -14,6 +14,16 @@ Use it three ways:
 | A developer | [`neoapps` command line](#command-line) |
 | A coding agent (Claude Code, Claude Desktop, Cursor, any MCP client) | [MCP server](#coding-agents-mcp) |
 
+## What you get
+
+AuditDesk (`samples/auditdesk`), generated from one schema and one UI config, sample data only:
+
+| Dashboard | List with search and export |
+|---|---|
+| ![Dashboard](docs/images/dashboard.png) | ![List](docs/images/list.png) |
+| **Record with related tabs** | **Roles and permissions** |
+| ![Record](docs/images/record.png) | ![Permissions](docs/images/permissions.png) |
+
 ## Install
 
 ```bash

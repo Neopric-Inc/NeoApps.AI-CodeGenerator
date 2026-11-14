@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Link as RouterLink, useNavigate, useParams } from "react-router-dom";
-import { Alert, Box, Breadcrumbs, Button, CircularProgress, Link, Paper, Tab, Tabs, Typography } from "@mui/material";
+import { Alert, Box, Button, CircularProgress, Link, Paper, Tab, Tabs, Typography } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import EditOutlined from "@mui/icons-material/EditOutlined";
 import DeleteOutline from "@mui/icons-material/DeleteOutlineOutlined";
@@ -97,12 +97,6 @@ export const RecordPage: React.FC = () => {
 
   return (
     <Box>
-      <Breadcrumbs sx={{ mb: 1 }}>
-        <Link component={RouterLink} to={`/r/${name}`} underline="hover" color="inherit">{table.label}</Link>
-        <Typography sx={{
-          color: "text.primary"
-        }}>{String(record[table.displayField] ?? `#${id}`)}</Typography>
-      </Breadcrumbs>
       <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2.5, flexWrap: "wrap" }}>
         <Typography
           variant="h5"
