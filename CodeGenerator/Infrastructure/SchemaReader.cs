@@ -30,7 +30,7 @@ public static class SchemaReader
         var dt = Query(connection,
             // ai_* tables belong to the generated API's AI assistant (created at runtime) and VersionInfo to the
             // migration runner (FluentMigrator); they get no generated CRUD.
-            "SELECT * FROM information_schema.tables WHERE table_schema = DATABASE() AND table_type = 'BASE TABLE' AND LOWER(table_name) NOT IN ('ai_files','ai_chunks','ai_conversations','ai_messages','ai_runs','user_tenants','login_attempts','user_security','number_sequences','background_jobs','background_job_events') AND LOWER(table_name) <> 'versioninfo' ORDER BY table_name",
+            "SELECT * FROM information_schema.tables WHERE table_schema = DATABASE() AND table_type = 'BASE TABLE' AND LOWER(table_name) NOT IN ('ai_files','ai_chunks','ai_conversations','ai_messages','ai_runs','user_tenants','login_attempts','user_security','number_sequences','background_jobs','background_job_events','user_notifications','user_notification_settings') AND LOWER(table_name) <> 'versioninfo' ORDER BY table_name",
             null);
         if (IsCaseInsensitive(connection))
         {

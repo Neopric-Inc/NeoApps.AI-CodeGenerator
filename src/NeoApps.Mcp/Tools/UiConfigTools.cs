@@ -174,6 +174,18 @@ internal static class UiConfigTools
               ("by"/"at": optional columns stamped on the record). The admin UI asks for the password automatically.
               History rows, timestamps and SLA
               deadline rows are written automatically in the same transaction.
+          "notifications": [ { "table": "cases", "when": { "to": "submitted" }, "notify": ["role:Manager"],
+                               "title": "{case_number} needs review", "channels": ["inApp", "email"] },
+                             { "table": "cases", "when": { "to": ["approved", "rejected"] }, "notify": ["creator"],
+                               "title": "Your case {case_number} was {status}" },
+                             { "table": "cases", "when": { "changed": "assignee_id" }, "notify": [{ "column": "assignee_id", "table": "members", "userColumn": "user_id" }] } ]
+              The bell in the top bar. "when": { "on": "create" } (default), { "to": state(s) } (column: the lifecycle's, or
+              "column"), or { "changed": column }. "notify": "creator", "role:Name", a column holding a users id or login name, or
+              { column, table, userColumn } for a column pointing at a row that holds the user. "title": text with {column} and
+              {id} placeholders. The person who made the change is never notified. Rows are written in the same transaction as
+              the change. "email": each person adds their address under the bell; sent when the API has
+              Notifications__Email__From plus Notifications__Email__AcsConnectionString or SmtpHost/SmtpUser/SmtpPassword
+              (environment only), with Notifications__AppUrl for the link. Retried up to 5 times.
           "validations": { "customer_invoices": {
               "contact_email": { "format": "email" }, "website": { "format": "url" }, "phone": { "format": "phone" },
               "invoice_number": { "pattern": "^INV-[0-9]{4,}$", "message": "Use INV- followed by digits" },
