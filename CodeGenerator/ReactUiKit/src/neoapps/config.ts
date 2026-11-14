@@ -156,6 +156,30 @@ export function resolveMenu(tables: Record<string, ResolvedTable>, ui: UiConfig)
 }
 
 /** Deep-ish merge: later configs override earlier ones; table/field maps merge per key. */
+const same = (a: unknown, b: unknown) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+
+/**
+ * The admin-saved copy (Customize UI) applied on top of the published config, without hiding later publishes.
+ * Saves record the published config they were made against (_base). Per top-level key and per table: if the published
+ * value is unchanged since that save, the admin's version stands; if a publish changed it, the publish wins. Older saves
+ * without _base keep only cosmetic settings (name, tagline, theme) and keys the published config doesn't set.
+ */
+export function effectiveSaved(file: UiConfig, saved: (UiConfig & { _base?: UiConfig }) | null | undefined): UiConfig | null {
+  if (!saved) return null;
+  const { _base: base, tables: savedTables, ...rest } = saved as any;
+  const out: any = { tables: {} };
+  const f: any = file || {};
+  for (const [k, v] of Object.entries(rest)) {
+    const keep = base ? same(f[k], (base as any)[k]) : (f[k] === undefined || ["appName", "tagline", "theme"].includes(k));
+    if (keep) out[k] = v;
+  }
+  for (const [t, v] of Object.entries(savedTables || {})) {
+    const keep = base ? same(f.tables?.[t], (base as any).tables?.[t]) : f.tables?.[t] === undefined;
+    if (keep) out.tables[t] = v;
+  }
+  return out;
+}
+
 export function mergeConfig(...configs: (UiConfig | null | undefined)[]): UiConfig {
   const out: UiConfig = { tables: {} };
   for (const c of configs) {
