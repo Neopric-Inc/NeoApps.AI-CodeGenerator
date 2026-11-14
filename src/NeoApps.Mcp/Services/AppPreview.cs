@@ -292,6 +292,12 @@ public static class AppPreview
                 foreach (var st in from.Concat(to)) State("transition", st);
                 Roles(step, tr["roles"]);
                 foreach (var a in Strs(tr["actors"])) if (a is not ("human" or "ai" or "system")) w.Add($"{step}: unknown actor '{a}' (human, ai, system).");
+                if (tr["signature"] is JsonObject sig)
+                {
+                    Col($"{step} signature.by", table, Str(sig["by"]));
+                    Col($"{step} signature.at", table, Str(sig["at"]));
+                }
+                if (tr["signature"] != null && Strs(tr["actors"]).Contains("ai")) w.Add($"{step}: a signed step can only be done by a person; remove \"ai\" from actors.");
                 foreach (var kind in new[] { "requires", "forbids" })
                     foreach (var rq in Objs(tr[kind]))
                         if (Table($"{step} {kind}", Str(rq["table"])))
@@ -423,6 +429,7 @@ public static class AppPreview
                 foreach (var fb in Objs(tr["forbids"])) extra.Add(Str(fb["message"]) ?? $"no {Label(ui, Str(fb["table"]) ?? "")}");
                 if (tr["distinctFrom"] is JsonArray { Count: > 0 }) extra.Add("by a different person");
                 if (Set(tr["actors"]).Contains("ai")) extra.Add("AI may do it");
+                if (tr["signature"] is JsonValue or JsonObject && tr["signature"]?.ToJsonString() != "false") extra.Add("signed with password");
                 lines.Add($"{(from.Count == 0 ? "any" : string.Join(" / ", from))} → {string.Join(" / ", Set(tr["to"]))}: {Who(tr["roles"])}{(extra.Count > 0 ? $" ({string.Join("; ", extra)})" : "")}.");
             }
             if (Set(lc["frozen"]) is { Count: > 0 } frozen) lines.Add($"Locked once {string.Join(" / ", frozen)}.");

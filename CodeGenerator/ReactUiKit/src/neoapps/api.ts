@@ -37,9 +37,23 @@ export class ApiError extends Error {
   }
 }
 
-export async function api<T = any>(method: string, path: string, body?: any): Promise<T> {
+/** Asks the person to sign (re-enter their password) for a step that needs it; resolves null when they cancel. */
+export type SignatureHandler = (meaning: string) => Promise<string | null>;
+let signatureHandler: SignatureHandler | null = null;
+export const setSignatureHandler = (h: SignatureHandler | null) => { signatureHandler = h; };
+const toBase64 = (s: string) => btoa(String.fromCharCode(...new TextEncoder().encode(s)));
+
+export async function api<T = any>(method: string, path: string, body?: any, signature?: string): Promise<T> {
   const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (signature) headers["X-NeoApps-Signature"] = toBase64(signature); // checked once by the server, never stored
   const res = await apiFetch(path, { method, headers, body: body === undefined ? undefined : JSON.stringify(body) });
+  if (res.status === 428 && signatureHandler) {
+    // a lifecycle step with "signature": ask for the password, then send the same request once more
+    const msg = await res.clone().json().then((j) => j?.message as string).catch(() => "");
+    const password = await signatureHandler(String(msg || "").replace(/^Signature required:\s*/, ""));
+    if (!password) throw new ApiError(428, "Not signed: nothing was changed.");
+    return api<T>(method, path, body, password);
+  }
   const text = await res.text();
   let json: any = null;
   try {

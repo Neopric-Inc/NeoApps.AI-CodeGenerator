@@ -11,6 +11,7 @@ import { JobsPage } from "./jobs/JobsPage";
 import { Dashboard } from "./Dashboard";
 import { Login } from "./Login";
 import { registerServiceWorker } from "./pwa";
+import { SignatureDialog } from "./SignatureDialog";
 import { RecordPage } from "./RecordPage";
 import { ResourcePage } from "./ResourcePage";
 import { Shell } from "./Shell";
@@ -45,6 +46,7 @@ const Routed: React.FC = () => {
   return (
     <>
       {error && <Alert severity="error">{error}</Alert>}
+      <SignatureDialog />
       <Routes>
         <Route element={<Shell />}>
           <Route path="/" element={<Dashboard />} />

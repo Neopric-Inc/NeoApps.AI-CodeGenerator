@@ -53,6 +53,8 @@ namespace nkv.MicroService.Utility
             public List<Requirement> Forbids = new();      // none of these may exist
             public List<DistinctRule> DistinctFrom = new(); // the actor must not be the user in these columns
             public string AdminBypass;                       // overrides the lifecycle's
+            public string Meaning;                           // electronic signature: password re-entry + this statement
+            public string SignedBy, SignedAt;                // optional columns stamped with the signer and UTC time
         }
         sealed class DistinctRule { public string Column, Table, Key, UserColumn = "user_id", Message; }
         sealed class Requirement
@@ -81,6 +83,7 @@ namespace nkv.MicroService.Utility
                 {
                     ["column"] = kv.Value.Column,
                     ["transitions"] = kv.Value.Transitions.Count,
+                    ["signatures"] = kv.Value.Transitions.Count(t => t.Meaning != null),
                     ["adminBypass"] = kv.Value.AdminBypass,
                     ["frozen"] = new JsonArray(kv.Value.Frozen.Select(x => (JsonNode)x).ToArray()),
                     ["editableIn"] = new JsonObject(kv.Value.EditableIn.Select(e => KeyValuePair.Create(e.Key, (JsonNode)new JsonArray(e.Value.Select(x => (JsonNode)x).ToArray())))),
@@ -144,6 +147,13 @@ namespace nkv.MicroService.Utility
                                 });
                             }
                             if (tn["adminBypass"] != null) t.AdminBypass = Bypass(tn["adminBypass"]);
+                            if (tn["signature"] is JsonValue sv) t.Meaning = sv.TryGetValue<bool>(out var on) ? (on ? $"I approve moving this record to {string.Join("/", t.To)}." : null) : sv.GetValue<string>();
+                            else if (tn["signature"] is JsonObject so)
+                            {
+                                t.Meaning = so["meaning"]?.GetValue<string>() ?? $"I approve moving this record to {string.Join("/", t.To)}.";
+                                t.SignedBy = so["by"]?.GetValue<string>(); t.SignedAt = so["at"]?.GetValue<string>();
+                            }
+                            if (t.Meaning != null) t.Actors = new(StringComparer.OrdinalIgnoreCase) { "human" }; // only a person can sign
                             lc.Transitions.Add(t);
                         }
                     if (o["adminBypass"] != null) lc.AdminBypass = Bypass(o["adminBypass"]);
@@ -274,6 +284,7 @@ namespace nkv.MicroService.Utility
             var current = id == null ? null : LoadVisible(cmd, table, id);
             if (current == null) return; // not visible: the scoped UPDATE affects nothing
             string fromState = null, toState = null;
+            Transition signed = null;
             if (_lifecycles.TryGetValue(table, out var lc))
             {
                 fromState = Str(current.GetValueOrDefault(lc.Column));
@@ -283,7 +294,9 @@ namespace nkv.MicroService.Utility
                 if (values.TryGetValue(lc.Column, out var nv) && Str(nv) != null && !string.Equals(Str(nv), fromState, StringComparison.OrdinalIgnoreCase))
                 {
                     toState = Str(nv);
-                    CheckTransition(cmd, caller, table, lc, fromState, toState, id, current);
+                    signed = CheckTransition(cmd, caller, table, lc, fromState, toState, id, current);
+                    if (signed?.Meaning != null) VerifySignature(cmd, caller, table, toState, signed.Meaning);
+                    else signed = null;
                 }
             }
             if (im != null && !isSoftDelete)
@@ -315,11 +328,14 @@ namespace nkv.MicroService.Utility
                 foreach (var (k, v) in changes) after[k] = v;
                 if (toState != null)
                 {
-                    WriteHistory(c, caller, lc, after, id, fromState, toState);
+                    WriteHistory(c, caller, lc, after, id, fromState, toState, signed?.Meaning);
+                    if (signed != null) StampSignature(c, table, signed, caller, id);
                     StampTimestamp(c, table, lc, toState, id);
                     UpdateSla(c, caller, lc, after, id, fromState, toState);
                 }
-                WriteAudit(c, caller, table, isSoftDelete ? "delete" : "update", id, changes, current);
+                var audited = changes;
+                if (signed != null) audited = new Dictionary<string, object>(changes, StringComparer.OrdinalIgnoreCase) { ["signature"] = $"{caller.User} re-entered their password: {signed.Meaning}" };
+                WriteAudit(c, caller, table, isSoftDelete ? "delete" : "update", id, audited, current);
                 WriteOutbox(c, caller, table, isSoftDelete ? "delete" : "update", id, after, current);
             });
         }
@@ -347,7 +363,7 @@ namespace nkv.MicroService.Utility
             throw new DataGuardException($"This {table} record is {state}: your role ({role}) can only {verb} it while it is {string.Join(" or ", states)}.", 409);
         }
 
-        static void CheckTransition(MySqlCommand cmd, Caller caller, string table, Lifecycle lc, string from, string to, object id, Dictionary<string, object> current)
+        static Transition CheckTransition(MySqlCommand cmd, Caller caller, string table, Lifecycle lc, string from, string to, object id, Dictionary<string, object> current)
         {
             var role = RoleName(cmd.Connection, caller);
             bool Bypasses(Transition t)
@@ -380,7 +396,7 @@ namespace nkv.MicroService.Utility
                 if (failed != null) { firstFailure ??= failed.Message ?? $"needs a {failed.Table} record matching {JsonSerializer.Serialize(failed.Where)}"; continue; }
                 var present = t.Forbids.FirstOrDefault(r => RequirementMet(cmd, table, r, r.LinkFrom != null ? current.GetValueOrDefault(r.LinkFrom) : id));
                 if (present != null) { firstFailure ??= present.Message ?? $"there is a {present.Table} record matching {JsonSerializer.Serialize(present.Where)}"; continue; }
-                return;
+                return t;
             }
             throw new DataGuardException($"{table}: can't move to '{to}' yet: {firstFailure}.", 409);
         }
@@ -414,7 +430,36 @@ namespace nkv.MicroService.Utility
             return Convert.ToInt64(Apply(q).ExecuteScalar()) > 0;
         }
 
-        static void WriteHistory(MySqlCommand c, Caller caller, Lifecycle lc, Dictionary<string, object> row, object id, string from, string to)
+        /// <summary>Header carrying the signer's password (base64 UTF-8) for a step with "signature". Never stored or logged.</summary>
+        public const string SignatureHeader = "X-NeoApps-Signature";
+
+        /// <summary>
+        /// Electronic signature: the person doing this step re-enters their password. Wrong passwords count toward the
+        /// sign-in lockout. Administrators are not exempt, and the AI or a background job can never sign.
+        /// </summary>
+        static void VerifySignature(MySqlCommand cmd, Caller caller, string table, string to, string meaning)
+        {
+            if (caller.IsAi || caller.IsSystem || caller.UserId == 0)
+                throw new DataGuardException($"{table}: moving to '{to}' needs a person's signature.", 403);
+            string password = null;
+            var h = Accessor?.HttpContext?.Request.Headers[SignatureHeader].ToString();
+            if (!string.IsNullOrEmpty(h))
+                try { password = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(h)); } catch { password = null; }
+            if (string.IsNullOrEmpty(password))
+                throw new DataGuardException($"Signature required: {meaning}", 428);
+            if (AuthGuard.LockedMinutes(caller.User) > 0)
+                throw new DataGuardException("Too many wrong passwords. Try again later.", 423);
+            using var q = new MySqlCommand("SELECT password_hash FROM users WHERE user_id = @u LIMIT 1", cmd.Connection, cmd.Transaction);
+            q.Parameters.AddWithValue("@u", caller.UserId);
+            if (!PasswordHasher.Verify(password, q.ExecuteScalar() as string))
+            {
+                AuthGuard.RecordFailure(caller.User);
+                throw new DataGuardException("Signature not accepted: the password didn't match.", 403);
+            }
+        }
+
+
+        static void WriteHistory(MySqlCommand c, Caller caller, Lifecycle lc, Dictionary<string, object> row, object id, string from, string to, string meaning = null)
         {
             if (lc.HistoryTable == null) return;
             var vals = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase)
@@ -423,8 +468,20 @@ namespace nkv.MicroService.Utility
             };
             if (lc.HistoryFrom != null) vals[lc.HistoryFrom] = from;
             if (lc.HistoryActor != null) vals[lc.HistoryActor] = caller.IsSystem ? "system" : caller.IsAi ? "ai" : "human";
-            if (lc.HistoryReason != null) vals[lc.HistoryReason] = $"by {caller.User}";
+            if (lc.HistoryReason != null) vals[lc.HistoryReason] = meaning == null ? $"by {caller.User}" : $"signed by {caller.User}: {meaning}";
             InsertInternal(c, lc.HistoryTable, vals, caller, row);
+        }
+
+        static void StampSignature(MySqlCommand c, string table, Transition t, Caller caller, object id)
+        {
+            var sets = new List<string>();
+            using var u = new MySqlCommand("", c.Connection, c.Transaction);
+            if (t.SignedBy != null && Columns[table].Contains(t.SignedBy)) { sets.Add($"`{SafeIdentifier(t.SignedBy)}` = @by"); u.Parameters.AddWithValue("@by", caller.User); }
+            if (t.SignedAt != null && Columns[table].Contains(t.SignedAt)) sets.Add($"`{SafeIdentifier(t.SignedAt)}` = UTC_TIMESTAMP()");
+            if (sets.Count == 0) return;
+            u.CommandText = $"UPDATE `{table}` SET {string.Join(", ", sets)} WHERE `{PrimaryKeys[table]}` = @id";
+            u.Parameters.AddWithValue("@id", id);
+            u.ExecuteNonQuery();
         }
 
         static void StampTimestamp(MySqlCommand c, string table, Lifecycle lc, string state, object id)
