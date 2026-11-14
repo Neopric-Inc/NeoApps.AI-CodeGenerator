@@ -12,29 +12,16 @@ GITHUB = "https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator"
 EXTRA_CSS = """
     .dropdown { position: relative; }
     .dropdown > button { background: none; border: 0; font: inherit; color: inherit; cursor: pointer; padding: 6px 0; }
-    .dropdown-menu { display: none; position: absolute; top: 100%; left: -14px; min-width: 250px; padding: 8px;
-      background: var(--paper); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 12px 30px rgba(23,33,43,.10); z-index: 20; }
+    .dropdown-menu { display: none; position: absolute; top: 100%; left: -14px; min-width: 260px; padding: 8px;
+      background: #121317; border: 1px solid #2a2d33; border-radius: 12px; box-shadow: 0 24px 60px rgba(0,0,0,.5); z-index: 40; }
     .dropdown:hover .dropdown-menu, .dropdown:focus-within .dropdown-menu { display: block; }
-    .dropdown-menu a { display: block; padding: 8px 10px; border-radius: 8px; color: var(--ink); }
-    .dropdown-menu a:hover { background: var(--wash); }
-    .nav-links a[aria-current="page"], .dropdown > button[aria-current="page"] { color: var(--ink); font-weight: 650; }
-    .includes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
-    .include { background: var(--paper); border: 1px solid var(--line); border-radius: 14px; padding: 18px; }
-    .include h3 { margin: 0 0 6px; font-size: 1rem; }
-    .include p { margin: 0; color: var(--muted); font-size: .9rem; }
-    .industry { margin: 0 0 34px; }
-    .industry h2 { font-size: 1.5rem; margin: 0 0 14px; }
-    .faq details { border-bottom: 1px solid var(--line); padding: 14px 0; }
-    .faq summary { cursor: pointer; font-weight: 650; }
+    .dropdown-menu a { display: block; padding: 8px 12px; border-radius: 8px; color: var(--soft); }
+    .dropdown-menu a:hover { background: #1a1c21; color: var(--ink); }
+    .nav-links a[aria-current="page"], .dropdown > button[aria-current="page"] { color: var(--ink); }
+    .faq details { border-bottom: 1px solid var(--line); padding: 18px 0; }
+    .faq summary { cursor: pointer; font-weight: 500; font-size: 1.04rem; }
     .faq p { color: var(--muted); margin: 10px 0 0; }
-    .connect { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-    .connect article { background: var(--paper); border: 1px solid var(--line); border-radius: 16px; padding: 22px; }
-    .connect h3 { margin: 0 0 10px; }
-    .connect ol { margin: 0; padding-left: 20px; color: var(--muted); }
-    .connect li { margin: 6px 0; }
-    .price { font-size: 2rem; font-weight: 750; margin: 6px 0; }
-    @media (max-width: 900px) { .includes, .connect { grid-template-columns: 1fr 1fr; } }
-    @media (max-width: 600px) { .includes, .connect { grid-template-columns: 1fr; } .dropdown { display: none; } }
+    @media (max-width: 640px) { .dropdown { display: none; } }
 """
 
 NAV = [
@@ -83,7 +70,7 @@ def header(current):
 FOOTER = f"""  <footer>
     <div class="wrap footer-row">
       <a class="brand" href="index.html"><span class="brand-mark">N</span>NeoApps.AI</a>
-      <span>Business apps you own. Built in Claude, ChatGPT or Codex.</span>
+      <span>Custom software, built by your AI, owned by you.</span>
       <div class="footer-links"><a href="get-started.html">Get started</a><a href="pricing.html">Pricing</a><a href="developers.html">Developers</a><a href="{GITHUB}">GitHub</a><a href="mailto:info@neopric.com">Contact</a></div>
     </div>
   </footer>"""
@@ -96,7 +83,10 @@ def page(file, title, description, body, scripts=("assets/site.js",)):
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#f7f8fa">
+  <meta name="theme-color" content="#0b0c0e">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
   <meta name="description" content="{description}">
   <title>{title}</title>
   <link rel="stylesheet" href="assets/site.css">
@@ -208,55 +198,80 @@ CLOUD_PROMPT = ("Use the NeoApps connector. I want to build [describe your busin
                 "the link. Never ask me for passwords, card numbers or API keys in this chat.")
 
 # ---------------------------------------------------------------- Home
-home = f"""    <section class="hero">
-      <div class="wrap hero-grid">
-        <div>
-          <span class="eyebrow"><span class="dot"></span> Works in Claude, ChatGPT and Codex</span>
-          <h1>Describe your process.<br>Get a working business app.</h1>
-          <p>Logins, roles, approvals, audit trail and AI, built from a conversation. Live the same day. Change it any time; your data stays.</p>
-          <div class="hero-actions">
-            <a class="button" href="get-started.html">Start building</a>
-            <a class="button secondary" href="use-cases.html">See use cases</a>
-          </div>
-          <p class="hero-note">Production apps, not prototypes. Open source. You own the code.</p>
-        </div>
-        <div class="terminal" aria-label="Example conversation">
-          <div class="terminal-head"><span></span><span></span><span></span> claude · neoapps</div>
-          <div class="terminal-body">
-            <div><span class="prompt">you &gt;</span> Build a client portal for my firm</div>
-            <div class="term-muted">Who uses it? What needs approval?</div>
-            <div class="term-blue">Preview: 6 screens, 4 roles, 2 approvals</div>
-            <div class="term-muted">Approved → publishing…</div>
-            <div><span class="prompt">neoapps &gt;</span> Live at yourfirm.us.neoapps.ai</div>
-          </div>
+home = """    <section class="hero">
+      <div class="wrap">
+        <a class="eyebrow" href="#rules"><span class="dot"></span> New: sign-offs with password re-entry, and notifications</a>
+        <h1>Custom software, built by your AI, owned by you.</h1>
+        <p class="lede">Describe your process in Claude, ChatGPT or Codex. Get a real app with roles, approvals and an audit trail. Run it in our cloud or yours.</p>
+        <div class="hero-actions">
+          <a class="button" href="get-started.html">Start building</a>
+          <a class="button secondary" href="#how-it-works">See how it works</a>
         </div>
       </div>
     </section>
-""" + section("how-it-works", "How it works", "Four steps. No code.", None,
+    <section class="hero-shot" aria-label="Product screenshot">
+      <div class="wrap">
+        <div class="shot glow"><img src="assets/img/bell.webp" width="1440" height="900" alt="An audit app's dashboard with a notification that an engagement is ready for sign-off"></div>
+        <p class="caption">AuditDesk, generated from one description. Sample data.</p>
+      </div>
+    </section>
+    <section class="works" aria-label="Works with">
+      <div class="wrap">
+        <p class="label">Built from the assistant you already use</p>
+        <div class="works-row"><span>Claude</span><span>Claude Desktop</span><span>ChatGPT</span><span>Codex</span></div>
+      </div>
+    </section>
+""" + section("how-it-works", "How it works", "From a description to a live app. Same day.", None,
     '        <div class="steps">'
-    '<article class="step"><div class="step-num">01</div><h3>Connect</h3><p>Add NeoApps to Claude, ChatGPT or Codex. One link.</p></article>'
-    '<article class="step"><div class="step-num">02</div><h3>Describe</h3><p>Explain your process. Your assistant asks the right questions.</p></article>'
-    '<article class="step"><div class="step-num">03</div><h3>Review</h3><p>See every screen, field and permission before anything is built.</p></article>'
-    '<article class="step"><div class="step-num">04</div><h3>Publish</h3><p>It goes live. Invite your team and customers.</p></article></div>', white=True) \
-+ section("includes", "What you get", "Every app is production grade.", "The parts business software needs, enforced on the server, in every app.", cards(INCLUDES)) \
-+ section("industries", "Use cases", "Built for real businesses.", None,
-    cards([(name, items[0][1]) for _, name, items in INDUSTRIES], cls="include", grid="includes")
-    + '\n        <p style="margin:20px 0 0"><a class="text-link" href="use-cases.html">All use cases and ready-made prompts →</a></p>', white=True) \
-+ section("proof", "Proof", "ClaimKit: years of R&D tax-credit expertise, live in four hours.", None,
+    '<article class="step"><div class="step-num">01</div><h3>Describe it</h3><p>Who uses it, what it tracks, who approves. Plain words in your assistant.</p></article>'
+    '<article class="step"><div class="step-num">02</div><h3>Review the plan</h3><p>See every screen, field and permission before anything is built.</p></article>'
+    '<article class="step"><div class="step-num">03</div><h3>Publish</h3><p>Your team signs in. Need a change later? Ask. Your data stays.</p></article></div>') \
++ section("rules", "Production grade", "Your rules, enforced on the server.", "Not hidden buttons. Every request is checked, for every person, every time.",
+    '''        <div class="feature">
+          <div class="feature-copy"><h3>Sign-offs that hold up.</h3><p>The partner re-enters their password to sign. Their name, the time and the statement go in the audit log. Admins can't skip it. The AI can't sign.</p></div>
+          <div class="shot"><img src="assets/img/sign.webp" width="1440" height="900" loading="lazy" alt="A sign-off dialog asking the partner to re-enter their password, showing the statement being signed"></div>
+        </div>
+        <div class="feature flip">
+          <div class="shot"><img src="assets/img/permissions.webp" width="1440" height="900" loading="lazy" alt="A roles and permissions grid showing what each role can read, create, edit and delete"></div>
+          <div class="feature-copy"><h3>Who sees what. Who changes what.</h3><p>Set it by role. Customers see only their own records. Records lock after sign-off. The server enforces it, not the screen.</p></div>
+        </div>
+        <div class="feature">
+          <div class="feature-copy"><h3>A history for every step.</h3><p>Who moved it, from what, to what, and when. Ready when the auditor asks.</p></div>
+          <div class="shot"><img src="assets/img/signed.webp" width="1440" height="900" loading="lazy" alt="A signed-off engagement with its phase history listing each change and its time"></div>
+        </div>''') \
++ section(None, "Everyday use", "Works the way your team does.", None,
+    '''        <div class="tiles">
+          <article class="tile phone"><h3>On every screen.</h3><p>Add it to your phone's home screen or install it on your desktop. Notifications in the app, or by email.</p><img src="assets/img/phone.webp" width="1170" height="1500" loading="lazy" alt="The app on a phone, showing the dashboard"></article>
+          <article class="tile"><h3>Your data is never stuck.</h3><p>Export any list to CSV. The code is open source. Leave whenever you want.</p><div class="shot"><img src="assets/img/list.webp" width="1440" height="900" loading="lazy" alt="A list of engagements with search and an Export button"></div></article>
+        </div>''') \
++ section("industries", "Use cases", "Built for work that gets audited.", "Replace the spreadsheet, the inbox and the shared drive with one app your team trusts.",
+    '        <div class="industry-grid">' + "".join(f'<a href="use-cases.html#{a}"><span>{n}</span><strong>{items[0][0]}</strong></a>' for a, n, items in INDUSTRIES) + '</div>'
+    + '\n        <p style="margin:20px 0 0"><a class="text-link" href="use-cases.html">All use cases and ready-made prompts →</a></p>') \
++ section("proof", "Proof", "ClaimKit: years of R&amp;D tax-credit expertise, live in four hours.", None,
     '        <div class="video-grid"><div class="video-frame"><iframe src="https://www.youtube-nocookie.com/embed/MD_jAxglA_Y?rel=0" title="ClaimKit walkthrough" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div>'
     '<div class="video-copy"><p>Our team built ClaimKit, a full client portal for R&amp;D tax-credit consultants, with a coding agent and NeoApps in about four hours. A typical agency build takes five to six months.</p>'
     '<p>The expert still decides. The app does the intake, documents and evidence.</p></div></div>') \
-+ """    <section class="section white">
++ section("own", "Where it runs", "Run it where your data must live.", None,
+    '''        <div class="paths">
+          <article class="path-card"><h3>Our cloud</h3><p>Hosting, database and sign-in included. Microsoft Azure, United States. Encrypted in transit and at rest.</p><p class="note">From US$49/month</p></article>
+          <article class="path-card featured"><h3>Your cloud</h3><p>We set it up in your Azure, AWS or Google Cloud account, inside the controls you already have, and hand it over.</p><p class="note">One-time, from US$10,000</p></article>
+          <article class="path-card"><h3>Your machine</h3><p>Open source. Build and run it yourself. The code, data and servers are all yours.</p><p class="note">Free</p></article>
+        </div>
+        <ul class="trust" aria-label="In place today"><li>Encrypted in transit and at rest</li><li>Roles enforced on the server</li><li>Audit trail</li><li>Password re-entry for sign-offs</li><li>We never train on your data</li><li>Open source</li></ul>
+        <p class="fine">SOC 2 and HIPAA are not certified yet. <a class="text-link" href="pricing.html#faq">Read the FAQ</a></p>''') \
++ """    <section class="cta">
       <div class="wrap">
-        <div class="cta-band">
-          <div><h2>Your process. Your app.</h2><p>Start free with the open source, or go live on NeoApps Cloud from US$49/month.</p></div>
+        <h2>Replace one spreadsheet this week.</h2>
+        <p>Start with one team and one workflow. Add the next when it sticks.</p>
+        <div class="hero-actions">
           <a class="button" href="get-started.html">Start building</a>
+          <a class="button secondary" href="mailto:info@neopric.com">Talk to us</a>
         </div>
       </div>
     </section>
 """
-page("index.html", "NeoApps.AI: describe your process, get a working business app",
-     "Describe your process in Claude, ChatGPT or Codex and get a production business app with logins, approvals, audit trail and AI.", home)
+page("index.html", "NeoApps.AI: custom software, built by your AI, owned by you",
+     "Describe your process in Claude, ChatGPT or Codex. Get a real app with roles, approvals and an audit trail. Run it in our cloud or yours.", home)
 
 # ---------------------------------------------------------------- Use cases
 uc = ""
@@ -367,6 +382,10 @@ dev = section("open-source", "Developers", "Open source. Real stack. No lock-in.
         ("Background jobs", "Long work and approvals on a RabbitMQ worker."),
         ("AI workflows", "Document Q&amp;A, ask-your-data and AI-drafted records with approval."),
         ("Local models", "Any OpenAI-compatible endpoint, e.g. Ollama or vLLM."),
+        ("Signatures", "Steps that need the person's password again; signer, time and statement logged."),
+        ("Notifications", "Bell and email from rules: who to tell, when a record moves."),
+        ("Installable", "Every app installs on phones and desktops."),
+        ("CSV export", "Any list, with the same permissions as the screen."),
     ]), white=True) \
 + section("build-yourself", "Prompt", "Build and host it yourself.", None,
     '        <div style="max-width:860px">' + prompt_box("I want to build [describe my business app]. Ask me about users, processes, data and permissions. Check the NeoApps schema guidelines and my environment. Show me a plan and wait for my approval. Then generate, build and run the app locally with the NeoApps tools, keep the source in my project, and show me how to host it myself.") + "</div>"
