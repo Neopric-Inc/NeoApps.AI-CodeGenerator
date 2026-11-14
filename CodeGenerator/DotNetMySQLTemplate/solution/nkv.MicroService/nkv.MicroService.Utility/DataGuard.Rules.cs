@@ -91,6 +91,7 @@ namespace nkv.MicroService.Utility
                 ["immutable"] = new JsonObject(_immutable.Select(kv => KeyValuePair.Create(kv.Key, (JsonNode)new JsonArray(kv.Value.Select(x => (JsonNode)x).ToArray())))),
                 ["rowScopes"] = ScopesSummary(),
                 ["numbering"] = new JsonArray(_numbering.Values.SelectMany(l => l).Select(n => (JsonNode)$"{n.Table}.{n.Column}: {n.Pattern} (reset {n.Reset})").ToArray()),
+                ["notifications"] = _notifyRules.Count,
                 ["audit"] = _auditTable, ["outbox"] = _outboxTable, ["outboxRules"] = _outboxAll ? -1 : _outboxRules.Count,
             };
         }
@@ -218,6 +219,7 @@ namespace nkv.MicroService.Utility
                 if (!_immutable.ContainsKey(lc.HistoryTable)) _immutable[lc.HistoryTable] = new(StringComparer.OrdinalIgnoreCase) { "*" };
             if (_outboxTable != null) _immutable[_outboxTable] = new(StringComparer.OrdinalIgnoreCase) { "*" };
             LoadNumbering(c);
+            InitNotifications(c);
         }
 
         // ------------------------------------------------------------------ write execution
@@ -272,6 +274,7 @@ namespace nkv.MicroService.Utility
                 }
                 WriteAudit(c, caller, table, "create", id, row, null);
                 WriteOutbox(c, caller, table, "insert", id, row, null);
+                Notify(c, caller, table, "create", id, row, null);
             });
         }
 
@@ -337,6 +340,7 @@ namespace nkv.MicroService.Utility
                 if (signed != null) audited = new Dictionary<string, object>(changes, StringComparer.OrdinalIgnoreCase) { ["signature"] = $"{caller.User} re-entered their password: {signed.Meaning}" };
                 WriteAudit(c, caller, table, isSoftDelete ? "delete" : "update", id, audited, current);
                 WriteOutbox(c, caller, table, isSoftDelete ? "delete" : "update", id, after, current);
+                if (!isSoftDelete) Notify(c, caller, table, "update", id, after, current);
             });
         }
 
