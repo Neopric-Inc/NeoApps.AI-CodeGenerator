@@ -26,7 +26,7 @@ public static class UiKit
         // DataGuard tenancy (created by the API on startup)
         "user_tenants", "login_attempts", "user_security", "number_sequences",
         // background jobs (created by the API on startup)
-        "background_jobs", "background_job_events",
+        "background_jobs", "background_job_events", "user_notifications", "user_notification_settings",
         // migration history (FluentMigrator)
         "versioninfo",
     };

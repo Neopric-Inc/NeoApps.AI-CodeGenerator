@@ -33,6 +33,7 @@ namespace nkv.MicroService.Utility
             var cfg = services.GetService<IConfiguration>();
             _rabbitUri = cfg?.GetConnectionString("RabitMQ");
             DataGuard.SetSigningSecret(cfg?["AppSettings:Secret"]);
+            NotificationMailer.Start(cfg);
             if (DataGuard.Config["outbox"] is JsonObject ob)
             {
                 _exchange = ob["exchange"]?.GetValue<string>() ?? _exchange;

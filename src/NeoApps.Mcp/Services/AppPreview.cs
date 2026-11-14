@@ -25,7 +25,7 @@ public static class AppPreview
         "roles", "users", "entities", "permissionmatrix", "messagequeue", "s3bucket", "s3bucket_folders", "dnd_ui_versions",
         "project_dnd_ui_versions", "workflow", "workflows", "workflows_projects", "workflow_builds", "workflow_runs",
         "workflow_deployments", "workflow_triggers", "workflow_trigger_conditions",
-        "ai_files", "ai_chunks", "ai_conversations", "ai_messages", "ai_runs", "versioninfo", "user_tenants", "login_attempts", "user_security", "number_sequences", "background_jobs", "background_job_events",
+        "ai_files", "ai_chunks", "ai_conversations", "ai_messages", "ai_runs", "versioninfo", "user_tenants", "login_attempts", "user_security", "number_sequences", "background_jobs", "background_job_events", "user_notifications", "user_notification_settings",
     };
     // Column names become C# property names in the generated API, unescaped.
     private static readonly HashSet<string> CSharpWords = new(StringComparer.Ordinal)
@@ -384,6 +384,25 @@ public static class AppPreview
             if (dl["escalate"] is JsonObject esc && Table("jobs.deadlines.escalate", Str(esc["table"])))
                 foreach (var (c, _) in esc["values"] as JsonObject ?? []) Col("jobs.deadlines.escalate.values", Str(esc["table"])!, c);
         }
+        foreach (var n in Objs(ui["notifications"]))
+        {
+            if (!Table("notifications", Str(n["table"]))) continue;
+            var table = Str(n["table"])!;
+            var where = $"notifications.{table}";
+            if (n["when"] is JsonObject wn) { Col($"{where}.when.column", table, Str(wn["column"])); Col($"{where}.when.changed", table, Str(wn["changed"])); }
+            var who = n["notify"] is JsonArray na ? na.ToList() : [n["notify"]];
+            if (who.All(x => x == null)) w.Add($"{where}: say who to notify (\"creator\", \"role:Name\" or a column holding the user).");
+            foreach (var x in who)
+            {
+                if (Str(x) is { } s1)
+                {
+                    if (s1.StartsWith("role:", StringComparison.OrdinalIgnoreCase)) Roles($"{where}.notify", new JsonArray(s1[5..]));
+                    else if (!s1.Equals("creator", StringComparison.OrdinalIgnoreCase)) Col($"{where}.notify", table, s1);
+                }
+                else if (x is JsonObject xo) { Col($"{where}.notify", table, Str(xo["column"])); Table($"{where}.notify.table", Str(xo["table"])); }
+            }
+            foreach (var ch in Strs(n["channels"])) if (ch is not ("inApp" or "email")) w.Add($"{where}: unknown channel '{ch}' (inApp, email).");
+        }
         foreach (var lim in Objs(ui["limits"]))
         {
             if (!Table("limits", Str(lim["table"]))) continue;
@@ -446,6 +465,13 @@ public static class AppPreview
         foreach (var (table, cols) in ui["immutable"] as JsonObject ?? [])
             data.Add(Set(cols).Contains("*") ? $"{Label(ui, table)}: can be added to, never changed or deleted." : $"{Label(ui, table)}: {string.Join(", ", Set(cols))} can't be changed after creation.");
         if (ui["audit"] is JsonObject au) data.Add($"Every change is recorded in {Label(ui, Str(au["table"]) ?? "the audit log")}.");
+        foreach (var n in Objs(ui["notifications"]))
+        {
+            var wn = n["when"] as JsonObject;
+            var when = wn?["to"] != null ? $"moves to {string.Join(" / ", Set(wn["to"]))}" : Str(wn?["changed"]) is { } chg ? $"{chg} changes" : "is created";
+            var who = string.Join(", ", (n["notify"] is JsonArray na ? na.ToList() : [n["notify"]]).Select(x => Str(x) is { } s1 ? (s1.StartsWith("role:") ? s1[5..] : s1 == "creator" ? "whoever created it" : s1) : Str(x?["column"]) ?? "?"));
+            data.Add($"{Label(ui, Str(n["table"]) ?? "")}: notify {who} when it {when}{(Set(n["channels"]).Contains("email") ? " (bell + email)" : " (bell)")}.");
+        }
         foreach (var lim in Objs(ui["limits"])) data.Add($"{Label(ui, Str(lim["table"]) ?? "")}: limited by the {Str(lim["max"]?["column"]) ?? "plan"} of the {Singular(Label(ui, Str(lim["max"]?["from"]) ?? "plan")).ToLowerInvariant()}.");
         foreach (var dl in Objs(ui["jobs"]?["deadlines"])) data.Add($"{Label(ui, Str(dl["table"]) ?? "")}: overdue items are flagged automatically.");
         if (data.Count > 0) cards.Add(("Data checks", data));

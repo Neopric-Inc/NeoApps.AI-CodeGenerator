@@ -9,6 +9,7 @@ import { useApp } from "./AppContext";
 import { Icon } from "./icons";
 import { extensions } from "../custom";
 import { Breadcrumbs, markMenuNavigation } from "./Breadcrumbs";
+import { NotificationBell } from "./NotificationBell";
 
 const WIDTH = 248;
 
@@ -77,6 +78,7 @@ export const Shell: React.FC = () => {
           <Box sx={{ flex: 1 }} />
           {me && (
             <>
+              <NotificationBell />
               <Chip size="small" label={me.role_name || "Member"} color={me.is_admin ? "primary" : "default"} variant="outlined" sx={{ mr: 1.5 }} />
               <IconButton onClick={(e) => setAnchor(e.currentTarget)} size="small">
                 <Avatar sx={{ width: 32, height: 32, fontSize: 14, bgcolor: "primary.main" }}>{me.username.slice(0, 1).toUpperCase()}</Avatar>
