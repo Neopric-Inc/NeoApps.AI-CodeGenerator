@@ -202,6 +202,73 @@ CLOUD_PROMPT = ("Use the NeoApps connector. I want to build [describe your busin
                 "permissions, then show me the preview and wait for my review. After I approve, publish it, check it's live and give me "
                 "the link. Never ask me for passwords, card numbers or API keys in this chat.")
 
+
+# ---------------------------------------------------------------- Illustrations (HTML/CSS mockups, sample data)
+CHECK = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+MOCK_REQUEST = """<div class="mock" role="img" aria-label="Illustration: a request moving from Draft to Submitted to Approved, with who did each step">
+  <div class="mock-bar"><span>REQ-2026-00012</span><span class="pill ok">Approved</span></div>
+  <div class="mock-body">
+    <div class="mock-title">Standing desk for the ops room</div>
+    <div class="mock-kv"><span>Requested by</span><b>Emma Clarke</b></div>
+    <div class="mock-kv"><span>Amount</span><b>$640.00</b></div>
+    <div class="mock-steps"><span class="pill">Draft</span><i></i><span class="pill info">Submitted</span><i></i><span class="pill ok">Approved</span></div>
+    <ul class="mock-log"><li><b>Emma</b> submitted<em>9:14 AM</em></li><li><b>Marcus</b> approved: “Order from the usual supplier.”<em>10:02 AM</em></li></ul>
+  </div>
+</div>"""
+MOCK_SIGNOFF = """<div class="mock" role="img" aria-label="Illustration: a partner re-entering their password to sign off an audit engagement">
+  <div class="mock-bar"><span>ENG-2026-00001</span><span class="pill info">Report</span></div>
+  <div class="mock-body">
+    <div class="mock-title">Sign this step</div>
+    <div class="mock-quote">I approve this engagement for release and confirm the report is complete.</div>
+    <div class="mock-field"><span>Your password</span><b>••••••••••</b></div>
+    <div class="mock-actions"><span class="mock-btn ghost">Cancel</span><span class="mock-btn">Sign</span></div>
+    <p class="mock-foot">Signer, time and statement go in the audit log.</p>
+  </div>
+</div>"""
+MOCK_INSPECTION = """<div class="mock" role="img" aria-label="Illustration: a site inspection checklist with photos and a supervisor sign-off">
+  <div class="mock-bar"><span>INS-2026-00031 · Dock 4</span><span class="pill warn">In review</span></div>
+  <div class="mock-body">
+    <ul class="mock-check"><li class="done">""" + CHECK + """Guard rails secured</li><li class="done">""" + CHECK + """Fire exits clear</li><li class="fail"><span>!</span>Forklift log missing</li></ul>
+    <div class="mock-photos"><span></span><span></span><span></span></div>
+    <div class="mock-kv"><span>Corrective action</span><b>Assigned to Ana · due Fri</b></div>
+  </div>
+</div>"""
+MOCK_CONNECT = """<div class="mock wide" role="img" aria-label="Illustration: an assistant's add-connector form with the NeoApps link pasted in">
+  <div class="mock-bar"><span>Add custom connector</span><span class="mock-x">×</span></div>
+  <div class="mock-body">
+    <div class="mock-field"><span>Name</span><b>NeoApps</b></div>
+    <div class="mock-field focus"><span>URL</span><b>""" + CLOUD_URL + """</b><em class="mock-callout">Paste this</em></div>
+    <div class="mock-actions"><span class="mock-btn ghost">Cancel</span><span class="mock-btn">Add</span></div>
+    <p class="mock-foot">Then sign in to NeoApps when asked. Your assistant's screen looks similar.</p>
+  </div>
+</div>"""
+ARCH = """<div class="arch" role="img" aria-label="Diagram: your assistant talks to the NeoApps connector, which builds and publishes your app (API, web app, database). On NeoApps Cloud the builder and app run on our servers; self-hosted, everything runs in your environment.">
+  <div class="arch-col"><div class="arch-label">Where you work</div>
+    <div class="arch-box"><b>Your assistant</b><span>Claude, ChatGPT or Codex</span></div></div>
+  <div class="arch-arrow" aria-hidden="true"><span>MCP</span></div>
+  <div class="arch-zone"><div class="arch-label">NeoApps Cloud, or your environment when self-hosted</div>
+    <div class="arch-row">
+      <div class="arch-box"><b>NeoApps connector</b><span>Plan, preview, publish</span></div>
+      <div class="arch-arrow" aria-hidden="true"><span>builds</span></div>
+      <div class="arch-box"><b>Generator</b><span>Schema + UI config → code</span></div>
+      <div class="arch-arrow" aria-hidden="true"><span>deploys</span></div>
+      <div class="arch-stack"><div class="arch-box accent"><b>Your app</b><span>.NET 10 API · React UI</span></div>
+        <div class="arch-box"><b>Data</b><span>MySQL · Redis · RabbitMQ</span></div></div>
+    </div></div>
+</div>"""
+
+COMPARE_TABLE = '''        <div class="compare-wrap"><table class="compare">
+          <thead><tr><th scope="col"><span class="sr-only">Question</span></th><th scope="col">Our cloud</th><th scope="col" class="featured">Your cloud</th><th scope="col">Your machine</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Who runs it</th><td>NeoApps, on Microsoft Azure in the US</td><td class="featured">Your Azure, AWS or Google Cloud account. We set it up and hand it over.</td><td>You, on your own servers</td></tr>
+            <tr><th scope="row">Updates</th><td>We keep it running and up to date</td><td class="featured">Your team, with our handover</td><td>You</td></tr>
+            <tr><th scope="row">Your app's code</th><td>Yes, anytime. Ask your assistant for your app's plan and build it with the open-source generator.</td><td class="featured">Yours</td><td>Yours</td></tr>
+            <tr><th scope="row">Your records</th><td>Export any list to CSV</td><td class="featured">In your own database</td><td>In your own database</td></tr>
+            <tr><th scope="row">Price</th><td>From US$49/month</td><td class="featured">One-time, from US$10,000</td><td>Free, open source</td></tr>
+            <tr><th scope="row"></th><td><a class="text-link" href="get-started.html">Start building</a></td><td class="featured"><a class="text-link" href="mailto:info@neopric.com?subject=NeoApps%20deploy%20in%20our%20cloud">Talk to us</a></td><td><a class="text-link" href="developers.html">Developer setup</a></td></tr>
+          </tbody>
+        </table></div>'''
+
 # ---------------------------------------------------------------- Home
 home = """    <section class="hero">
       <div class="wrap">
@@ -240,16 +307,7 @@ home = """    <section class="hero">
         </div>
         <p style="margin:20px 0 0"><a class="text-link" href="#proof">Watch a full build: ClaimKit, live in four hours →</a></p>''') \
 + section("own", "Where it runs", "Run it where your data must live. Leave whenever you want.", None,
-    '''        <div class="compare-wrap"><table class="compare">
-          <thead><tr><th scope="col"><span class="sr-only">Question</span></th><th scope="col">Our cloud</th><th scope="col" class="featured">Your cloud</th><th scope="col">Your machine</th></tr></thead>
-          <tbody>
-            <tr><th scope="row">Who runs it</th><td>NeoApps, on Microsoft Azure in the US</td><td class="featured">Your Azure, AWS or Google Cloud account. We set it up and hand it over.</td><td>You, on your own servers</td></tr>
-            <tr><th scope="row">Your app's code</th><td>Yes, anytime. Ask your assistant for your app's plan and build it with the open-source generator.</td><td class="featured">Yours</td><td>Yours</td></tr>
-            <tr><th scope="row">Your records</th><td>Export any list to CSV</td><td class="featured">In your own database</td><td>In your own database</td></tr>
-            <tr><th scope="row">Price</th><td>From US$49/month</td><td class="featured">One-time, from US$10,000</td><td>Free, open source</td></tr>
-            <tr><th scope="row"></th><td><a class="text-link" href="get-started.html">Start building</a></td><td class="featured"><a class="text-link" href="mailto:info@neopric.com?subject=NeoApps%20deploy%20in%20our%20cloud">Talk to us</a></td><td><a class="text-link" href="developers.html">Developer setup</a></td></tr>
-          </tbody>
-        </table></div>
+    '''''' + COMPARE_TABLE + '''
         <ul class="trust" aria-label="In place today"><li>Encrypted in transit and at rest</li><li>Roles enforced on the server</li><li>Audit trail</li><li>Password re-entry for sign-offs</li><li>We never train on your data</li><li>Open source</li></ul>
         <p class="fine">SOC 2 and HIPAA are not certified yet. <a class="text-link" href="pricing.html#faq">Read the FAQ</a></p>''') \
 + section("rules", "Production grade", "Your rules, enforced on the server.", "Not hidden buttons. Every request is checked, for every person, every time.",
@@ -292,10 +350,17 @@ page("index.html", "NeoApps.AI: custom software, built by your AI, owned by you"
      "Describe your process in Claude, ChatGPT or Codex. Get a real app with roles, approvals and an audit trail. Run it in our cloud or yours.", home)
 
 # ---------------------------------------------------------------- Use cases
-uc = ""
+FEATURED = [
+    (MOCK_REQUEST, "Requests and approvals", "Employees ask. Managers decide. Every step is on record.", "#professional"),
+    (MOCK_SIGNOFF, "Audit engagements", "Partners sign off with their password. The statement is logged.", "#professional"),
+    (MOCK_INSPECTION, "Field inspections", "Checklists, photos, failed items become corrective actions.", "#field"),
+]
+uc = section("featured", "Use cases", "Apps teams run every day.", "Three examples. Each is a starting point your assistant adapts to how you work.",
+    '        <div class="featured-grid">' + "".join(
+        f'<article class="featured-card">{m}<h3>{t}</h3><p>{d}</p><a class="text-link" href="{h}">See related apps →</a></article>' for m, t, d, h in FEATURED)
+    + '</div>\n        <p style="margin:20px 0 0"><a class="text-link" href="#prompt-library">Start from a ready-made prompt →</a></p>')
 for i, (anchor, name, items) in enumerate(INDUSTRIES):
-    uc += section(anchor, "Use cases" if i == 0 else name, name if i else name, "Each one is a starting point. Your assistant adapts it to how you work." if i == 0 else None,
-                  cards(items), white=bool(i % 2))
+    uc += section(anchor, "Industry", name, None, cards(items), white=bool(i % 2))
 uc += """    <section class="section white" id="prompt-library">
       <div class="wrap">
         <div class="section-heading">
@@ -332,6 +397,7 @@ def copy_inline(text):
 
 gs = section("connect", "Get started", "Connect once. Then just describe your app.", "Pick the assistant you already use.",
     f"""        <p class="needs"><strong>You'll need:</strong> a NeoApps account and a card for the plan (promo codes go in at checkout). Connecting opens a NeoApps page where you sign up or sign in.</p>
+        <div class="connect-visual"><div class="connect-copy"><h3>One link connects everything.</h3><p>Paste the NeoApps link where your assistant adds connectors or apps, then sign in. That's the whole setup.</p></div>""" + MOCK_CONNECT + f"""</div>
         <div class="connect">
           <article><h3>Claude</h3><ol><li>Open the Claude desktop app: Settings → Connectors → Add custom connector.</li><li>Paste {copy_inline(CLOUD_URL)}</li><li>Click Connect and sign in to NeoApps. It also works in the Claude mobile app.</li></ol></article>
           <article><h3>ChatGPT</h3><ol><li>Settings → Apps &amp; Connectors → Advanced settings: turn on Developer mode.</li><li>Choose Create and paste {copy_inline(CLOUD_URL)}</li><li>Sign in to NeoApps when asked.</li></ol></article>
@@ -358,6 +424,7 @@ pr = section("plans", "Pricing", "Simple pricing. Your data and code stay yours.
         </div>
         <p style="margin:18px 0 0;color:var(--muted)">AI inside your apps runs on your own Anthropic or OpenAI-compatible key, billed by them. Your Claude, ChatGPT or Codex plan is separate. Data is hosted in the US.</p>
         <p style="margin:8px 0 0;color:var(--muted)">Need it built for you? <a class="text-link" href="mailto:info@neopric.com?subject=NeoApps%20custom%20build">Talk to us</a> about custom apps, hosting and support.</p>""", white=True) \
++ section("compare", "Where it runs", "Who runs it, who updates it, what you keep.", None, COMPARE_TABLE) \
 + section("adopt", "How teams adopt", "Start small. Grow when it sticks.", None,
     '        <ol style="max-width:820px;margin:0;padding-left:20px;line-height:1.9">'
     '<li><b>One team, one workflow.</b> Replace a spreadsheet in a day.</li>'
@@ -393,6 +460,7 @@ dev = section("open-source", "Developers", "Open source. Real stack. No lock-in.
         ("MySQL, Redis, RabbitMQ", "Background jobs, approvals and events, out of the box."),
         ("MCP server and CLI", "Every operation as a tool for Claude, ChatGPT, Codex and others."),
     ]), white=True) \
++ section("how", "How it fits together", "Your assistant talks. NeoApps builds. Your app runs.", "The same pieces run on NeoApps Cloud or in your own environment.", "        " + ARCH) \
 + section("local", "Run it locally", "One command to install.", "Needs Docker. Registers the MCP server with Claude Code and Claude Desktop and prints the config for Codex and others.",
     f"""        <div class="prompt-box" style="max-width:860px"><pre class="copy-text">curl -fsSL https://raw.githubusercontent.com/Neopric-Inc/NeoApps.AI-CodeGenerator/main/install.sh | bash</pre><div class="copy-row"><span class="copy-status" aria-live="polite"></span><button class="button secondary small copy-button" type="button">Copy</button></div></div>
         <p style="margin:16px 0 0">Then ask your agent to build an app, or use the CLI: <code>neoapps new MyApp --schema schema.sql --ui ui.config.json --deploy</code>. <a class="text-link" href="{GITHUB}#coding-agents-mcp">Setup guide ↗</a></p>""") \
