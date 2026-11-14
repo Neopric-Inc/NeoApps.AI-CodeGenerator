@@ -80,6 +80,30 @@ public static class UiKit
     /// tenant role templates (permissionmatrix rows with user_id NULL), the same shape the in-app Roles screen edits.
     /// Letters: c = create, r = read, u = update, d = delete. "*" applies to every app table.
     /// </summary>
+    /// <summary>
+    /// Sample rows from schema.sql belong to the workspace owner. Rows are owner-scoped (createdBy holds the owner), so
+    /// seed rows written with another createdBy ('sample', 'system', ...) were invisible: lists came back empty,
+    /// "Requested by" pickers had nothing to choose, and row scopes that look a user up in a seeded table found no one.
+    /// Runs once, when the database is first set up.
+    /// </summary>
+    public static void ClaimSeedRows(MySqlConnection connection, string tenant)
+    {
+        var tables = new List<string>();
+        using (var cmd = new MySqlCommand(@"SELECT c.TABLE_NAME FROM information_schema.COLUMNS c
+            JOIN information_schema.COLUMNS m ON m.TABLE_SCHEMA = c.TABLE_SCHEMA AND m.TABLE_NAME = c.TABLE_NAME AND LOWER(m.COLUMN_NAME) = 'modifiedby'
+            WHERE c.TABLE_SCHEMA = DATABASE() AND LOWER(c.COLUMN_NAME) = 'createdby'", connection))
+        using (var r = cmd.ExecuteReader())
+            while (r.Read()) tables.Add(r.GetString(0));
+        var claimed = 0;
+        foreach (var t in tables.Where(t => !SystemTables.Contains(t) && t.All(ch => char.IsLetterOrDigit(ch) || ch == '_')))
+        {
+            using var upd = new MySqlCommand($"UPDATE `{t}` SET createdBy = @t, modifiedBy = @t WHERE createdBy <> @t OR modifiedBy <> @t", connection);
+            upd.Parameters.AddWithValue("@t", tenant);
+            claimed += upd.ExecuteNonQuery();
+        }
+        if (claimed > 0) Console.WriteLine($"Sample data: {claimed} row(s) assigned to the workspace owner.");
+    }
+
     public static void SeedRoles(MySqlConnection connection, string tenant, string uiConfigPath)
     {
         var roles = LoadConfig(uiConfigPath)?["roles"] as JsonObject;

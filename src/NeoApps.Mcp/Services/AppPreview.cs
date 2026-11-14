@@ -304,7 +304,13 @@ public static class AppPreview
                 foreach (var orphan in options.Where(o => !reachable.Contains(o)))
                     w.Add($"{where}: state '{orphan}' can't be reached (not initial and no transition leads to it).");
             if (lc["history"] is JsonObject h && Table(where + ".history", Str(h["table"])))
+            {
                 foreach (var k in new[] { "link", "from", "to", "actor" }) Col($"{where}.history.{k}", Str(h["table"])!, Str(h[k]));
+                // the first history row (record created) has no previous state
+                var fromCol = tables.FirstOrDefault(t => t.Name == Str(h["table"]))?.Columns.FirstOrDefault(c => c.Name == Str(h["from"]));
+                if (fromCol is { NotNull: true, Default: null })
+                    w.Add($"{where}.history: {Str(h["table"])}.{fromCol.Name} must allow NULL: the entry written when a record is created has no previous state.");
+            }
             foreach (var (st, tsCol) in lc["timestamps"] as JsonObject ?? []) { State("timestamps", st); Col(where + ".timestamps", table, Str(tsCol)); }
             if (lc["sla"] is JsonObject sla && Table(where + ".sla", Str(sla["table"])))
             {
@@ -334,6 +340,10 @@ public static class AppPreview
             foreach (var n in Objs(node))
             {
                 Col($"numbering.{table}", table, Str(n["column"]));
+                // the number is assigned by the API, so forms and API callers leave it out
+                var numCol = tables.FirstOrDefault(t => t.Name == table)?.Columns.FirstOrDefault(c => c.Name == Str(n["column"]));
+                if (numCol is { NotNull: true, Default: null })
+                    w.Add($"numbering.{table}: make {table}.{numCol.Name} DEFAULT NULL (keep it UNIQUE) so records can be created without typing a number.");
                 if (Str(n["pattern"]) is not { } pat || !pat.Contains("{seq")) w.Add($"numbering.{table}: the pattern needs a {{seq}} or {{seq:N}} token.");
             }
         }
