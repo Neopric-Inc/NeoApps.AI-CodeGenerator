@@ -281,10 +281,10 @@ home = """    <section class="hero">
         </div>
       </div>
     </section>
-    <section class="hero-shot" aria-label="Product screenshot">
+    <section class="hero-shot" aria-label="Product demo">
       <div class="wrap">
-        <div class="shot glow"><img src="assets/img/bell.webp" width="1440" height="900" alt="An audit app's dashboard with a notification that an engagement is ready for sign-off"></div>
-        <p class="caption">AuditDesk, generated from one description. Sample data.</p>
+        <div class="shot glow"><video src="assets/video/receipts-demo.mp4" poster="assets/img/receipts-poster.webp" width="1280" height="720" autoplay muted loop playsinline preload="metadata" aria-label="Claude builds a Receipts app with NeoApps, then a receipt is uploaded and AI drafts the expense"></video></div>
+        <p class="caption">Built live in Claude: a Receipts app where AI drafts the expense. Sample receipt.</p>
       </div>
     </section>
     <section class="works" aria-label="Works with">
