@@ -284,7 +284,16 @@ namespace nkv.MicroService.Utility
             if (_immutable.TryGetValue(table, out var im) && im.Contains("*"))
                 throw new DataGuardException($"{table} is append-only: records can't be changed or deleted.", 409);
             var id = KeyValue(cmd, table, values);
-            var current = id == null ? null : LoadVisible(cmd, table, id);
+            if (id == null)
+            {
+                // the rules can't tell which record changes (several rows, or a key that isn't a value): refuse rather than skip them
+                var guarded = (_lifecycles.TryGetValue(table, out var lcx) && values.ContainsKey(lcx.Column))
+                    || (_immutable.TryGetValue(table, out var imx) && values.Keys.Any(k => imx.Contains(k)));
+                if (guarded)
+                    throw new DataGuardException($"{table}: change one record at a time, by its key (WHERE {PrimaryKeys.GetValueOrDefault(table, "id")} = @id), so its rules can be checked.", 400);
+                return;
+            }
+            var current = LoadVisible(cmd, table, id);
             if (current == null) return; // not visible: the scoped UPDATE affects nothing
             string fromState = null, toState = null;
             Transition signed = null;
@@ -648,8 +657,12 @@ namespace nkv.MicroService.Utility
         static object KeyValue(MySqlCommand cmd, string table, Dictionary<string, object> values)
         {
             if (!PrimaryKeys.TryGetValue(table, out var pk)) return null;
-            var m = Regex.Match(cmd.CommandText, $@"\bWHERE\b.*?`?\b{Regex.Escape(pk)}\b`?\s*=\s*(@\w+)", RegexOptions.IgnoreCase | RegexOptions.Singleline);
-            if (m.Success && cmd.Parameters.Contains(m.Groups[1].Value)) return cmd.Parameters[m.Groups[1].Value].Value;
+            var m = Regex.Match(cmd.CommandText, $@"\bWHERE\b.*?`?\b{Regex.Escape(pk)}\b`?\s*=\s*(@\w+|'(?:[^']|'')*'|-?\d+)", RegexOptions.IgnoreCase | RegexOptions.Singleline);
+            if (m.Success)
+            {
+                var key = SqlValue(m.Groups[1].Value, cmd); // a parameter, or the key written in the SQL (WHERE id = 4)
+                if (key != null && !(key is string p && p.StartsWith("@"))) return key;
+            }
             if (!values.TryGetValue(pk, out var v)) return null;
             return v is string s && s.StartsWith("@") ? null : v;
         }
