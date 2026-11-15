@@ -126,7 +126,7 @@ namespace nkv.MicroService.Utility
                 if (s.Equals("creator", StringComparison.OrdinalIgnoreCase))
                 {
                     var name = Str(row.GetValueOrDefault(CreatedByUser));
-                    if (name != null) { sql = "SELECT user_id FROM users WHERE username = @p AND isActive = 1"; p = Regex.Replace(name, " via AI$", ""); }
+                    if (name != null) { sql = "SELECT user_id FROM users WHERE username = @p AND isActive = 1"; p = Regex.Replace(name, " via [A-Za-z]+$", ""); }
                 }
                 else if (s.StartsWith("role:", StringComparison.OrdinalIgnoreCase))
                 { sql = "SELECT u.user_id FROM users u JOIN roles r ON r.role_id = u.role_id WHERE r.role_name = @p AND u.isActive = 1"; p = s[5..]; }

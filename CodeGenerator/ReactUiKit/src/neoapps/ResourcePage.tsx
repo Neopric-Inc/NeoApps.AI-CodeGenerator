@@ -12,6 +12,7 @@ import { useApp } from "./AppContext";
 import { WorkflowButtons } from "./ai/Workflows";
 import { DataTable } from "./DataTable";
 import { exportCsv } from "./exportCsv";
+import { ImportButton } from "./ImportCsv";
 import { Icon } from "./icons";
 import { RecordForm } from "./RecordForm";
 import { invalidateReferences, useReferences } from "./useReferences";
@@ -164,6 +165,7 @@ const TablePage: React.FC = () => {
             finally { setExporting(false); }
           }}>{exporting ? "Exporting…" : "Export"}</Button>
         )}
+        {can(name, "create") && <ImportButton table={table} onDone={() => setReload((r) => r + 1)} />}
         {can(name, "create") && (
           <Button variant="contained" startIcon={<AddIcon />} onClick={() => setEditing(null)}>New {table.singular.toLowerCase()}</Button>
         )}
