@@ -489,7 +489,7 @@ namespace nkv.MicroService.Utility
                     if (e.StartsWith("@")) Bind(cmd, e, caller.Tenant.Value);
                     else throw new DataGuardException($"{table}.{TenantColumn} must be a parameter");
                 }
-                values[cols[i]] = e.StartsWith("@") && cmd.Parameters.Contains(e) ? cmd.Parameters[e].Value : (object)e;
+                values[cols[i]] = SqlValue(e, cmd);
             }
             foreach (var h in HiddenFields(table)) values.Remove(h); // set to the column default below
             if (caller.Owner != null && cols.Contains("createdby"))
@@ -554,6 +554,32 @@ namespace nkv.MicroService.Utility
         }
 
         /// <summary>Column -> bound value for "a=@a, b=@b" (only parameter assignments).</summary>
+        /// <summary>The value an INSERT/UPDATE expression stands for: a parameter's value, a quoted string literal without its
+        /// quotes ('it''s' -> it's), NULL as null; anything else (numbers, functions) as written. Rules such as lifecycles,
+        /// validations and audit compare these, so SET status = 'sent' and SET status = @s behave the same.</summary>
+        static object SqlValue(string e, MySqlCommand cmd)
+        {
+            e = e.Trim();
+            if (e.StartsWith("@") && cmd.Parameters.Contains(e)) return cmd.Parameters[e].Value;
+            if (e.Length >= 2 && (e[0] == '\'' || e[0] == '"') && e[^1] == e[0])
+            {
+                var q = e[0];
+                var inner = e[1..^1];
+                // only a single literal: every inner quote must be doubled (or backslash-escaped)
+                var sb = new System.Text.StringBuilder();
+                for (var i = 0; i < inner.Length; i++)
+                {
+                    var ch = inner[i];
+                    if (ch == '\\' && i + 1 < inner.Length) { sb.Append(inner[++i]); continue; }
+                    if (ch == q) { if (i + 1 < inner.Length && inner[i + 1] == q) { sb.Append(q); i++; continue; } return e; }
+                    sb.Append(ch);
+                }
+                return sb.ToString();
+            }
+            if (e.Equals("NULL", StringComparison.OrdinalIgnoreCase)) return null;
+            return e;
+        }
+
         static Dictionary<string, object> SetAssignments(string setPart, MySqlCommand cmd)
         {
             var end = FindTopLevel(setPart, 0, @"\bWHERE\b");
@@ -564,7 +590,7 @@ namespace nkv.MicroService.Utility
                 var m = Regex.Match(a, @"^\s*`?(\w+)`?\s*=\s*(.+?)\s*$", RegexOptions.Singleline);
                 if (!m.Success) continue;
                 var e = m.Groups[2].Value;
-                d[m.Groups[1].Value.ToLowerInvariant()] = e.StartsWith("@") && cmd.Parameters.Contains(e) ? cmd.Parameters[e].Value : (object)e;
+                d[m.Groups[1].Value.ToLowerInvariant()] = SqlValue(e, cmd);
             }
             return d;
         }
