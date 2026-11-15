@@ -119,6 +119,7 @@ namespace nkv.MicroService.API.Jobs
             {
                 User = job.Username, UserId = job.UserId, RoleId = now.Value.roleId, Owner = job.Owner,
                 IsAi = job.Kind.StartsWith("ai.", StringComparison.OrdinalIgnoreCase), CorrelationId = "job-" + id,
+                Via = job.Kind == "data.import" ? "import" : null,
             };
             if (DataGuard.TenancyEnabled)
             {

@@ -168,7 +168,7 @@ namespace nkv.MicroService.Utility
 
         /// <summary>The person behind a write, as stored in created_by_user / modified_by_user.</summary>
         public static string ActorName(Caller caller) =>
-            caller == null ? "system" : caller.IsSystem ? "system" : caller.IsAi ? $"{caller.User} via AI" : caller.User;
+            caller == null ? "system" : caller.IsSystem ? "system" : caller.IsAi ? $"{caller.User} via AI" : caller.Via != null ? $"{caller.User} via {caller.Via}" : caller.User;
 
         static bool HasCol(string table, string col) => Columns.TryGetValue(table, out var cs) && cs.Contains(col);
 
@@ -253,6 +253,7 @@ namespace nkv.MicroService.Utility
             public int RoleId;
             public bool IsAi;          // request came through the AI assistant/workflows
             public bool IsSystem;      // background job
+            public string Via;         // channel shown after the person, e.g. "import" -> "<user> via import"
             public bool Unassigned;    // tenancy on, but this account has no tenant mapping yet: no data access
             public string Owner;       // workspace owner (ClaimTypes.Actor)
             public int? Tenant;        // null = platform user
