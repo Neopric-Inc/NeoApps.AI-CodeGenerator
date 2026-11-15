@@ -43,6 +43,7 @@ NAV = [
         ("developers.html#open-source", "Open source"),
         ("developers.html#local", "Run it locally"),
         ("developers.html#rules", "Data rules"),
+        ("developers.html#extend", "Extend it"),
         (GITHUB, "GitHub ↗"),
     ]),
 ]
@@ -477,8 +478,16 @@ dev = section("open-source", "Developers", "Open source. Real stack. No lock-in.
         ("Signatures", "Steps that need the person's password again; signer, time and statement logged."),
         ("Notifications", "Bell and email from rules: who to tell, when a record moves."),
         ("Installable", "Every app installs on phones and desktops."),
-        ("CSV export", "Any list, with the same permissions as the screen."),
+        ("CSV import and export", "Any list. Imports are checked against every rule first, then saved all or nothing."),
     ]), white=True) \
++ section("extend", "Extend it", "When config isn't enough, write code.", f'Your code survives every regenerate. Start from a working app in <a class="text-link" href="{GITHUB}/tree/main/samples">samples/ ↗</a>.',
+    cards([
+        ("Custom screens", "Your own React pages, dashboard widgets and record buttons. Works on NeoApps Cloud too."),
+        ("Custom server code", "C# jobs and endpoints, any NuGet package. Self-hosted for now."),
+        ("Preview first", "One page with the data model, every screen and who can do what, before anything is built."),
+        ("Test the rules", "<code>neoapps test</code> proves each role sees only its own rows."),
+    ])
+    + '\n        <p style="margin:24px 0 0"><b>Not yet:</b> calendar view, bulk entry grid, PDFs, SMS and calendar sync. Write them as custom code today; built-in versions are coming.</p>') \
 + section("build-yourself", "Prompt", "Build and host it yourself.", None,
     '        <div style="max-width:860px">' + prompt_box("I want to build [describe my business app]. Ask me about users, processes, data and permissions. Check the NeoApps schema guidelines and my environment. Show me a plan and wait for my approval. Then generate, build and run the app locally with the NeoApps tools, keep the source in my project, and show me how to host it myself.") + "</div>"
     + f'\n        <p style="margin:16px 0 0"><a class="button secondary" href="{GITHUB}">View on GitHub ↗</a></p>')
