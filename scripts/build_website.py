@@ -265,7 +265,7 @@ COMPARE_TABLE = '''        <div class="compare-wrap"><table class="compare">
             <tr><th scope="row">Updates</th><td>We keep it running and up to date</td><td class="featured">Your team, with our handover</td><td>You</td></tr>
             <tr><th scope="row">Your app's code</th><td>Yes, anytime. Ask your assistant for your app's plan and build it with the open-source generator.</td><td class="featured">Yours</td><td>Yours</td></tr>
             <tr><th scope="row">Your records</th><td>Export any list to CSV</td><td class="featured">In your own database</td><td>In your own database</td></tr>
-            <tr><th scope="row">Price</th><td>From US$49/month</td><td class="featured">One-time, from US$10,000</td><td>Free, open source</td></tr>
+            <tr><th scope="row">Price</th><td>14 days free, then from US$49/month</td><td class="featured">One-time, from US$10,000</td><td>Free, open source</td></tr>
             <tr><th scope="row"></th><td><a class="text-link" href="get-started.html">Start building</a></td><td class="featured"><a class="text-link" href="mailto:info@neopric.com?subject=NeoApps%20deploy%20in%20our%20cloud">Talk to us</a></td><td><a class="text-link" href="developers.html">Developer setup</a></td></tr>
           </tbody>
         </table></div>'''
@@ -280,6 +280,7 @@ home = """    <section class="hero">
           <a class="button" href="get-started.html">Start building</a>
           <a class="button secondary" href="#how-it-works">See how it works</a>
         </div>
+        <p class="fine">14 days free. No card needed.</p>
       </div>
     </section>
     <section class="hero-shot" aria-label="Product demo">
@@ -344,6 +345,7 @@ home = """    <section class="hero">
           <a class="button" href="get-started.html">Start building</a>
           <a class="button secondary" href="mailto:info@neopric.com">Talk to us</a>
         </div>
+        <p class="fine">14 days free. No card needed.</p>
       </div>
     </section>
 """
@@ -397,7 +399,7 @@ def copy_inline(text):
 
 
 gs = section("connect", "Get started", "Connect once. Then just describe your app.", "Pick the assistant you already use.",
-    f"""        <p class="needs"><strong>You'll need:</strong> a NeoApps account and a card for the plan (promo codes go in at checkout). Connecting opens a NeoApps page where you sign up or sign in.</p>
+    f"""        <p class="needs"><strong>You'll need:</strong> a NeoApps account. Confirm your email and you get 14 days free, no card. Pick a plan when you're ready (promo codes go in at checkout). Connecting opens a NeoApps page where you sign up or sign in.</p>
         <div class="connect-visual"><div class="connect-copy"><h3>One link connects everything.</h3><p>Paste the NeoApps link where your assistant adds connectors or apps, then sign in. That's the whole setup.</p></div>""" + MOCK_CONNECT + f"""</div>
         <div class="connect">
           <article><h3>Claude</h3><ol><li>Open the Claude desktop app: Settings → Connectors → Add custom connector.</li><li>Paste {copy_inline(CLOUD_URL)}</li><li>Click Connect and sign in to NeoApps. It also works in the Claude mobile app.</li></ol></article>
@@ -420,7 +422,7 @@ page("get-started.html", "Get started · NeoApps.AI", "Connect NeoApps to Claude
 pr = section("plans", "Pricing", "Simple pricing. Your data and code stay yours.", None,
     """        <div class="paths">
           <article class="path-card"><div class="path-label">Open source</div><h3>Run it yourself</h3><div class="price">Free</div><p>Generate and host apps on your own machines. You manage hosting and updates.</p><a class="button secondary" href="developers.html">Developer setup</a></article>
-          <article class="path-card featured"><div class="path-label">NeoApps Cloud</div><h3>One app</h3><div class="price">US$49<small>/month</small></div><p>Hosting, database and sign-in included. Built and published from your assistant.</p><a class="button" href="get-started.html">Get started</a></article>
+          <article class="path-card featured"><div class="path-label">NeoApps Cloud</div><h3>One app</h3><div class="price">US$49<small>/month</small></div><p>Hosting, database and sign-in included. Built and published from your assistant. Try it free for 14 days, no card.</p><a class="button" href="get-started.html">Start free trial</a></article>
           <article class="path-card"><div class="path-label">NeoApps Cloud</div><h3>Up to three apps</h3><div class="price">US$149<small>/month</small></div><p>Everything in One app, for up to three apps.</p><a class="button secondary" href="get-started.html">Get started</a></article>
         </div>
         <p style="margin:18px 0 0;color:var(--muted)">AI inside your apps runs on your own Anthropic or OpenAI-compatible key, billed by them. Your Claude, ChatGPT or Codex plan is separate. Data is hosted in the US.</p>
@@ -433,6 +435,7 @@ pr = section("plans", "Pricing", "Simple pricing. Your data and code stay yours.
     '<li><b>Add the next workflow</b> once the first one sticks.</li></ol>') \
 + section("faq", "FAQ", "Questions people ask.", None, '        <div class="faq" style="max-width:820px">' + "".join(
     f"<details><summary>{q}</summary><p>{a}</p></details>" for q, a in [
+        ("Is there a free trial?", "Yes. 14 days, no card. Confirm your email, then build and publish one app. Pick a plan to keep it running; if you don't, it pauses and is kept for 30 days."),
         ("Do I need to code?", "No. You describe your business in Claude, ChatGPT or Codex. You review a preview and approve it."),
         ("Is it a prototype or a real app?", "A real app: sign-in, roles, data rules enforced on the server, and an audit trail. Teams run their business on it."),
         ("How fast is it live?", "Usually the same day. Describe it, approve the preview, publish."),
@@ -450,7 +453,7 @@ pr = section("plans", "Pricing", "Simple pricing. Your data and code stay yours.
         ("What can't it do?", "It's for business records and workflows. It isn't for games, design tools or heavy number-crunching."),
         ("What if I cancel?", "Your apps stay available for 30 days so you can take your data with you. Then they're closed."),
     ]) + "</div>")
-page("pricing.html", "Pricing · NeoApps.AI", "NeoApps Cloud from US$49/month for one app, US$149/month for up to three. Free and open source to self-host.", pr)
+page("pricing.html", "Pricing · NeoApps.AI", "NeoApps Cloud: 14 days free, no card. Then US$49/month for one app, US$149/month for up to three. Free and open source to self-host.", pr)
 
 # ---------------------------------------------------------------- Developers
 dev = section("open-source", "Developers", "Open source. Real stack. No lock-in.",
