@@ -63,7 +63,7 @@
 
     /* Screenshots */
     .shot { border: 1px solid var(--line-strong); border-radius: 14px; padding: 6px; background: var(--raised); }
-    .shot img { display: block; width: 100%; height: auto; border-radius: 9px; }
+    .shot img, .shot video { display: block; width: 100%; height: auto; border-radius: 9px; }
     .shot.glow { padding: 8px; box-shadow: 0 40px 120px -40px rgba(122,162,255,.35); }
 
     /* Works-with strip */

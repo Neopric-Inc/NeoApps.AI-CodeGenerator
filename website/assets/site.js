@@ -16,3 +16,8 @@
         status.textContent = 'Open the preview and select the prompt to copy.';
       }
     });
+
+// Respect reduced motion: show the poster instead of playing demo videos
+if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  document.querySelectorAll('video[autoplay]').forEach(v => { v.removeAttribute('autoplay'); v.pause(); v.controls = true; });
+}
