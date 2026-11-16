@@ -490,7 +490,7 @@ dev = section("open-source", "Developers", "Open source. Real stack. No lock-in.
         ("Preview first", "One page with the data model, every screen and who can do what, before anything is built."),
         ("Test the rules", "<code>neoapps test</code> proves each role sees only its own rows."),
     ])
-    + '\n        <p style="margin:24px 0 0"><b>Not yet:</b> calendar view, bulk entry grid, PDFs, SMS and calendar sync. Write them as custom code today; built-in versions are coming.</p>') \
+    + '\n        <p style="margin:24px 0 0"><b>Not built in yet:</b> calendar view, bulk entry grid, PDFs, SMS and calendar sync. Calendar, charts and PDFs work today as custom screens, on NeoApps Cloud too; SMS and calendar sync as custom server code, self-hosted.</p>') \
 + section("build-yourself", "Prompt", "Build and host it yourself.", None,
     '        <div style="max-width:860px">' + prompt_box("I want to build [describe my business app]. Ask me about users, processes, data and permissions. Check the NeoApps schema guidelines and my environment. Show me a plan and wait for my approval. Then generate, build and run the app locally with the NeoApps tools, keep the source in my project, and show me how to host it myself.") + "</div>"
     + f'\n        <p style="margin:16px 0 0"><a class="button secondary" href="{GITHUB}">View on GitHub ↗</a></p>')
