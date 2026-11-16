@@ -45,7 +45,7 @@ namespace nkv.MicroService.DataAccess.Impl
                 var connection = mySqlDatabaseConnector.GetConnection();
                 using (var cmd = connection.CreateCommand())
                 {
-                    cmd.CommandText = @"SELECT count(*) TotalCount FROM users t WHERE t.password_hash LIKE CONCAT('%',@SearchKey,'%') OR t.username LIKE CONCAT('%',@SearchKey,'%')";
+                    cmd.CommandText = @"SELECT count(*) TotalCount FROM users t WHERE t.username LIKE CONCAT('%',@SearchKey,'%')";
                     cmd.Parameters.AddWithValue("@SearchKey", searchKey);
                     using (var reader = cmd.ExecuteReader())
                         while (reader.Read())
@@ -82,7 +82,7 @@ namespace nkv.MicroService.DataAccess.Impl
                             {
                                 user_id = reader.GetValue<Int32>("user_id"),
                                 username = reader.GetValue<String>("username"),
-                                password_hash = reader.GetValue<String>("password_hash"),
+                                password_hash = null, // never sent to clients; sign-in reads it in AuthenticateUser
                                 role_id = reader.GetValue<Int32>("role_id"),
                                 createdBy = reader.IsDBNull(Helper.GetColumnOrder(reader, "createdBy")) ? (String?)null : reader.GetString("createdBy"),
                                 modifiedBy = reader.IsDBNull(Helper.GetColumnOrder(reader, "modifiedBy")) ? (String?)null : reader.GetString("modifiedBy"),
@@ -113,7 +113,7 @@ namespace nkv.MicroService.DataAccess.Impl
                 var connection = mySqlDatabaseConnector.GetConnection();
                 using (var cmd = connection.CreateCommand())
                 {
-                    cmd.CommandText = @"SELECT t.* FROM users t WHERE t.password_hash LIKE CONCAT('%',@SearchKey,'%') OR t.username LIKE CONCAT('%',@SearchKey,'%') ORDER BY column LIMIT @Offset, @ItemsPerPage";
+                    cmd.CommandText = @"SELECT t.* FROM users t WHERE t.username LIKE CONCAT('%',@SearchKey,'%') ORDER BY column LIMIT @Offset, @ItemsPerPage";
                     cmd.CommandText = Helper.ConverOrderListToSQL(cmd.CommandText, orderBy);
                     cmd.Parameters.AddWithValue("@SearchKey", searchKey);
                     cmd.Parameters.AddWithValue("@Offset", offset);
@@ -125,7 +125,7 @@ namespace nkv.MicroService.DataAccess.Impl
                             {
                                 user_id = reader.GetValue<Int32>("user_id"),
                                 username = reader.GetValue<String>("username"),
-                                password_hash = reader.GetValue<String>("password_hash"),
+                                password_hash = null, // never sent to clients; sign-in reads it in AuthenticateUser
                                 role_id = reader.GetValue<Int32>("role_id"),
                                 createdBy = reader.IsDBNull(Helper.GetColumnOrder(reader, "createdBy")) ? (String?)null : reader.GetString("createdBy"),
                                 modifiedBy = reader.IsDBNull(Helper.GetColumnOrder(reader, "modifiedBy")) ? (String?)null : reader.GetString("modifiedBy"),
@@ -165,7 +165,7 @@ namespace nkv.MicroService.DataAccess.Impl
                             {
                                 user_id = reader.GetValue<Int32>("user_id"),
                                 username = reader.GetValue<String>("username"),
-                                password_hash = reader.GetValue<String>("password_hash"),
+                                password_hash = null, // never sent to clients; sign-in reads it in AuthenticateUser
                                 role_id = reader.GetValue<Int32>("role_id"),
                                 createdBy = reader.IsDBNull(Helper.GetColumnOrder(reader, "createdBy")) ? (String?)null : reader.GetString("createdBy"),
                                 modifiedBy = reader.IsDBNull(Helper.GetColumnOrder(reader, "modifiedBy")) ? (String?)null : reader.GetString("modifiedBy"),
@@ -234,12 +234,12 @@ namespace nkv.MicroService.DataAccess.Impl
                 var connection = mySqlDatabaseConnector.GetConnection();
                 using (var cmd = connection.CreateCommand())
                 {
-                    cmd.CommandText = @"UPDATE users SET modifiedAt=@modifiedAt,modifiedBy=@modifiedBy,password_hash=@password_hash,role_id=@role_id,user_id=@user_id,username=@username,isActive=@isActive WHERE user_id=@user_id";
+                    cmd.CommandText = @"UPDATE users SET modifiedAt=@modifiedAt,modifiedBy=@modifiedBy,password_hash=COALESCE(@password_hash, password_hash),role_id=@role_id,user_id=@user_id,username=@username,isActive=@isActive WHERE user_id=@user_id";
                     //cmd.Parameters.AddWithValue("@createdAt", model.modifiedAt);
                     //cmd.Parameters.AddWithValue("@createdBy", model.createdBy);
                     cmd.Parameters.AddWithValue("@modifiedAt", model.createdAt);
                     cmd.Parameters.AddWithValue("@modifiedBy", model.modifiedBy);
-                    cmd.Parameters.AddWithValue("@password_hash", PasswordHasher.EnsureHashed(model.password_hash));
+                    cmd.Parameters.AddWithValue("@password_hash", string.IsNullOrEmpty(model.password_hash) ? (object)DBNull.Value : PasswordHasher.EnsureHashed(model.password_hash)); // empty = keep
                     cmd.Parameters.AddWithValue("@role_id", model.role_id);
                     cmd.Parameters.AddWithValue("@user_id", model.user_id);
                     cmd.Parameters.AddWithValue("@username", model.username);
