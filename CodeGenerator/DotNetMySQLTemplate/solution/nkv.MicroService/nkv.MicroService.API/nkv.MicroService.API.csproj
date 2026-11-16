@@ -4,6 +4,8 @@
     <PackageReference Include="AWSSDK.S3" Version="4.0.104.8" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.14" />
     <PackageReference Include="Microsoft.Extensions.Logging.Log4Net.AspNetCore" Version="8.0.0" />
+    <!-- log4net 2.0.15 (pulled in above) has advisory GHSA-4f7c-pmjv-c25w -->
+    <PackageReference Include="log4net" Version="3.6.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="10.3.1" />
     <PackageReference Include="StackExchange.Redis" Version="2.13.23" />
     <PackageReference Include="PdfPig" Version="0.1.16" />

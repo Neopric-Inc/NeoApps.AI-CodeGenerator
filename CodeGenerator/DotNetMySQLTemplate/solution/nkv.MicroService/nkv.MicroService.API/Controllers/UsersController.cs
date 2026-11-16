@@ -116,6 +116,9 @@ namespace nkv.MicroService.API.Controllers
 
                 // Extract the actual token from the Authorization header (e.g., "Bearer token")
                 token = token.Replace("Bearer ", "");
+                // same password rules as Admin > Members
+                if (AuthGuard.PasswordProblem(model?.password_hash, model?.username) is string weak)
+                    return BadRequest(new APIResponse(ResponseCode.ERROR, weak));
                 return Ok(Manager.AddUsersWithToken(model, token));
             }
             catch (Exception ex)

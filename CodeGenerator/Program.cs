@@ -719,19 +719,12 @@ WHERE
         {
             try
             {
-                foreach (string field in tblInfo)
-                {
-                    query += "t.";
-                    qry += "t.";
-                    query += field;
-                    qry += field;
-                    query += " LIKE CONCAT('%',@SearchKey,'%')";
-                    qry += " LIKE CONCAT('%',@SearchKey,'%')";
-                    if (field != tblInfo[^1])
-                        query += " OR ";
-                    if (field != tblInfo[^1])
-                        qry += " OR ";
-                }
+                // The OR list is bracketed: the query before it ends in "isActive=1 [AND createdBy=@ownername] AND ",
+                // and without brackets those conditions would apply to the first column only (deleted rows found by search).
+                var conds = tblInfo.Count == 0 ? "1=0"
+                    : string.Join(" OR ", tblInfo.Select(field => "t." + field + " LIKE CONCAT('%',@SearchKey,'%')"));
+                query += "(" + conds + ")";
+                qry += "(" + conds + ")";
             }
             catch (Exception ex)
             {
@@ -2748,7 +2741,9 @@ APIResponse Update{tableName}Transactional({primaryKeyListParam},{tableName}Tran
                         // :- add [Required] only if the column name is not createdBy,modifiedBy,createdAt,modifiedAt
                         // numbered columns ("numbering" in ui.config.json) are assigned by the API, so clients leave them empty
                         if (dict["Column_Name"] != "createdBy" && dict["Column_Name"] != "createdAt" && dict["Column_Name"] != "modifiedAt" && dict["Column_Name"] != "modifiedBy"
-                            && !NumberedColumns().Contains(tbl + "." + dict["Column_Name"])) 
+                            && !NumberedColumns().Contains(tbl + "." + dict["Column_Name"])
+                            // users.password_hash is never sent to clients, so edits may leave it empty (= keep); POST checks it
+                            && !(tbl.Equals("users", StringComparison.OrdinalIgnoreCase) && dict["Column_Name"].Equals("password_hash", StringComparison.OrdinalIgnoreCase))) 
                             text += "[Required]\n";
                     }
                         
