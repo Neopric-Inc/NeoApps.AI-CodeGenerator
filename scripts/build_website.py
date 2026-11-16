@@ -405,15 +405,16 @@ gs = section("connect", "Get started", "Connect once. Then just describe your ap
           <article><h3>Claude</h3><ol><li>Open the Claude desktop app: Settings → Connectors → Add custom connector.</li><li>Paste {copy_inline(CLOUD_URL)}</li><li>Click Connect and sign in to NeoApps. It also works in the Claude mobile app.</li></ol></article>
           <article><h3>ChatGPT</h3><ol><li>Settings → Apps &amp; Connectors → Advanced settings: turn on Developer mode.</li><li>Choose Create and paste {copy_inline(CLOUD_URL)}</li><li>Sign in to NeoApps when asked.</li></ol></article>
           <article><h3>Codex</h3><ol><li>Run {copy_inline("codex mcp add neoapps --url " + CLOUD_URL)}</li><li>Sign in to NeoApps when asked.</li></ol></article>
-          <article><h3>Google Antigravity</h3><ol><li>Open <code>~/.gemini/config/mcp_config.json</code> and add {copy_inline('"neoapps": {"serverUrl": "' + CLOUD_URL + '"}')} under <code>mcpServers</code>.</li><li>Restart Antigravity and sign in to NeoApps when asked.</li></ol></article>
+          <article><h3>Gemini</h3><ol><li>Open gemini.google.com: Connectors → + Custom. Paste {copy_inline(CLOUD_URL)} and leave Client ID empty.</li><li>Agree, then sign in to NeoApps and click Allow.</li><li>In a chat, type <code>@NeoApps Cloud</code> and describe your app.</li></ol></article>
         </div>
         <div class="gemini-strip">
-          <h3>Gemini app</h3>
-          <p>In Gemini Spark (Google AI Ultra): Connectors → + Custom, paste the link and leave Client ID empty. Then sign in to NeoApps and click Allow.</p>
+          <h3>Gemini, start to finish</h3>
+          <p>A note-taking app, built and published from a Gemini chat in about 5 minutes.</p>
           <div class="shots-row">
-          <figure><div class="shot"><img src="assets/img/gemini-add.webp" width="448" height="380" loading="lazy" alt="Gemini's Connect to an MCP server dialog with the NeoApps link pasted in"></div><figcaption>1. Paste the NeoApps link.</figcaption></figure>
-          <figure><div class="shot"><img src="assets/img/gemini-allow.webp" width="342" height="227" loading="lazy" alt="The NeoApps page asking to allow Google to build apps"></div><figcaption>2. Sign in to NeoApps and allow.</figcaption></figure>
-          <figure><div class="shot"><img src="assets/img/gemini-tools.webp" width="732" height="310" loading="lazy" alt="Gemini showing NeoApps Cloud with its tools: start_here, save_app_plan, publish_app, my_apps and more"></div><figcaption>3. NeoApps tools are ready.</figcaption></figure>
+            <figure><div class="shot"><img src="assets/img/gemini-add.webp" width="448" height="380" loading="lazy" alt="Gemini's Connect to an MCP server dialog with the NeoApps link pasted in"></div><figcaption>1. Paste the NeoApps link.</figcaption></figure>
+            <figure><div class="shot"><img src="assets/img/gemini-allow.webp" width="342" height="227" loading="lazy" alt="The NeoApps page asking to allow Google to build apps"></div><figcaption>2. Sign in to NeoApps and allow.</figcaption></figure>
+            <figure><div class="shot"><img src="assets/img/gemini-chat-plan.webp" width="624" height="522" loading="lazy" alt="Gemini chat asking to let it save the QuickNotes app plan to NeoApps Cloud"></div><figcaption>3. Ask with @NeoApps Cloud.</figcaption></figure>
+            <figure><div class="shot"><img src="assets/img/quicknotes-list.webp" width="800" height="370" loading="lazy" alt="The live QuickNotes app showing a notes list"></div><figcaption>4. Your app is live.</figcaption></figure>
           </div>
         </div>
 """, white=True) \

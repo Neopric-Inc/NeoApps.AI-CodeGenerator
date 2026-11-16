@@ -247,7 +247,7 @@
     .gemini-strip { margin-top: 16px; padding: 28px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--paper); }
     .gemini-strip h3 { margin: 0 0 8px; }
     .gemini-strip > p { margin: 0; color: var(--muted); }
-    .shots-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-top: 20px; align-items: end; }
+    .shots-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-top: 20px; align-items: end; }
     .shots-row .shot { display: flex; align-items: center; justify-content: center; height: 230px; }
     .shots-row .shot img { width: auto; max-width: 100%; max-height: 100%; }
     .shots-row figure { margin: 0; }
