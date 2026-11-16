@@ -45,10 +45,46 @@ public static class AppPreview
 
     // ------------------------------------------------------------------ SQL parsing
 
+    /// <summary>Removes /* */, -- and # comments, but never inside quotes: DEFAULT '#1f6feb' is a value, not a comment.</summary>
+    static string StripComments(string sql)
+    {
+        var sb = new System.Text.StringBuilder(sql.Length);
+        for (int i = 0; i < sql.Length; i++)
+        {
+            var c = sql[i];
+            if (c is '\'' or '"' or '`')
+            {
+                sb.Append(c);
+                for (i++; i < sql.Length; i++)
+                {
+                    sb.Append(sql[i]);
+                    if (sql[i] == '\\' && c != '`' && i + 1 < sql.Length) { sb.Append(sql[++i]); continue; }
+                    if (sql[i] == c) break;
+                }
+                continue;
+            }
+            if (c == '/' && i + 1 < sql.Length && sql[i + 1] == '*')
+            {
+                var end = sql.IndexOf("*/", i + 2, StringComparison.Ordinal);
+                i = end < 0 ? sql.Length : end + 1;
+                sb.Append(' ');
+                continue;
+            }
+            if (c == '#' || (c == '-' && i + 1 < sql.Length && sql[i + 1] == '-'))
+            {
+                var eol = sql.IndexOf('\n', i);
+                i = eol < 0 ? sql.Length : eol - 1;
+                sb.Append(' ');
+                continue;
+            }
+            sb.Append(c);
+        }
+        return sb.ToString();
+    }
+
     public static List<Table> Parse(string sql)
     {
-        sql = Regex.Replace(sql, @"/\*.*?\*/", " ", RegexOptions.Singleline);
-        sql = Regex.Replace(sql, @"(--|#)[^\n]*", " ");
+        sql = StripComments(sql);
         var tables = new List<Table>();
         foreach (Match m in Regex.Matches(sql, @"CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?`?(\w+)`?\s*\(", RegexOptions.IgnoreCase))
         {
