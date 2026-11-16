@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
-  <meta name="description" content="Connect NeoApps to Claude, ChatGPT or Codex and build your first business app.">
+  <meta name="description" content="Connect NeoApps to Claude, ChatGPT, Codex or Gemini and build your first business app.">
   <title>Get started · NeoApps.AI</title>
   <link rel="stylesheet" href="assets/site.css">
   <style>
@@ -57,6 +57,16 @@
           <article><h3>Claude</h3><ol><li>Open the Claude desktop app: Settings → Connectors → Add custom connector.</li><li>Paste <span class="copy-inline"><code class="copy-text">https://cloud.neoapps.ai/mcp</code><button class="copy-button" type="button" aria-label="Copy https://cloud.neoapps.ai/mcp">Copy</button><span class="copy-status sr-only" aria-live="polite"></span></span></li><li>Click Connect and sign in to NeoApps. It also works in the Claude mobile app.</li></ol></article>
           <article><h3>ChatGPT</h3><ol><li>Settings → Apps &amp; Connectors → Advanced settings: turn on Developer mode.</li><li>Choose Create and paste <span class="copy-inline"><code class="copy-text">https://cloud.neoapps.ai/mcp</code><button class="copy-button" type="button" aria-label="Copy https://cloud.neoapps.ai/mcp">Copy</button><span class="copy-status sr-only" aria-live="polite"></span></span></li><li>Sign in to NeoApps when asked.</li></ol></article>
           <article><h3>Codex</h3><ol><li>Run <span class="copy-inline"><code class="copy-text">codex mcp add neoapps --url https://cloud.neoapps.ai/mcp</code><button class="copy-button" type="button" aria-label="Copy codex mcp add neoapps --url https://cloud.neoapps.ai/mcp">Copy</button><span class="copy-status sr-only" aria-live="polite"></span></span></li><li>Sign in to NeoApps when asked.</li></ol></article>
+          <article><h3>Google Antigravity</h3><ol><li>Open <code>~/.gemini/config/mcp_config.json</code> and add <span class="copy-inline"><code class="copy-text">"neoapps": {"serverUrl": "https://cloud.neoapps.ai/mcp"}</code><button class="copy-button" type="button" aria-label="Copy "neoapps": {"serverUrl": "https://cloud.neoapps.ai/mcp"}">Copy</button><span class="copy-status sr-only" aria-live="polite"></span></span> under <code>mcpServers</code>.</li><li>Restart Antigravity and sign in to NeoApps when asked.</li></ol></article>
+        </div>
+        <div class="gemini-strip">
+          <h3>Gemini app</h3>
+          <p>In Gemini Spark (Google AI Ultra): Connectors → + Custom, paste the link and leave Client ID empty. Then sign in to NeoApps and click Allow.</p>
+          <div class="shots-row">
+          <figure><div class="shot"><img src="assets/img/gemini-add.webp" width="448" height="380" loading="lazy" alt="Gemini's Connect to an MCP server dialog with the NeoApps link pasted in"></div><figcaption>1. Paste the NeoApps link.</figcaption></figure>
+          <figure><div class="shot"><img src="assets/img/gemini-allow.webp" width="342" height="227" loading="lazy" alt="The NeoApps page asking to allow Google to build apps"></div><figcaption>2. Sign in to NeoApps and allow.</figcaption></figure>
+          <figure><div class="shot"><img src="assets/img/gemini-tools.webp" width="732" height="310" loading="lazy" alt="Gemini showing NeoApps Cloud with its tools: start_here, save_app_plan, publish_app, my_apps and more"></div><figcaption>3. NeoApps tools are ready.</figcaption></figure>
+          </div>
         </div>
 
       </div>

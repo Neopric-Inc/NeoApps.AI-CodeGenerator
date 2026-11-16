@@ -244,6 +244,14 @@
     /* Get started */
     .connect { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
     .connect article { padding: 28px; }
+    .gemini-strip { margin-top: 16px; padding: 28px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--paper); }
+    .gemini-strip h3 { margin: 0 0 8px; }
+    .gemini-strip > p { margin: 0; color: var(--muted); }
+    .shots-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-top: 20px; align-items: end; }
+    .shots-row .shot { display: flex; align-items: center; justify-content: center; height: 230px; }
+    .shots-row .shot img { width: auto; max-width: 100%; max-height: 100%; }
+    .shots-row figure { margin: 0; }
+    .shots-row figcaption { margin-top: 8px; color: var(--muted); font-size: .9rem; }
     .connect h3 { margin: 0 0 12px; font-size: 1.15rem; font-weight: 600; }
     .connect ol { margin: 0; padding-left: 20px; color: var(--muted); }
     .connect li { margin: 8px 0; }
