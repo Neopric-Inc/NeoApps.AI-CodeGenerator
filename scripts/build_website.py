@@ -512,7 +512,7 @@ page("developers.html", "Developers · NeoApps.AI", "Open-source generator: MySQ
 # ---------------------------------------------------------------- Security
 SEC_ROWS = [
     ("Someone opens another person's records by changing an id",
-     "Every query passes one checkpoint (DataGuard) that applies roles, tenants and row rules. A record you may not see answers \"not found\"."),
+     "Every query passes one checkpoint (DataGuard) that applies roles, tenants and row rules. A request for a record you may not see is refused."),
     ("Keys and passwords end up in the browser",
      "The web app never holds the sign-in token: it lives in an HttpOnly cookie. AI keys are typed on a NeoApps page and stay on the server. Each app gets its own random signing secret."),
     ("No limits on sign-in, no checks on input",
