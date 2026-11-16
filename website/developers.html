@@ -32,7 +32,7 @@
   <header class="topbar">
     <nav class="nav wrap" aria-label="Main navigation">
       <a class="brand" href="index.html" aria-label="NeoApps.AI home"><span class="brand-mark">N</span>NeoApps.AI</a>
-      <div class="nav-links"><a href="index.html">Home</a><div class="dropdown"><button type="button" onclick="location.href='use-cases.html'">Use cases ▾</button><div class="dropdown-menu"><a href="use-cases.html#healthcare">Healthcare and research</a><a href="use-cases.html#legal">Legal</a><a href="use-cases.html#professional">Accounting and professional services</a><a href="use-cases.html#field">Field operations and compliance</a><a href="use-cases.html#education">Education</a><a href="use-cases.html#insurance">Insurance</a><a href="use-cases.html#property">Property and real estate</a><a href="use-cases.html#public">Nonprofit and government</a><a href="use-cases.html#manufacturing">Manufacturing and quality</a><a href="use-cases.html#prompt-library">Prompt library</a></div></div><a href="pricing.html">Pricing</a><div class="dropdown"><button type="button" aria-current="page" onclick="location.href='developers.html'">Developers ▾</button><div class="dropdown-menu"><a href="developers.html#open-source">Open source</a><a href="developers.html#local">Run it locally</a><a href="developers.html#rules">Data rules</a><a href="developers.html#extend">Extend it</a><a href="security.html">Security</a><a href="https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator">GitHub ↗</a></div></div><a class="button small" href="get-started.html">Get started</a></div>
+      <div class="nav-links"><a href="index.html">Home</a><div class="dropdown"><button type="button" onclick="location.href='use-cases.html'">Use cases ▾</button><div class="dropdown-menu"><a href="use-cases.html#healthcare">Healthcare and research</a><a href="use-cases.html#legal">Legal</a><a href="use-cases.html#professional">Accounting and professional services</a><a href="use-cases.html#field">Field operations and compliance</a><a href="use-cases.html#education">Education</a><a href="use-cases.html#insurance">Insurance</a><a href="use-cases.html#property">Property and real estate</a><a href="use-cases.html#public">Nonprofit and government</a><a href="use-cases.html#manufacturing">Manufacturing and quality</a><a href="use-cases.html#prompt-library">Prompt library</a></div></div><a href="pricing.html">Pricing</a><div class="dropdown"><button type="button" aria-current="page" onclick="location.href='developers.html'">Developers ▾</button><div class="dropdown-menu"><a href="developers.html#open-source">Open source</a><a href="developers.html#local">Run it locally</a><a href="developers.html#rules">Data rules</a><a href="developers.html#extend">Extend it</a><a href="security.html">Security</a><a href="https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator">GitHub ↗</a></div></div><a class="button small" href="get-started.html">Connect assistant</a></div>
     </nav>
   </header>
   <main id="top">
@@ -40,10 +40,10 @@
       <div class="wrap">
         <div class="section-heading">
           <div class="kicker">Developers</div>
-          <h2>Open source. Real stack. No lock-in.</h2>
-          <p>NeoApps turns a MySQL schema and a UI config into a full app. Two years open source, built on 15 years of ERP work.</p>
+          <h2>Review the app plan. Generate source you can run.</h2>
+          <p>NeoApps turns a MySQL schema and a UI config into a full app. Start with AuditDesk to see how roles and workflows are defined before you generate the app.</p>
         </div>
-        <div class="includes"><article class="include"><h3>.NET 10 API</h3><p>Generated controllers, repositories, JWT auth and Swagger.</p></article><article class="include"><h3>React admin UI</h3><p>React 19 and MUI, driven by schema.json and ui.config.json.</p></article><article class="include"><h3>MySQL, Redis, RabbitMQ</h3><p>Background jobs, approvals and events, out of the box.</p></article><article class="include"><h3>MCP server and CLI</h3><p>Every operation as a tool for Claude, ChatGPT, Codex, Gemini and others.</p></article></div>
+<p><a class="button secondary" href="#local">Try the AuditDesk example</a> <a class="text-link" href="https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator/tree/main/samples/auditdesk">Browse the sample files ↗</a></p>        <div class="includes"><article class="include"><h3>.NET 10 API</h3><p>Generated controllers, repositories, JWT auth and Swagger.</p></article><article class="include"><h3>React admin UI</h3><p>React 19 and MUI, driven by schema.json and ui.config.json.</p></article><article class="include"><h3>MySQL, Redis, RabbitMQ</h3><p>Background jobs, approvals and events, out of the box.</p></article><article class="include"><h3>MCP server and CLI</h3><p>Every operation as a tool for Claude, ChatGPT, Codex, Gemini and others.</p></article></div>
       </div>
     </section>
     <section class="section" id="how">
@@ -74,10 +74,10 @@
         <div class="section-heading">
           <div class="kicker">Run it locally</div>
           <h2>One command to install.</h2>
-          <p>Needs Docker. Registers the MCP server with Claude Code and Claude Desktop and prints the config for Codex and others.</p>
+          <p>Requires Git, the .NET 10 SDK and Docker. The installer registers the MCP server with Claude Code and Claude Desktop and prints the config for Codex and others.</p>
         </div>
         <div class="prompt-box" style="max-width:860px"><pre class="copy-text">curl -fsSL https://raw.githubusercontent.com/Neopric-Inc/NeoApps.AI-CodeGenerator/main/install.sh | bash</pre><div class="copy-row"><span class="copy-status" aria-live="polite"></span><button class="button secondary small copy-button" type="button">Copy</button></div></div>
-        <p style="margin:16px 0 0">Then ask your agent to build an app, or use the CLI: <code>neoapps new MyApp --schema schema.sql --ui ui.config.json --deploy</code>. <a class="text-link" href="https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator#coding-agents-mcp">Setup guide ↗</a></p>
+        <p style="margin:16px 0 0">From a clone of the repository, preview the sample with <code>neoapps preview AuditDesk --schema samples/auditdesk/auditdesk.sql --ui samples/auditdesk/auditdesk.ui.json</code>. Review the plan, then run <code>neoapps new AuditDesk --schema samples/auditdesk/auditdesk.sql --ui samples/auditdesk/auditdesk.ui.json --deploy</code> to generate and run it. <a class="text-link" href="https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator#coding-agents-mcp">Setup guide ↗</a></p>
       </div>
     </section>
     <section class="section white" id="rules">
@@ -118,7 +118,7 @@
     <div class="wrap footer-row">
       <a class="brand" href="index.html"><span class="brand-mark">N</span>NeoApps.AI</a>
       <span>Custom software, built by your AI, owned by you.</span>
-      <div class="footer-links"><a href="get-started.html">Get started</a><a href="pricing.html">Pricing</a><a href="developers.html">Developers</a><a href="security.html">Security</a><a href="https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator">GitHub</a><a href="mailto:info@neopric.com">Contact</a></div>
+      <div class="footer-links"><a href="get-started.html">Connect your AI assistant</a><a href="pricing.html">Pricing</a><a href="developers.html">Developers</a><a href="security.html">Security</a><a href="https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator">GitHub</a><a href="mailto:info@neopric.com">Contact</a></div>
     </div>
   </footer>
   <script src="assets/site.js"></script>
