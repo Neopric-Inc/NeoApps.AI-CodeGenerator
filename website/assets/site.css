@@ -161,6 +161,7 @@
     .connect-visual .mock { flex: 1 1 380px; min-width: 0; max-width: 520px; }
 
     /* Developers: architecture */
+    .compiler-rules { margin-top: 24px; }
     .arch { display: flex; flex-wrap: wrap; align-items: stretch; gap: 14px; }
     .arch-col { display: flex; flex-direction: column; gap: 10px; flex: 0 1 200px; }
     .arch-zone { flex: 1 1 640px; display: flex; flex-direction: column; gap: 10px; padding: 16px; border: 1px dashed #3a3e46; border-radius: 14px; background: rgba(255,255,255,.015); }

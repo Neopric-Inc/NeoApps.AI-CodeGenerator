@@ -3,6 +3,7 @@
 Run from the repo root: python3 scripts/build_website.py
 Edit the page bodies below, then rebuild; the HTML files are what GitHub Pages serves.
 """
+from html import escape
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent / "website"
@@ -109,9 +110,9 @@ def page(file, title, description, body, scripts=("assets/site.js",)):
     (ROOT / file).write_text(html)
 
 
-def prompt_box(text):
+def prompt_box(text, label="Copy prompt"):
     return (f'<div class="prompt-box"><pre class="copy-text">{text}</pre><div class="copy-row"><span class="copy-status" aria-live="polite"></span>'
-            f'<button class="button secondary small copy-button" type="button">Copy prompt</button></div></div>')
+            f'<button class="button secondary small copy-button" type="button">{label}</button></div></div>')
 
 
 def section(id_, kicker, heading, intro, inner, white=False):
@@ -244,19 +245,14 @@ MOCK_CONNECT = """<div class="mock wide" role="img" aria-label="Illustration: an
     <p class="mock-foot">Then sign in to NeoApps when asked. Your assistant's screen looks similar.</p>
   </div>
 </div>"""
-ARCH = """<div class="arch" role="img" aria-label="Diagram: your assistant talks to the NeoApps connector, which builds and publishes your app (API, web app, database). On NeoApps Cloud the builder and app run on our servers; self-hosted, everything runs in your environment.">
-  <div class="arch-col"><div class="arch-label">Where you work</div>
-    <div class="arch-box"><b>Your assistant</b><span>Claude, ChatGPT, Codex or Gemini</span></div></div>
-  <div class="arch-arrow" aria-hidden="true"><span>MCP</span></div>
-  <div class="arch-zone"><div class="arch-label">NeoApps Cloud, or your environment when self-hosted</div>
-    <div class="arch-row">
-      <div class="arch-box"><b>NeoApps connector</b><span>Plan, preview, publish</span></div>
-      <div class="arch-arrow" aria-hidden="true"><span>builds</span></div>
-      <div class="arch-box"><b>Generator</b><span>Schema + UI config → code</span></div>
-      <div class="arch-arrow" aria-hidden="true"><span>deploys</span></div>
-      <div class="arch-stack"><div class="arch-box accent"><b>Your app</b><span>.NET 10 API · React UI</span></div>
-        <div class="arch-box"><b>Data</b><span>MySQL · Redis · RabbitMQ</span></div></div>
-    </div></div>
+ARCH = """<div class="arch arch-row" role="img" aria-label="Claude, Cursor or Codex drafts a MySQL schema and JSON app configuration. NeoApps validates the plan and generates a .NET 10 API with server-side permissions and audit logging, a MySQL database, and a React web app.">
+  <div class="arch-box"><b>LLM / MCP client</b><span>Claude, Cursor, Codex</span></div>
+  <div class="arch-arrow" aria-hidden="true"></div>
+  <div class="arch-box"><b>Declarative app plan</b><span>MySQL schema + JSON configuration</span></div>
+  <div class="arch-arrow" aria-hidden="true"></div>
+  <div class="arch-box"><b>NeoApps compiler</b><span>Validate, preview, generate</span></div>
+  <div class="arch-arrow" aria-hidden="true"></div>
+  <div class="arch-box accent"><b>Generated app</b><span>.NET 10 API · server RBAC · audit log · MySQL · React PWA</span></div>
 </div>"""
 
 COMPARE_TABLE = '''        <div class="compare-wrap"><table class="compare">
@@ -488,45 +484,94 @@ pr = section("plans", "Pricing", "Choose where your app runs.", None,
 page("pricing.html", "Pricing · NeoApps.AI", "NeoApps Cloud: 14 days free, no card. Then US$49/month for one app, US$149/month for up to three. Free and open source to self-host.", pr)
 
 # ---------------------------------------------------------------- Developers
-dev = section("open-source", "Developers", "Review the app plan. Generate source you can run.",
-    "NeoApps turns a MySQL schema and a UI config into a full app. Start with AuditDesk to see how roles and workflows are defined before you generate the app.",
-    f'<p><a class="button secondary" href="#local">Try the AuditDesk example</a> <a class="text-link" href="{GITHUB}/tree/main/samples/auditdesk">Browse the sample files ↗</a></p>' + cards([
-        (".NET 10 API", "Generated controllers, repositories, JWT auth and Swagger."),
-        ("React admin UI", "React 19 and MUI, driven by schema.json and ui.config.json."),
-        ("MySQL, Redis, RabbitMQ", "Background jobs, approvals and events, out of the box."),
-        ("MCP server and CLI", "Every operation as a tool for Claude, ChatGPT, Codex, Gemini and others."),
-    ]), white=True) \
-+ section("how", "How it fits together", "Your assistant talks. NeoApps builds. Your app runs.", "The same pieces run on NeoApps Cloud or in your own environment.", "        " + ARCH) \
-+ section("local", "Run it locally", "One command to install.", "Requires Git, the .NET 10 SDK and Docker. The installer registers the MCP server with Claude Code and Claude Desktop and prints the config for Codex and others.",
-    f"""        <div class="prompt-box" style="max-width:860px"><pre class="copy-text">curl -fsSL https://raw.githubusercontent.com/Neopric-Inc/NeoApps.AI-CodeGenerator/main/install.sh | bash</pre><div class="copy-row"><span class="copy-status" aria-live="polite"></span><button class="button secondary small copy-button" type="button">Copy</button></div></div>
-        <p style="margin:16px 0 0">From a clone of the repository, preview the sample with <code>neoapps preview AuditDesk --schema samples/auditdesk/auditdesk.sql --ui samples/auditdesk/auditdesk.ui.json</code>. Review the plan, then run <code>neoapps new AuditDesk --schema samples/auditdesk/auditdesk.sql --ui samples/auditdesk/auditdesk.ui.json --deploy</code> to generate and run it. <a class="text-link" href="{GITHUB}#coding-agents-mcp">Setup guide ↗</a></p>""") \
-+ section("rules", "Data rules", "Business rules are config, not code.", "The API enforces them on every query, for people, AI and integrations alike.",
+INSTALL_COMMAND = "curl -fsSL https://raw.githubusercontent.com/Neopric-Inc/NeoApps.AI-CodeGenerator/main/install.sh | bash"
+SHELL_CONTINUATION = ' \\\n'
+AUDITDESK_INPUTS = SHELL_CONTINUATION.join((
+    '  --schema "$HOME/.neoapps/samples/auditdesk/auditdesk.sql"',
+    '  --ui "$HOME/.neoapps/samples/auditdesk/auditdesk.ui.json"',
+))
+PREVIEW_COMMAND = "neoapps preview AuditDesk" + SHELL_CONTINUATION + AUDITDESK_INPUTS
+BUILD_COMMAND = "neoapps new AuditDesk" + SHELL_CONTINUATION + AUDITDESK_INPUTS + " --deploy"
+
+CLAUDE_DESKTOP_CONFIG = """{
+  "mcpServers": {
+    "neoapps": {
+      "command": "/absolute/path/to/dotnet",
+      "args": ["/Users/you/.neoapps/src/NeoApps.Mcp/bin/Release/net10.0/neoapps-mcp.dll"],
+      "env": {
+        "NEOAPPS_HOME": "/Users/you/.neoapps",
+        "DOTNET_ROOT": "/absolute/path/to/dotnet-directory",
+        "PATH": "/absolute/path/to/dotnet-directory:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin"
+      }
+    }
+  }
+}"""
+
+dev = f"""    <section class="hero" id="open-source">
+      <div class="wrap">
+        <h1>Deterministic compilation for probabilistic AI.</h1>
+        <p class="lede">Stop debugging hallucinated auth middleware and leaky SQL queries. Let LLMs generate declarative app plans while NeoApps compiles the server-enforced backend, RBAC, and UI.</p>
+        <div class="hero-actions">
+          <a class="button secondary" href="{GITHUB}#readme">Read the Docs</a>
+          <a class="button secondary" href="{GITHUB}">Star on GitHub</a>
+          <a class="button secondary" href="#mcp">Connect MCP Server</a>
+        </div>
+      </div>
+    </section>
+    <section class="section" id="local">
+      <div class="wrap">
+        <div class="section-heading">
+          <h2>Run your first app locally</h2>
+          <p>Requires Git, the .NET 10 SDK, and Docker. AuditDesk uses sample data. <a class="text-link" href="{GITHUB}/tree/main/samples/auditdesk">Browse its schema and configuration</a>.</p>
+        </div>
+        <div class="includes">
+          <article class="include">
+            <h3>Install the CLI</h3>
+            <p>The installer puts <code>neoapps</code> in <code>~/.local/bin</code>. If needed, add it to your shell’s <code>PATH</code> as directed by the installer.</p>
+            {prompt_box(escape(INSTALL_COMMAND), "Copy install command")}
+          </article>
+          <article class="include">
+            <h3>Preview the app plan</h3>
+            <p>Open the preview path printed by the CLI to review the schema, screens, roles, and workflow rules.</p>
+            {prompt_box(escape(PREVIEW_COMMAND), "Copy preview command")}
+          </article>
+          <article class="include">
+            <h3>Generate and run AuditDesk</h3>
+            <p>Once you’ve reviewed the plan, run the app in Docker. The CLI prints the local app URL and sign-in details.</p>
+            {prompt_box(escape(BUILD_COMMAND), "Copy build command")}
+          </article>
+        </div>
+      </div>
+    </section>
+""" + section("how", "Architecture", "How the compiler works",
+    "The assistant proposes a plan. The open-source compiler turns the approved schema and configuration into an application.",
+    "        " + ARCH + '\n        <div id="rules" class="compiler-rules">' + cards([
+        ("Plan-First Execution", "The assistant drafts the schema and configuration. The preview checks the plan and shows the data model, role permissions, and allowed state transitions."),
+        ("Zero-Trust API Layer", "The generated API enforces role permissions, tenant and row scopes, and configured lifecycle rules on the server. The UI follows the same rules."),
+        ("Append-Only Audit Trail", "When auditing is configured, tracked changes record the actor, time, action, and changed fields. Password-verified sign-offs can record who signed, when, and the statement they signed."),
+    ]) + "</div>") \
++ section("mcp", "Agent integration", "Built for Claude Desktop, Cursor, and custom agents.",
+    "Add the NeoApps MCP server to your local IDE or AI assistant. Your coding agent can inspect schemas, preview permission rules, and plan updates to existing apps.",
+    f"""        <p>The installer registers NeoApps in Claude Desktop when it’s installed. Restart Claude Desktop after installation. For manual setup, merge the <code>neoapps</code> entry into <code>mcpServers</code> in <code>claude_desktop_config.json</code>. Use the absolute paths printed by the installer in place of the example paths.</p>
+        {prompt_box(escape(CLAUDE_DESKTOP_CONFIG), "Copy MCP configuration")}
+        <p><a class="text-link" href="{GITHUB}#coding-agents-mcp">Read the setup guide for Cursor and other MCP clients</a> · <a class="text-link" href="get-started.html">Connect to NeoApps Cloud</a></p>""") \
++ section("extend", "Extensibility", "No walled gardens. Extend everything with standard code.",
+    "Keep custom React and C# code alongside your app plan so the generator can include it in the next build.",
     cards([
-        ("Tenancy and row scopes", "Customer portals: each customer sees only their own rows."),
-        ("Lifecycles", "Status steps, who may take them, and per-role edit locks."),
-        ("Validations and numbering", "Formats, ranges, date order, totals; INV-2026-00001."),
-        ("Audit, outbox, limits", "Change history, domain events and plan limits."),
-        ("Migrations keep data", "Schema changes become reviewed FluentMigrator migrations."),
-        ("Background jobs", "Long work and approvals on a RabbitMQ worker."),
-        ("AI workflows", "Document Q&amp;A, ask-your-data and AI-drafted records with approval."),
-        ("Local models", "Any OpenAI-compatible endpoint, e.g. Ollama or vLLM."),
-        ("Signatures", "Steps that need the person's password again; signer, time and statement logged."),
-        ("Notifications", "Bell and email from rules: who to tell, when a record moves."),
-        ("Installable", "Every app installs on phones and desktops."),
-        ("CSV import and export", "Any list. Imports are checked against every rule first, then saved all or nothing."),
-    ]), white=True) \
-+ section("extend", "Extend it", "When config isn't enough, write code.", f'Your code survives every regenerate. Start from a working app in <a class="text-link" href="{GITHUB}/tree/main/samples">samples/ ↗</a>.',
-    cards([
-        ("Custom screens", "Your own React pages, dashboard widgets and record buttons. Works on NeoApps Cloud too."),
-        ("Custom server code", "C# jobs and endpoints, any NuGet package. Self-hosted for now."),
-        ("Preview first", "One page with the data model, every screen and who can do what, before anything is built."),
-        ("Test the rules", "<code>neoapps test</code> proves each role sees only its own rows."),
-    ])
-    + '\n        <p style="margin:24px 0 0"><b>Not built in yet:</b> calendar view, bulk entry grid, PDFs, SMS and calendar sync. Calendar, charts and PDFs work today as custom screens, on NeoApps Cloud too; SMS and calendar sync as custom server code, self-hosted.</p>') \
-+ section("build-yourself", "Prompt", "Build and host it yourself.", None,
-    '        <div style="max-width:860px">' + prompt_box("I want to build [describe my business app]. Ask me about users, processes, data and permissions. Check the NeoApps schema guidelines and my environment. Show me a plan and wait for my approval. Then generate, build and run the app locally with the NeoApps tools, keep the source in my project, and show me how to host it myself.") + "</div>"
-    + f'\n        <p style="margin:16px 0 0"><a class="button secondary" href="{GITHUB}">View on GitHub ↗</a></p>')
-page("developers.html", "Developers · NeoApps.AI", "Open-source generator: MySQL schema and UI config to a .NET 10 API and React admin UI, with an MCP server and CLI.", dev)
+        ("Custom Screens and Integrations", "Extend the React UI with custom pages and actions. On self-hosted deployments, add C# jobs or endpoints and use configured outbox events to drive integrations such as webhooks."),
+        ("Direct Database Access", "When you self-host, connect existing BI tools, ETL pipelines, or SQL clients to your MySQL instance with credentials you manage."),
+        ("Eject Anytime", "Keep the schema and UI configuration in your repository. Use the open-source generator to rebuild and run the app in your own environment."),
+    ]) + f'\n        <p id="build-yourself"><a class="text-link" href="{GITHUB}/tree/main/samples">Explore app samples and extension code</a></p>') \
++ section("faq", "Developer FAQ", "Building, updating, and versioning apps",
+    "How to work with a generated application over time.",
+    '        <div class="faq" style="max-width:820px">' + "".join(
+        f"<details><summary>{question}</summary><p>{answer}</p></details>" for question, answer in [
+            ("What stack does NeoApps generate?", "A .NET 10 Web API with role-based permissions and Swagger, a React 19 and Material UI frontend, and a MySQL database. The local Docker setup also provides Redis and RabbitMQ for background jobs."),
+            ("How do schema migrations work when my AI updates an app?", f"Run <code>neoapps evolve AuditDesk --plan</code> to compare the proposed schema with the live database and inspect the generated FluentMigrator migration. NeoApps backs up the database before applying changes. Drops require explicit opt-in, and renames need a mapping. <a class='text-link' href='{GITHUB}#changing-a-running-app-migrations'>Read the migration guide</a>."),
+            ("Can I version-control my app plans in Git?", "Yes. Commit the SQL schema, UI configuration, and any migrations or custom code to your own repository. Review changes in pull requests and run approved builds and migrations in your CI/CD pipeline. Store deployment credentials in the pipeline’s secret store."),
+        ]) + "</div>")
+page("developers.html", "Developers · NeoApps.AI",
+     "Use NeoApps to preview declarative app plans and generate a .NET 10 API, MySQL database and React UI. Start with the CLI or connect an MCP client.", dev)
 
 
 # ---------------------------------------------------------------- Security
