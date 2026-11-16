@@ -245,7 +245,7 @@ MOCK_CONNECT = """<div class="mock wide" role="img" aria-label="Illustration: an
 </div>"""
 ARCH = """<div class="arch" role="img" aria-label="Diagram: your assistant talks to the NeoApps connector, which builds and publishes your app (API, web app, database). On NeoApps Cloud the builder and app run on our servers; self-hosted, everything runs in your environment.">
   <div class="arch-col"><div class="arch-label">Where you work</div>
-    <div class="arch-box"><b>Your assistant</b><span>Claude, ChatGPT or Codex</span></div></div>
+    <div class="arch-box"><b>Your assistant</b><span>Claude, ChatGPT, Codex or Gemini</span></div></div>
   <div class="arch-arrow" aria-hidden="true"><span>MCP</span></div>
   <div class="arch-zone"><div class="arch-label">NeoApps Cloud, or your environment when self-hosted</div>
     <div class="arch-row">
@@ -275,7 +275,7 @@ home = """    <section class="hero">
       <div class="wrap">
         <a class="eyebrow" href="#rules"><span class="dot"></span> New: sign-offs with password re-entry, and notifications</a>
         <h1>Custom software, built by your AI, owned by you.</h1>
-        <p class="lede">Describe your process in Claude, ChatGPT or Codex. Get a real app with roles, approvals and an audit trail. Run it in our cloud or yours.</p>
+        <p class="lede">Describe your process in Claude, ChatGPT, Codex or Gemini. Get a real app with roles, approvals and an audit trail. Run it in our cloud or yours.</p>
         <div class="hero-actions">
           <a class="button" href="get-started.html">Start building</a>
           <a class="button secondary" href="#how-it-works">See how it works</a>
@@ -292,7 +292,7 @@ home = """    <section class="hero">
     <section class="works" aria-label="Works with">
       <div class="wrap">
         <p class="label">Built from the assistant you already use</p>
-        <div class="works-row"><span>Claude</span><span>Claude Desktop</span><span>ChatGPT</span><span>Codex</span></div>
+        <div class="works-row"><span>Claude</span><span>Claude Desktop</span><span>ChatGPT</span><span>Codex</span><span>Gemini</span></div>
       </div>
     </section>
 """ + section("how-it-works", "How it works", "From a prompt to an approved request. Same day.",
@@ -350,7 +350,7 @@ home = """    <section class="hero">
     </section>
 """
 page("index.html", "NeoApps.AI: custom software, built by your AI, owned by you",
-     "Describe your process in Claude, ChatGPT or Codex. Get a real app with roles, approvals and an audit trail. Run it in our cloud or yours.", home)
+     "Describe your process in Claude, ChatGPT, Codex or Gemini. Get a real app with roles, approvals and an audit trail. Run it in our cloud or yours.", home)
 
 # ---------------------------------------------------------------- Use cases
 FEATURED = [
@@ -369,7 +369,7 @@ uc += """    <section class="section white" id="prompt-library">
         <div class="section-heading">
           <div class="kicker">Prompt library</div>
           <h2>Start from a ready-made prompt.</h2>
-          <p>Copy one into Claude, ChatGPT or Codex. Your assistant asks questions and shows a preview before building.</p>
+          <p>Copy one into Claude, ChatGPT, Codex or Gemini. Your assistant asks questions and shows a preview before building.</p>
         </div>
         <div class="library-tools" role="search">
           <input id="prompt-search" type="search" placeholder="Search apps, industries or workflows…" aria-label="Search prompt library">
@@ -436,7 +436,7 @@ pr = section("plans", "Pricing", "Simple pricing. Your data and code stay yours.
           <article class="path-card featured"><div class="path-label">NeoApps Cloud</div><h3>One app</h3><div class="price">US$49<small>/month</small></div><p>Hosting, database and sign-in included. Built and published from your assistant. Try it free for 14 days, no card.</p><a class="button" href="get-started.html">Start free trial</a></article>
           <article class="path-card"><div class="path-label">NeoApps Cloud</div><h3>Up to three apps</h3><div class="price">US$149<small>/month</small></div><p>Everything in One app, for up to three apps.</p><a class="button secondary" href="get-started.html">Get started</a></article>
         </div>
-        <p style="margin:18px 0 0;color:var(--muted)">AI inside your apps runs on your own Anthropic or OpenAI-compatible key, billed by them. Your Claude, ChatGPT or Codex plan is separate. Data is hosted in the US.</p>
+        <p style="margin:18px 0 0;color:var(--muted)">AI inside your apps runs on your own Anthropic or OpenAI-compatible key, billed by them. Your Claude, ChatGPT, Codex or Gemini plan is separate. Data is hosted in the US.</p>
         <p style="margin:8px 0 0;color:var(--muted)">Need it built for you? <a class="text-link" href="mailto:info@neopric.com?subject=NeoApps%20custom%20build">Talk to us</a> about custom apps, hosting and support.</p>""", white=True) \
 + section("compare", "Where it runs", "Who runs it, who updates it, what you keep.", None, COMPARE_TABLE) \
 + section("adopt", "How teams adopt", "Start small. Grow when it sticks.", None,
@@ -447,7 +447,7 @@ pr = section("plans", "Pricing", "Simple pricing. Your data and code stay yours.
 + section("faq", "FAQ", "Questions people ask.", None, '        <div class="faq" style="max-width:820px">' + "".join(
     f"<details><summary>{q}</summary><p>{a}</p></details>" for q, a in [
         ("Is there a free trial?", "Yes. 14 days, no card. Confirm your email, then build and publish one app. Pick a plan to keep it running; if you don't, it pauses and is kept for 30 days."),
-        ("Do I need to code?", "No. You describe your business in Claude, ChatGPT or Codex. You review a preview and approve it."),
+        ("Do I need to code?", "No. You describe your business in Claude, ChatGPT, Codex or Gemini. You review a preview and approve it."),
         ("Is it a prototype or a real app?", "A real app: sign-in, roles, data rules enforced on the server, and an audit trail. Teams run their business on it."),
         ("How fast is it live?", "Usually the same day. Describe it, approve the preview, publish."),
         ("Do I lose data when I change the app?", "No. Ask your assistant for the change and your data stays. If a change would delete something, you're asked first."),
@@ -473,7 +473,7 @@ dev = section("open-source", "Developers", "Open source. Real stack. No lock-in.
         (".NET 10 API", "Generated controllers, repositories, JWT auth and Swagger."),
         ("React admin UI", "React 19 and MUI, driven by schema.json and ui.config.json."),
         ("MySQL, Redis, RabbitMQ", "Background jobs, approvals and events, out of the box."),
-        ("MCP server and CLI", "Every operation as a tool for Claude, ChatGPT, Codex and others."),
+        ("MCP server and CLI", "Every operation as a tool for Claude, ChatGPT, Codex, Gemini and others."),
     ]), white=True) \
 + section("how", "How it fits together", "Your assistant talks. NeoApps builds. Your app runs.", "The same pieces run on NeoApps Cloud or in your own environment.", "        " + ARCH) \
 + section("local", "Run it locally", "One command to install.", "Needs Docker. Registers the MCP server with Claude Code and Claude Desktop and prints the config for Codex and others.",
