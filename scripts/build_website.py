@@ -44,6 +44,7 @@ NAV = [
         ("developers.html#local", "Run it locally"),
         ("developers.html#rules", "Data rules"),
         ("developers.html#extend", "Extend it"),
+        ("security.html", "Security"),
         (GITHUB, "GitHub ↗"),
     ]),
 ]
@@ -72,7 +73,7 @@ FOOTER = f"""  <footer>
     <div class="wrap footer-row">
       <a class="brand" href="index.html"><span class="brand-mark">N</span>NeoApps.AI</a>
       <span>Custom software, built by your AI, owned by you.</span>
-      <div class="footer-links"><a href="get-started.html">Get started</a><a href="pricing.html">Pricing</a><a href="developers.html">Developers</a><a href="{GITHUB}">GitHub</a><a href="mailto:info@neopric.com">Contact</a></div>
+      <div class="footer-links"><a href="get-started.html">Get started</a><a href="pricing.html">Pricing</a><a href="developers.html">Developers</a><a href="security.html">Security</a><a href="{GITHUB}">GitHub</a><a href="mailto:info@neopric.com">Contact</a></div>
     </div>
   </footer>"""
 
@@ -506,4 +507,51 @@ dev = section("open-source", "Developers", "Open source. Real stack. No lock-in.
     '        <div style="max-width:860px">' + prompt_box("I want to build [describe my business app]. Ask me about users, processes, data and permissions. Check the NeoApps schema guidelines and my environment. Show me a plan and wait for my approval. Then generate, build and run the app locally with the NeoApps tools, keep the source in my project, and show me how to host it myself.") + "</div>"
     + f'\n        <p style="margin:16px 0 0"><a class="button secondary" href="{GITHUB}">View on GitHub ↗</a></p>')
 page("developers.html", "Developers · NeoApps.AI", "Open-source generator: MySQL schema and UI config to a .NET 10 API and React admin UI, with an MCP server and CLI.", dev)
+
+
+# ---------------------------------------------------------------- Security
+SEC_ROWS = [
+    ("Someone opens another person's records by changing an id",
+     "Every query passes one checkpoint (DataGuard) that applies roles, tenants and row rules. A record you may not see answers \"not found\"."),
+    ("Keys and passwords end up in the browser",
+     "The web app never holds the sign-in token: it lives in an HttpOnly cookie. AI keys are typed on a NeoApps page and stay on the server. Each app gets its own random signing secret."),
+    ("No limits on sign-in, no checks on input",
+     "Sign-in is rate-limited per address, with lockout and password rules. Field rules (formats, ranges, totals) are checked on the server, not only in the form."),
+    ("SQL injection and cross-site scripting",
+     "Values are always parameters; column names must be plain names or the request is refused. The API only answers in JSON and React escapes what it shows."),
+    ("Code that calls packages that don't exist",
+     "The AI writes a plan, not code. Custom screens can only import a short list of pinned, vetted packages."),
+]
+SEC_TABLE = '        <div class="compare-wrap"><table class="compare"><thead><tr><th scope="col">Where AI-built apps usually break</th><th scope="col">What NeoApps does</th></tr></thead><tbody>' + "".join(
+    f"<tr><th scope=\"row\">{a}</th><td>{b}</td></tr>" for a, b in SEC_ROWS) + "</tbody></table></div>\n"
+
+sec = section(None, "Security", "AI designs it. Tested code builds it. You can check every line.",
+    "Your assistant writes a plan: tables, roles and rules. The same open-source generator turns every plan into code, so the parts that usually go wrong are written once and tested.",
+    SEC_TABLE) \
++ section("tested", "What we tested", "54 checks on a real app. All pass.",
+    "On 16 Nov 2026 we generated QuickNotes, ran it in production mode and attacked it.",
+    """        <div class="includes">
+          <article class="include"><h3>Access</h3><p>Viewers can't write. Members can't delete, read user or permission tables, or make themselves admin. Signed-out sessions stop working.</p></article>
+          <article class="include"><h3>Injection</h3><p>Attacks through sort order, search, filters and ids are refused or treated as plain text. Tables stay intact.</p></article>
+          <article class="include"><h3>Sign-in</h3><p>Weak passwords refused. Repeated wrong passwords are blocked. Forged tokens refused. Cookies are HttpOnly and SameSite.</p></article>
+          <article class="include"><h3>Packages and code</h3><p>No known-vulnerable NuGet or npm packages. A static scan with the open Semgrep rules, then a manual review of what it flagged.</p></article>
+        </div>
+        <h3 style="margin:32px 0 8px">What we found and fixed</h3>
+        <ul class="plain-list">
+          <li>Search could show deleted records.</li>
+          <li>The built-in users endpoint showed password hashes to admins.</li>
+          <li>A logging library had a known moderate issue. Updated.</li>
+          <li>Cloud app pages were missing some browser security headers.</li>
+        </ul>
+        <p style="color:var(--muted)">Run the same checks on your own app: <code>scripts/security-probe.py</code> in the repo.</p>
+""", white=True) \
++ section("careful", "Where to be careful", "What we can't check for you.", None,
+    """        <ul class="plain-list">
+          <li>Code you add yourself (custom screens) is yours to review.</li>
+          <li>Roles do what you set. Give people the least access they need.</li>
+          <li>AI features run on your own key. Keep it on the AI settings page, never in a chat.</li>
+        </ul>
+        <p>Found a problem? Email <a class="text-link" href="mailto:info@neopric.com?subject=Security">info@neopric.com</a> with \"Security\" in the subject.</p>
+""")
+page("security.html", "Security · NeoApps.AI", "How NeoApps closes the holes AI-built apps usually have, and the checks we ran to prove it.", sec)
 print("built", [p.name for p in ROOT.glob("*.html")])

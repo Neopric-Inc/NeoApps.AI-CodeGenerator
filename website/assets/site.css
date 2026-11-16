@@ -244,6 +244,8 @@
     /* Get started */
     .connect { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
     .connect article { padding: 28px; }
+    .plain-list { margin: 0 0 16px; padding-left: 20px; color: var(--muted); }
+    .plain-list li { margin: 6px 0; }
     .gemini-strip { margin-top: 16px; padding: 28px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--paper); }
     .gemini-strip h3 { margin: 0 0 8px; }
     .gemini-strip > p { margin: 0; color: var(--muted); }
