@@ -60,7 +60,7 @@ def header(current):
                          f'<div class="dropdown-menu">{links}</div></div>')
         else:
             items.append(f'<a href="{href}"{cur}>{label}</a>')
-    items.append('<a class="button small" href="get-started.html">Get started</a>')
+    items.append('<a class="button small" href="get-started.html">Connect assistant</a>')
     return f"""  <header class="topbar">
     <nav class="nav wrap" aria-label="Main navigation">
       <a class="brand" href="index.html" aria-label="NeoApps.AI home"><span class="brand-mark">N</span>NeoApps.AI</a>
@@ -73,7 +73,7 @@ FOOTER = f"""  <footer>
     <div class="wrap footer-row">
       <a class="brand" href="index.html"><span class="brand-mark">N</span>NeoApps.AI</a>
       <span>Custom software, built by your AI, owned by you.</span>
-      <div class="footer-links"><a href="get-started.html">Get started</a><a href="pricing.html">Pricing</a><a href="developers.html">Developers</a><a href="security.html">Security</a><a href="{GITHUB}">GitHub</a><a href="mailto:info@neopric.com">Contact</a></div>
+      <div class="footer-links"><a href="get-started.html">Connect your AI assistant</a><a href="pricing.html">Pricing</a><a href="developers.html">Developers</a><a href="security.html">Security</a><a href="{GITHUB}">GitHub</a><a href="mailto:info@neopric.com">Contact</a></div>
     </div>
   </footer>"""
 
@@ -267,24 +267,31 @@ COMPARE_TABLE = '''        <div class="compare-wrap"><table class="compare">
             <tr><th scope="row">Your app's code</th><td>Yes, anytime. Ask your assistant for your app's plan and build it with the open-source generator.</td><td class="featured">Yours</td><td>Yours</td></tr>
             <tr><th scope="row">Your records</th><td>Export any list to CSV</td><td class="featured">In your own database</td><td>In your own database</td></tr>
             <tr><th scope="row">Price</th><td>14 days free, then from US$49/month</td><td class="featured">One-time, from US$10,000</td><td>Free, open source</td></tr>
-            <tr><th scope="row"></th><td><a class="text-link" href="get-started.html">Start building</a></td><td class="featured"><a class="text-link" href="mailto:info@neopric.com?subject=NeoApps%20deploy%20in%20our%20cloud">Talk to us</a></td><td><a class="text-link" href="developers.html">Developer setup</a></td></tr>
+            <tr><th scope="row"></th><td><a class="text-link" href="get-started.html">Connect your AI assistant</a></td><td class="featured"><a class="text-link" href="mailto:info@neopric.com?subject=NeoApps%20deploy%20in%20our%20cloud">Talk to us</a></td><td><a class="text-link" href="developers.html">Developer setup</a></td></tr>
           </tbody>
         </table></div>'''
 
 # ---------------------------------------------------------------- Home
 home = """    <section class="hero">
       <div class="wrap">
-        <a class="eyebrow" href="#rules"><span class="dot"></span> New: sign-offs with password re-entry, and notifications</a>
-        <h1>Custom software, built by your AI, owned by you.</h1>
-        <p class="lede">Describe your process in Claude, ChatGPT, Codex or Gemini. Get a real app with roles, approvals and an audit trail. Run it in our cloud or yours.</p>
+        <a class="eyebrow" href="#rules"><span class="dot"></span> See how NeoApps enforces your rules</a>
+        <h1>Build client portals and approval workflows with the AI you already use.</h1>
+        <p class="lede">Review who can see, edit, and approve records before you build. NeoApps enforces those rules on the server. Run the app in our cloud or yours.</p>
         <div class="hero-actions">
-          <a class="button" href="get-started.html">Start building</a>
-          <a class="button secondary" href="#how-it-works">See how it works</a>
+          <a class="button" href="#sample-plan">See a sample app plan</a>
+          <a class="button secondary" href="get-started.html">Connect your AI assistant</a>
         </div>
         <p class="fine">14 days free. No card needed.</p>
       </div>
     </section>
-    <section class="hero-shot" aria-label="Product demo">
+    <section class="hero-shot" aria-label="Sample app plan">
+      <div class="wrap" id="sample-plan">
+        <h2>See what your users can do before you build</h2>
+        <p>In this sample plan, employees see their own requests and managers decide which requests to approve.</p>
+        <div class="shot glow"><img src="assets/img/req-plan.webp" width="1390" height="380" alt="Sample plan showing roles, request stages and notifications"></div>
+      </div>
+    </section>
+    <section class="hero-shot" aria-label="Receipts app build video">
       <div class="wrap">
         <div class="shot glow"><video src="assets/video/receipts-demo.mp4" poster="assets/img/receipts-poster.webp" width="1280" height="720" autoplay muted loop playsinline preload="metadata" aria-label="Claude builds a Receipts app with NeoApps, then a receipt is uploaded and AI drafts the expense"></video></div>
         <p class="caption">Built live in Claude: a Receipts app where AI drafts the expense. Sample receipt.</p>
@@ -308,7 +315,7 @@ home = """    <section class="hero">
           <article class="walk-step"><div class="step-num">04</div><h3>Every step is on record</h3><p>Who submitted, who approved, and when. Emma is told it's approved.</p>
             <div class="shot"><img src="assets/img/req-history.webp" width="1600" height="1000" loading="lazy" alt="The request's status history: drafted and submitted by Emma, approved by Marcus"></div></article>
         </div>
-        <p style="margin:20px 0 0"><a class="text-link" href="#proof">Watch a full build: ClaimKit, live in four hours →</a></p>''') \
+        <p style="margin:20px 0 0"><a class="text-link" href="#proof">See ClaimKit, a real client portal →</a></p>''') \
 + section("own", "Where it runs", "Run it where your data must live. Leave whenever you want.", None,
     '''''' + COMPARE_TABLE + '''
         <ul class="trust" aria-label="In place today"><li>Encrypted in transit and at rest</li><li>Roles enforced on the server</li><li>Audit trail</li><li>Password re-entry for sign-offs</li><li>We never train on your data</li><li>Open source</li></ul>
@@ -331,7 +338,7 @@ home = """    <section class="hero">
           <article class="tile phone"><h3>On every screen.</h3><p>Add it to your phone's home screen or install it on your desktop. Notifications in the app, or by email.</p><img src="assets/img/phone.webp" width="1170" height="1500" loading="lazy" alt="The app on a phone, showing the dashboard"></article>
           <article class="tile"><h3>Your data is never stuck.</h3><p>Export any list to CSV. The code is open source. Leave whenever you want.</p><div class="shot"><img src="assets/img/list.webp" width="1440" height="900" loading="lazy" alt="A list of engagements with search and an Export button"></div></article>
         </div>''') \
-+ section("industries", "Use cases", "Built for work that gets audited.", "Replace the spreadsheet, the inbox and the shared drive with one app your team trusts.",
++ section("industries", "Use cases", "Client portals and internal workflows", "Give customers a place to submit documents and follow progress. Give your team a clear approval process and a record of decisions.",
     '        <div class="industry-grid">' + "".join(f'<a href="use-cases.html#{a}"><span>{n}</span><strong>{items[0][0]}</strong></a>' for a, n, items in INDUSTRIES) + '</div>'
     + '\n        <p style="margin:20px 0 0"><a class="text-link" href="use-cases.html">All use cases and ready-made prompts →</a></p>') \
 + section("proof", "Proof", "ClaimKit: years of R&amp;D tax-credit expertise, live in four hours.", None,
@@ -340,18 +347,18 @@ home = """    <section class="hero">
     '<p>The expert still decides. The app does the intake, documents and evidence.</p></div></div>') \
 + """    <section class="cta">
       <div class="wrap">
-        <h2>Replace one spreadsheet this week.</h2>
-        <p>Start with one team and one workflow. Add the next when it sticks.</p>
+        <h2>Build your first portal or approval workflow.</h2>
+        <p>Describe one process, then review its permissions and approval steps before publishing.</p>
         <div class="hero-actions">
-          <a class="button" href="get-started.html">Start building</a>
+          <a class="button" href="get-started.html">Connect your AI assistant</a>
           <a class="button secondary" href="mailto:info@neopric.com">Talk to us</a>
         </div>
         <p class="fine">14 days free. No card needed.</p>
       </div>
     </section>
 """
-page("index.html", "NeoApps.AI: custom software, built by your AI, owned by you",
-     "Describe your process in Claude, ChatGPT, Codex or Gemini. Get a real app with roles, approvals and an audit trail. Run it in our cloud or yours.", home)
+page("index.html", "NeoApps.AI · Client portals and approval workflows",
+     "Review who can see, edit, and approve records before you build. NeoApps enforces those rules on the server. Run the app in our cloud or yours.", home)
 
 # ---------------------------------------------------------------- Use cases
 FEATURED = [
@@ -359,7 +366,11 @@ FEATURED = [
     (MOCK_SIGNOFF, "Audit engagements", "Partners sign off with their password. The statement is logged.", "#professional"),
     (MOCK_INSPECTION, "Field inspections", "Checklists, photos, failed items become corrective actions.", "#field"),
 ]
-uc = section("featured", "Use cases", "Apps teams run every day.", "Three examples. Each is a starting point your assistant adapts to how you work.",
+uc = section("app-types", "Use cases", "Start with the kind of app you need.", "Choose a customer portal or an internal workflow, then try a sample prompt.",
+    '''        <div class="tiles">
+          <article class="tile"><h3>Customer portals</h3><p>Clients submit documents and check progress. Give each client access to their own records.</p><a class="text-link" href="index.html#proof">See the ClaimKit walkthrough →</a> <a class="text-link" href="get-started.html#portal-prompt">Get the portal prompt →</a></article>
+          <article class="tile"><h3>Internal workflows</h3><p>Employees submit requests, managers approve them, and each decision is recorded.</p><a class="text-link" href="index.html#how-it-works">See the Requests walkthrough and prompt →</a></article>
+        </div>''') + section("featured", "Examples", "Apps teams run every day.", "See how teams handle requests, sign-offs and inspections.",
     '        <div class="featured-grid">' + "".join(
         f'<article class="featured-card">{m}<h3>{t}</h3><p>{d}</p><a class="text-link" href="{h}">See related apps →</a></article>' for m, t, d, h in FEATURED)
     + '</div>\n        <p style="margin:20px 0 0"><a class="text-link" href="#prompt-library">Start from a ready-made prompt →</a></p>')
@@ -399,14 +410,16 @@ def copy_inline(text):
             f'<button class="copy-button" type="button" aria-label="Copy {text}">Copy</button><span class="copy-status sr-only" aria-live="polite"></span></span>')
 
 
-gs = section("connect", "Get started", "Connect once. Then just describe your app.", "Pick the assistant you already use.",
+PORTAL_PROMPT = CLOUD_PROMPT.replace("[describe your business app]", "a client portal where clients upload documents and see their own records. Staff review submissions, record approval decisions and notify the client when the status changes")
+
+gs = section("connect", "Get started", "Connect your assistant and preview your first app.", "Connect your assistant, review the app plan, then approve it to publish.",
     f"""        <p class="needs"><strong>You'll need:</strong> a NeoApps account. Confirm your email and you get 14 days free, no card. Pick a plan when you're ready (promo codes go in at checkout). Connecting opens a NeoApps page where you sign up or sign in.</p>
-        <div class="connect-visual"><div class="connect-copy"><h3>One link connects everything.</h3><p>Paste the NeoApps link where your assistant adds connectors or apps, then sign in. That's the whole setup.</p></div>""" + MOCK_CONNECT + f"""</div>
+        <div class="connect-visual"><div class="connect-copy"><h3>Choose your assistant</h3><p>Paste the NeoApps link where your assistant adds connectors or apps, then sign in. That's the whole setup.</p></div>""" + MOCK_CONNECT + f"""</div>
         <div class="connect">
-          <article><h3>Claude</h3><ol><li>Open the Claude desktop app: Settings → Connectors → Add custom connector.</li><li>Paste {copy_inline(CLOUD_URL)}</li><li>Click Connect and sign in to NeoApps. It also works in the Claude mobile app.</li></ol></article>
-          <article><h3>ChatGPT</h3><ol><li>Settings → Apps &amp; Connectors → Advanced settings: turn on Developer mode.</li><li>Choose Create and paste {copy_inline(CLOUD_URL)}</li><li>Sign in to NeoApps when asked.</li></ol></article>
-          <article><h3>Codex</h3><ol><li>Run {copy_inline("codex mcp add neoapps --url " + CLOUD_URL)}</li><li>Sign in to NeoApps when asked.</li></ol></article>
-          <article><h3>Gemini</h3><ol><li>Open gemini.google.com: Connectors → + Custom. Paste {copy_inline(CLOUD_URL)} and leave Client ID empty.</li><li>Agree, then sign in to NeoApps and click Allow.</li><li>In a chat, type <code>@NeoApps Cloud</code> and describe your app.</li></ol></article>
+          <details name="assistant-setup"><summary>Claude</summary><ol><li>Open the Claude desktop app: Settings → Connectors → Add custom connector.</li><li>Paste {copy_inline(CLOUD_URL)}</li><li>Click Connect and sign in to NeoApps. It also works in the Claude mobile app.</li></ol></details>
+          <details name="assistant-setup"><summary>ChatGPT</summary><ol><li>Settings → Apps &amp; Connectors → Advanced settings: turn on Developer mode.</li><li>Choose Create and paste {copy_inline(CLOUD_URL)}</li><li>Sign in to NeoApps when asked.</li></ol></details>
+          <details name="assistant-setup"><summary>Codex</summary><ol><li>Run {copy_inline("codex mcp add neoapps --url " + CLOUD_URL)}</li><li>Sign in to NeoApps when asked.</li></ol></details>
+          <details name="assistant-setup"><summary>Gemini</summary><ol><li>Open gemini.google.com: Connectors → + Custom. Paste {copy_inline(CLOUD_URL)} and leave Client ID empty.</li><li>Agree, then sign in to NeoApps and click Allow.</li><li>In a chat, type <code>@NeoApps Cloud</code> and describe your app.</li></ol></details>
         </div>
         <div class="gemini-strip">
           <h3>Gemini, start to finish</h3>
@@ -420,6 +433,7 @@ gs = section("connect", "Get started", "Connect once. Then just describe your ap
         </div>
 """, white=True) \
 + section("prompt", "Then", "Paste this and describe your business.", None, f'        <div style="max-width:860px">{prompt_box(CLOUD_PROMPT)}</div>') \
++ section("portal-prompt", "Starter prompt", "Try a client portal.", "Copy this prompt into your connected assistant to preview a portal with client and staff roles.", f'        <div style="max-width:860px">{prompt_box(PORTAL_PROMPT)}</div>') \
 + section("after", "After it's live", "Invite people. Add AI. Keep improving.", None,
     '        <div class="steps">'
     '<article class="step"><div class="step-num">01</div><h3>Invite people</h3><p>Add your team and customers in Members, with the role they need.</p></article>'
@@ -431,11 +445,12 @@ gs = section("connect", "Get started", "Connect once. Then just describe your ap
 page("get-started.html", "Get started · NeoApps.AI", "Connect NeoApps to Claude, ChatGPT, Codex or Gemini and build your first business app.", gs)
 
 # ---------------------------------------------------------------- Pricing
-pr = section("plans", "Pricing", "Simple pricing. Your data and code stay yours.", None,
+pr = section("plans", "Pricing", "Choose where your app runs.", None,
     """        <div class="paths">
+          <article class="path-card"><div class="path-label">Private cloud</div><h3>Deploy in your cloud</h3><div class="price">From US$10,000</div><p>One-time setup in your AWS, Azure or Google Cloud account, with handover to your team.</p><a class="button secondary" href="mailto:info@neopric.com?subject=NeoApps%20private%20cloud">Discuss private cloud setup</a></article>
           <article class="path-card"><div class="path-label">Open source</div><h3>Run it yourself</h3><div class="price">Free</div><p>Generate and host apps on your own machines. You manage hosting and updates.</p><a class="button secondary" href="developers.html">Developer setup</a></article>
-          <article class="path-card featured"><div class="path-label">NeoApps Cloud</div><h3>One app</h3><div class="price">US$49<small>/month</small></div><p>Hosting, database and sign-in included. Built and published from your assistant. Try it free for 14 days, no card.</p><a class="button" href="get-started.html">Start free trial</a></article>
-          <article class="path-card"><div class="path-label">NeoApps Cloud</div><h3>Up to three apps</h3><div class="price">US$149<small>/month</small></div><p>Everything in One app, for up to three apps.</p><a class="button secondary" href="get-started.html">Get started</a></article>
+          <article class="path-card featured"><div class="path-label">NeoApps Cloud</div><h3>One app</h3><div class="price">US$49<small>/month</small></div><p>Hosting, database and sign-in included. Built and published from your assistant. Try it free for 14 days, no card.</p><a class="button" href="get-started.html">Connect your AI assistant</a></article>
+          <article class="path-card"><div class="path-label">NeoApps Cloud</div><h3>Up to three apps</h3><div class="price">US$149<small>/month</small></div><p>Everything in One app, for up to three apps.</p><a class="button secondary" href="get-started.html">Connect your AI assistant</a></article>
         </div>
         <p style="margin:18px 0 0;color:var(--muted)">AI inside your apps runs on your own Anthropic or OpenAI-compatible key, billed by them. Your Claude, ChatGPT, Codex or Gemini plan is separate. Data is hosted in the US.</p>
         <p style="margin:8px 0 0;color:var(--muted)">Need it built for you? <a class="text-link" href="mailto:info@neopric.com?subject=NeoApps%20custom%20build">Talk to us</a> about custom apps, hosting and support.</p>""", white=True) \
@@ -468,18 +483,18 @@ pr = section("plans", "Pricing", "Simple pricing. Your data and code stay yours.
 page("pricing.html", "Pricing · NeoApps.AI", "NeoApps Cloud: 14 days free, no card. Then US$49/month for one app, US$149/month for up to three. Free and open source to self-host.", pr)
 
 # ---------------------------------------------------------------- Developers
-dev = section("open-source", "Developers", "Open source. Real stack. No lock-in.",
-    "NeoApps turns a MySQL schema and a UI config into a full app. Two years open source, built on 15 years of ERP work.",
-    cards([
+dev = section("open-source", "Developers", "Review the app plan. Generate source you can run.",
+    "NeoApps turns a MySQL schema and a UI config into a full app. Start with AuditDesk to see how roles and workflows are defined before you generate the app.",
+    f'<p><a class="button secondary" href="#local">Try the AuditDesk example</a> <a class="text-link" href="{GITHUB}/tree/main/samples/auditdesk">Browse the sample files ↗</a></p>' + cards([
         (".NET 10 API", "Generated controllers, repositories, JWT auth and Swagger."),
         ("React admin UI", "React 19 and MUI, driven by schema.json and ui.config.json."),
         ("MySQL, Redis, RabbitMQ", "Background jobs, approvals and events, out of the box."),
         ("MCP server and CLI", "Every operation as a tool for Claude, ChatGPT, Codex, Gemini and others."),
     ]), white=True) \
 + section("how", "How it fits together", "Your assistant talks. NeoApps builds. Your app runs.", "The same pieces run on NeoApps Cloud or in your own environment.", "        " + ARCH) \
-+ section("local", "Run it locally", "One command to install.", "Needs Docker. Registers the MCP server with Claude Code and Claude Desktop and prints the config for Codex and others.",
++ section("local", "Run it locally", "One command to install.", "Requires Git, the .NET 10 SDK and Docker. The installer registers the MCP server with Claude Code and Claude Desktop and prints the config for Codex and others.",
     f"""        <div class="prompt-box" style="max-width:860px"><pre class="copy-text">curl -fsSL https://raw.githubusercontent.com/Neopric-Inc/NeoApps.AI-CodeGenerator/main/install.sh | bash</pre><div class="copy-row"><span class="copy-status" aria-live="polite"></span><button class="button secondary small copy-button" type="button">Copy</button></div></div>
-        <p style="margin:16px 0 0">Then ask your agent to build an app, or use the CLI: <code>neoapps new MyApp --schema schema.sql --ui ui.config.json --deploy</code>. <a class="text-link" href="{GITHUB}#coding-agents-mcp">Setup guide ↗</a></p>""") \
+        <p style="margin:16px 0 0">From a clone of the repository, preview the sample with <code>neoapps preview AuditDesk --schema samples/auditdesk/auditdesk.sql --ui samples/auditdesk/auditdesk.ui.json</code>. Review the plan, then run <code>neoapps new AuditDesk --schema samples/auditdesk/auditdesk.sql --ui samples/auditdesk/auditdesk.ui.json --deploy</code> to generate and run it. <a class="text-link" href="{GITHUB}#coding-agents-mcp">Setup guide ↗</a></p>""") \
 + section("rules", "Data rules", "Business rules are config, not code.", "The API enforces them on every query, for people, AI and integrations alike.",
     cards([
         ("Tenancy and row scopes", "Customer portals: each customer sees only their own rows."),
@@ -529,7 +544,7 @@ sec = section(None, "Security", "AI designs it. Tested code builds it. You can c
     "Your assistant writes a plan: tables, roles and rules. The same open-source generator turns every plan into code, so the parts that usually go wrong are written once and tested.",
     SEC_TABLE) \
 + section("tested", "What we tested", "54 checks on a real app. All pass.",
-    "On 16 Nov 2026 we generated QuickNotes, ran it in production mode and attacked it.",
+    "The 16 Nov 2026 test run covered a generated QuickNotes app running in production mode.",
     """        <div class="includes">
           <article class="include"><h3>Access</h3><p>Viewers can't write. Members can't delete, read user or permission tables, or make themselves admin. Signed-out sessions stop working.</p></article>
           <article class="include"><h3>Injection</h3><p>Attacks through sort order, search, filters and ids are refused or treated as plain text. Tables stay intact.</p></article>
@@ -543,7 +558,7 @@ sec = section(None, "Security", "AI designs it. Tested code builds it. You can c
           <li>A logging library had a known moderate issue. Updated.</li>
           <li>Cloud app pages were missing some browser security headers.</li>
         </ul>
-        <p style="color:var(--muted)">Run the same checks on your own app: <code>scripts/security-probe.py</code> in the repo.</p>
+        <p style="color:var(--muted)">See the <a class="text-link" href="https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator/blob/main/scripts/security-probe.py">test script</a> for the checks behind these results.</p>
 """, white=True) \
 + section("careful", "Where to be careful", "What we can't check for you.", None,
     """        <ul class="plain-list">
