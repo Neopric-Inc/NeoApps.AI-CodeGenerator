@@ -272,93 +272,98 @@ COMPARE_TABLE = '''        <div class="compare-wrap"><table class="compare">
         </table></div>'''
 
 # ---------------------------------------------------------------- Home
-home = """    <section class="hero">
+home = f"""    <section class="hero">
       <div class="wrap">
-        <a class="eyebrow" href="#rules"><span class="dot"></span> See how NeoApps enforces your rules</a>
-        <h1>Build client portals and approval workflows with the AI you already use.</h1>
-        <p class="lede">Review who can see, edit, and approve records before you build. NeoApps enforces those rules on the server. Run the app in our cloud or yours.</p>
+        <a class="eyebrow" href="#how-it-works"><span class="dot"></span> Open-Source Execution Engine for Frontier AI</a>
+        <h1>Frontier AI thinks. NeoApps compiles it into governed production software.</h1>
+        <p class="lede">Connect Claude, ChatGPT, Codex, or Gemini to NeoApps. Turn your product specs, research, and workflows into full-stack apps with server-enforced roles, audit trails, and zero vendor lock-in.</p>
         <div class="hero-actions">
-          <a class="button" href="#sample-plan">See a sample app plan</a>
-          <a class="button secondary" href="get-started.html">Connect your AI assistant</a>
+          <a class="button" href="get-started.html">Start Building Free</a>
+          <a class="button secondary" href="developers.html#local">Install the NeoApps CLI</a>
         </div>
-        <p class="fine">14 days free. No card needed.</p>
-      </div>
-    </section>
-    <section class="hero-shot" aria-label="Sample app plan">
-      <div class="wrap" id="sample-plan">
-        <h2>See what your users can do before you build</h2>
-        <p>In this sample plan, employees see their own requests and managers decide which requests to approve.</p>
-        <div class="shot glow"><img src="assets/img/req-plan.webp" width="1390" height="380" alt="Sample plan showing roles, request stages and notifications"></div>
-      </div>
-    </section>
-    <section class="hero-shot" aria-label="Receipts app build video">
-      <div class="wrap">
-        <div class="shot glow"><video src="assets/video/receipts-demo.mp4" poster="assets/img/receipts-poster.webp" width="1280" height="720" autoplay muted loop playsinline preload="metadata" aria-label="Claude builds a Receipts app with NeoApps, then a receipt is uploaded and AI drafts the expense"></video></div>
-        <p class="caption">Built live in Claude: a Receipts app where AI drafts the expense. Sample receipt.</p>
+        <p class="fine">14-day cloud trial • No card needed</p>
       </div>
     </section>
     <section class="works" aria-label="Works with">
       <div class="wrap">
-        <p class="label">Built from the assistant you already use</p>
-        <div class="works-row"><span>Claude</span><span>Claude Desktop</span><span>ChatGPT</span><span>Codex</span><span>Gemini</span></div>
+        <p class="label">Works natively with:</p>
+        <div class="works-row"><span>Claude</span><span>Claude Desktop (MCP)</span><span>ChatGPT</span><span>OpenAI Codex</span><span>Google Gemini</span></div>
       </div>
     </section>
-""" + section("how-it-works", "How it works", "From a prompt to an approved request. Same day.",
-    "Real screens from the Requests sample: an employee asks, a manager decides, the app keeps the record.",
-    '''        <div class="walk">
-          <article class="walk-step"><div class="step-num">01</div><h3>Describe it in your assistant</h3>
-            ''' + prompt_box(REQ_PROMPT) + '''</article>
-          <article class="walk-step"><div class="step-num">02</div><h3>Review the plan before it's built</h3><p>Who can do what, the steps a request moves through, who gets told.</p>
-            <div class="shot"><img src="assets/img/req-plan.webp" width="1390" height="380" loading="lazy" alt="The plan preview: who can do what, the request steps, and the notification rules"></div></article>
-          <article class="walk-step"><div class="step-num">03</div><h3>The manager approves in the app</h3><p>Marcus is told a request needs him. He approves it with a note.</p>
-            <div class="shot"><img src="assets/img/req-approve.webp" width="1600" height="1000" loading="lazy" alt="A manager approving a request with a decision note"></div></article>
-          <article class="walk-step"><div class="step-num">04</div><h3>Every step is on record</h3><p>Who submitted, who approved, and when. Emma is told it's approved.</p>
-            <div class="shot"><img src="assets/img/req-history.webp" width="1600" height="1000" loading="lazy" alt="The request's status history: drafted and submitted by Emma, approved by Marcus"></div></article>
+    <section class="section" id="positioning">
+      <div class="wrap">
+        <div class="section-heading">
+          <h2>AI writes code fast. NeoApps makes sure it holds up in production.</h2>
+          <p>Raw AI-generated apps break down when real users, permissions, and auditors show up. NeoApps separates AI reasoning from deterministic execution.</p>
         </div>
-        <p style="margin:20px 0 0"><a class="text-link" href="#proof">See ClaimKit, a real client portal →</a></p>''') \
-+ section("own", "Where it runs", "Run it where your data must live. Leave whenever you want.", None,
-    '''''' + COMPARE_TABLE + '''
-        <ul class="trust" aria-label="In place today"><li>Encrypted in transit and at rest</li><li>Roles enforced on the server</li><li>Audit trail</li><li>Password re-entry for sign-offs</li><li>We never train on your data</li><li>Open source</li></ul>
-        <p class="fine">SOC 2 and HIPAA are not certified yet. <a class="text-link" href="pricing.html#faq">Read the FAQ</a></p>''') \
-+ section("rules", "Production grade", "Your rules, enforced on the server.", "Not hidden buttons. Every request is checked, for every person, every time.",
-    '''        <div class="feature">
-          <div class="feature-copy"><h3>Sign-offs that hold up.</h3><p>The partner re-enters their password to sign. Their name, the time and the statement go in the audit log. Admins can't skip it. The AI can't sign.</p></div>
-          <div class="shot"><img src="assets/img/sign.webp" width="1440" height="900" loading="lazy" alt="A sign-off dialog asking the partner to re-enter their password, showing the statement being signed"></div>
+        <div class="tiles"><article class="tile"><h3>Raw Vibe Coding (Other AI Builders)</h3><ul class="plain-list"><li><strong>Fragile Security</strong> Permissions hidden in UI buttons that anyone can bypass via API.</li><li><strong>Black-Box Lock-In</strong> Proprietary hosting and tangled generated code you can&#x27;t easily maintain.</li><li><strong>Context Reset</strong> Re-explaining business rules every time you tweak a screen.</li></ul></article><article class="tile"><h3>Governed Compilation (NeoApps.AI)</h3><ul class="plain-list"><li><strong>Server-Enforced Rules</strong> Roles, record locks, and password sign-offs enforced at the database and API layer.</li><li><strong>100% Open-Source Core</strong> Inspect the plan, export clean code, or self-host on your own cloud anytime.</li><li><strong>Deterministic Blueprints</strong> Your AI generates a structured specification; NeoApps compiles it reliably every time.</li></ul></article></div>
+      </div>
+    </section>
+    <section class="section" id="how-it-works">
+      <div class="wrap">
+        <div class="section-heading">
+          <h2>From AI conversation to live deployment in four steps.</h2>
         </div>
-        <div class="feature flip">
-          <div class="shot"><img src="assets/img/permissions.webp" width="1440" height="900" loading="lazy" alt="A roles and permissions grid showing what each role can read, create, edit and delete"></div>
-          <div class="feature-copy"><h3>Who sees what. Who changes what.</h3><p>Set it by role. Customers see only their own records. Records lock after sign-off. The server enforces it, not the screen.</p></div>
+        <div class="walk">
+          <article class="walk-step"><div class="step-num">01</div><h3>Plan in Your Favorite AI</h3><p>Brainstorm your product, SaaS portal, or internal workflow in Claude, ChatGPT, or Gemini. NeoApps plugs directly into your assistant via MCP and custom actions.</p></article>
+          <article class="walk-step"><div class="step-num">02</div><h3>Review the Deterministic Plan</h3><p>Before a single line of infrastructure spins up, inspect a human-readable blueprint of your data models, user roles, state transitions, and notification triggers.</p><div class="shot"><img src="assets/img/req-plan.webp" width="1390" height="380" loading="lazy" alt="Sample app plan with roles and workflow steps"></div></article>
+          <article class="walk-step"><div class="step-num">03</div><h3>Compile &amp; Deploy Anywhere</h3><p>NeoApps compiles your plan into a production-ready application with built-in authentication, server-side RBAC, and responsive web/mobile views.</p><div class="shot"><img src="assets/img/req-approve.webp" width="1600" height="1000" loading="lazy" alt="Generated app showing the approval workflow"></div></article>
+          <article class="walk-step"><div class="step-num">04</div><h3>Audit &amp; Iterate Safely</h3><p>Every record change, approval, and sign-off is logged automatically. Ask your AI to add new features without breaking existing security rules.</p><div class="shot"><img src="assets/img/req-history.webp" width="1600" height="1000" loading="lazy" alt="Approval history in the generated app"></div></article>
         </div>
-        <div class="feature">
-          <div class="feature-copy"><h3>A history for every step.</h3><p>Who moved it, from what, to what, and when. Ready when the auditor asks.</p></div>
-          <div class="shot"><img src="assets/img/signed.webp" width="1440" height="900" loading="lazy" alt="A signed-off engagement with its phase history listing each change and its time"></div>
-        </div>''') \
-+ section(None, "Everyday use", "Works the way your team does.", None,
-    '''        <div class="tiles">
-          <article class="tile phone"><h3>On every screen.</h3><p>Add it to your phone's home screen or install it on your desktop. Notifications in the app, or by email.</p><img src="assets/img/phone.webp" width="1170" height="1500" loading="lazy" alt="The app on a phone, showing the dashboard"></article>
-          <article class="tile"><h3>Your data is never stuck.</h3><p>Export any list to CSV. The code is open source. Leave whenever you want.</p><div class="shot"><img src="assets/img/list.webp" width="1440" height="900" loading="lazy" alt="A list of engagements with search and an Export button"></div></article>
-        </div>''') \
-+ section("industries", "Use cases", "Client portals and internal workflows", "Give customers a place to submit documents and follow progress. Give your team a clear approval process and a record of decisions.",
-    '        <div class="industry-grid">' + "".join(f'<a href="use-cases.html#{a}"><span>{n}</span><strong>{items[0][0]}</strong></a>' for a, n, items in INDUSTRIES) + '</div>'
-    + '\n        <p style="margin:20px 0 0"><a class="text-link" href="use-cases.html">All use cases and ready-made prompts →</a></p>') \
+      </div>
+    </section>
+    <section class="section" id="industries">
+      <div class="wrap">
+        <div class="section-heading">
+          <h2>Built for external products and mission-critical operations.</h2>
+          <p>Whether you are launching a multi-tenant client portal or replacing high-risk spreadsheets, NeoApps enforces your rules out of the box.</p>
+        </div>
+        <div class="tiles"><article class="tile"><h3>Customer-Facing &amp; Commercial Apps</h3><ul class="plain-list"><li><strong>Client &amp; Partner Portals</strong> Give customers secure access to their own records, invoices, and project milestones.</li><li><strong>Vertical SaaS MVPs</strong> Build B2B tools with multi-tenant data isolation.</li><li><strong>Service Marketplaces &amp; Intake</strong> Automate onboarding, document collection, and status tracking on desktop and mobile.</li></ul></article><article class="tile"><h3>Regulated &amp; Audited Operations</h3><ul class="plain-list"><li><strong>Healthcare &amp; Research</strong> Patient intake and clinical study coordination deployed inside your own cloud.</li><li><strong>Legal &amp; Accounting</strong> Engagement portals, evidence tracking, and partner sign-offs with password re-entry.</li><li><strong>Field Ops &amp; Manufacturing</strong> Non-conformance reports, corrective actions, and mobile checklists.</li></ul></article></div>
+        <p><a class="text-link" href="use-cases.html">Explore use cases and starter prompts →</a></p>
+      </div>
+    </section>
+    <section class="section" id="own">
+      <div class="wrap">
+        <div class="section-heading">
+          <h2>Run it where your data must live. Leave whenever you want.</h2>
+          <p>Deploy on our managed US Azure cloud, or run the open-source engine in your own environment.</p>
+        </div>
+        <div id="rules" class="tiles"><article class="tile"><h3>Security and deployment</h3><ul class="plain-list"><li><strong>Zero-Trust Architecture</strong> Deploy in your own AWS, Azure, or Google Cloud account and apply your organization’s security controls.</li><li><strong>Password-Verified Sign-Offs</strong> Critical actions require password re-entry—admins can&#x27;t skip it, and the AI can&#x27;t forge it.</li><li><strong>Zero Model Training</strong> NeoApps never uses your schemas, business logic, or customer records to train AI models. Your AI provider’s terms apply.</li></ul></article></div>
+        <p class="fine"><a class="text-link" href="security.html">Review security controls</a> · <a class="text-link" href="pricing.html#faq">Read the compliance FAQ</a></p>
+      </div>
+    </section>
+    <section class="section" id="plans">
+      <div class="wrap">
+        <div class="section-heading">
+          <h2>Start open-source. Scale with full governance.</h2>
+        </div>
+        <div class="paths">
+          <article class="path-card"><h3>Community / Self-Hosted (Free Forever)</h3><ul class="plain-list"><li>Full open-source generator &amp; CLI</li><li>Run locally or on your own servers</li><li>Unlimited apps and developers</li><li>Community GitHub support</li></ul></article>
+          <article class="path-card"><h3>Cloud Starter ($49/month)</h3><ul class="plain-list"><li>Hosted on NeoApps managed US Azure cloud</li><li>14-day free trial, no credit card required</li><li>Built-in auth, audit logs, and CSV exports</li></ul></article>
+          <article class="path-card"><h3>Team &amp; Growth ($299/month)</h3><p><strong>Proposed plan · not available today</strong></p><ul class="plain-list"><li>Custom domains &amp; white-label branding</li><li>Staging and production environments</li><li>SSO / SAML integration &amp; priority support</li><li>Higher user seats and API rate limits</li></ul></article>
+          <article class="path-card"><h3>Enterprise Private Cloud (From $10,000 one-time setup)</h3><ul class="plain-list"><li>Deployed and configured in your AWS, Azure, or GCP account</li><li>Full source code and infrastructure handover</li></ul></article>
+        </div>
+        <p><a class="text-link" href="pricing.html">Compare current plans →</a></p>
+      </div>
+    </section>
+""" \
 + section("proof", "Proof", "ClaimKit: years of R&amp;D tax-credit expertise, live in four hours.", None,
     '        <div class="video-grid"><div class="video-frame"><iframe src="https://www.youtube-nocookie.com/embed/MD_jAxglA_Y?rel=0" title="ClaimKit walkthrough" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div>'
     '<div class="video-copy"><p>Our team built ClaimKit, a full client portal for R&amp;D tax-credit consultants, with a coding agent and NeoApps in about four hours. A typical agency build takes five to six months.</p>'
     '<p>The expert still decides. The app does the intake, documents and evidence.</p></div></div>') \
-+ """    <section class="cta">
++ f"""    <section class="cta">
       <div class="wrap">
-        <h2>Build your first portal or approval workflow.</h2>
-        <p>Describe one process, then review its permissions and approval steps before publishing.</p>
+        <h2>Stop babysitting AI-generated code. Start compiling real software.</h2>
+        <p>Connect your AI assistant and ship your first governed app today.</p>
         <div class="hero-actions">
-          <a class="button" href="get-started.html">Connect your AI assistant</a>
-          <a class="button secondary" href="mailto:info@neopric.com">Talk to us</a>
+          <a class="button" href="get-started.html">Start Free on Cloud</a>
+          <a class="button secondary" href="{GITHUB}">Explore GitHub Repo</a>
         </div>
-        <p class="fine">14 days free. No card needed.</p>
       </div>
     </section>
 """
-page("index.html", "NeoApps.AI · Client portals and approval workflows",
-     "Review who can see, edit, and approve records before you build. NeoApps enforces those rules on the server. Run the app in our cloud or yours.", home)
+page("index.html", 'NeoApps.AI · Governed production software',
+     'Connect Claude, ChatGPT, Codex, or Gemini to NeoApps. Turn your product specs, research, and workflows into full-stack apps with server-enforced roles, audit trails, and zero vendor lock-in.', home)
 
 # ---------------------------------------------------------------- Use cases
 FEATURED = [
@@ -369,7 +374,7 @@ FEATURED = [
 uc = section("app-types", "Use cases", "Start with the kind of app you need.", "Choose a customer portal or an internal workflow, then try a sample prompt.",
     '''        <div class="tiles">
           <article class="tile"><h3>Customer portals</h3><p>Clients submit documents and check progress. Give each client access to their own records.</p><a class="text-link" href="index.html#proof">See the ClaimKit walkthrough →</a> <a class="text-link" href="get-started.html#portal-prompt">Get the portal prompt →</a></article>
-          <article class="tile"><h3>Internal workflows</h3><p>Employees submit requests, managers approve them, and each decision is recorded.</p><a class="text-link" href="index.html#how-it-works">See the Requests walkthrough and prompt →</a></article>
+          <article class="tile"><h3>Internal workflows</h3><p>Employees submit requests, managers approve them, and each decision is recorded.</p><a class="text-link" href="index.html#how-it-works">See the Requests walkthrough →</a></article>
         </div>''') + section("featured", "Examples", "Apps teams run every day.", "See how teams handle requests, sign-offs and inspections.",
     '        <div class="featured-grid">' + "".join(
         f'<article class="featured-card">{m}<h3>{t}</h3><p>{d}</p><a class="text-link" href="{h}">See related apps →</a></article>' for m, t, d, h in FEATURED)
