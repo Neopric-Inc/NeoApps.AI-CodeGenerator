@@ -405,6 +405,17 @@ gs = section("connect", "Get started", "Connect once. Then just describe your ap
           <article><h3>Claude</h3><ol><li>Open the Claude desktop app: Settings → Connectors → Add custom connector.</li><li>Paste {copy_inline(CLOUD_URL)}</li><li>Click Connect and sign in to NeoApps. It also works in the Claude mobile app.</li></ol></article>
           <article><h3>ChatGPT</h3><ol><li>Settings → Apps &amp; Connectors → Advanced settings: turn on Developer mode.</li><li>Choose Create and paste {copy_inline(CLOUD_URL)}</li><li>Sign in to NeoApps when asked.</li></ol></article>
           <article><h3>Codex</h3><ol><li>Run {copy_inline("codex mcp add neoapps --url " + CLOUD_URL)}</li><li>Sign in to NeoApps when asked.</li></ol></article>
+          <article><h3>Gemini</h3><ol><li>Open gemini.google.com: Connectors → + Custom. Paste {copy_inline(CLOUD_URL)} and leave Client ID empty.</li><li>Agree, then sign in to NeoApps and click Allow.</li><li>In a chat, type <code>@NeoApps Cloud</code> and describe your app.</li></ol></article>
+        </div>
+        <div class="gemini-strip">
+          <h3>Gemini, start to finish</h3>
+          <p>A note-taking app, built and published from a Gemini chat in about 5 minutes.</p>
+          <div class="shots-row">
+            <figure><div class="shot"><img src="assets/img/gemini-add.webp" width="448" height="380" loading="lazy" alt="Gemini's Connect to an MCP server dialog with the NeoApps link pasted in"></div><figcaption>1. Paste the NeoApps link.</figcaption></figure>
+            <figure><div class="shot"><img src="assets/img/gemini-allow.webp" width="342" height="227" loading="lazy" alt="The NeoApps page asking to allow Google to build apps"></div><figcaption>2. Sign in to NeoApps and allow.</figcaption></figure>
+            <figure><div class="shot"><img src="assets/img/gemini-chat-plan.webp" width="624" height="522" loading="lazy" alt="Gemini chat asking to let it save the QuickNotes app plan to NeoApps Cloud"></div><figcaption>3. Ask with @NeoApps Cloud.</figcaption></figure>
+            <figure><div class="shot"><img src="assets/img/quicknotes-list.webp" width="800" height="370" loading="lazy" alt="The live QuickNotes app showing a notes list"></div><figcaption>4. Your app is live.</figcaption></figure>
+          </div>
         </div>
 """, white=True) \
 + section("prompt", "Then", "Paste this and describe your business.", None, f'        <div style="max-width:860px">{prompt_box(CLOUD_PROMPT)}</div>') \
@@ -416,7 +427,7 @@ gs = section("connect", "Get started", "Connect once. Then just describe your ap
     '<article class="step"><div class="step-num">04</div><h3>Forgot your login?</h3><p>Go to <a class="text-link" href="https://cloud.neoapps.ai/recover">cloud.neoapps.ai/recover</a>.</p></article></div>', white=True) \
 + section(None, "Prefer to run it yourself?", "Free and open source.", None,
     '        <p><a class="button secondary" href="developers.html">Developer setup →</a></p>')
-page("get-started.html", "Get started · NeoApps.AI", "Connect NeoApps to Claude, ChatGPT or Codex and build your first business app.", gs)
+page("get-started.html", "Get started · NeoApps.AI", "Connect NeoApps to Claude, ChatGPT, Codex or Gemini and build your first business app.", gs)
 
 # ---------------------------------------------------------------- Pricing
 pr = section("plans", "Pricing", "Simple pricing. Your data and code stay yours.", None,
