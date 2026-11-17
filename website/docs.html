@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b0c0e">
+  <link rel="icon" href="favicon.ico" sizes="any">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+  <meta name="description" content="Choose an example, connect an assistant, review your plan, and publish your first NeoApps application.">
+  <title>First app guide · NeoApps.AI</title>
+  <link rel="stylesheet" href="assets/site.css">
+  <style>
+    .dropdown { position: relative; }
+    .dropdown > button { background: none; border: 0; font: inherit; color: inherit; cursor: pointer; padding: 6px 0; }
+    .dropdown-menu { display: none; position: absolute; top: 100%; left: -14px; min-width: 260px; padding: 8px;
+      background: #121317; border: 1px solid #2a2d33; border-radius: 12px; box-shadow: 0 24px 60px rgba(0,0,0,.5); z-index: 40; }
+    .dropdown:hover .dropdown-menu, .dropdown:focus-within .dropdown-menu { display: block; }
+    .dropdown-menu a { display: block; padding: 8px 12px; border-radius: 8px; color: var(--soft); }
+    .dropdown-menu a:hover { background: #1a1c21; color: var(--ink); }
+    .nav-links a[aria-current="page"], .dropdown > button[aria-current="page"] { color: var(--ink); }
+    .faq details { border-bottom: 1px solid var(--line); padding: 18px 0; }
+    .faq summary { cursor: pointer; font-weight: 500; font-size: 1.04rem; }
+    .faq p { color: var(--muted); margin: 10px 0 0; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <nav class="nav wrap" aria-label="Main navigation">
+      <a class="brand" href="index.html" aria-label="NeoApps.AI home"><span class="brand-mark">N</span>NeoApps.AI</a>
+      <div class="nav-links"><a href="index.html">Home</a><div class="dropdown"><button type="button" onclick="location.href='use-cases.html'">Use cases ▾</button><div class="dropdown-menu"><a href="use-cases.html#healthcare">Healthcare and research</a><a href="use-cases.html#legal">Legal</a><a href="use-cases.html#professional">Accounting and professional services</a><a href="use-cases.html#field">Field operations and compliance</a><a href="use-cases.html#education">Education</a><a href="use-cases.html#insurance">Insurance</a><a href="use-cases.html#property">Property and real estate</a><a href="use-cases.html#public">Nonprofit and government</a><a href="use-cases.html#manufacturing">Manufacturing and quality</a><a href="use-cases.html#prompt-library">Prompt library</a></div></div><a href="pricing.html">Pricing</a><a href="docs.html" aria-current="page">Docs</a><div class="dropdown"><button type="button" onclick="location.href='developers.html'">Developers ▾</button><div class="dropdown-menu"><a href="developers.html#open-source">Open source</a><a href="developers.html#local">Run it locally</a><a href="developers.html#rules">Data rules</a><a href="developers.html#extend">Extend it</a><a href="security.html">Security</a><a href="https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator">GitHub ↗</a></div></div><a class="button small" href="get-started.html">Connect assistant</a></div>
+      <details class="mobile-nav">
+        <summary>Menu</summary>
+        <div class="mobile-nav-links"><a href="index.html">Home</a><a href="use-cases.html">Use cases</a><a href="pricing.html">Pricing</a><a href="docs.html" aria-current="page">Docs</a><a href="developers.html">Developers</a><a href="security.html">Security</a><a href="get-started.html">Connect assistant</a></div>
+      </details>
+    </nav>
+  </header>
+  <main id="top">
+
+    <section class="hero">
+      <div class="wrap">
+        <h1>Build your first app with NeoApps</h1>
+        <p class="lede">Start with a workflow you know. This guide takes you from describing it in your assistant to opening the app your team can use.</p>
+        <div class="hero-actions">
+          <a class="button" href="#first-app">Follow the guide</a>
+          <a class="button secondary" href="#troubleshooting">Find help</a>
+        </div>
+      </div>
+    </section>
+    <section class="section white" id="first-app">
+      <div class="wrap">
+        <div class="section-heading">
+          <div class="kicker">First app</div>
+          <h2>From idea to app link</h2>
+          <p>Try the client portal with sample records. Once you’ve checked who can see and change each record, you can start working with real documents.</p>
+        </div>
+        <div class="includes"><article class="include"><h3>Choose an example</h3><p>Start with a <a class="text-link" href="get-started.html#portal-prompt">client portal</a> or <a class="text-link" href="use-cases.html#featured">browse examples</a>. Write down what people need to submit, who reviews it, and what they need to see.</p></article><article class="include"><h3>Connect your assistant</h3><p>Choose your assistant on <a class="text-link" href="get-started.html#connect">Get Started</a> and follow its connection steps. In a new chat, ask your assistant to use NeoApps to show your apps. An empty list is expected when you’re new.</p></article><article class="include"><h3>Review the plan</h3><p>Paste the starter prompt into the connected assistant. Check the proposed screens, the information they collect, and what clients and staff can do. Ask for changes and review the revised plan before approving it.</p></article><article class="include"><h3>Publish and open the app</h3><p>Ask your assistant to publish the approved plan and share the app link when it is ready. Open the link, follow the sign-in instructions, and test a submission and review with sample data.</p></article></div>
+      </div>
+    </section>
+    <section class="section" id="troubleshooting">
+      <div class="wrap">
+        <div class="section-heading">
+          <div class="kicker">Troubleshooting</div>
+          <h2>What to do when you get stuck</h2>
+        </div>
+        <div class="faq">
+          <details><summary>I can’t find the connector settings</summary><p>Check the steps for your assistant. A workspace administrator may need to enable connectors or give you permission to add one. If you’re working in a local coding environment, see <a class="text-link" href="developers.html#local">the local quickstart</a>.</p></details>
+          <details><summary>NeoApps asks me to sign in again</summary><p>Reconnect NeoApps through your assistant’s settings and use the account that owns your app. Then reopen the conversation and ask the assistant to check for the existing app or plan.</p></details>
+          <details><summary>The preview needs changes</summary><p>Tell the assistant which screen, field, or access rule should change. Ask it to show the revised plan before you approve publishing.</p></details>
+          <details><summary>Publishing failed or I don’t have a link yet</summary><p>Ask your assistant to check the status of the same publish attempt. If it failed, ask what needs to change. After you address the reported issue, ask the assistant to retry the existing app.</p></details>
+        </div>
+      </div>
+    </section>
+    <section class="section" id="agent-docs">
+      <div class="wrap">
+        <div class="section-heading">
+          <div class="kicker">For agents</div>
+          <h2>Give your coding agent the setup guide</h2>
+          <p>The <a class="text-link" href="llms.txt">agent index</a> links to the Cloud connector workflow, repository instructions, and a local sample.</p>
+        </div>
+        <div class="prompt-box"><pre class="copy-text">Use the NeoApps guide at https://neoapps.ai/llms.txt to help me plan a business app. Ask who will use it and what they need to do. Show me the proposed screens and access rules before I decide whether to publish.</pre><div class="copy-row"><span class="copy-status" aria-live="polite"></span><button class="button secondary small copy-button" type="button">Copy prompt</button></div></div>
+      </div>
+    </section>
+
+  </main>
+  <footer>
+    <div class="wrap footer-row">
+      <a class="brand" href="index.html"><span class="brand-mark">N</span>NeoApps.AI</a>
+      <span>Custom software, built by your AI, owned by you.</span>
+      <div class="footer-links"><a href="get-started.html">Connect your AI assistant</a><a href="pricing.html">Pricing</a><a href="docs.html">Docs</a><a href="developers.html">Developers</a><a href="security.html">Security</a><a href="llms.txt">For agents</a><a href="https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator">GitHub</a><a href="mailto:info@neopric.com">Contact</a></div>
+    </div>
+  </footer>
+  <script src="assets/site.js"></script>
+</body>
+</html>

@@ -25,14 +25,17 @@
     .faq details { border-bottom: 1px solid var(--line); padding: 18px 0; }
     .faq summary { cursor: pointer; font-weight: 500; font-size: 1.04rem; }
     .faq p { color: var(--muted); margin: 10px 0 0; }
-    @media (max-width: 640px) { .dropdown { display: none; } }
   </style>
 </head>
 <body>
   <header class="topbar">
     <nav class="nav wrap" aria-label="Main navigation">
       <a class="brand" href="index.html" aria-label="NeoApps.AI home"><span class="brand-mark">N</span>NeoApps.AI</a>
-      <div class="nav-links"><a href="index.html">Home</a><div class="dropdown"><button type="button" onclick="location.href='use-cases.html'">Use cases ▾</button><div class="dropdown-menu"><a href="use-cases.html#healthcare">Healthcare and research</a><a href="use-cases.html#legal">Legal</a><a href="use-cases.html#professional">Accounting and professional services</a><a href="use-cases.html#field">Field operations and compliance</a><a href="use-cases.html#education">Education</a><a href="use-cases.html#insurance">Insurance</a><a href="use-cases.html#property">Property and real estate</a><a href="use-cases.html#public">Nonprofit and government</a><a href="use-cases.html#manufacturing">Manufacturing and quality</a><a href="use-cases.html#prompt-library">Prompt library</a></div></div><a href="pricing.html">Pricing</a><div class="dropdown"><button type="button" onclick="location.href='developers.html'">Developers ▾</button><div class="dropdown-menu"><a href="developers.html#open-source">Open source</a><a href="developers.html#local">Run it locally</a><a href="developers.html#rules">Data rules</a><a href="developers.html#extend">Extend it</a><a href="security.html">Security</a><a href="https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator">GitHub ↗</a></div></div><a class="button small" href="get-started.html">Connect assistant</a></div>
+      <div class="nav-links"><a href="index.html">Home</a><div class="dropdown"><button type="button" onclick="location.href='use-cases.html'">Use cases ▾</button><div class="dropdown-menu"><a href="use-cases.html#healthcare">Healthcare and research</a><a href="use-cases.html#legal">Legal</a><a href="use-cases.html#professional">Accounting and professional services</a><a href="use-cases.html#field">Field operations and compliance</a><a href="use-cases.html#education">Education</a><a href="use-cases.html#insurance">Insurance</a><a href="use-cases.html#property">Property and real estate</a><a href="use-cases.html#public">Nonprofit and government</a><a href="use-cases.html#manufacturing">Manufacturing and quality</a><a href="use-cases.html#prompt-library">Prompt library</a></div></div><a href="pricing.html">Pricing</a><a href="docs.html">Docs</a><div class="dropdown"><button type="button" onclick="location.href='developers.html'">Developers ▾</button><div class="dropdown-menu"><a href="developers.html#open-source">Open source</a><a href="developers.html#local">Run it locally</a><a href="developers.html#rules">Data rules</a><a href="developers.html#extend">Extend it</a><a href="security.html">Security</a><a href="https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator">GitHub ↗</a></div></div><a class="button small" href="get-started.html">Connect assistant</a></div>
+      <details class="mobile-nav">
+        <summary>Menu</summary>
+        <div class="mobile-nav-links"><a href="index.html">Home</a><a href="use-cases.html">Use cases</a><a href="pricing.html">Pricing</a><a href="docs.html">Docs</a><a href="developers.html">Developers</a><a href="security.html" aria-current="page">Security</a><a href="get-started.html">Connect assistant</a></div>
+      </details>
     </nav>
   </header>
   <main id="top">
@@ -40,11 +43,22 @@
       <div class="wrap">
         <div class="section-heading">
           <div class="kicker">Security</div>
-          <h2>AI designs it. Tested code builds it. You can check every line.</h2>
+          <h1>How NeoApps protects access to your apps.</h1>
           <p>Your assistant writes a plan: tables, roles and rules. The same open-source generator turns every plan into code, so the parts that usually go wrong are written once and tested.</p>
         </div>
         <div class="compare-wrap"><table class="compare"><thead><tr><th scope="col">Where AI-built apps usually break</th><th scope="col">What NeoApps does</th></tr></thead><tbody><tr><th scope="row">Someone opens another person's records by changing an id</th><td>Every query passes one checkpoint (DataGuard) that applies roles, tenants and row rules. A request for a record you may not see is refused.</td></tr><tr><th scope="row">Keys and passwords end up in the browser</th><td>The web app never holds the sign-in token: it lives in an HttpOnly cookie. AI keys are typed on a NeoApps page and stay on the server. Each app gets its own random signing secret.</td></tr><tr><th scope="row">No limits on sign-in, no checks on input</th><td>Sign-in is rate-limited per address, with lockout and password rules. Field rules (formats, ranges, totals) are checked on the server, not only in the form.</td></tr><tr><th scope="row">SQL injection and cross-site scripting</th><td>Values are always parameters; column names must be plain names or the request is refused. The API only answers in JSON and React escapes what it shows.</td></tr><tr><th scope="row">Code that calls packages that don't exist</th><td>The AI writes a plan, not code. Custom screens can only import a short list of pinned, vetted packages.</td></tr></tbody></table></div>
 
+      </div>
+    </section>
+    <section class="section" id="access">
+      <div class="wrap">
+        <div class="section-heading">
+          <div class="kicker">Access and permissions</div>
+          <h2>Who can see and change your records?</h2>
+          <p>Review access in the app plan before publishing and assign each person the right role when you invite them.</p>
+        </div>
+        <div class="includes"><article class="include"><h3>Roles inside your app</h3><p>Roles decide who can view, add, change, or delete records. For example, a client portal can give each client access to their own requests and let staff review submissions.</p></article><article class="include"><h3>Access from your assistant</h3><p>When you connect an assistant, review the permissions shown on the NeoApps Cloud sign-in screen. Those permissions cover what the assistant can do in your Cloud account. Each published app has its own roles for its users.</p></article></div>
+        <p><a class="text-link" href="get-started.html#connect">See how assistant setup works →</a></p>
       </div>
     </section>
     <section class="section white" id="tested">
@@ -76,7 +90,6 @@
         <div class="section-heading">
           <div class="kicker">Where to be careful</div>
           <h2>What we can't check for you.</h2>
-          
         </div>
         <ul class="plain-list">
           <li>Code you add yourself (custom screens) is yours to review.</li>
@@ -93,7 +106,7 @@
     <div class="wrap footer-row">
       <a class="brand" href="index.html"><span class="brand-mark">N</span>NeoApps.AI</a>
       <span>Custom software, built by your AI, owned by you.</span>
-      <div class="footer-links"><a href="get-started.html">Connect your AI assistant</a><a href="pricing.html">Pricing</a><a href="developers.html">Developers</a><a href="security.html">Security</a><a href="https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator">GitHub</a><a href="mailto:info@neopric.com">Contact</a></div>
+      <div class="footer-links"><a href="get-started.html">Connect your AI assistant</a><a href="pricing.html">Pricing</a><a href="docs.html">Docs</a><a href="developers.html">Developers</a><a href="security.html">Security</a><a href="llms.txt">For agents</a><a href="https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator">GitHub</a><a href="mailto:info@neopric.com">Contact</a></div>
     </div>
   </footer>
   <script src="assets/site.js"></script>

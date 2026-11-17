@@ -10,8 +10,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
-  <meta name="description" content="Connect Claude, ChatGPT, Codex, or Gemini to NeoApps. Turn your product specs, research, and workflows into full-stack apps with server-enforced roles, audit trails, and zero vendor lock-in.">
-  <title>NeoApps.AI · Governed production software</title>
+  <meta name="description" content="Describe a business app in your assistant, review its screens and permissions, and choose where to run it with NeoApps.">
+  <title>NeoApps.AI · Build business apps with your AI assistant</title>
   <link rel="stylesheet" href="assets/site.css">
   <style>
     .dropdown { position: relative; }
@@ -25,108 +25,171 @@
     .faq details { border-bottom: 1px solid var(--line); padding: 18px 0; }
     .faq summary { cursor: pointer; font-weight: 500; font-size: 1.04rem; }
     .faq p { color: var(--muted); margin: 10px 0 0; }
-    @media (max-width: 640px) { .dropdown { display: none; } }
   </style>
 </head>
 <body>
   <header class="topbar">
     <nav class="nav wrap" aria-label="Main navigation">
       <a class="brand" href="index.html" aria-label="NeoApps.AI home"><span class="brand-mark">N</span>NeoApps.AI</a>
-      <div class="nav-links"><a href="index.html" aria-current="page">Home</a><div class="dropdown"><button type="button" onclick="location.href='use-cases.html'">Use cases ▾</button><div class="dropdown-menu"><a href="use-cases.html#healthcare">Healthcare and research</a><a href="use-cases.html#legal">Legal</a><a href="use-cases.html#professional">Accounting and professional services</a><a href="use-cases.html#field">Field operations and compliance</a><a href="use-cases.html#education">Education</a><a href="use-cases.html#insurance">Insurance</a><a href="use-cases.html#property">Property and real estate</a><a href="use-cases.html#public">Nonprofit and government</a><a href="use-cases.html#manufacturing">Manufacturing and quality</a><a href="use-cases.html#prompt-library">Prompt library</a></div></div><a href="pricing.html">Pricing</a><div class="dropdown"><button type="button" onclick="location.href='developers.html'">Developers ▾</button><div class="dropdown-menu"><a href="developers.html#open-source">Open source</a><a href="developers.html#local">Run it locally</a><a href="developers.html#rules">Data rules</a><a href="developers.html#extend">Extend it</a><a href="security.html">Security</a><a href="https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator">GitHub ↗</a></div></div><a class="button small" href="get-started.html">Connect assistant</a></div>
+      <div class="nav-links"><a href="index.html" aria-current="page">Home</a><div class="dropdown"><button type="button" onclick="location.href='use-cases.html'">Use cases ▾</button><div class="dropdown-menu"><a href="use-cases.html#healthcare">Healthcare and research</a><a href="use-cases.html#legal">Legal</a><a href="use-cases.html#professional">Accounting and professional services</a><a href="use-cases.html#field">Field operations and compliance</a><a href="use-cases.html#education">Education</a><a href="use-cases.html#insurance">Insurance</a><a href="use-cases.html#property">Property and real estate</a><a href="use-cases.html#public">Nonprofit and government</a><a href="use-cases.html#manufacturing">Manufacturing and quality</a><a href="use-cases.html#prompt-library">Prompt library</a></div></div><a href="pricing.html">Pricing</a><a href="docs.html">Docs</a><div class="dropdown"><button type="button" onclick="location.href='developers.html'">Developers ▾</button><div class="dropdown-menu"><a href="developers.html#open-source">Open source</a><a href="developers.html#local">Run it locally</a><a href="developers.html#rules">Data rules</a><a href="developers.html#extend">Extend it</a><a href="security.html">Security</a><a href="https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator">GitHub ↗</a></div></div><a class="button small" href="get-started.html">Connect assistant</a></div>
+      <details class="mobile-nav">
+        <summary>Menu</summary>
+        <div class="mobile-nav-links"><a href="index.html" aria-current="page">Home</a><a href="use-cases.html">Use cases</a><a href="pricing.html">Pricing</a><a href="docs.html">Docs</a><a href="developers.html">Developers</a><a href="security.html">Security</a><a href="get-started.html">Connect assistant</a></div>
+      </details>
     </nav>
   </header>
   <main id="top">
     <section class="hero">
       <div class="wrap">
-        <a class="eyebrow" href="#how-it-works"><span class="dot"></span> Open-Source Execution Engine for Frontier AI</a>
-        <h1>Frontier AI thinks. NeoApps compiles it into governed production software.</h1>
-        <p class="lede">Connect Claude, ChatGPT, Codex, or Gemini to NeoApps. Turn your product specs, research, and workflows into full-stack apps with server-enforced roles, audit trails, and zero vendor lock-in.</p>
+        <h1>Build a business app around the way your team works.</h1>
+        <p class="lede">Describe your workflow in the AI assistant you already use. Review the screens and who can access them, then choose where your app runs.</p>
         <div class="hero-actions">
-          <a class="button" href="get-started.html">Start Building Free</a>
-          <a class="button secondary" href="developers.html#local">Install the NeoApps CLI</a>
+          <a class="button" href="get-started.html">Plan my first app</a>
+          <a class="button secondary" href="#industries">See example apps</a>
         </div>
-        <p class="fine">14-day cloud trial • No card needed</p>
+        <p class="fine">14-day Cloud trial. No card needed.</p>
       </div>
     </section>
-    <section class="works" aria-label="Works with">
+    <section class="works" aria-label="Assistant setup options">
       <div class="wrap">
-        <p class="label">Works natively with:</p>
-        <div class="works-row"><span>Claude</span><span>Claude Desktop (MCP)</span><span>ChatGPT</span><span>OpenAI Codex</span><span>Google Gemini</span></div>
-      </div>
-    </section>
-    <section class="section" id="positioning">
-      <div class="wrap">
-        <div class="section-heading">
-          <h2>AI writes code fast. NeoApps makes sure it holds up in production.</h2>
-          <p>Raw AI-generated apps break down when real users, permissions, and auditors show up. NeoApps separates AI reasoning from deterministic execution.</p>
-        </div>
-        <div class="tiles"><article class="tile"><h3>Raw Vibe Coding (Other AI Builders)</h3><ul class="plain-list"><li><strong>Fragile Security</strong> Permissions hidden in UI buttons that anyone can bypass via API.</li><li><strong>Black-Box Lock-In</strong> Proprietary hosting and tangled generated code you can&#x27;t easily maintain.</li><li><strong>Context Reset</strong> Re-explaining business rules every time you tweak a screen.</li></ul></article><article class="tile"><h3>Governed Compilation (NeoApps.AI)</h3><ul class="plain-list"><li><strong>Server-Enforced Rules</strong> Roles, record locks, and password sign-offs enforced at the database and API layer.</li><li><strong>100% Open-Source Core</strong> Inspect the plan, export clean code, or self-host on your own cloud anytime.</li><li><strong>Deterministic Blueprints</strong> Your AI generates a structured specification; NeoApps compiles it reliably every time.</li></ul></article></div>
-      </div>
-    </section>
-    <section class="section" id="how-it-works">
-      <div class="wrap">
-        <div class="section-heading">
-          <h2>From AI conversation to live deployment in four steps.</h2>
-        </div>
-        <div class="walk">
-          <article class="walk-step"><div class="step-num">01</div><h3>Plan in Your Favorite AI</h3><p>Brainstorm your product, SaaS portal, or internal workflow in Claude, ChatGPT, or Gemini. NeoApps plugs directly into your assistant via MCP and custom actions.</p></article>
-          <article class="walk-step"><div class="step-num">02</div><h3>Review the Deterministic Plan</h3><p>Before a single line of infrastructure spins up, inspect a human-readable blueprint of your data models, user roles, state transitions, and notification triggers.</p><div class="shot"><img src="assets/img/req-plan.webp" width="1390" height="380" loading="lazy" alt="Sample app plan with roles and workflow steps"></div></article>
-          <article class="walk-step"><div class="step-num">03</div><h3>Compile &amp; Deploy Anywhere</h3><p>NeoApps compiles your plan into a production-ready application with built-in authentication, server-side RBAC, and responsive web/mobile views.</p><div class="shot"><img src="assets/img/req-approve.webp" width="1600" height="1000" loading="lazy" alt="Generated app showing the approval workflow"></div></article>
-          <article class="walk-step"><div class="step-num">04</div><h3>Audit &amp; Iterate Safely</h3><p>Every record change, approval, and sign-off is logged automatically. Ask your AI to add new features without breaking existing security rules.</p><div class="shot"><img src="assets/img/req-history.webp" width="1600" height="1000" loading="lazy" alt="Approval history in the generated app"></div></article>
-        </div>
+        <p class="label">Setup guides for</p>
+        <div class="works-row"><span>Claude</span><span>ChatGPT</span><span>Codex</span><span>Gemini</span></div>
       </div>
     </section>
     <section class="section" id="industries">
       <div class="wrap">
         <div class="section-heading">
-          <h2>Built for external products and mission-critical operations.</h2>
-          <p>Whether you are launching a multi-tenant client portal or replacing high-risk spreadsheets, NeoApps enforces your rules out of the box.</p>
+          <h2>What you can build</h2>
+          <p>Start with a workflow your team already knows.</p>
         </div>
-        <div class="tiles"><article class="tile"><h3>Customer-Facing &amp; Commercial Apps</h3><ul class="plain-list"><li><strong>Client &amp; Partner Portals</strong> Give customers secure access to their own records, invoices, and project milestones.</li><li><strong>Vertical SaaS MVPs</strong> Build B2B tools with multi-tenant data isolation.</li><li><strong>Service Marketplaces &amp; Intake</strong> Automate onboarding, document collection, and status tracking on desktop and mobile.</li></ul></article><article class="tile"><h3>Regulated &amp; Audited Operations</h3><ul class="plain-list"><li><strong>Healthcare &amp; Research</strong> Patient intake and clinical study coordination deployed inside your own cloud.</li><li><strong>Legal &amp; Accounting</strong> Engagement portals, evidence tracking, and partner sign-offs with password re-entry.</li><li><strong>Field Ops &amp; Manufacturing</strong> Non-conformance reports, corrective actions, and mobile checklists.</li></ul></article></div>
-        <p><a class="text-link" href="use-cases.html">Explore use cases and starter prompts →</a></p>
+        <div class="featured-grid">
+          <article class="featured-card">
+            <div class="mock" role="img" aria-label="Illustration: a client portal showing the documents requested and the current status">
+  <div class="mock-bar"><span>Client portal</span><span class="pill info">In review</span></div>
+  <div class="mock-body">
+    <div class="mock-title">Document request</div>
+    <div class="mock-kv"><span>Engagement letter</span><b>Received</b></div>
+    <div class="mock-kv"><span>Supporting documents</span><b>In review</b></div>
+    <p class="mock-foot">Your contact will update the status after reviewing your documents.</p>
+  </div>
+</div>
+            <div class="featured-content">
+              <h3>Client portal</h3>
+              <p>Clients submit documents and see the status of their own requests. Staff can review submissions in one place.</p>
+              <a class="text-link" href="use-cases.html#client-portal">View client portal example →</a>
+            </div>
+          </article>          <article class="featured-card">
+            <div class="mock" role="img" aria-label="Illustration: a request moving from Draft to Submitted to Approved, with who did each step">
+  <div class="mock-bar"><span>REQ-2026-00012</span><span class="pill ok">Approved</span></div>
+  <div class="mock-body">
+    <div class="mock-title">Standing desk for the ops room</div>
+    <div class="mock-kv"><span>Requested by</span><b>Emma Clarke</b></div>
+    <div class="mock-kv"><span>Amount</span><b>$640.00</b></div>
+    <div class="mock-steps"><span class="pill">Draft</span><i></i><span class="pill info">Submitted</span><i></i><span class="pill ok">Approved</span></div>
+    <ul class="mock-log"><li><b>Emma</b> submitted<em>9:14 AM</em></li><li><b>Marcus</b> approved: “Order from the usual supplier.”<em>10:02 AM</em></li></ul>
+  </div>
+</div>
+            <div class="featured-content">
+              <h3>Internal approval tracker</h3>
+              <p>Employees submit requests. Managers record decisions and employees can see the outcome.</p>
+              <a class="text-link" href="use-cases.html#approval-tracker">View internal approval tracker example →</a>
+            </div>
+          </article>          <article class="featured-card">
+            <div class="mock" role="img" aria-label="Illustration: a site inspection checklist with photos and a supervisor sign-off">
+  <div class="mock-bar"><span>INS-2026-00031 · Dock 4</span><span class="pill warn">In review</span></div>
+  <div class="mock-body">
+    <ul class="mock-check"><li class="done"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Guard rails secured</li><li class="done"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Fire exits clear</li><li class="fail"><span>!</span>Forklift log missing</li></ul>
+    <div class="mock-photos"><span></span><span></span><span></span></div>
+    <div class="mock-kv"><span>Corrective action</span><b>Assigned to Ana · due Fri</b></div>
+  </div>
+</div>
+            <div class="featured-content">
+              <h3>Field inspection checklist</h3>
+              <p>Inspectors record results and photos on site. Supervisors can assign and follow up on corrective actions.</p>
+              <a class="text-link" href="use-cases.html#field-inspection">View field inspection checklist example →</a>
+            </div>
+          </article>
+        </div>
+        <p><a class="text-link" href="use-cases.html#prompt-library">Browse all starter prompts →</a></p>
+      </div>
+    </section>
+
+    <section class="section" id="how-it-works">
+      <div class="wrap">
+        <div class="section-heading">
+          <h2>From your first idea to a working app</h2>
+        </div>
+        <div class="walk">
+          <article class="walk-step"><div class="step-num">01</div><h3>Describe your workflow</h3><p>Tell your assistant what people need to do and what information the app should keep.</p></article>
+          <article class="walk-step"><div class="step-num">02</div><h3>Review screens and permissions</h3><p>Check what each screen shows and who can view, edit, or approve records. Ask for changes to the plan before you approve it.</p><div class="shot"><img src="assets/img/req-plan.webp" width="1390" height="380" loading="lazy" alt="Sample app plan with roles and workflow steps"></div></article>
+          <article class="walk-step"><div class="step-num">03</div><h3>Publish after approval</h3><p>Ask your assistant to publish the approved plan to NeoApps Cloud. Open the app link when it’s ready. You can also run the app yourself.</p><div class="shot"><img src="assets/img/req-approve.webp" width="1600" height="1000" loading="lazy" alt="Generated app showing the approval workflow"></div></article>
+          <article class="walk-step"><div class="step-num">04</div><h3>Improve the app with your team</h3><p>Use the app with your team. Review its activity and ask your assistant to plan changes as your workflow evolves.</p><div class="shot"><img src="assets/img/req-history.webp" width="1600" height="1000" loading="lazy" alt="Approval history in the generated app"></div></article>
+        </div>
+      </div>
+    </section>
+    <section class="section" id="positioning">
+      <div class="wrap">
+        <div class="section-heading">
+          <h2>Set the rules your app should follow</h2>
+          <p>NeoApps turns the reviewed plan into an application with sign-in, records, and roles.</p>
+        </div>
+        <div id="rules" class="includes">
+          <article class="include"><h3>Control access by role</h3><p>Let clients see their own documents and give staff the access they need to review submissions.</p></article>
+          <article class="include"><h3>Keep a record of decisions</h3><p>For workflows configured with approvals and audit history, see who made the decision and when.</p></article>
+          <article class="include"><h3>Build from an open-source plan</h3><p>Use the open-source generator to build the app from its schema and configuration.</p></article>
+        </div>
+        <p><a class="text-link" href="security.html">Review security controls →</a></p>
       </div>
     </section>
     <section class="section" id="own">
       <div class="wrap">
         <div class="section-heading">
-          <h2>Run it where your data must live. Leave whenever you want.</h2>
-          <p>Deploy on our managed US Azure cloud, or run the open-source engine in your own environment.</p>
+          <h2>Choose where your app runs</h2>
+          <p>Use NeoApps Cloud, arrange setup in your own cloud account, or run the open-source generator on your own infrastructure.</p>
         </div>
-        <div id="rules" class="tiles"><article class="tile"><h3>Security and deployment</h3><ul class="plain-list"><li><strong>Zero-Trust Architecture</strong> Deploy in your own AWS, Azure, or Google Cloud account and apply your organization’s security controls.</li><li><strong>Password-Verified Sign-Offs</strong> Critical actions require password re-entry—admins can&#x27;t skip it, and the AI can&#x27;t forge it.</li><li><strong>Zero Model Training</strong> NeoApps never uses your schemas, business logic, or customer records to train AI models. Your AI provider’s terms apply.</li></ul></article></div>
-        <p class="fine"><a class="text-link" href="security.html">Review security controls</a> · <a class="text-link" href="pricing.html#faq">Read the compliance FAQ</a></p>
-      </div>
-    </section>
-    <section class="section" id="plans">
-      <div class="wrap">
-        <div class="section-heading">
-          <h2>Start open-source. Scale with full governance.</h2>
-        </div>
-        <div class="paths">
-          <article class="path-card"><h3>Community / Self-Hosted (Free Forever)</h3><ul class="plain-list"><li>Full open-source generator &amp; CLI</li><li>Run locally or on your own servers</li><li>Unlimited apps and developers</li><li>Community GitHub support</li></ul></article>
-          <article class="path-card"><h3>Cloud Starter ($49/month)</h3><ul class="plain-list"><li>Hosted on NeoApps managed US Azure cloud</li><li>14-day free trial, no credit card required</li><li>Built-in auth, audit logs, and CSV exports</li></ul></article>
-          <article class="path-card"><h3>Team &amp; Growth ($299/month)</h3><p><strong>Proposed plan · not available today</strong></p><ul class="plain-list"><li>Custom domains &amp; white-label branding</li><li>Staging and production environments</li><li>SSO / SAML integration &amp; priority support</li><li>Higher user seats and API rate limits</li></ul></article>
-          <article class="path-card"><h3>Enterprise Private Cloud (From $10,000 one-time setup)</h3><ul class="plain-list"><li>Deployed and configured in your AWS, Azure, or GCP account</li><li>Full source code and infrastructure handover</li></ul></article>
-        </div>
-        <p><a class="text-link" href="pricing.html">Compare current plans →</a></p>
+        <p><a class="text-link" href="pricing.html#compare">Compare hosting options →</a></p>
       </div>
     </section>
     <section class="section" id="proof">
       <div class="wrap">
         <div class="section-heading">
-          <div class="kicker">Proof</div>
-          <h2>ClaimKit: years of R&amp;D tax-credit expertise, live in four hours.</h2>
-          
+          <div class="kicker">Customer portal example</div>
+          <h2>ClaimKit for R&amp;D tax-credit consultants</h2>
         </div>
-        <div class="video-grid"><div class="video-frame"><iframe src="https://www.youtube-nocookie.com/embed/MD_jAxglA_Y?rel=0" title="ClaimKit walkthrough" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div><div class="video-copy"><p>Our team built ClaimKit, a full client portal for R&amp;D tax-credit consultants, with a coding agent and NeoApps in about four hours. A typical agency build takes five to six months.</p><p>The expert still decides. The app does the intake, documents and evidence.</p></div></div>
+        <div class="video-grid"><div class="video-frame"><iframe src="https://www.youtube-nocookie.com/embed/MD_jAxglA_Y?rel=0" title="ClaimKit walkthrough" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div><div class="video-copy"><p>Our team built ClaimKit with a coding agent and NeoApps. The portal collects documents and tracks evidence so consultants can review client submissions.</p></div></div>
       </div>
     </section>
+    <section class="section" id="plans">
+      <div class="wrap">
+        <div class="section-heading">
+          <h2>Cloud trial and pricing</h2>
+          <p>Try NeoApps Cloud for 14 days. See pricing for current plans, app limits, and what happens when the trial ends.</p>
+        </div>
+        <p><a class="text-link" href="pricing.html">See NeoApps pricing →</a></p>
+      </div>
+    </section>
+    <section class="section" id="faq">
+      <div class="wrap">
+        <div class="section-heading">
+          <div class="kicker">FAQ</div>
+          <h2>Before you build your first app</h2>
+        </div>
+        <div class="faq">
+          <details><summary>Do I need to know how to code?</summary><p>For the Cloud connector, describe the app in your own words and review the plan in your assistant. The <a class="text-link" href="developers.html#local">local setup</a> is available if you prefer to run the tools yourself.</p></details>
+          <details><summary>Which assistants can I use?</summary><p>See the <a class="text-link" href="get-started.html#connect">assistant setup guides</a> for supported connection paths and workspace requirements.</p></details>
+          <details><summary>What will I see before I publish?</summary><p>The plan describes what the app tracks, its screens, and what each person can do. Ask your assistant to revise anything that needs changing.</p></details>
+          <details><summary>What if I get stuck?</summary><p>See the <a class="text-link" href="docs.html#troubleshooting">troubleshooting guide</a> for help with connecting, signing in, and publishing.</p></details>
+        </div>
+      </div>
+    </section>
+
     <section class="cta">
       <div class="wrap">
-        <h2>Stop babysitting AI-generated code. Start compiling real software.</h2>
-        <p>Connect your AI assistant and ship your first governed app today.</p>
+        <h2>Plan your first app</h2>
+        <p>Connect your assistant and describe a workflow you want to improve.</p>
         <div class="hero-actions">
-          <a class="button" href="get-started.html">Start Free on Cloud</a>
-          <a class="button secondary" href="https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator">Explore GitHub Repo</a>
+          <a class="button" href="get-started.html">Get started</a>
+          <a class="button secondary" href="docs.html#first-app">Read the first-app guide</a>
         </div>
       </div>
     </section>
@@ -136,7 +199,7 @@
     <div class="wrap footer-row">
       <a class="brand" href="index.html"><span class="brand-mark">N</span>NeoApps.AI</a>
       <span>Custom software, built by your AI, owned by you.</span>
-      <div class="footer-links"><a href="get-started.html">Connect your AI assistant</a><a href="pricing.html">Pricing</a><a href="developers.html">Developers</a><a href="security.html">Security</a><a href="https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator">GitHub</a><a href="mailto:info@neopric.com">Contact</a></div>
+      <div class="footer-links"><a href="get-started.html">Connect your AI assistant</a><a href="pricing.html">Pricing</a><a href="docs.html">Docs</a><a href="developers.html">Developers</a><a href="security.html">Security</a><a href="llms.txt">For agents</a><a href="https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator">GitHub</a><a href="mailto:info@neopric.com">Contact</a></div>
     </div>
   </footer>
   <script src="assets/site.js"></script>

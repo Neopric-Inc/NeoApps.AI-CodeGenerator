@@ -25,14 +25,17 @@
     .faq details { border-bottom: 1px solid var(--line); padding: 18px 0; }
     .faq summary { cursor: pointer; font-weight: 500; font-size: 1.04rem; }
     .faq p { color: var(--muted); margin: 10px 0 0; }
-    @media (max-width: 640px) { .dropdown { display: none; } }
   </style>
 </head>
 <body>
   <header class="topbar">
     <nav class="nav wrap" aria-label="Main navigation">
       <a class="brand" href="index.html" aria-label="NeoApps.AI home"><span class="brand-mark">N</span>NeoApps.AI</a>
-      <div class="nav-links"><a href="index.html">Home</a><div class="dropdown"><button type="button" onclick="location.href='use-cases.html'">Use cases ▾</button><div class="dropdown-menu"><a href="use-cases.html#healthcare">Healthcare and research</a><a href="use-cases.html#legal">Legal</a><a href="use-cases.html#professional">Accounting and professional services</a><a href="use-cases.html#field">Field operations and compliance</a><a href="use-cases.html#education">Education</a><a href="use-cases.html#insurance">Insurance</a><a href="use-cases.html#property">Property and real estate</a><a href="use-cases.html#public">Nonprofit and government</a><a href="use-cases.html#manufacturing">Manufacturing and quality</a><a href="use-cases.html#prompt-library">Prompt library</a></div></div><a href="pricing.html">Pricing</a><div class="dropdown"><button type="button" aria-current="page" onclick="location.href='developers.html'">Developers ▾</button><div class="dropdown-menu"><a href="developers.html#open-source">Open source</a><a href="developers.html#local">Run it locally</a><a href="developers.html#rules">Data rules</a><a href="developers.html#extend">Extend it</a><a href="security.html">Security</a><a href="https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator">GitHub ↗</a></div></div><a class="button small" href="get-started.html">Connect assistant</a></div>
+      <div class="nav-links"><a href="index.html">Home</a><div class="dropdown"><button type="button" onclick="location.href='use-cases.html'">Use cases ▾</button><div class="dropdown-menu"><a href="use-cases.html#healthcare">Healthcare and research</a><a href="use-cases.html#legal">Legal</a><a href="use-cases.html#professional">Accounting and professional services</a><a href="use-cases.html#field">Field operations and compliance</a><a href="use-cases.html#education">Education</a><a href="use-cases.html#insurance">Insurance</a><a href="use-cases.html#property">Property and real estate</a><a href="use-cases.html#public">Nonprofit and government</a><a href="use-cases.html#manufacturing">Manufacturing and quality</a><a href="use-cases.html#prompt-library">Prompt library</a></div></div><a href="pricing.html">Pricing</a><a href="docs.html">Docs</a><div class="dropdown"><button type="button" aria-current="page" onclick="location.href='developers.html'">Developers ▾</button><div class="dropdown-menu"><a href="developers.html#open-source">Open source</a><a href="developers.html#local">Run it locally</a><a href="developers.html#rules">Data rules</a><a href="developers.html#extend">Extend it</a><a href="security.html">Security</a><a href="https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator">GitHub ↗</a></div></div><a class="button small" href="get-started.html">Connect assistant</a></div>
+      <details class="mobile-nav">
+        <summary>Menu</summary>
+        <div class="mobile-nav-links"><a href="index.html">Home</a><a href="use-cases.html">Use cases</a><a href="pricing.html">Pricing</a><a href="docs.html">Docs</a><a href="developers.html" aria-current="page">Developers</a><a href="security.html">Security</a><a href="get-started.html">Connect assistant</a></div>
+      </details>
     </nav>
   </header>
   <main id="top">
@@ -41,10 +44,32 @@
         <h1>Deterministic compilation for probabilistic AI.</h1>
         <p class="lede">Stop debugging hallucinated auth middleware and leaky SQL queries. Let LLMs generate declarative app plans while NeoApps compiles the server-enforced backend, RBAC, and UI.</p>
         <div class="hero-actions">
-          <a class="button secondary" href="https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator#readme">Read the Docs</a>
+          <a class="button secondary" href="https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator#readme">Read the technical docs</a>
           <a class="button secondary" href="https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator">Star on GitHub</a>
-          <a class="button secondary" href="#mcp">Connect MCP Server</a>
+          <a class="button secondary" href="#setup-paths">Choose a setup</a>
         </div>
+      </div>
+    </section>
+    <section class="section" id="setup-paths">
+      <div class="wrap">
+        <div class="section-heading">
+          <div class="kicker">Setup</div>
+          <h2>Choose where to build.</h2>
+          <p>Start with your assistant on NeoApps Cloud or use the open-source tooling on your own machine.</p>
+        </div>
+        <div class="tiles">
+          <article class="tile">
+            <h3>Connect to NeoApps Cloud</h3>
+            <p>Use the hosted connector in your assistant to plan and publish a managed app.</p>
+            <a class="text-link" href="get-started.html#connect">See setup by assistant →</a>
+          </article>
+          <article class="tile">
+            <h3>Run the generator locally</h3>
+            <p>Use the CLI directly or let a coding agent call the local MCP server over standard input and output (stdio).</p>
+            <a class="text-link" href="#local">Run the local quickstart</a> · <a class="text-link" href="#mcp">Connect a local agent →</a>
+          </article>
+        </div>
+        <p><a class="text-link" href="llms.txt">Read the agent index</a> · <a class="text-link" href="https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator/blob/main/AGENTS.md">Read repository agent instructions</a> · <a class="text-link" href="https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator/blob/main/docs/CLOUD.md">Read Cloud integration details</a></p>
       </div>
     </section>
     <section class="section" id="local">
@@ -98,9 +123,9 @@
     <section class="section" id="mcp">
       <div class="wrap">
         <div class="section-heading">
-          <div class="kicker">Agent integration</div>
-          <h2>Built for Claude Desktop, Cursor, and custom agents.</h2>
-          <p>Add the NeoApps MCP server to your local IDE or AI assistant. Your coding agent can inspect schemas, preview permission rules, and plan updates to existing apps.</p>
+          <div class="kicker">Local agent integration</div>
+          <h2>Connect a local MCP client.</h2>
+          <p>Add the local NeoApps MCP server to a supported client, such as Claude Desktop or Cursor. Your coding agent can inspect schemas, preview permission rules, and plan updates to existing apps.</p>
         </div>
         <p>The installer registers NeoApps in Claude Desktop when it’s installed. Restart Claude Desktop after installation. For manual setup, merge the <code>neoapps</code> entry into <code>mcpServers</code> in <code>claude_desktop_config.json</code>. Use the absolute paths printed by the installer in place of the example paths.</p>
         <div class="prompt-box"><pre class="copy-text">{
@@ -146,7 +171,7 @@
     <div class="wrap footer-row">
       <a class="brand" href="index.html"><span class="brand-mark">N</span>NeoApps.AI</a>
       <span>Custom software, built by your AI, owned by you.</span>
-      <div class="footer-links"><a href="get-started.html">Connect your AI assistant</a><a href="pricing.html">Pricing</a><a href="developers.html">Developers</a><a href="security.html">Security</a><a href="https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator">GitHub</a><a href="mailto:info@neopric.com">Contact</a></div>
+      <div class="footer-links"><a href="get-started.html">Connect your AI assistant</a><a href="pricing.html">Pricing</a><a href="docs.html">Docs</a><a href="developers.html">Developers</a><a href="security.html">Security</a><a href="llms.txt">For agents</a><a href="https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator">GitHub</a><a href="mailto:info@neopric.com">Contact</a></div>
     </div>
   </footer>
   <script src="assets/site.js"></script>
