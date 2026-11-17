@@ -25,26 +25,28 @@
     .faq details { border-bottom: 1px solid var(--line); padding: 18px 0; }
     .faq summary { cursor: pointer; font-weight: 500; font-size: 1.04rem; }
     .faq p { color: var(--muted); margin: 10px 0 0; }
-    @media (max-width: 640px) { .dropdown { display: none; } }
   </style>
 </head>
 <body>
   <header class="topbar">
     <nav class="nav wrap" aria-label="Main navigation">
       <a class="brand" href="index.html" aria-label="NeoApps.AI home"><span class="brand-mark">N</span>NeoApps.AI</a>
-      <div class="nav-links"><a href="index.html">Home</a><div class="dropdown"><button type="button" onclick="location.href='use-cases.html'">Use cases ▾</button><div class="dropdown-menu"><a href="use-cases.html#healthcare">Healthcare and research</a><a href="use-cases.html#legal">Legal</a><a href="use-cases.html#professional">Accounting and professional services</a><a href="use-cases.html#field">Field operations and compliance</a><a href="use-cases.html#education">Education</a><a href="use-cases.html#insurance">Insurance</a><a href="use-cases.html#property">Property and real estate</a><a href="use-cases.html#public">Nonprofit and government</a><a href="use-cases.html#manufacturing">Manufacturing and quality</a><a href="use-cases.html#prompt-library">Prompt library</a></div></div><a href="pricing.html">Pricing</a><div class="dropdown"><button type="button" onclick="location.href='developers.html'">Developers ▾</button><div class="dropdown-menu"><a href="developers.html#open-source">Open source</a><a href="developers.html#local">Run it locally</a><a href="developers.html#rules">Data rules</a><a href="developers.html#extend">Extend it</a><a href="security.html">Security</a><a href="https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator">GitHub ↗</a></div></div><a class="button small" href="get-started.html">Connect assistant</a></div>
+      <div class="nav-links"><a href="index.html">Home</a><div class="dropdown"><button type="button" onclick="location.href='use-cases.html'">Use cases ▾</button><div class="dropdown-menu"><a href="use-cases.html#healthcare">Healthcare and research</a><a href="use-cases.html#legal">Legal</a><a href="use-cases.html#professional">Accounting and professional services</a><a href="use-cases.html#field">Field operations and compliance</a><a href="use-cases.html#education">Education</a><a href="use-cases.html#insurance">Insurance</a><a href="use-cases.html#property">Property and real estate</a><a href="use-cases.html#public">Nonprofit and government</a><a href="use-cases.html#manufacturing">Manufacturing and quality</a><a href="use-cases.html#prompt-library">Prompt library</a></div></div><a href="pricing.html">Pricing</a><a href="docs.html">Docs</a><div class="dropdown"><button type="button" onclick="location.href='developers.html'">Developers ▾</button><div class="dropdown-menu"><a href="developers.html#open-source">Open source</a><a href="developers.html#local">Run it locally</a><a href="developers.html#rules">Data rules</a><a href="developers.html#extend">Extend it</a><a href="security.html">Security</a><a href="https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator">GitHub ↗</a></div></div><a class="button small" href="get-started.html" aria-current="page">Connect assistant</a></div>
+      <details class="mobile-nav">
+        <summary>Menu</summary>
+        <div class="mobile-nav-links"><a href="index.html">Home</a><a href="use-cases.html">Use cases</a><a href="pricing.html">Pricing</a><a href="docs.html">Docs</a><a href="developers.html">Developers</a><a href="security.html">Security</a><a href="get-started.html" aria-current="page">Connect assistant</a></div>
+      </details>
     </nav>
   </header>
   <main id="top">
     <section class="section white" id="connect">
       <div class="wrap">
         <div class="section-heading">
-          <div class="kicker">Get started</div>
-          <h2>Connect your assistant and preview your first app.</h2>
-          <p>Connect your assistant, review the app plan, then approve it to publish.</p>
+          <h1>Plan your first app with NeoApps</h1>
+          <p>Connect the assistant you already use, check the app plan, and decide when to publish.</p>
         </div>
-        <p class="needs"><strong>You'll need:</strong> a NeoApps account. Confirm your email and you get 14 days free, no card. Pick a plan when you're ready (promo codes go in at checkout). Connecting opens a NeoApps page where you sign up or sign in.</p>
-        <div class="connect-visual"><div class="connect-copy"><h3>Choose your assistant</h3><p>Paste the NeoApps link where your assistant adds connectors or apps, then sign in. That's the whole setup.</p></div><div class="mock wide" role="img" aria-label="Illustration: an assistant's add-connector form with the NeoApps link pasted in">
+        <p class="needs"><strong>You'll need a NeoApps account.</strong> Connecting opens NeoApps Cloud so you can sign up or sign in. See <a class="text-link" href="pricing.html#faq">trial and plan details</a>.</p>
+        <div class="connect-visual"><div class="connect-copy"><h2>Choose your assistant</h2><p>Add NeoApps from the assistant’s settings. If you use a work account, you may need an administrator to enable connectors or custom apps.</p></div><div class="mock wide" role="img" aria-label="Illustration: an assistant's add-connector form with the NeoApps link pasted in">
   <div class="mock-bar"><span>Add custom connector</span><span class="mock-x">×</span></div>
   <div class="mock-body">
     <div class="mock-field"><span>Name</span><b>NeoApps</b></div>
@@ -59,9 +61,11 @@
           <details name="assistant-setup"><summary>Codex</summary><ol><li>Run <span class="copy-inline"><code class="copy-text">codex mcp add neoapps --url https://cloud.neoapps.ai/mcp</code><button class="copy-button" type="button" aria-label="Copy codex mcp add neoapps --url https://cloud.neoapps.ai/mcp">Copy</button><span class="copy-status sr-only" aria-live="polite"></span></span></li><li>Sign in to NeoApps when asked.</li></ol></details>
           <details name="assistant-setup"><summary>Gemini</summary><ol><li>Open gemini.google.com: Connectors → + Custom. Paste <span class="copy-inline"><code class="copy-text">https://cloud.neoapps.ai/mcp</code><button class="copy-button" type="button" aria-label="Copy https://cloud.neoapps.ai/mcp">Copy</button><span class="copy-status sr-only" aria-live="polite"></span></span> and leave Client ID empty.</li><li>Agree, then sign in to NeoApps and click Allow.</li><li>In a chat, type <code>@NeoApps Cloud</code> and describe your app.</li></ol></details>
         </div>
+        <p class="fine">Can’t find the setup option? <a class="text-link" href="docs.html#troubleshooting">Check the connection and sign-in guide</a>.</p>
+        <p><a class="text-link" href="#check-connection">Already connected? Check your connection →</a></p>
         <div class="gemini-strip">
-          <h3>Gemini, start to finish</h3>
-          <p>A note-taking app, built and published from a Gemini chat in about 5 minutes.</p>
+          <h2>A first app in Gemini</h2>
+          <p>This example shows how the QuickNotes app went from setup to a live link.</p>
           <div class="shots-row">
             <figure><div class="shot"><img src="assets/img/gemini-add.webp" width="448" height="380" loading="lazy" alt="Gemini's Connect to an MCP server dialog with the NeoApps link pasted in"></div><figcaption>1. Paste the NeoApps link.</figcaption></figure>
             <figure><div class="shot"><img src="assets/img/gemini-allow.webp" width="342" height="227" loading="lazy" alt="The NeoApps page asking to allow Google to build apps"></div><figcaption>2. Sign in to NeoApps and allow.</figcaption></figure>
@@ -72,14 +76,22 @@
 
       </div>
     </section>
+    <section class="section" id="check-connection">
+      <div class="wrap">
+        <div class="section-heading">
+          <h2>Check your connection</h2>
+          <p>Open a chat with NeoApps enabled and ask your assistant to show your NeoApps apps. An empty list is expected for a new account.</p>
+        </div>
+        <p><a class="text-link" href="docs.html#troubleshooting">Get help signing in or connecting →</a></p>
+      </div>
+    </section>
     <section class="section" id="prompt">
       <div class="wrap">
         <div class="section-heading">
-          <div class="kicker">Then</div>
-          <h2>Paste this and describe your business.</h2>
-          
+          <h2>Describe the app you want</h2>
+          <p>Start with a task your team repeats. If you’re still choosing an idea, <a class="text-link" href="use-cases.html#featured">try one of the examples</a>.</p>
         </div>
-        <div style="max-width:860px"><div class="prompt-box"><pre class="copy-text">Use the NeoApps connector. I want to build [describe your business app]. Ask me about users, data, approvals and permissions, then show me the preview and wait for my review. After I approve, publish it, check it's live and give me the link. Never ask me for passwords, card numbers or API keys in this chat.</pre><div class="copy-row"><span class="copy-status" aria-live="polite"></span><button class="button secondary small copy-button" type="button">Copy prompt</button></div></div></div>
+        <div style="max-width:860px"><div class="prompt-box"><pre class="copy-text">Use the NeoApps connector. I want to build [describe your business app]. Ask me about users, data, approvals and permissions, then show me the preview and wait for my review. After I approve, publish it, check it&#x27;s live and give me the link. Never ask me for passwords, card numbers or API keys in this chat.</pre><div class="copy-row"><span class="copy-status" aria-live="polite"></span><button class="button secondary small copy-button" type="button">Copy prompt</button></div></div></div>
       </div>
     </section>
     <section class="section" id="portal-prompt">
@@ -92,12 +104,20 @@
         <div style="max-width:860px"><div class="prompt-box"><pre class="copy-text">Use the NeoApps connector. I want to build a client portal where clients upload documents and see their own records. Staff review submissions, record approval decisions and notify the client when the status changes. Ask me about users, data, approvals and permissions, then show me the preview and wait for my review. After I approve, publish it, check it's live and give me the link. Never ask me for passwords, card numbers or API keys in this chat.</pre><div class="copy-row"><span class="copy-status" aria-live="polite"></span><button class="button secondary small copy-button" type="button">Copy prompt</button></div></div></div>
       </div>
     </section>
+    <section class="section" id="review-and-publish">
+      <div class="wrap">
+        <div class="section-heading">
+          <h2>Review, approve, and open your app</h2>
+          <p>Check the proposed screens, records, and access rules. Ask for changes if you need them. When the plan is ready, approve it and ask your assistant to publish and share the link.</p>
+        </div>
+        <p>Open the link and follow the sign-in instructions. Try the workflow with sample records before you invite your team.</p>        <p><a class="text-link" href="docs.html#first-app">Read the first-app guide →</a></p>
+      </div>
+    </section>
     <section class="section white" id="after">
       <div class="wrap">
         <div class="section-heading">
           <div class="kicker">After it's live</div>
           <h2>Invite people. Add AI. Keep improving.</h2>
-          
         </div>
         <div class="steps"><article class="step"><div class="step-num">01</div><h3>Invite people</h3><p>Add your team and customers in Members, with the role they need.</p></article><article class="step"><div class="step-num">02</div><h3>Turn on AI</h3><p>Ask your assistant for the AI settings link. Paste your own key there, never in a chat.</p></article><article class="step"><div class="step-num">03</div><h3>Change it</h3><p>Tell your assistant what to change. Review, publish. Your data stays.</p></article><article class="step"><div class="step-num">04</div><h3>Forgot your login?</h3><p>Go to <a class="text-link" href="https://cloud.neoapps.ai/recover">cloud.neoapps.ai/recover</a>.</p></article></div>
       </div>
@@ -107,7 +127,6 @@
         <div class="section-heading">
           <div class="kicker">Prefer to run it yourself?</div>
           <h2>Free and open source.</h2>
-          
         </div>
         <p><a class="button secondary" href="developers.html">Developer setup →</a></p>
       </div>
@@ -118,7 +137,7 @@
     <div class="wrap footer-row">
       <a class="brand" href="index.html"><span class="brand-mark">N</span>NeoApps.AI</a>
       <span>Custom software, built by your AI, owned by you.</span>
-      <div class="footer-links"><a href="get-started.html">Connect your AI assistant</a><a href="pricing.html">Pricing</a><a href="developers.html">Developers</a><a href="security.html">Security</a><a href="https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator">GitHub</a><a href="mailto:info@neopric.com">Contact</a></div>
+      <div class="footer-links"><a href="get-started.html">Connect your AI assistant</a><a href="pricing.html">Pricing</a><a href="docs.html">Docs</a><a href="developers.html">Developers</a><a href="security.html">Security</a><a href="llms.txt">For agents</a><a href="https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator">GitHub</a><a href="mailto:info@neopric.com">Contact</a></div>
     </div>
   </footer>
   <script src="assets/site.js"></script>

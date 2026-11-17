@@ -1,0 +1,21 @@
+# NeoApps.AI
+
+> NeoApps helps people plan and generate business applications with an AI assistant. A plan describes the data, screens, roles, and workflow rules for the app.
+
+For hosted apps, use the NeoApps Cloud MCP connector at https://cloud.neoapps.ai/mcp. For local development, use the open-source generator through its CLI or local MCP server. Confirm which path the user wants and use the tools available in the connected environment.
+
+Start with the goal, the people who use the app, and what they need to do. Show the user the proposed screens and access rules, and revise the plan as needed. Publish only when the user approves the plan. Check the status of the same publish attempt and share the app URL when it is ready.
+
+## First app
+
+- [First app guide](https://neoapps.ai/docs.html): Walk through an example and recover from common setup and publishing issues.
+- [Connect your assistant](https://neoapps.ai/get-started.html): Choose an assistant and copy a starter prompt.
+- [App examples](https://neoapps.ai/use-cases.html#featured): Explore business workflows the generator can support.
+
+## Agent and developer references
+
+- [Cloud workflow](https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator/blob/main/docs/CLOUD.md): Hosted MCP tools, sign-in, and deployment.
+- [Repository agent instructions](https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator/blob/main/AGENTS.md): Start here when working in the repository.
+- [App generation instructions](https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator/blob/main/CLAUDE.md): Requirements, schema and UI config, previews, migrations, and verification.
+- [Local quickstart](https://neoapps.ai/developers.html#local): Run, preview, and build an app with the CLI.
+- [AuditDesk sample](https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator/tree/main/samples/auditdesk): Reproduce a local app with sample data.
