@@ -3,7 +3,7 @@ import {
   Alert, Autocomplete, Box, Button, Checkbox, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle,
   FormControlLabel, InputAdornment, MenuItem, TextField,
 } from "@mui/material";
-import { createRecord, updateRecord } from "./api";
+import { createRecord, putRecord } from "./api";
 import { currencySymbol, renderValue, toApiDate, toApiDateTime, toDateInput, toDateTimeInput } from "./format";
 import { FieldRule, ResolvedField, ResolvedTable } from "./types";
 import { useApp } from "./AppContext";
@@ -149,7 +149,7 @@ export const RecordForm: React.FC<Props> = ({ table, record, defaults, open, onC
     setError(undefined);
     try {
       const payload = toPayload();
-      const res = editing ? await updateRecord(table.name, record![table.primaryKey], payload) : await createRecord(table.name, payload);
+      const res = editing ? await putRecord(table.name, record![table.primaryKey], payload) : await createRecord(table.name, payload);
       if (res && res.code === 0) throw new Error(res.message || "Save failed");
       invalidateReferences(table.name);
       onSaved();

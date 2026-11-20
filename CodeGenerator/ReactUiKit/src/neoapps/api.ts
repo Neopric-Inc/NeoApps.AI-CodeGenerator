@@ -101,8 +101,22 @@ export const getRecord = async (table: string, id: any) => {
   const res = await api<any>("GET", `${table}/${encodeURIComponent(id)}`);
   return res?.code === 1 ? res.document : null;
 };
-export const createRecord = (table: string, data: any) => api<any>("POST", table, data);
-export const updateRecord = (table: string, id: any, data: any) => api<any>("PUT", `${table}/${encodeURIComponent(id)}`, data);
+/** Creates a row. The response is {code, message, document: newId}; `id` repeats the new id for convenience. */
+export const createRecord = async (table: string, data: any) => {
+  const res = await api<any>("POST", table, data);
+  return res && typeof res === "object" && (typeof res.document === "number" || typeof res.document === "string") ? { ...res, id: res.document } : res;
+};
+/** Replaces a row with exactly `data` (every required field). The admin forms use this. */
+export const putRecord = (table: string, id: any, data: any) => api<any>("PUT", `${table}/${encodeURIComponent(id)}`, data);
+const SYSTEM_COLUMNS = new Set(["createdBy", "modifiedBy", "createdAt", "modifiedAt", "created_by_user", "modified_by_user"]);
+/** Changes some fields of a row: fields not in `data` keep their current values (custom screens can send only what changed). */
+export const updateRecord = async (table: string, id: any, data: any) => {
+  const current = await getRecord(table, id).catch(() => null);
+  const base: any = {};
+  if (current && typeof current === "object")
+    for (const [k, v] of Object.entries(current)) if (!SYSTEM_COLUMNS.has(k) && !(k in (data || {}))) base[k] = v;
+  return putRecord(table, id, { ...base, ...data });
+};
 export const deleteRecord = (table: string, id: any) => api<any>("DELETE", `${table}/${encodeURIComponent(id)}`);
 
 /** Number of active rows in `table` where `column` equals `value` (generated /filter endpoint, condition 5 = Equals). */
