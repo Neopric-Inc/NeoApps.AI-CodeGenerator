@@ -84,6 +84,8 @@ export interface UiConfig {
   menu?: MenuGroup[];
   dashboard?: { cards?: DashboardCard[]; recentTable?: string };
   tables?: Record<string, TableConfig>;
+  /** Lists of tables that reference this table get a picker that limits them to one of its records (kept in ?scope=ID). */
+  scopePicker?: { table: string };
   /** Roles seeded when the database is created: {"Viewer": {"*": "r"}} (c/r/u/d). Read by the generator only. */
   roles?: Record<string, Record<string, string>>;
   /** AI assistant settings, read by the API (instructions, tools, workflows) and the UI. */

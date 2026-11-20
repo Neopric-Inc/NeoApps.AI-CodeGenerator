@@ -71,6 +71,7 @@ internal static class UiConfigTools
             { "group": "Studies", "items": ["studies", "visits", "assessments"] },
             { "group": "Documents", "items": ["documents", "source_documents"] }
           ],
+          "scopePicker": { "table": "studies" },     // lists of tables with a FK to studies get a "Study" picker (?scope=ID)
           "dashboard": { "cards": [ { "table": "studies", "label": "Active studies" },          // row count
                                     { "table": "studies", "label": "Total budget", "sum": "budget_amount",  // or a total,
                                       "where": { "status": "enrolling" }, "format": "currency", "currencyCode": "USD" } ], // optionally filtered
@@ -258,7 +259,9 @@ internal static class UiConfigTools
         always limited to what the signed-in user may read. Workflows run as background jobs (RabbitMQ worker): the dialog
         shows each step live, the job pauses with a proposal the user reviews (and can untick rows), and nothing is created
         until they approve. They can close the dialog and come back under Background jobs. "records" = query/aggregate
-        tables; "clinicaltrials_gov" = live ClinicalTrials.gov search. Model enum-like target columns as VARCHAR and
+        tables; "clinicaltrials_gov" = live ClinicalTrials.gov search; "pubmed" = live PubMed search (real articles with
+        PMID/DOI/abstract; optional env NCBI_API_KEY). Reasoning models (OpenAI-compatible): env AI_REASONING_EFFORT
+        (low|medium|high) and AI_WORKFLOW_MAX_TOKENS (default 40000). Model enum-like target columns as VARCHAR and
         describe valid values in "instructions".
 
         Background jobs. Other long-running work (imports, monthly runs, anything that waits for approval) is a C# class
