@@ -102,6 +102,16 @@ public static class DbImport
         public string QTable(string table) => Schema != null && Engine is "postgres" or "sqlserver" ? Q(Schema) + "." + Q(table) : Q(table);
     }
 
+    /// <summary>A MySQL connection string from mysql://user:pass@host:3306/db?SslMode=Required (the app database to copy into).</summary>
+    public static string TargetConnection(string envName)
+    {
+        var v = Environment.GetEnvironmentVariable(envName);
+        if (string.IsNullOrWhiteSpace(v)) throw new ArgumentException($"{envName} is not set.");
+        var t = Source.Parse(v);
+        if (t.Engine != "mysql") throw new ArgumentException($"{envName} must be a mysql:// address (the app database).");
+        return t.ConnectionString;
+    }
+
     /// <summary>The source address: the named environment variable, or a SQLite path given directly.</summary>
     public static Source ResolveSource(string? from, string? fromEnv)
     {
@@ -490,12 +500,16 @@ public static class DbImport
     /// Copies every mapped table into the app database. Ids are kept, so links hold; existing rows are updated by key.
     /// Rows belong to the workspace owner (rows are owner-scoped); created_by_user says "import".
     /// </summary>
-    public static List<TableCount> Copy(Source s, JsonObject map, string targetConnection, string owner, Action<string> log, CancellationToken ct, int batch = 500)
+    public static List<TableCount> Copy(Source s, JsonObject map, string targetConnection, string? owner, Action<string> log, CancellationToken ct, int batch = 500)
     {
         Validate(map);
         using var src = s.Open();
         using var dst = new MySqlConnection(targetConnection);
         dst.Open();
+        // rows belong to the app's workspace owner: the owner_name the first member signs in with
+        if (Scalar(dst, @"SELECT p.owner_name FROM permissionmatrix p JOIN users u ON u.user_id = p.user_id
+                WHERE p.owner_name IS NOT NULL AND p.owner_name <> '' ORDER BY u.user_id LIMIT 1") is string o && o.Length > 0) owner = o;
+        if (string.IsNullOrEmpty(owner)) throw new InvalidOperationException("Couldn't find the app's owner in the target database.");
         Exec(dst, "SET SESSION foreign_key_checks = 0");
         var result = new List<TableCount>();
         var appColumns = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
