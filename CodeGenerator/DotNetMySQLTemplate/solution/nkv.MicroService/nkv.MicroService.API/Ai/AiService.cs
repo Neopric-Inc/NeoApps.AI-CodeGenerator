@@ -752,15 +752,34 @@ When done, call propose_records exactly once with all rows.";
                 refs.Add(refId);
                 output.Add(new JsonObject { ["ref"] = refId, ["table"] = table, ["values"] = values });
             }
-            foreach (var row in output.OfType<JsonObject>())
+            // Drop rows missing a required column (the insert would fail after approval), then clear links to dropped rows; repeat until stable.
+            for (var changed = true; changed;)
             {
-                var vals = row["values"]!.AsObject();
-                foreach (var k in vals.Select(kv => kv.Key).ToList())
-                    if (vals[k] is JsonValue jv && jv.ToString().StartsWith("@") && !refs.Contains(jv.ToString()[1..]))
-                    {
-                        warnings.Add($"{row["table"]}.{k} pointed at unknown row {jv}; left empty.");
-                        vals[k] = null; // don't block the whole proposal on one dangling link
-                    }
+                changed = false;
+                foreach (var row in output.OfType<JsonObject>())
+                {
+                    var vals = row["values"]!.AsObject();
+                    foreach (var k in vals.Select(kv => kv.Key).ToList())
+                        if (vals[k] is JsonValue jv && jv.ToString().StartsWith("@") && !refs.Contains(jv.ToString()[1..]))
+                        {
+                            warnings.Add($"{row["table"]}.{k} pointed at unknown row {jv}; left empty.");
+                            vals[k] = null; // don't block the whole proposal on one dangling link
+                        }
+                }
+                foreach (var row in output.OfType<JsonObject>().ToList())
+                {
+                    var table = row["table"]!.GetValue<string>();
+                    var vals = row["values"]!.AsObject();
+                    var missing = cols[table].Where(x => !x.Nullable && !x.HasDefault && !x.IsPk && !x.AutoIncrement
+                            && !new[] { "createdBy", "modifiedBy", "createdAt", "modifiedAt", "isActive" }.Contains(x.Name)
+                            && (!vals.TryGetPropertyValue(x.Name, out var v) || v == null))
+                        .Select(x => x.Name).ToList();
+                    if (missing.Count == 0) continue;
+                    warnings.Add($"Left out a {table} row without {string.Join(", ", missing)}; re-run the workflow or add it by hand.");
+                    output.Remove(row);
+                    refs.Remove(row["ref"]!.ToString());
+                    changed = true;
+                }
             }
             return output;
         }
