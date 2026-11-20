@@ -48,7 +48,7 @@ public static class Cli
                 {
                     // neoapps import-db <App> map|copy [--from file.sqlite | --from-env VAR]  (address in NEOAPPS_SOURCE_DB by default)
                     var step = args.Length > 2 && !args[2].StartsWith('-') ? args[2] : "map";
-                    return await RunJob(jobs, tools.ImportDb(Name(), step, Opt("--from-env"), Opt("--from"), ct)) ? 0 : 1;
+                    return await RunJob(jobs, tools.ImportDb(Name(), step, Opt("--from-env"), Opt("--from"), Opt("--to-env"), ct)) ? 0 : 1;
                 }
                 case "evolve":
                 {

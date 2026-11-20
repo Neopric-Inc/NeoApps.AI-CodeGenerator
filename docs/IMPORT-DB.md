@@ -60,7 +60,8 @@ Apps work best with 3-15 tables: skip the ones nobody needs on screen.
 ./neoapps import-db Chinook copy
 ```
 
-Copies every table in link order and prints source and app counts per table. Ids are kept. Rows belong to the
+Copies every table in link order and prints source and app counts per table. (`--to-env VAR` copies into the
+mysql:// address in VAR instead of this computer's app; NeoApps Cloud uses it.) Ids are kept. Rows belong to the
 app's owner; "Created by" shows `import`. Safe to run again: existing rows are updated by key, new rows added.
 Rows deleted in the source are **not** deleted in the app.
 

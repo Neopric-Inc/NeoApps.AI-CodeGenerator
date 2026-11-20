@@ -300,6 +300,7 @@ public sealed class NeoAppsTools(
         [Description("map | copy")] string step = "map",
         [Description("Name of the environment variable holding the source address (default NEOAPPS_SOURCE_DB).")] string? sourceEnv = null,
         [Description("Path to a SQLite file, instead of sourceEnv.")] string? sqliteFile = null,
+        [Description("Advanced (NeoApps Cloud): name of an environment variable holding the mysql:// address of the database to copy into, instead of this computer's app.")] string? targetEnv = null,
         CancellationToken ct = default)
     {
         name = ProjectStore.ValidateName(name);
@@ -333,13 +334,20 @@ public sealed class NeoAppsTools(
                         : $"Preview (`neoapps preview {name}`), then `neoapps new {name} --schema workspace/{name}/schema.sql --ui workspace/{name}/ui.config.json`, then run step copy.",
                 };
             }
-            var state = store.Require(name);
             if (!File.Exists(mapFile)) throw new InvalidOperationException("No import.map.json yet: run step map first.");
             var saved = System.Text.Json.Nodes.JsonNode.Parse(await File.ReadAllTextAsync(mapFile, jct)) as System.Text.Json.Nodes.JsonObject
                 ?? throw new InvalidOperationException("import.map.json is not a JSON object.");
-            await EnsureInfraAsync(job, jct);
-            job.Log($"Copying from the {source.Engine} database '{source.Database}' into {state.DatabaseName}…");
-            var counts = await Task.Run(() => DbImport.Copy(source, saved, migrations.ConnectionString(state), state.AdminUsername ?? "admin", job.Log, jct), jct);
+            string target, owner = null!;
+            if (!string.IsNullOrWhiteSpace(targetEnv)) target = DbImport.TargetConnection(targetEnv);
+            else
+            {
+                var state = store.Require(name);
+                await EnsureInfraAsync(job, jct);
+                target = migrations.ConnectionString(state);
+                owner = state.AdminUsername ?? "admin";
+            }
+            job.Log($"Copying from the {source.Engine} database '{source.Database}'…");
+            var counts = await Task.Run(() => DbImport.Copy(source, saved, target, owner, job.Log, jct), jct);
             return new
             {
                 app = name, tables = counts,
