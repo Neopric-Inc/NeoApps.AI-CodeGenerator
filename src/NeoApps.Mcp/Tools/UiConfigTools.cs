@@ -119,7 +119,13 @@ internal static class UiConfigTools
         Packages available to custom screens (pinned, vetted; nothing else can be imported, also on NeoApps Cloud):
           @fullcalendar/react (calendar: import FullCalendar from "@fullcalendar/react"; views from "@fullcalendar/react/daygrid",
           "/timegrid", "/list", drag and drop from "/interaction"), date-fns (dates), jspdf (PDFs in the browser),
-          @mui/x-charts (charts). For a bulk entry grid, save the rows with startJob("data.import", {table, rows}) from
+          @mui/x-charts (charts), react-leaflet + leaflet (maps: import { MapContainer, TileLayer, Polyline, CircleMarker,
+          Popup } from "react-leaflet" and import "leaflet/dist/leaflet.css"; give MapContainer a height; use CircleMarker,
+          not Marker, so no icon images are needed; tiles: url "https://tile.openstreetmap.org/{z}/{x}/{y}.png" with
+          attribution "&copy; OpenStreetMap contributors"). Data helpers from ../neoapps/api: createRecord(table, data)
+          returns { document: newId, id: newId }; updateRecord(table, id, changes) keeps fields you don't send;
+          listWhere(table, column, value, max?, orderBy?) returns the matching rows (e.g. every point of one walk,
+          orderBy "point_number|ASC"); getRecord(table, id) returns one row. For a bulk entry grid, save the rows with startJob("data.import", {table, rows}) from
           ../neoapps/jobs/jobsApi: every row is checked against the app's rules and saved all or nothing.
         The UI is React 19 + MUI 9 (Vite): style props go in sx (sx={{ fontWeight: 600 }}, not fontWeight={600}),
         Grid uses size={{ xs: 12, md: 6 }} (no item/xs props), TextField uses slotProps (no InputProps/InputLabelProps).

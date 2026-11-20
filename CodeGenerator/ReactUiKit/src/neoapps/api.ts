@@ -125,6 +125,14 @@ export async function countWhere(table: string, column: string, value: any): Pro
   return res && res.code === 1 ? res.document?.totalRecords || 0 : 0;
 }
 
+/** Active rows of `table` where `column` equals `value` (e.g. every GPS point of one walk), up to `max` rows. */
+export async function listWhere(table: string, column: string, value: any, max = 1000, orderBy?: string): Promise<Record<string, any>[]> {
+  const q = new URLSearchParams({ page: "1", itemsPerPage: String(max) });
+  if (orderBy) q.set("orderBy", orderBy);
+  const res = await api<any>("POST", `${table}/filter?${q}`, [{ columnName: column, columnCondition: 5, columnValue: String(value) }]);
+  return res && res.code === 1 && res.document ? res.document.records || [] : [];
+}
+
 export async function login(username: string, password: string): Promise<void> {
   const res = await api<any>("POST", "Token", { username, password });
   if (res?.code !== 1) throw new ApiError(401, "Invalid username or password."); // the cookie is set by the response
