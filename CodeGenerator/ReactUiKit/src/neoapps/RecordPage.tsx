@@ -16,7 +16,7 @@ import { useReferences } from "./useReferences";
 import AutoAwesome from "@mui/icons-material/AutoAwesome";
 import { FilesPanel } from "./ai/FilesPanel";
 import { WorkflowButtons } from "./ai/Workflows";
-import { extensions } from "../custom";
+import { extensions } from "./customExtensions";
 
 /** Related records of one child table, filtered client-side by the FK pointing at the parent. */
 const ChildList: React.FC<{ child: ResolvedTable; fk: string; parentId: any }> = ({ child, fk, parentId }) => {

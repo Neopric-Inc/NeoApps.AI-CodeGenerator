@@ -15,7 +15,7 @@ import { SignatureDialog } from "./SignatureDialog";
 import { RecordPage } from "./RecordPage";
 import { ResourcePage } from "./ResourcePage";
 import { Shell } from "./Shell";
-import { extensions } from "../custom";
+import { extensions } from "./customExtensions";
 
 registerServiceWorker();
 

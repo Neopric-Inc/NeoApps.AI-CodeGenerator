@@ -4,7 +4,7 @@ import { Breadcrumbs as MuiBreadcrumbs, Link, Typography } from "@mui/material";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import { useApp } from "./AppContext";
 import { getRecord } from "./api";
-import { extensions } from "../custom";
+import { extensions } from "./customExtensions";
 
 /**
  * Breadcrumbs that follow how the user actually got here: a sidebar click starts a new trail, following links
