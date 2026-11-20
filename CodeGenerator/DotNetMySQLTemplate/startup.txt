@@ -145,6 +145,7 @@ namespace {projectName}.API
             services.AddSingleton<{projectName}.API.Ai.AiData>();
             services.AddHttpClient<{projectName}.API.Ai.ClaudeClient>(h => h.Timeout = System.TimeSpan.FromMinutes(5));
             services.AddHttpClient("clinicaltrials");
+            services.AddHttpClient("pubmed");
             services.AddScoped<{projectName}.API.Ai.AiService>();
             // Background jobs (Jobs/): RabbitMQ queue + worker, live progress over Redis, pause for approval and resume.
             // Every JobHandler subclass in this assembly (including Custom/, from workspace/<App>/custom-api) is a job kind.

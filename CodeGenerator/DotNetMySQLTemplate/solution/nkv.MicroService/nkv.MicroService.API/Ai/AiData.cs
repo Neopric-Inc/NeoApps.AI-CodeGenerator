@@ -168,16 +168,35 @@ namespace nkv.MicroService.API.Ai
             return match?.Name ?? throw new AiException($"Unknown column '{col}'. Available: {string.Join(", ", cols.Select(x => x.Name))}");
         }
 
+        /// <summary>Normalises the "filters" tool input: array, JSON string, or a {column: value} map (= eq filters).</summary>
+        private static JsonArray Filters(JsonNode node)
+        {
+            if (node is JsonValue sv && sv.TryGetValue<string>(out var s)) { try { node = JsonNode.Parse(s); } catch (System.Text.Json.JsonException) { return new JsonArray(); } }
+            if (node is JsonArray a) return a;
+            if (node is JsonObject o)
+            {
+                if (o.ContainsKey("column")) return new JsonArray(o.DeepClone());
+                return new JsonArray(o.Select(kv => (JsonNode)new JsonObject { ["column"] = kv.Key, ["op"] = "eq", ["value"] = kv.Value?.DeepClone() }).ToArray());
+            }
+            return new JsonArray();
+        }
+
         private static string Where(List<ColumnInfo> cols, JsonArray filters, List<(string, object)> ps)
         {
             var parts = new List<string> { "t.createdBy=@tenant", "t.isActive=1" };
             var i = 0;
-            foreach (var f in filters ?? new JsonArray())
+            foreach (var raw in filters ?? new JsonArray())
             {
-                var col = CheckColumn(cols, f?["column"]?.GetValue<string>());
-                var op = (f?["op"]?.GetValue<string>() ?? "eq").ToLowerInvariant();
+                // Models send filters in several shapes: {column,op,value}, ["col","op","value"], or a JSON string of either.
+                var f = raw;
+                if (f is JsonValue sv && sv.TryGetValue<string>(out var fs)) { try { f = JsonNode.Parse(fs); } catch (System.Text.Json.JsonException) { f = null; } }
+                if (f is JsonArray fa && fa.Count >= 2)
+                    f = new JsonObject { ["column"] = fa[0]?.ToString(), ["op"] = fa.Count >= 3 ? fa[1]?.ToString() : "eq", ["value"] = (fa.Count >= 3 ? fa[2] : fa[1])?.DeepClone() };
+                if (f is not JsonObject) throw new AiException("Each filter must be an object like {\"column\": \"case_id\", \"op\": \"eq\", \"value\": 1}.");
+                var col = CheckColumn(cols, (f["column"] ?? f["field"] ?? f["name"])?.ToString());
+                var op = ((f["op"] ?? f["operator"])?.ToString() ?? "eq").ToLowerInvariant() switch { "=" or "==" => "eq", "!=" or "<>" => "ne", ">" => "gt", ">=" => "gte", "<" => "lt", "<=" => "lte", "like" => "contains", var o => o };
                 var p = "@f" + i++;
-                var val = f?["value"] is JsonValue v ? v.ToString() : f?["value"]?.ToJsonString();
+                var val = f["value"] is JsonValue v ? v.ToString() : f["value"]?.ToJsonString();
                 string sql = op switch
                 {
                     "eq" => $"t.`{col}` = {p}", "ne" => $"t.`{col}` <> {p}", "gt" => $"t.`{col}` > {p}", "gte" => $"t.`{col}` >= {p}",
@@ -203,7 +222,7 @@ namespace nkv.MicroService.API.Ai
             var table = CheckTable(c, u, input["table"]?.GetValue<string>());
             var cols = Columns(c, table);
             var ps = new List<(string, object)> { ("@tenant", u.Tenant) };
-            var where = Where(cols, input["filters"] as JsonArray, ps);
+            var where = Where(cols, Filters(input["filters"]), ps);
             var select = input["columns"] is JsonArray sc && sc.Count > 0
                 ? string.Join(", ", sc.Select(x => "t.`" + CheckColumn(cols, x!.GetValue<string>()) + "`"))
                 : string.Join(", ", cols.Where(x => !Audit.Contains(x.Name) || x.Name == "createdAt").Select(x => "t.`" + x.Name + "`"));
@@ -222,7 +241,7 @@ namespace nkv.MicroService.API.Ai
             if (!new[] { "count", "sum", "avg", "min", "max" }.Contains(metric)) throw new AiException("metric must be count, sum, avg, min or max");
             var expr = metric == "count" ? "COUNT(*)" : $"{metric.ToUpperInvariant()}(t.`{CheckColumn(cols, input["column"]?.GetValue<string>())}`)";
             var ps = new List<(string, object)> { ("@tenant", u.Tenant) };
-            var where = Where(cols, input["filters"] as JsonArray, ps);
+            var where = Where(cols, Filters(input["filters"]), ps);
             var group = input["group_by"]?.GetValue<string>() is { Length: > 0 } g ? CheckColumn(cols, g) : null;
             var sql = group == null
                 ? $"SELECT {expr} AS value FROM `{table}` t WHERE {where}"

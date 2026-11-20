@@ -1,13 +1,13 @@
-import React, { useCallback, useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
-  Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, InputAdornment, Paper, Snackbar,
+  Alert, Autocomplete, Box, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, InputAdornment, Paper, Snackbar,
   TextField, Typography,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import SearchIcon from "@mui/icons-material/Search";
 import DownloadIcon from "@mui/icons-material/FileDownloadOutlined";
-import { countWhere, deleteRecord, listRecords } from "./api";
+import { api, countWhere, deleteRecord, listRecords } from "./api";
 import { useApp } from "./AppContext";
 import { WorkflowButtons } from "./ai/Workflows";
 import { DataTable } from "./DataTable";
@@ -81,7 +81,7 @@ export const ResourcePage: React.FC = () => {
 
 const TablePage: React.FC = () => {
   const { table: name = "" } = useParams();
-  const { tables, can, canOpen, canChangeRecord, ai } = useApp();
+  const { tables, can, canOpen, canChangeRecord, ai, config } = useApp();
   const navigate = useNavigate();
   const table = tables[name];
   const [rows, setRows] = useState<Record<string, any>[]>([]);
@@ -93,6 +93,30 @@ const TablePage: React.FC = () => {
   const [search, setSearch] = useState("");
   const [exporting, setExporting] = useState(false);
   const [query, setQuery] = useState("");
+  // Optional parent picker (ui.config "scopePicker": {"table": "cases"}): lists of tables with a foreign key to that table
+  // can be limited to one parent record; the choice is kept in the URL (?scope=ID) and remembered per parent table.
+  const scopeName = config.scopePicker?.table;
+  const scopeTable = scopeName ? tables[scopeName] : undefined;
+  const scopeCol = scopeTable && name !== scopeName ? table?.schema.columns.find((c) => c.references?.table === scopeName)?.name : undefined;
+  const scopeKey = "neoapps.scope." + scopeName;
+  const [params, setParams] = useSearchParams();
+  const [scopeId, setScopeIdState] = useState<string>(() => params.get("scope") ?? (() => { try { return localStorage.getItem(scopeKey) || ""; } catch { return ""; } })());
+  const [scopeOptions, setScopeOptions] = useState<Record<string, any>[]>([]);
+  const setScopeId = (v: string) => {
+    setScopeIdState(v);
+    try { if (v) localStorage.setItem(scopeKey, v); else localStorage.removeItem(scopeKey); } catch { /* storage unavailable */ }
+    setPage(0);
+    const next = new URLSearchParams(params);
+    if (v) next.set("scope", v); else next.delete("scope");
+    setParams(next, { replace: true });
+  };
+  useEffect(() => {
+    if (!scopeCol || !scopeTable) return;
+    listRecords(scopeTable.name, 1, 1000, scopeTable.defaultSort || undefined).then((p) => setScopeOptions(p.records)).catch(() => setScopeOptions([]));
+  }, [scopeCol, scopeTable]);
+  const scopeLabel = (r: Record<string, any>) => String(r[scopeTable?.displayField || ""] ?? `#${r[scopeTable?.primaryKey || "id"]}`);
+  // memoised: RecordForm re-initialises its fields whenever this object changes
+  const scopeDefaults = useMemo(() => (scopeCol && scopeId ? { [scopeCol]: Number(scopeId) || scopeId } : undefined), [scopeCol, scopeId]);
   const [sort, setSort] = useState<{ column: string; dir: "ASC" | "DESC" } | undefined>();
   const [editing, setEditing] = useState<Record<string, any> | null | undefined>(undefined);
   const [reload, setReload] = useState(0);
@@ -113,16 +137,35 @@ const TablePage: React.FC = () => {
     setLoading(true);
     setError(undefined);
     try {
-      const res = await listRecords(table.name, page + 1, pageSize, sort ? `${sort.column}|${sort.dir}` : undefined, query);
-      setRows(res.records);
-      setTotal(res.total);
+      const orderBy = sort ? `${sort.column}|${sort.dir}` : undefined;
+      if (scopeCol && scopeId) {
+        const where = [{ columnName: scopeCol, columnCondition: 5, columnValue: String(scopeId) }];
+        const q = query.trim().toLowerCase();
+        const qs = new URLSearchParams({ page: String(q ? 1 : page + 1), itemsPerPage: String(q ? 1000 : pageSize) });
+        if (orderBy) qs.set("orderBy", orderBy);
+        const res = await api<any>("POST", `${table.name}/filter?${qs}`, where);
+        const doc = res && res.code === 1 ? res.document : null;
+        let recs: Record<string, any>[] = doc?.records || [];
+        if (q) {
+          recs = recs.filter((r) => Object.values(r).some((v) => v !== null && v !== undefined && String(v).toLowerCase().includes(q)));
+          setTotal(recs.length);
+          setRows(recs.slice(page * pageSize, page * pageSize + pageSize));
+        } else {
+          setRows(recs);
+          setTotal(doc?.totalRecords || 0);
+        }
+      } else {
+        const res = await listRecords(table.name, page + 1, pageSize, orderBy, query);
+        setRows(res.records);
+        setTotal(res.total);
+      }
     } catch (e: any) {
       setError(e.message);
       setRows([]);
     } finally {
       setLoading(false);
     }
-  }, [table, page, pageSize, sort, query, canOpen]);
+  }, [table, page, pageSize, sort, query, canOpen, scopeCol, scopeId]);
 
   useEffect(() => {
     load();
@@ -151,6 +194,17 @@ const TablePage: React.FC = () => {
           </Box>
         </Box>
         <form onSubmit={(e) => { e.preventDefault(); setPage(0); setQuery(search); }}>
+          {scopeCol && scopeTable && (
+            <Autocomplete
+              size="small" sx={{ width: { xs: "100%", sm: 280 }, bgcolor: "background.paper" }}
+              options={scopeOptions}
+              value={scopeOptions.find((o) => String(o[scopeTable.primaryKey]) === String(scopeId)) || null}
+              onChange={(_, v) => setScopeId(v ? String(v[scopeTable.primaryKey]) : "")}
+              getOptionLabel={scopeLabel}
+              isOptionEqualToValue={(a, b) => String(a[scopeTable.primaryKey]) === String(b[scopeTable.primaryKey])}
+              renderInput={(p) => <TextField {...p} label={scopeTable.singular} placeholder={`All ${scopeTable.label.toLowerCase()}`} />}
+            />
+          )}
           <TextField size="small" placeholder={`Search ${table.label.toLowerCase()}`} value={search} onChange={(e) => setSearch(e.target.value)}
             sx={{ width: { xs: "100%", sm: 260 }, bgcolor: "background.paper" }} slotProps={{
             input: { startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }
@@ -185,7 +239,7 @@ const TablePage: React.FC = () => {
           emptyText={query ? `No ${table.label.toLowerCase()} match "${query}".` : undefined}
         />
       </Paper>
-      <RecordForm table={table} record={editing || null} open={editing !== undefined} onClose={() => setEditing(undefined)}
+      <RecordForm table={table} record={editing || null} defaults={scopeDefaults} open={editing !== undefined} onClose={() => setEditing(undefined)}
         onSaved={() => { setEditing(undefined); setReload((r) => r + 1); }} />
       {del.dialog}
     </Box>

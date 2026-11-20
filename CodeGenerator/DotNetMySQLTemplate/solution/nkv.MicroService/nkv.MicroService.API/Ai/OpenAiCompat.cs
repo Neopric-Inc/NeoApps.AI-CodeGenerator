@@ -13,7 +13,7 @@ namespace nkv.MicroService.API.Ai
     /// </summary>
     public static class OpenAiCompat
     {
-        public static JsonObject ToOpenAi(JsonObject a)
+        public static JsonObject ToOpenAi(JsonObject a, string baseUrl = null)
         {
             var msgs = new JsonArray();
             var system = a["system"] switch
@@ -78,8 +78,14 @@ namespace nkv.MicroService.API.Ai
             }
 
             var o = new JsonObject { ["model"] = a["model"]!.DeepClone(), ["messages"] = msgs };
-            if (a["max_tokens"] != null) o["max_tokens"] = a["max_tokens"]!.DeepClone();
-            if (a["temperature"] != null) o["temperature"] = a["temperature"]!.DeepClone();
+            var mdl = a["model"]!.GetValue<string>().ToLowerInvariant();
+            var reasoning = mdl.StartsWith("gpt-5") || mdl.StartsWith("o1") || mdl.StartsWith("o3") || mdl.StartsWith("o4");
+            // OpenAI and Azure OpenAI take max_completion_tokens for every current model and require it for GPT-5/o-series
+            // (on Azure the model is a deployment name, so the host decides); other OpenAI-compatible servers expect max_tokens
+            var official = baseUrl != null && (baseUrl.Contains("api.openai.com") || baseUrl.Contains(".openai.azure.com") || baseUrl.Contains(".services.ai.azure.com"));
+            if (a["max_tokens"] != null) o[reasoning || official ? "max_completion_tokens" : "max_tokens"] = a["max_tokens"]!.DeepClone();
+            if (Environment.GetEnvironmentVariable("AI_REASONING_EFFORT") is { Length: > 0 } effort) o["reasoning_effort"] = effort; // low | medium | high (gpt-oss, GPT-5, o-series)
+            if (a["temperature"] != null && !reasoning && Environment.GetEnvironmentVariable("AI_REASONING_EFFORT") is not { Length: > 0 }) o["temperature"] = a["temperature"]!.DeepClone(); // reasoning models only allow the default
             if (a["tools"] is JsonArray tools && tools.Count > 0)
             {
                 o["tools"] = new JsonArray(tools.Select(t => (JsonNode)new JsonObject

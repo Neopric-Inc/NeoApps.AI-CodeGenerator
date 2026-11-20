@@ -31,7 +31,7 @@ namespace nkv.MicroService.API.Ai
         public async Task<JsonObject> CreateAsync(JsonObject body, CancellationToken ct)
         {
             var forcedTool = body["tool_choice"]?["type"]?.GetValue<string>() == "tool" ? body["tool_choice"]!["name"]!.GetValue<string>() : null;
-            var payload = (_settings.IsOpenAi ? OpenAiCompat.ToOpenAi(body) : body).ToJsonString();
+            var payload = (_settings.IsOpenAi ? OpenAiCompat.ToOpenAi(body, _settings.BaseUrl) : body).ToJsonString();
             for (var attempt = 1; ; attempt++)
             {
                 TimeSpan? wait = null;
@@ -122,6 +122,7 @@ namespace nkv.MicroService.API.Ai
                     var isError = false;
                     try { output = await runTool(name, input); }
                     catch (AiException ex) { output = "Error: " + ex.Message; isError = true; }
+                    catch (Exception ex) when (ex is InvalidOperationException or FormatException or ArgumentException or System.Text.Json.JsonException or KeyNotFoundException or NullReferenceException) { output = "Error: the tool input was malformed (" + ex.Message + "). Check the tool schema and try again."; isError = true; } // let the model retry instead of failing the request
                     results.Add(new JsonObject
                     {
                         ["type"] = "tool_result",

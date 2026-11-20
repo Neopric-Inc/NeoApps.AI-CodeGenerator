@@ -282,6 +282,14 @@ namespace nkv.MicroService.API.Ai
                         ["status"] = Str("RECRUITING (default), NOT_YET_RECRUITING, ACTIVE_NOT_RECRUITING, COMPLETED"),
                         ["limit"] = Int("max studies (default 10, max 25)"),
                     }, "condition"));
+            if (enabled.Contains("pubmed"))
+                tools.Add(Tool("search_pubmed", "Searches PubMed (NCBI) for published medical literature and returns real articles with PMID, DOI, authors, journal, year, publication types and abstract excerpts. Use it for every literature reference; cite only articles it returns.",
+                    new JsonObject
+                    {
+                        ["query"] = Str("PubMed query, e.g. 'pericardiocentesis complications cardiac arrest' or '(hypoxic ischemic encephalopathy) AND (cardiac arrest) AND review[pt]'"),
+                        ["limit"] = Int("max articles (default 8, max 20)"),
+                        ["reviews_only"] = new JsonObject { ["type"] = "boolean", ["description"] = "only systematic reviews, meta-analyses and reviews" },
+                    }, "query"));
             return tools;
         }
 
@@ -304,6 +312,7 @@ namespace nkv.MicroService.API.Ai
                 case "query_records": return _data.QueryRecords(c, u, input);
                 case "aggregate_records": return _data.Aggregate(c, u, input);
                 case "search_clinical_trials": return await SearchTrials(input, ct);
+                case "search_pubmed": return await SearchPubMed(input, ct);
                 default: throw new AiException($"Unknown tool {name}");
             }
         }
@@ -345,6 +354,66 @@ namespace nkv.MicroService.API.Ai
                 });
             }
             return new JsonObject { ["count"] = studies.Count, ["studies"] = studies }.ToJsonString();
+        }
+
+        /// <summary>PubMed via NCBI E-utilities: esearch -> esummary (metadata) + efetch (abstracts). Optional NCBI_API_KEY env raises the rate limit.</summary>
+        private async Task<string> SearchPubMed(JsonObject input, CancellationToken ct)
+        {
+            var query = input["query"]?.ToString() ?? "";
+            if (string.IsNullOrWhiteSpace(query)) return "Give a query.";
+            if (input["reviews_only"] is JsonValue ro && ro.TryGetValue<bool>(out var rev) && rev)
+                query = $"({query}) AND (systematic review[pt] OR meta-analysis[pt] OR review[pt])";
+            var limit = Math.Clamp(input["limit"] is JsonValue lv && int.TryParse(lv.ToString(), out var li) ? li : 8, 1, 20);
+            var key = Environment.GetEnvironmentVariable("NCBI_API_KEY");
+            var k = string.IsNullOrWhiteSpace(key) ? "" : "&api_key=" + Uri.EscapeDataString(key);
+            const string eu = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/";
+            var http = _httpFactory.CreateClient("pubmed");
+            http.Timeout = TimeSpan.FromSeconds(30);
+            try
+            {
+                var search = JsonNode.Parse(await http.GetStringAsync($"{eu}esearch.fcgi?db=pubmed&retmode=json&sort=relevance&tool=neoapps&retmax={limit}&term={Uri.EscapeDataString(query)}{k}", ct));
+                var ids = (search?["esearchresult"]?["idlist"] as JsonArray)?.Select(x => x!.ToString()).ToList() ?? new List<string>();
+                if (ids.Count == 0) return $"No PubMed articles for: {query}. Try broader terms.";
+                var idList = string.Join(",", ids);
+                var summary = JsonNode.Parse(await http.GetStringAsync($"{eu}esummary.fcgi?db=pubmed&retmode=json&tool=neoapps&id={idList}{k}", ct))?["result"];
+                var abstracts = new Dictionary<string, string>();
+                try
+                {
+                    var xml = System.Xml.Linq.XDocument.Parse(await http.GetStringAsync($"{eu}efetch.fcgi?db=pubmed&retmode=xml&rettype=abstract&tool=neoapps&id={idList}{k}", ct));
+                    foreach (var art in xml.Descendants("PubmedArticle"))
+                    {
+                        var pmid = art.Descendants("PMID").FirstOrDefault()?.Value;
+                        var text = string.Join(" ", art.Descendants("AbstractText").Select(a => (a.Attribute("Label") is { } l ? l.Value + ": " : "") + a.Value));
+                        if (pmid != null) abstracts[pmid] = Trim(text, 900);
+                    }
+                }
+                catch { /* abstracts are optional */ }
+                var arts = new JsonArray();
+                foreach (var id in ids)
+                {
+                    var a = summary?[id];
+                    if (a == null) continue;
+                    var doi = (a["articleids"] as JsonArray)?.FirstOrDefault(x => x?["idtype"]?.ToString() == "doi")?["value"]?.ToString();
+                    var authors = (a["authors"] as JsonArray)?.Select(x => x?["name"]?.ToString()).Where(x => x != null).ToList() ?? new List<string>();
+                    arts.Add(new JsonObject
+                    {
+                        ["pmid"] = id,
+                        ["doi"] = doi,
+                        ["title"] = a["title"]?.ToString(),
+                        ["authors"] = authors.Count > 6 ? string.Join(", ", authors.Take(6)) + ", et al." : string.Join(", ", authors),
+                        ["journal"] = a["fulljournalname"]?.ToString() ?? a["source"]?.ToString(),
+                        ["year"] = (a["pubdate"]?.ToString() ?? "").Split(' ')[0],
+                        ["publication_types"] = string.Join(", ", (a["pubtype"] as JsonArray)?.Select(x => x?.ToString()) ?? Array.Empty<string>()),
+                        ["url"] = $"https://pubmed.ncbi.nlm.nih.gov/{id}/",
+                        ["abstract"] = abstracts.GetValueOrDefault(id, ""),
+                    });
+                }
+                return new JsonObject { ["query"] = query, ["count"] = arts.Count, ["articles"] = arts }.ToJsonString();
+            }
+            catch (Exception ex) when (ex is not AiException && !ct.IsCancellationRequested)
+            {
+                throw new AiException("PubMed is unreachable: " + ex.Message);
+            }
         }
 
         private static string Trim(string s, int n) => s == null ? "" : s.Length <= n ? s : s.Substring(0, n) + "…";
@@ -628,7 +697,8 @@ When done, call propose_records exactly once with all rows.";
             var sources = new Dictionary<string, Source>();
             progress?.Invoke($"Asking {_settings.Model(cfg)} to work through: {string.Join(", ", targets)}");
             var (text2, _, proposal) = await _claude.RunAsync(_settings.Model(cfg), system,
-                new JsonArray(new JsonObject { ["role"] = "user", ["content"] = sb.ToString() }), tools, 16000,
+                new JsonArray(new JsonObject { ["role"] = "user", ["content"] = sb.ToString() }), tools,
+                int.TryParse(Environment.GetEnvironmentVariable("AI_WORKFLOW_MAX_TOKENS"), out var wmt) && wmt > 0 ? wmt : 40000, // reasoning models spend part of this on thinking
                 (name, input) => { progress?.Invoke(DescribeTool(name, input)); return RunTool(name, input, u, sources, ct); },
                 ct, stopOnTool: "propose_records", maxTurns: 16,
                 onToolCall: name => { if (name == "propose_records") progress?.Invoke(DescribeTool(name, new JsonObject())); });
@@ -656,7 +726,7 @@ When done, call propose_records exactly once with all rows.";
             var output = new JsonArray();
             foreach (var r in records.OfType<JsonObject>())
             {
-                var requested = r["table"]?.GetValue<string>()?.ToLowerInvariant();
+                var requested = (r["table"] is JsonValue rtv ? rtv.ToString() : null)?.Trim().ToLowerInvariant(); // tolerate non-string values from smaller models
                 var table = targets.FirstOrDefault(t => t == requested);
                 if (table == null) { warnings.Add($"Skipped a row for table '{requested}', which isn't a target of this workflow."); continue; }
                 var values = new JsonObject();
@@ -678,14 +748,20 @@ When done, call propose_records exactly once with all rows.";
                         warnings.Add($"{table}.{k} stops at exactly {ts.Length} characters and may be cut off; re-run the workflow.");
                 foreach (var (k, v) in inherit)
                     if (cols[table].FirstOrDefault(x => x.Name == k) is { } ic) values[ic.Name] = JsonValue.Create(v.ToString());
-                var refId = r["ref"]?.GetValue<string>() ?? Guid.NewGuid().ToString("N")[..6];
+                var refId = (r["ref"] is JsonValue rrv ? rrv.ToString().Trim().TrimStart('@') : null) is { Length: > 0 } rr ? rr : Guid.NewGuid().ToString("N")[..6]; // numeric or "@x" refs
                 refs.Add(refId);
                 output.Add(new JsonObject { ["ref"] = refId, ["table"] = table, ["values"] = values });
             }
             foreach (var row in output.OfType<JsonObject>())
-                foreach (var (k, v) in row["values"]!.AsObject())
-                    if (v is JsonValue jv && jv.ToString().StartsWith("@") && !refs.Contains(jv.ToString()[1..]))
-                        warnings.Add($"{row["table"]}.{k} points at unknown row {jv}.");
+            {
+                var vals = row["values"]!.AsObject();
+                foreach (var k in vals.Select(kv => kv.Key).ToList())
+                    if (vals[k] is JsonValue jv && jv.ToString().StartsWith("@") && !refs.Contains(jv.ToString()[1..]))
+                    {
+                        warnings.Add($"{row["table"]}.{k} pointed at unknown row {jv}; left empty.");
+                        vals[k] = null; // don't block the whole proposal on one dangling link
+                    }
+            }
             return output;
         }
 
