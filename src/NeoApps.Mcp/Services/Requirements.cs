@@ -28,6 +28,13 @@ public static class Requirements
         var latest = LatestVersion(history);
         string? Prev(string file) => latest == 0 ? null : File.Exists(Path.Combine(history, $"v{latest}", file)) ? File.ReadAllText(Path.Combine(history, $"v{latest}", file)) : null;
 
+        // custom screens must compile before anything is previewed, saved or built (errors last: callers show the tail)
+        var custom = CustomScreensCheck.Run(store.GeneratorDir, Path.Combine(dir, "custom"));
+        if (custom.Errors.Count > 0)
+            throw new InvalidOperationException("The custom screens do not compile. Fix these lines in custom_screens (file(line,column): error):\n"
+                + string.Join("\n", custom.Errors.Take(5)) + (custom.Errors.Count > 5 ? $"\n(+{custom.Errors.Count - 5} more)" : "")
+                + (custom.Errors.Any(e => e.Contains("TS2307")) ? "\nOnly react, @mui/*, react-router-dom, @fullcalendar/react, date-fns, jspdf, @mui/x-charts, react-leaflet/leaflet and ../neoapps/* can be imported." : ""));
+
         var ui = File.Exists(uiFile) ? File.ReadAllText(uiFile) : null;
         var result = AppPreview.Build(File.ReadAllText(schemaFile), ui, Prev("schema.sql"), Prev("ui.config.json"), title: null);
         var html = result.Html.Replace("<title>App preview · plan</title>", $"<title>{name} · plan</title>").Replace("<h1>App preview</h1>", $"<h1>{name}</h1>");
@@ -56,6 +63,7 @@ public static class Requirements
             relations = result.Relations,
             issues = result.Warnings,
             changes = result.Changes,
+            customScreens = custom.Ran ? "compiled" : custom.Note,
             next = result.Warnings.Count > 0
                 ? "Fix the issues, then preview again."
                 : saveVersion
