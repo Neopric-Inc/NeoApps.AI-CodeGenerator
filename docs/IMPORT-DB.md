@@ -47,6 +47,30 @@ How it maps:
 
 Apps work best with 3-15 tables: skip the ones nobody needs on screen.
 
+### Pick tables and rows (big or public databases)
+
+The map records each table's size (`rows`, `sizeMb`; estimates from the database's statistics) and warns about large
+tables. To see and search them:
+
+```bash
+./neoapps import-db Chinook tables --search "invoice price"     # tables whose name or a column matches, biggest first
+./neoapps import-db Chinook map --only Artist,Album,Track --filters filters.json
+```
+
+`filters.json` (also editable in the map as `"where"` / `"limit"` on a table):
+
+```json
+{ "Track": { "where": "GenreId = 1 AND Milliseconds > 300000", "limit": 1000 },
+  "Invoice": { "where": "BillingCountry = 'Germany'" } }
+```
+
+`where` is one condition in the source database's own SQL, `limit` caps the rows. Filters run in a read-only session
+(PostgreSQL, MySQL) and anything that isn't a plain condition (`;`, comments, `INSERT`, `INTO`, `pg_sleep`…) is refused
+before anything is written. A filtered parent leaves some links pointing nowhere: copy says how many.
+
+Public or shared databases (research servers such as Ensembl's public MySQL) limit heavy use and can be very large:
+map first (it only reads the structure), keep a few tables, and filter or limit rows.
+
 ## 3. Build the app
 
 ```bash
@@ -63,7 +87,7 @@ Apps work best with 3-15 tables: skip the ones nobody needs on screen.
 Copies every table in link order and prints source and app counts per table. (`--to-env VAR` copies into the
 mysql:// address in VAR instead of this computer's app; NeoApps Cloud uses it.) Ids are kept. Rows belong to the
 app's owner; "Created by" shows `import`. Safe to run again: existing rows are updated by key, new rows added.
-Rows deleted in the source are **not** deleted in the app.
+Rows deleted in the source are **not** deleted in the app (copy lists tables where the app has more rows).
 
 ## 5. When the source changes
 
@@ -78,8 +102,9 @@ Rows deleted in the source are **not** deleted in the app.
 
 ## Claude (MCP)
 
-The `neoapps_import_db` tool does the same (`step: "map" | "copy"`, `sourceEnv` = the variable's name, or
-`sqliteFile`). The user sets the variable in their own terminal; never ask for a password in the chat.
+The `neoapps_import_db` tool does the same (`step: "map" | "copy" | "tables"`, `sourceEnv` = the variable's name, or
+`sqliteFile`; `only`, `filters`, `search`). Results carry a `notice` the assistant passes on: copy only data the user may
+copy, keep few tables, respect shared servers, nothing is deleted. The user sets the variable in their own terminal; never ask for a password in the chat.
 
 ## Limits
 
