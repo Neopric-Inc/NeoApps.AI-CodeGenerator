@@ -297,18 +297,30 @@ public sealed class NeoAppsTools(
         """)]
     public Task<object> ImportDb(
         [Description("App name (PascalCase), e.g. Chinook.")] string name,
-        [Description("map | copy")] string step = "map",
+        [Description("map | copy | tables (list/search the mapped tables with their size)")] string step = "map",
         [Description("Name of the environment variable holding the source address (default NEOAPPS_SOURCE_DB).")] string? sourceEnv = null,
         [Description("Path to a SQLite file, instead of sourceEnv.")] string? sqliteFile = null,
         [Description("Advanced (NeoApps Cloud): name of an environment variable holding the mysql:// address of the database to copy into, instead of this computer's app.")] string? targetEnv = null,
+        [Description("map: keep only these source tables (comma-separated); the rest are skipped.")] string? only = null,
+        [Description("map: row filters as JSON, {\"Gene\": {\"where\": \"biotype = 'protein_coding'\", \"limit\": 5000}}; where is one condition, limit a row count; null removes it.")] string? filters = null,
+        [Description("tables: words to look for in table and column names.")] string? search = null,
         CancellationToken ct = default)
     {
         name = ProjectStore.ValidateName(name);
         step = step.Trim().ToLowerInvariant();
-        if (step is not ("map" or "copy")) throw new McpException("step is map or copy.");
-        var source = DbImport.ResolveSource(sqliteFile, sourceEnv);
+        if (step is not ("map" or "copy" or "tables")) throw new McpException("step is map, copy or tables.");
         var dir = store.ProjectDir(name);
         var mapFile = Path.Combine(dir, "import.map.json");
+        if (step == "tables")
+        {
+            if (!File.Exists(mapFile)) throw new McpException("No import.map.json yet: run step map first.");
+            var m = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(mapFile)) as System.Text.Json.Nodes.JsonObject ?? throw new McpException("import.map.json is not a JSON object.");
+            return Task.FromResult<object>(new { app = name, notice = DbImport.Notice, tables = DbImport.Tables(m, search) });
+        }
+        var source = DbImport.ResolveSource(sqliteFile, sourceEnv);
+        var onlyList = only?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+        var filterJson = string.IsNullOrWhiteSpace(filters) ? null : System.Text.Json.Nodes.JsonNode.Parse(filters) as System.Text.Json.Nodes.JsonObject
+            ?? throw new McpException("filters must be a JSON object of table name to {where, limit}.");
         return jobs.StartAndWaitAsync("import-db", name, async (job, jct) =>
         {
             if (step == "map")
@@ -318,6 +330,15 @@ public sealed class NeoAppsTools(
                 var existing = File.Exists(mapFile) ? System.Text.Json.Nodes.JsonNode.Parse(await File.ReadAllTextAsync(mapFile, jct)) as System.Text.Json.Nodes.JsonObject : null;
                 var warnings = new List<string>();
                 var map = DbImport.BuildMap(source, tables, existing, warnings);
+                if (onlyList is { Count: > 0 } || filterJson != null)
+                {
+                    DbImport.Choose(map, onlyList, null, null, filterJson);
+                    warnings = warnings.Where(w => !w.Contains("tables: apps work best") && !w.Contains(" is large ") && !w.Contains("tables kept hold")).ToList();
+                    var recheck = new List<string>();
+                    DbImport.BuildMap(source, tables, map, recheck); // size notes for what is kept now
+                    warnings.AddRange(recheck.Where(w => w.Contains("tables: apps work best") || w.Contains(" is large ") || w.Contains("tables kept hold")));
+                }
+                DbImport.Validate(map); // a refused filter or name changes nothing on disk
                 Directory.CreateDirectory(dir);
                 await File.WriteAllTextAsync(mapFile, DbImport.MapJson(map), jct);
                 await File.WriteAllTextAsync(Path.Combine(dir, "schema.sql"), DbImport.SchemaSql(map), jct);
@@ -327,7 +348,8 @@ public sealed class NeoAppsTools(
                 var built = store.Get(name) != null;
                 return new
                 {
-                    app = name, source = new { source.Engine, source.Database, source.Schema }, tables = tables.Count, warnings,
+                    app = name, source = new { source.Engine, source.Database, source.Schema }, tables = tables.Count,
+                    kept = DbImport.Tables(map, null).Count(t => !t.Skipped), warnings, notice = DbImport.Notice,
                     files = wroteUi ? new[] { mapFile, Path.Combine(dir, "schema.sql"), uiFile } : new[] { mapFile, Path.Combine(dir, "schema.sql") },
                     next = built
                         ? $"The app exists: preview, then apply the schema with `neoapps evolve {name} --name 'source changes'`, then run step copy."
@@ -351,7 +373,9 @@ public sealed class NeoAppsTools(
             return new
             {
                 app = name, tables = counts,
-                mismatches = counts.Where(c => c.Source != c.App).Select(c => $"{c.Table}: {c.Source} in source, {c.App} in app").ToArray(),
+                mismatches = counts.Where(c => c.App < c.Source).Select(c => $"{c.Table}: {c.Source} in source, only {c.App} in app").ToArray(),
+                extra = counts.Where(c => c.App > c.Source).Select(c => $"{c.Table}: {c.App - c.Source} more row(s) in the app than this copy brought (added in the app or by an earlier copy; nothing is deleted)").ToArray(),
+                notice = DbImport.Notice,
                 note = "Rows removed from the source are not removed from the app. If the app is running, refresh the page to see the data.",
             };
         }, ct);

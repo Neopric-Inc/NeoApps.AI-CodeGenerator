@@ -48,7 +48,9 @@ public static class Cli
                 {
                     // neoapps import-db <App> map|copy [--from file.sqlite | --from-env VAR]  (address in NEOAPPS_SOURCE_DB by default)
                     var step = args.Length > 2 && !args[2].StartsWith('-') ? args[2] : "map";
-                    return await RunJob(jobs, tools.ImportDb(Name(), step, Opt("--from-env"), Opt("--from"), Opt("--to-env"), ct)) ? 0 : 1;
+                    if (step == "tables") { Print(await tools.ImportDb(Name(), "tables", search: Opt("--search"), ct: ct)); return 0; }
+                    return await RunJob(jobs, tools.ImportDb(Name(), step, Opt("--from-env"), Opt("--from"), Opt("--to-env"), Opt("--only"),
+                        Opt("--filters") is { } ff ? await File.ReadAllTextAsync(ff) : null, Opt("--search"), ct)) ? 0 : 1;
                 }
                 case "evolve":
                 {
@@ -224,7 +226,7 @@ public static class Cli
 
           new <App> --schema <file.sql> [--ui ui.config.json] [--template app|dnd] [--no-frontend] [--keep-db] [--deploy] [--consumer]
                                   generate database + .NET 10 API + React UI, optionally run it in Docker
-          import-db <App> map|copy [--from file.sqlite] [--from-env VAR]
+          import-db <App> map|copy|tables [--from file.sqlite] [--from-env VAR] [--only T1,T2] [--filters f.json] [--search words]
                                   build an app on an existing MySQL/PostgreSQL/SQL Server/SQLite database. map: writes
                                   workspace/<App>/import.map.json + schema.sql + a starter ui.config.json; then `new`.
                                   copy: copies the rows in (ids kept, re-runnable). The address is read from

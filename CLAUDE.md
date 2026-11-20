@@ -31,7 +31,9 @@ Work in the app's planning folder `workspace/<App>/` (git-ignored): `requirement
    `export NEOAPPS_SOURCE_DB='postgres://user:pass@host:5432/db'` in their own terminal (never ask for the password in
    chat), run `./neoapps import-db <App> map` (SQLite: `--from file.sqlite`; MCP: `neoapps_import_db`), review
    `import.map.json` with them (rename, `"skip": true` for tables they don't need), preview and `new` as below, then
-   `./neoapps import-db <App> copy` (ids kept, re-runnable). Source changed: `map`, `evolve`, `copy`. See `docs/IMPORT-DB.md`.
+   `./neoapps import-db <App> copy` (ids kept, re-runnable). Big or public databases: `import-db <App> tables --search …`, then
+   `map --only T1,T2 --filters f.json` (row conditions/limits); tell the user the result's `notice`. Source changed: `map`,
+   `evolve`, `copy`. See `docs/IMPORT-DB.md`.
 3. **Design the UI** (recommended): write `workspace/<App>/ui.config.json` following `neoapps_ui_config_guide`
    (`src/NeoApps.Mcp/Tools/UiConfigTools.cs`). It sets menu groups, labels, select options and colours for
    status/type columns, list columns, form order, dashboard cards, theme, and `roles` matching how the user described

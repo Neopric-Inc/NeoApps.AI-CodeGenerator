@@ -30,7 +30,11 @@ public static class DbImport
 
     public sealed record SrcColumn(string Name, string Type, long? Length, int? Precision, int? Scale, bool Nullable, bool Identity);
     public sealed record SrcForeignKey(List<string> Columns, string RefTable, List<string> RefColumns);
-    public sealed record SrcTable(string Name, List<SrcColumn> Columns, List<string> PrimaryKey, List<SrcForeignKey> ForeignKeys);
+    public sealed record SrcTable(string Name, List<SrcColumn> Columns, List<string> PrimaryKey, List<SrcForeignKey> ForeignKeys)
+    {
+        public long? Rows { get; init; }    // estimate (statistics) except SQLite (counted)
+        public double? SizeMb { get; init; }
+    }
 
     public sealed record Source(string Engine, string ConnectionString, string Host, string Database, string? Schema)
     {
@@ -128,12 +132,45 @@ public static class DbImport
     public static List<SrcTable> ReadSchema(Source s)
     {
         using var c = s.Open();
-        return s.Engine switch
+        var tables = s.Engine switch
         {
             "sqlite" => ReadSqlite(c),
             "mysql" => ReadInformationSchema(c, s, "DATABASE()"),
             _ => ReadInformationSchema(c, s, "@schema"),
         };
+        Dictionary<string, (long? Rows, double? Mb)> stats;
+        try { stats = Stats(c, s, tables); }
+        catch (DbException) { stats = new(); } // statistics are a hint; no permission to read them is fine
+        return tables.Select(t => stats.TryGetValue(t.Name, out var st) ? t with { Rows = st.Rows, SizeMb = st.Mb } : t).ToList();
+    }
+
+    /// <summary>Row counts and sizes from the engine's statistics (cheap; estimates), so big tables can be left out or filtered.</summary>
+    static Dictionary<string, (long? Rows, double? Mb)> Stats(DbConnection c, Source s, List<SrcTable> tables)
+    {
+        (string, object)[] ps = s.Schema != null ? [("@schema", s.Schema)] : [];
+        var sql = s.Engine switch
+        {
+            "mysql" => "SELECT TABLE_NAME AS t, TABLE_ROWS AS r, (DATA_LENGTH + INDEX_LENGTH) / 1048576.0 AS mb FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_TYPE = 'BASE TABLE'",
+            "postgres" => @"SELECT c.relname AS t, CASE WHEN c.reltuples < 0 THEN NULL ELSE c.reltuples::bigint END AS r, pg_total_relation_size(c.oid) / 1048576.0 AS mb
+                FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname = @schema AND c.relkind IN ('r', 'p')",
+            "sqlserver" => @"SELECT t.name AS t,
+                    (SELECT SUM(p.rows) FROM sys.partitions p WHERE p.object_id = t.object_id AND p.index_id IN (0, 1)) AS r,
+                    (SELECT SUM(a.total_pages) * 8 / 1024.0 FROM sys.partitions p JOIN sys.allocation_units a ON a.container_id = p.partition_id WHERE p.object_id = t.object_id) AS mb
+                FROM sys.tables t WHERE SCHEMA_NAME(t.schema_id) = @schema",
+            _ => null,
+        };
+        var result = new Dictionary<string, (long? Rows, double? Mb)>(StringComparer.OrdinalIgnoreCase);
+        if (sql != null)
+            foreach (var r in Rows(c, sql, ps))
+                result[Str(r["t"])] = (Num(r["r"]), r["mb"] is null ? null : Math.Round(Convert.ToDouble(r["mb"]), 1));
+        else
+            foreach (var t in tables)
+            {
+                using var cmd = c.CreateCommand();
+                cmd.CommandText = $"SELECT COUNT(*) FROM {s.Q(t.Name)}";
+                result[t.Name] = (Convert.ToInt64(cmd.ExecuteScalar()), null);
+            }
+        return result;
     }
 
     static List<Dictionary<string, object?>> Rows(DbConnection c, string sql, params (string, object)[] ps)
@@ -377,15 +414,25 @@ public static class DbImport
             if (mode == "surrogate") warnings.Add($"{t.Name}: its key ({string.Join(", ", sourceKey)}) isn't a single whole number, so the app adds {keyTarget} and keeps the old key unique (re-runs update by it).");
             if (mode == "none") warnings.Add($"{t.Name}: no primary key; each copy replaces all its rows.");
             var key = new JsonObject { ["mode"] = mode, ["target"] = keyTarget, ["source"] = new JsonArray(sourceKey.Select(k => (JsonNode)JsonValue.Create(k)!).ToArray()) };
-            var table = new JsonObject { ["source"] = t.Name, ["target"] = targetOf[t.Name], ["key"] = key, ["columns"] = columns, ["foreignKeys"] = fks };
+            var table = new JsonObject { ["source"] = t.Name, ["target"] = targetOf[t.Name] };
+            if (t.Rows != null) table["rows"] = t.Rows;
+            if (t.SizeMb != null) table["sizeMb"] = t.SizeMb;
+            table["key"] = key; table["columns"] = columns; table["foreignKeys"] = fks;
             if (prev?["skip"]?.GetValue<bool>() == true) table["skip"] = true;
+            if (prev?["where"] is JsonNode w) table["where"] = w.DeepClone();
+            if (prev?["limit"] is JsonNode l) table["limit"] = l.DeepClone();
             tables.Add(table);
         }
         foreach (var gone in old.Keys.Where(k => !src.Any(t => t.Name.Equals(k, StringComparison.OrdinalIgnoreCase))))
             warnings.Add($"{gone}: no longer in the source; removed from the map (the app's table stays until you drop it).");
 
-        var active = tables.OfType<JsonObject>().Count(t => t["skip"]?.GetValue<bool>() != true);
-        if (active > 15) warnings.Add($"{active} tables: apps work best with 3-15. Set \"skip\": true on tables the app doesn't need.");
+        var kept = tables.OfType<JsonObject>().Where(t => t["skip"]?.GetValue<bool>() != true).ToList();
+        if (kept.Count > 15) warnings.Add($"{kept.Count} tables: apps work best with 3-15. Keep only the tables the app needs (skip the rest).");
+        foreach (var t in kept.Where(t => t["where"] == null && t["limit"] == null &&
+            ((t["rows"]?.GetValue<long>() ?? 0) > 1_000_000 || (t["sizeMb"]?.GetValue<double>() ?? 0) > 1024)))
+            warnings.Add($"{t["source"]} is large (about {t["rows"]?.GetValue<long>():N0} rows, {t["sizeMb"]?.GetValue<double>():N0} MB): skip it, or copy only the rows needed (a filter or a row limit).");
+        var mb = kept.Sum(t => t["where"] == null && t["limit"] == null ? t["sizeMb"]?.GetValue<double>() ?? 0 : 0);
+        if (mb > 2048) warnings.Add($"The tables kept hold about {mb:N0} MB; copying it all takes long and may not fit the app's database. Filter or skip tables.");
         return new JsonObject
         {
             ["source"] = new JsonObject { ["engine"] = s.Engine, ["host"] = s.Host, ["database"] = s.Database, ["schema"] = s.Schema },
@@ -406,9 +453,31 @@ public static class DbImport
                 .Concat((t["foreignKeys"] as JsonArray ?? []).OfType<JsonObject>().SelectMany(f => new[] { G(f["column"]), G(f["refTable"]), G(f["refColumn"]) }));
             if (names.FirstOrDefault(n => !SafeName.IsMatch(n)) is { } bad)
                 throw new InvalidOperationException($"import.map.json: '{bad}' in {G(t["source"])} isn't a valid name (lowercase letters, digits and _, starting with a letter).");
+            if (t["where"] is JsonNode wn && WhereProblem(wn.GetValue<string>()) is { } why)
+                throw new InvalidOperationException($"import.map.json: the filter on {G(t["source"])} {why}.");
+            if (t["limit"] is JsonNode ln && (!ln.AsValue().TryGetValue<long>(out var lim) || lim is < 1 or > 10_000_000))
+                throw new InvalidOperationException($"import.map.json: the row limit on {G(t["source"])} must be a whole number from 1 to 10,000,000.");
             if (ActiveColumns(t).FirstOrDefault(c => !SafeType.IsMatch(G(c["type"]))) is { } badType)
                 throw new InvalidOperationException($"import.map.json: {G(t["source"])}.{G(badType["source"])} has type '{G(badType["type"])}'; use a MySQL type like VARCHAR(100), INT or DECIMAL(10,2), or set \"skip\": true.");
         }
+    }
+
+    static readonly Regex Forbidden = new(@"\b(insert|update|delete|drop|alter|create|grant|revoke|truncate|exec|execute|call|merge|replace|into|outfile|dumpfile|load_file|copy|sleep|pg_sleep|benchmark|waitfor|shutdown|kill|lock|handler|attach|detach|pragma|vacuum|set|declare|xp_\w+|sp_\w+|dbms_\w+|lo_\w+|pg_read\w*|pg_write\w*)\b",
+        RegexOptions.IgnoreCase);
+
+    /// <summary>
+    /// A row filter is one condition (the part after WHERE), e.g. biotype = 'protein_coding' AND seq_region_id &lt; 100.
+    /// It runs only in a read-only session; anything that could change data or reach outside the query is refused.
+    /// </summary>
+    public static string? WhereProblem(string where)
+    {
+        if (string.IsNullOrWhiteSpace(where)) return "is empty";
+        if (where.Length > 2000) return "is too long (2,000 characters at most)";
+        if (where.Contains(';') || where.Contains("--") || where.Contains("/*") || where.Contains("*/") || where.Contains('#') || where.Contains('\\'))
+            return "may not contain ; -- /* */ # or \\";
+        if (Forbidden.Match(where) is { Success: true } m) return $"may not use '{m.Value}' (only a condition, like status = 'open' AND created >= '2025-01-01')";
+        if (where.Count(ch => ch == '\'') % 2 != 0) return "has an unclosed quote";
+        return null;
     }
 
     static IEnumerable<JsonObject> Active(JsonObject map) => (map["tables"] as JsonArray ?? []).OfType<JsonObject>().Where(t => t["skip"]?.GetValue<bool>() != true);
@@ -432,6 +501,51 @@ public static class DbImport
         foreach (var t in list) Visit(t, new HashSet<string>());
         return done;
     }
+
+    /// <summary>
+    /// Keeps only the given source tables (when <paramref name="only"/> has any), skips or brings back tables, and sets
+    /// row filters: {"Gene": {"where": "biotype = 'protein_coding'", "limit": 5000}} (null or "" removes one).
+    /// </summary>
+    public static void Choose(JsonObject map, IEnumerable<string>? only, IEnumerable<string>? skip, IEnumerable<string>? include, JsonObject? filters)
+    {
+        bool In(IEnumerable<string>? list, string n) => list?.Any(x => x.Equals(n, StringComparison.OrdinalIgnoreCase)) == true;
+        var onlyList = only?.ToList();
+        foreach (var t in (map["tables"] as JsonArray ?? []).OfType<JsonObject>())
+        {
+            var n = G(t["source"]);
+            if (onlyList is { Count: > 0 }) { if (In(onlyList, n)) t.Remove("skip"); else t["skip"] = true; }
+            if (In(skip, n)) t["skip"] = true;
+            if (In(include, n)) t.Remove("skip");
+            var f = filters?.FirstOrDefault(kv => kv.Key.Equals(n, StringComparison.OrdinalIgnoreCase)).Value as JsonObject;
+            if (f == null) continue;
+            if (f.ContainsKey("where")) { if (f["where"]?.GetValue<string>() is { Length: > 0 } w) t["where"] = w.Trim(); else t.Remove("where"); }
+            if (f.ContainsKey("limit")) { if (f["limit"] is JsonValue lv && lv.TryGetValue<long>(out var l)) t["limit"] = l; else t.Remove("limit"); }
+        }
+        var missing = (onlyList ?? []).Concat(skip ?? []).Concat(include ?? []).Concat(filters?.Select(kv => kv.Key) ?? [])
+            .Where(n => !(map["tables"] as JsonArray ?? []).OfType<JsonObject>().Any(t => G(t["source"]).Equals(n, StringComparison.OrdinalIgnoreCase))).Distinct().ToList();
+        if (missing.Count > 0) throw new InvalidOperationException($"No table named {string.Join(", ", missing)} in the source. Use the source table names from the map.");
+    }
+
+    public sealed record TableInfo(string Source, string Target, long? Rows, double? SizeMb, bool Skipped, string? Where, long? Limit, string[] Columns);
+
+    /// <summary>The mapped tables, biggest first; with words, only tables whose name or a column name contains one of them.</summary>
+    public static List<TableInfo> Tables(JsonObject map, string? search)
+    {
+        var words = (search ?? "").Split(new[] { ' ', ',' }, StringSplitOptions.RemoveEmptyEntries).Select(w => w.ToLowerInvariant()).ToList();
+        return (map["tables"] as JsonArray ?? []).OfType<JsonObject>().Select(t => new TableInfo(G(t["source"]), G(t["target"]),
+                t["rows"]?.GetValue<long>(), t["sizeMb"]?.GetValue<double>(), t["skip"]?.GetValue<bool>() == true,
+                t["where"]?.GetValue<string>(), t["limit"]?.GetValue<long>(),
+                (t["columns"] as JsonArray ?? []).OfType<JsonObject>().Select(c => G(c["source"])).ToArray()))
+            .Where(t => words.Count == 0 || words.Any(w => t.Source.ToLowerInvariant().Contains(w) || t.Columns.Any(c => c.ToLowerInvariant().Contains(w))))
+            .OrderByDescending(t => t.SizeMb ?? 0).ThenByDescending(t => t.Rows ?? 0).ToList();
+    }
+
+    /// <summary>What an import can and can't do, for the assistant to tell the user before copying.</summary>
+    public const string Notice =
+        "Copy only data the user may copy. The source is only read (suggest a read-only user). Apps work best with 3-15 tables; " +
+        "keep the tables the app needs and filter big ones (each copy runs up to 30 minutes, and the app's database has a size limit). " +
+        "Public or shared databases (research servers and the like) limit heavy use: copy only the rows needed. " +
+        "Deleted source rows are not deleted in the app; binary columns, views and procedures are not copied.";
 
     /// <summary>schema.sql for the app, following the NeoApps rules.</summary>
     public static string SchemaSql(JsonObject map)
@@ -504,6 +618,14 @@ public static class DbImport
     {
         Validate(map);
         using var src = s.Open();
+        // the source is only read: refuse writes for this session where the engine can (filters are checked too)
+        try
+        {
+            using var ro = src.CreateCommand();
+            ro.CommandText = s.Engine switch { "postgres" => "SET SESSION CHARACTERISTICS AS TRANSACTION READ ONLY", "mysql" => "SET SESSION TRANSACTION READ ONLY", _ => "" };
+            if (ro.CommandText.Length > 0) ro.ExecuteNonQuery();
+        }
+        catch (DbException) { log("note: the source doesn't support read-only sessions; filters are still checked"); }
         using var dst = new MySqlConnection(targetConnection);
         dst.Open();
         // rows belong to the app's workspace owner: the owner_name the first member signs in with
@@ -536,8 +658,14 @@ public static class DbImport
                 var all = names.Concat(stamp).ToList();
                 var updates = names.Where(n => n != G(t["key"]!["target"])).Select(n => $"`{n}` = VALUES(`{n}`)").Append("modifiedAt = CURRENT_TIMESTAMP").Append("isActive = 1");
 
+                var where = t["where"]?.GetValue<string>();
+                var limit = t["limit"]?.GetValue<long>();
+                var filter = where != null ? $" WHERE ({where})" : "";
                 var cmd = src.CreateCommand();
-                cmd.CommandText = $"SELECT {string.Join(", ", cols.Select(c => s.Q(G(c["source"]))))} FROM {s.QTable(G(t["source"]))}";
+                cmd.CommandText = s.Engine == "sqlserver" && limit != null
+                    ? $"SELECT TOP ({limit}) {string.Join(", ", cols.Select(c => s.Q(G(c["source"]))))} FROM {s.QTable(G(t["source"]))}{filter}"
+                    : $"SELECT {string.Join(", ", cols.Select(c => s.Q(G(c["source"]))))} FROM {s.QTable(G(t["source"]))}{filter}{(limit != null ? $" LIMIT {limit}" : "")}";
+                cmd.CommandTimeout = 1800;
                 var reader = cmd.ExecuteReader();
                 var rows = new List<object?[]>();
                 batch = Math.Max(1, Math.Min(batch, 60_000 / all.Count)); // MySQL allows 65,535 parameters per statement
@@ -573,18 +701,21 @@ public static class DbImport
                 Flush();
                 reader.Dispose(); cmd.Dispose(); // one open command per connection (Postgres, SQL Server)
                 long srcCount;
-                using (var cnt = src.CreateCommand()) { cnt.CommandText = $"SELECT COUNT(*) FROM {s.QTable(G(t["source"]))}"; srcCount = Convert.ToInt64(cnt.ExecuteScalar()); }
+                using (var cnt = src.CreateCommand()) { cnt.CommandText = $"SELECT COUNT(*) FROM {s.QTable(G(t["source"]))}{filter}"; cnt.CommandTimeout = 1800; srcCount = Convert.ToInt64(cnt.ExecuteScalar()); }
+                if (limit != null) srcCount = Math.Min(srcCount, limit.Value);
                 var appCount = Convert.ToInt64(Scalar(dst, $"SELECT COUNT(*) FROM `{target}`"));
-                log($"{target}: {copied} row(s) copied ({srcCount} in source, {appCount} in app)");
+                log($"{target}: {copied} row(s) copied ({srcCount} in source{(filter.Length > 0 || limit != null ? " with the filter" : "")}, {appCount} in app)");
                 result.Add(new TableCount(target, srcCount, appCount));
             }
             // links that point nowhere (the source had them too, or a table was skipped)
+            var kept = Active(map).Select(t => G(t["target"])).ToHashSet();
             foreach (var t in Active(map))
-                foreach (var fk in (t["foreignKeys"] as JsonArray ?? []).OfType<JsonObject>())
+                foreach (var fk in (t["foreignKeys"] as JsonArray ?? []).OfType<JsonObject>().Where(f => kept.Contains(G(f["refTable"]))))
                 {
                     var n = Convert.ToInt64(Scalar(dst, $@"SELECT COUNT(*) FROM `{G(t["target"])}` c LEFT JOIN `{G(fk["refTable"])}` p ON p.`{G(fk["refColumn"])}` = c.`{G(fk["column"])}`
                         WHERE c.`{G(fk["column"])}` IS NOT NULL AND p.`{G(fk["refColumn"])}` IS NULL"));
-                    if (n > 0) log($"warning: {G(t["target"])}.{G(fk["column"])}: {n} row(s) point to a missing {G(fk["refTable"])}");
+                    if (n > 0) log($"warning: {G(t["target"])}.{G(fk["column"])}: {n} row(s) point to a {G(fk["refTable"])} that wasn't copied" +
+                        (G(t["target"]) is var tt && Active(map).Any(x => G(x["target"]) == G(fk["refTable"]) && (x["where"] != null || x["limit"] != null)) ? " (it is filtered)" : ""));
                 }
         }
         finally { Exec(dst, "SET SESSION foreign_key_checks = 1"); }
