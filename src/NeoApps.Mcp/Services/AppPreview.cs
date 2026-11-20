@@ -28,7 +28,7 @@ public static class AppPreview
         "ai_files", "ai_chunks", "ai_conversations", "ai_messages", "ai_runs", "versioninfo", "user_tenants", "login_attempts", "user_security", "number_sequences", "background_jobs", "background_job_events", "user_notifications", "user_notification_settings",
     };
     // Column names become C# property names in the generated API, unescaped.
-    private static readonly HashSet<string> CSharpWords = new(StringComparer.Ordinal)
+    internal static readonly HashSet<string> CSharpWords = new(StringComparer.Ordinal)
     {
         "abstract", "as", "base", "bool", "break", "byte", "case", "catch", "char", "checked", "class", "const", "continue",
         "decimal", "default", "delegate", "do", "double", "else", "enum", "event", "explicit", "extern", "false", "finally",
@@ -38,7 +38,7 @@ public static class AppPreview
         "this", "throw", "true", "try", "typeof", "uint", "ulong", "unchecked", "unsafe", "ushort", "using", "virtual", "void",
         "volatile", "while",
     };
-    private static readonly HashSet<string> SqlWords = new(StringComparer.OrdinalIgnoreCase)
+    internal static readonly HashSet<string> SqlWords = new(StringComparer.OrdinalIgnoreCase)
     {
         "order", "group", "key", "condition", "desc", "asc", "select", "from", "where", "table", "index", "range", "rank", "limit", "option",
     };

@@ -282,6 +282,73 @@ public sealed class NeoAppsTools(
         }, ct);
     }
 
+    [McpServerTool(Name = "neoapps_import_db")]
+    [Description("""
+        Builds an app on top of an existing database (MySQL, PostgreSQL, SQL Server or SQLite) and copies its data in.
+        step "map": reads the source schema and writes workspace/<name>/import.map.json (source -> app names; editable:
+        rename targets or set "skip": true), schema.sql following the NeoApps rules, and a starter ui.config.json (only if
+        none exists). Then preview and create the app as usual with that schema.sql and ui.config.json.
+        step "copy": copies the rows into the app's database, keeping ids so relations hold. Safe to run again: rows are
+        updated by key. When the source schema changes: run "map" again (names already in the map are kept), apply the new
+        schema.sql with neoapps_evolve_app, then "copy".
+        The source address is read from an environment variable on this computer (default NEOAPPS_SOURCE_DB, e.g.
+        postgres://user:password@host:5432/db) or is a SQLite file path. Never ask the user to paste a password into the
+        chat: have them set the variable in their own terminal. Long-running: returns a job.
+        """)]
+    public Task<object> ImportDb(
+        [Description("App name (PascalCase), e.g. Chinook.")] string name,
+        [Description("map | copy")] string step = "map",
+        [Description("Name of the environment variable holding the source address (default NEOAPPS_SOURCE_DB).")] string? sourceEnv = null,
+        [Description("Path to a SQLite file, instead of sourceEnv.")] string? sqliteFile = null,
+        CancellationToken ct = default)
+    {
+        name = ProjectStore.ValidateName(name);
+        step = step.Trim().ToLowerInvariant();
+        if (step is not ("map" or "copy")) throw new McpException("step is map or copy.");
+        var source = DbImport.ResolveSource(sqliteFile, sourceEnv);
+        var dir = store.ProjectDir(name);
+        var mapFile = Path.Combine(dir, "import.map.json");
+        return jobs.StartAndWaitAsync("import-db", name, async (job, jct) =>
+        {
+            if (step == "map")
+            {
+                job.Log($"Reading the {source.Engine} database '{source.Database}'…");
+                var tables = await Task.Run(() => DbImport.ReadSchema(source), jct);
+                var existing = File.Exists(mapFile) ? System.Text.Json.Nodes.JsonNode.Parse(await File.ReadAllTextAsync(mapFile, jct)) as System.Text.Json.Nodes.JsonObject : null;
+                var warnings = new List<string>();
+                var map = DbImport.BuildMap(source, tables, existing, warnings);
+                Directory.CreateDirectory(dir);
+                await File.WriteAllTextAsync(mapFile, DbImport.MapJson(map), jct);
+                await File.WriteAllTextAsync(Path.Combine(dir, "schema.sql"), DbImport.SchemaSql(map), jct);
+                var uiFile = Path.Combine(dir, "ui.config.json");
+                var wroteUi = !File.Exists(uiFile);
+                if (wroteUi) await File.WriteAllTextAsync(uiFile, DbImport.MapJson(DbImport.StarterUi(name, map)), jct);
+                var built = store.Get(name) != null;
+                return new
+                {
+                    app = name, source = new { source.Engine, source.Database, source.Schema }, tables = tables.Count, warnings,
+                    files = wroteUi ? new[] { mapFile, Path.Combine(dir, "schema.sql"), uiFile } : new[] { mapFile, Path.Combine(dir, "schema.sql") },
+                    next = built
+                        ? $"The app exists: preview, then apply the schema with `neoapps evolve {name} --name 'source changes'`, then run step copy."
+                        : $"Preview (`neoapps preview {name}`), then `neoapps new {name} --schema workspace/{name}/schema.sql --ui workspace/{name}/ui.config.json`, then run step copy.",
+                };
+            }
+            var state = store.Require(name);
+            if (!File.Exists(mapFile)) throw new InvalidOperationException("No import.map.json yet: run step map first.");
+            var saved = System.Text.Json.Nodes.JsonNode.Parse(await File.ReadAllTextAsync(mapFile, jct)) as System.Text.Json.Nodes.JsonObject
+                ?? throw new InvalidOperationException("import.map.json is not a JSON object.");
+            await EnsureInfraAsync(job, jct);
+            job.Log($"Copying from the {source.Engine} database '{source.Database}' into {state.DatabaseName}…");
+            var counts = await Task.Run(() => DbImport.Copy(source, saved, migrations.ConnectionString(state), state.AdminUsername ?? "admin", job.Log, jct), jct);
+            return new
+            {
+                app = name, tables = counts,
+                mismatches = counts.Where(c => c.Source != c.App).Select(c => $"{c.Table}: {c.Source} in source, {c.App} in app").ToArray(),
+                note = "Rows removed from the source are not removed from the app. If the app is running, refresh the page to see the data.",
+            };
+        }, ct);
+    }
+
     [McpServerTool(Name = "neoapps_generate_frontend")]
     [Description("(Re)generates the React frontend for an existing app, wired to its API URL. Long-running: returns a job to poll.")]
     public Task<object> GenerateFrontend(
