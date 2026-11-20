@@ -7,7 +7,7 @@ import {
 import MenuIcon from "@mui/icons-material/Menu";
 import { useApp } from "./AppContext";
 import { Icon } from "./icons";
-import { extensions } from "../custom";
+import { extensions } from "./customExtensions";
 import { Breadcrumbs, markMenuNavigation } from "./Breadcrumbs";
 import { NotificationBell } from "./NotificationBell";
 

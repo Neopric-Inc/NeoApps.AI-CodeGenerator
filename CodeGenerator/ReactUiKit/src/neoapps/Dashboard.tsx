@@ -8,7 +8,7 @@ import { useApp } from "./AppContext";
 import { DataTable } from "./DataTable";
 import { Icon } from "./icons";
 import { useReferences } from "./useReferences";
-import { extensions } from "../custom";
+import { extensions } from "./customExtensions";
 
 async function loadCard(card: DashboardCard): Promise<number> {
   const now = new Date();
