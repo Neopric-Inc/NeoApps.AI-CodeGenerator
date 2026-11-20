@@ -27,6 +27,11 @@ Work in the app's planning folder `workspace/<App>/` (git-ignored): `requirement
      `workflow_trigger_conditions`, `ai_files`, `ai_chunks`, `ai_conversations`, `ai_messages`, `ai_runs`, `versioninfo`, `user_tenants`, `login_attempts`, `user_security`, `number_sequences`, `background_jobs`, `background_job_events`, `user_notifications`, `user_notification_settings` (use e.g. `members`, `automation_runs`)
    - plain `CREATE TABLE` / `INSERT` only: no `CREATE DATABASE`, `USE`, `DELIMITER`, procedures
    Save it as `workspace/<App>/schema.sql` (copy it to `samples/` if it should be committed).
+   **Existing database** (MySQL, PostgreSQL, SQL Server, SQLite): don't write the schema by hand. Have the user
+   `export NEOAPPS_SOURCE_DB='postgres://user:pass@host:5432/db'` in their own terminal (never ask for the password in
+   chat), run `./neoapps import-db <App> map` (SQLite: `--from file.sqlite`; MCP: `neoapps_import_db`), review
+   `import.map.json` with them (rename, `"skip": true` for tables they don't need), preview and `new` as below, then
+   `./neoapps import-db <App> copy` (ids kept, re-runnable). Source changed: `map`, `evolve`, `copy`. See `docs/IMPORT-DB.md`.
 3. **Design the UI** (recommended): write `workspace/<App>/ui.config.json` following `neoapps_ui_config_guide`
    (`src/NeoApps.Mcp/Tools/UiConfigTools.cs`). It sets menu groups, labels, select options and colours for
    status/type columns, list columns, form order, dashboard cards, theme, and `roles` matching how the user described

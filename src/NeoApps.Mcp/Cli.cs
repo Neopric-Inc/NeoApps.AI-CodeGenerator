@@ -10,7 +10,7 @@ namespace NeoApps.Mcp;
 /// </summary>
 public static class Cli
 {
-    private static readonly string[] Commands = ["new", "evolve", "migrate", "preview", "frontend", "ui", "deploy", "status", "test", "logs", "stop", "list", "doctor", "guidelines", "ui-guide", "infra", "cloud", "pack", "help", "--help", "-h"];
+    private static readonly string[] Commands = ["new", "import-db", "evolve", "migrate", "preview", "frontend", "ui", "deploy", "status", "test", "logs", "stop", "list", "doctor", "guidelines", "ui-guide", "infra", "cloud", "pack", "help", "--help", "-h"];
     private static readonly JsonSerializerOptions Pretty = new() { WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
 
     public static bool IsCommand(string arg) => Commands.Contains(arg, StringComparer.OrdinalIgnoreCase);
@@ -43,6 +43,12 @@ public static class Cli
                         ok = await RunJob(jobs, tools.DeployApp(Name(), Flag("--consumer"), ct: ct));
                     if (ok) Print(await tools.AppStatus(Name(), ct));
                     return ok ? 0 : 1;
+                }
+                case "import-db":
+                {
+                    // neoapps import-db <App> map|copy [--from file.sqlite | --from-env VAR]  (address in NEOAPPS_SOURCE_DB by default)
+                    var step = args.Length > 2 && !args[2].StartsWith('-') ? args[2] : "map";
+                    return await RunJob(jobs, tools.ImportDb(Name(), step, Opt("--from-env"), Opt("--from"), ct)) ? 0 : 1;
                 }
                 case "evolve":
                 {
@@ -218,6 +224,11 @@ public static class Cli
 
           new <App> --schema <file.sql> [--ui ui.config.json] [--template app|dnd] [--no-frontend] [--keep-db] [--deploy] [--consumer]
                                   generate database + .NET 10 API + React UI, optionally run it in Docker
+          import-db <App> map|copy [--from file.sqlite] [--from-env VAR]
+                                  build an app on an existing MySQL/PostgreSQL/SQL Server/SQLite database. map: writes
+                                  workspace/<App>/import.map.json + schema.sql + a starter ui.config.json; then `new`.
+                                  copy: copies the rows in (ids kept, re-runnable). The address is read from
+                                  NEOAPPS_SOURCE_DB (e.g. postgres://user:pass@host:5432/db), never stored
           evolve <App> [--schema new.sql] [--ui ui.config.json] [--name "add equipment"] [--plan] [--allow-destructive] [--renames renames.json] [--deploy]
                                   apply a requirements change to a running app, keeping its data: writes a C# migration
                                   (workspace/<App>/migrations), backs up, migrates, regenerates API + UI. --plan only shows it
