@@ -10,6 +10,8 @@
     <PackageReference Include="Azure.Messaging.ServiceBus" Version="7.20.1" />
     <PackageReference Include="Azure.Storage.Blobs" Version="12.26.0" />
     <PackageReference Include="Microsoft.Data.SqlClient" Version="7.1.2" />
+    <!-- Entra ID sign-in (managed identity, az login): a separate package since SqlClient 7 -->
+    <PackageReference Include="Microsoft.Data.SqlClient.Extensions.Azure" Version="7.1.2" />
     <PackageReference Include="MySqlConnector" Version="2.6.2" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
     <PackageReference Include="RabbitMQ.Client" Version="6.8.1" />
