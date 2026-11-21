@@ -40,7 +40,14 @@ try:
         except Exception: pass
         if p.poll() is not None: break
         time.sleep(1)
-    s, r = req("GET", "/health"); check("health", s == 200, r)
+    try: s, r = req("GET", "/health")
+    except Exception as e: s, r = 0, str(e)
+    if s != 200:
+        log.flush()
+        print("FAIL the API didn't start" + (f" (exit code {p.poll()})" if p.poll() is not None else "") + ". Last lines of its log:")
+        print("".join(open(log_path).readlines()[-40:]))
+        sys.exit(1)
+    check("health", True)
     s, r = req("GET", "/health/ready"); print("ready:", s, r)
     s, r = req("POST", "/v1/api/Token", {"username": proj["AdminUsername"], "password": proj["AdminPassword"]})
     tok = r.get("document", {}).get("accessToken") if isinstance(r, dict) else None
