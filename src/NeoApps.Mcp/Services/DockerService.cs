@@ -114,6 +114,7 @@ public sealed class DockerService(NeoAppsSettings settings, ProjectStore store)
             sb.AppendLine("        REACT_APP_API_BASE_URL: /v1/api/");
             sb.AppendLine("    environment:");
             sb.AppendLine($"      API_UPSTREAM: {Quote($"http://{ComposeProjectName(p.Name)}-api:8080")}");
+            sb.AppendLine($"      APP_NAME: {Quote(CloudBundle.DisplayName(p.Name))}");
             sb.AppendLine("    ports:");
             sb.AppendLine($"      - \"{p.WebPort}:80\"");
             sb.AppendLine("    depends_on: [api]");

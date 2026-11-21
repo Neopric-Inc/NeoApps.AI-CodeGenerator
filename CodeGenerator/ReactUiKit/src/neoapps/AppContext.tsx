@@ -77,6 +77,11 @@ export const AppProvider: React.FC<{ children?: React.ReactNode }> = ({ children
 
   const baseConfig = useMemo(() => mergeConfig(fileConfig, effectiveSaved(fileConfig, serverConfig)), [fileConfig, serverConfig]);
   const config = useMemo(() => (preview ? mergeConfig(preview) : baseConfig), [baseConfig, preview]);
+  // the page title is the app's name (the built page carries a placeholder, so one build serves any app)
+  useEffect(() => {
+    const name = (config as any)?.appName;
+    if (name && document.title !== name) document.title = name;
+  }, [config]);
   const tables = useMemo(() => {
     const all = resolveAll(schema, config);
     // columns hidden from this role by the API are left out of lists, forms and detail pages

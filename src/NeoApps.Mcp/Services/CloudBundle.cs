@@ -35,6 +35,13 @@ public sealed partial class CloudBundle(NeoAppsSettings settings)
     private static readonly HashSet<string> SkipDirs = new(StringComparer.OrdinalIgnoreCase)
         { "bin", "obj", "node_modules", ".git", ".vs", ".idea", "build", "dist", "App_Data", "TestResults" };
 
+    /// <summary>The app's name for people: MyTodoList → My Todo List, todo_app → Todo App.</summary>
+    public static string DisplayName(string app)
+    {
+        var s = Regex.Replace(app.Replace('_', ' ').Replace('-', ' '), "(?<=[a-z0-9])(?=[A-Z])", " ").Trim();
+        return s.Length == 0 ? "App" : char.ToUpperInvariant(s[0]) + s[1..];
+    }
+
     /// <summary>Lowercase DNS label for the app: ClaimKit → claimkit, Todo_App → todo-app.</summary>
     public static string Slug(string app)
     {
@@ -74,7 +81,7 @@ public sealed partial class CloudBundle(NeoAppsSettings settings)
         await using (var tar = new TarWriter(gz, TarEntryFormat.Pax))
         {
             await AddTextAsync(tar, "manifest.json", manifest.ToJsonString(new JsonSerializerOptions { WriteIndented = true }), ct);
-            await AddTextAsync(tar, "docker-compose.yml", ComposeFile(slug, hasWeb), ct);
+            await AddTextAsync(tar, "docker-compose.yml", ComposeFile(slug, hasWeb, p.Name), ct);
             await AddTextAsync(tar, "db/init.sql", initSql, ct);
             log("Packing the API");
             await AddTreeAsync(tar, p.BackendPath, "api", ct);
@@ -93,7 +100,7 @@ public sealed partial class CloudBundle(NeoAppsSettings settings)
     /// network; only the web container (for Caddy) and the API (for the shared RabbitMQ) join "neoapps".
     /// Connection strings, CORS origin and the JWT secret come from .env, which the host writes.
     /// </summary>
-    public static string ComposeFile(string slug, bool hasWeb)
+    public static string ComposeFile(string slug, bool hasWeb, string? appName = null)
     {
         var sb = new StringBuilder();
         sb.AppendLine($"# NeoApps Cloud bundle for '{slug}'. The host writes .env (mode 600) next to this file.");
@@ -129,6 +136,7 @@ public sealed partial class CloudBundle(NeoAppsSettings settings)
             sb.AppendLine("        REACT_APP_API_BASE_URL: /v1/api/");
             sb.AppendLine("    environment:");
             sb.AppendLine("      API_UPSTREAM: \"http://api:8080\"");
+            sb.AppendLine($"      APP_NAME: \"{DisplayName(appName ?? slug).Replace("\"", "")}\"");
             sb.AppendLine("    networks:");
             sb.AppendLine("      default: {}");
             sb.AppendLine("      neoapps:");

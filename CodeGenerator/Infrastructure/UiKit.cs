@@ -66,9 +66,28 @@ public static class UiKit
         WritePwa(generatorRoot, publicDir, config);
         // The API reads the "ai" section (assistant instructions, tools, workflows) from its own copy.
         var apiDir = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(frontendDir).TrimEnd('/', '\\'))!, "DotNet_Output", "solution", appName, appName + ".API");
-        if (Directory.Exists(apiDir)) File.WriteAllText(Path.Combine(apiDir, "ui.config.json"), config.ToJsonString(Pretty));
+        if (Directory.Exists(apiDir))
+        {
+            File.WriteAllText(Path.Combine(apiDir, "ui.config.json"), config.ToJsonString(Pretty));
+            // The app's own UI files are also served by its API (/app-files/...), so one built web image can serve any
+            // app: the web container asks its API for them (default.conf) and falls back to its own copies.
+            var appFiles = Path.Combine(apiDir, "app-files");
+            Directory.CreateDirectory(appFiles);
+            foreach (var f in AppFiles)
+                if (File.Exists(Path.Combine(publicDir, f))) File.Copy(Path.Combine(publicDir, f), Path.Combine(appFiles, f), true);
+        }
+        // the page title comes from the app's name at run time (nginx, or the app itself), not from the build
+        var index = Path.Combine(frontendDir, "index.html");
+        if (File.Exists(index))
+            File.WriteAllText(index, System.Text.RegularExpressions.Regex.Replace(
+                System.Text.RegularExpressions.Regex.Replace(File.ReadAllText(index), "<title>[^<]*</title>", "<title>__APP_NAME__</title>"),
+                "(name=\"apple-mobile-web-app-title\" content=\")[^\"]*\"", "${1}__APP_NAME__\""));
         Console.WriteLine($"UI kit installed (schema.json, ui.config.json{(uiConfigPath != null ? " from " + uiConfigPath : "")}).");
     }
+
+    /// <summary>Files that differ per app (everything else in the built UI is the same for every app).</summary>
+    public static readonly string[] AppFiles =
+        { "schema.json", "ui.config.json", "manifest.json", "icon.svg", "icon-192.png", "icon-512.png", "icon-maskable-512.png", "apple-touch-icon.png", "favicon-32.png" };
 
     /// <summary>
     /// Makes the app installable (desktop, Android, iPhone home screen): manifest.json named and coloured from

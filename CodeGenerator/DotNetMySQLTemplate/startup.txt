@@ -223,6 +223,15 @@ namespace {projectName}.API
             AuthGuard.Init(Configuration, Configuration.GetConnectionString("MySQLDatabase"));
             SessionCookie.Init(Configuration);
 
+            // the app's own UI files (schema, settings, icons): public, read by the web container
+            var appFiles = System.IO.Path.Combine(env.ContentRootPath, "app-files");
+            if (System.IO.Directory.Exists(appFiles))
+                app.UseStaticFiles(new StaticFileOptions
+                {
+                    FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(appFiles),
+                    RequestPath = "/app-files",
+                    OnPrepareResponse = c => c.Context.Response.Headers["Cache-Control"] = "no-cache",
+                });
             app.UseRouting();
             app.UseRateLimiter();
             app.UseCors("AllowAllHeaders");

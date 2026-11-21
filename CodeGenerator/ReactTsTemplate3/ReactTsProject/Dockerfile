@@ -14,6 +14,8 @@ RUN if [ -n "$REACT_APP_API_BASE_URL" ]; then sed -i "s#^REACT_APP_API_BASE_URL=
 FROM nginx:alpine
 # where /v1/api/ is proxied to (compose sets it to this app's API service)
 ENV API_UPSTREAM=http://api:8080
+# the app's name for the page title (one built image can serve any app)
+ENV APP_NAME=App
 COPY ./default.conf /etc/nginx/templates/default.conf.template
 COPY --from=build /app/build /usr/share/nginx/html
 EXPOSE 80
