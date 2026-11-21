@@ -29,5 +29,6 @@
   <ItemGroup>
     <!-- SQL Server setup script (neoapps new with db azuresql): the app runs it on first start against an empty database -->
     <None Include="db/**" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Include="app-files/**" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>
