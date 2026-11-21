@@ -26,4 +26,8 @@
     <ProjectReference Include="..\nkv.MicroService.Utility\nkv.MicroService.Utility.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- SQL Server setup script (neoapps new with db azuresql): the app runs it on first start against an empty database -->
+    <None Include="db/**" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>

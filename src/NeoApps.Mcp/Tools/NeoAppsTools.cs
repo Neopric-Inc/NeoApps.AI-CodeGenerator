@@ -110,8 +110,7 @@ public sealed class NeoAppsTools(
             var d => throw new McpException($"Unknown database '{d}'. Use mysql or azuresql."),
         };
         var dbEnv = provider == "azuresql" ? (string.IsNullOrWhiteSpace(databaseEnv) ? "NEOAPPS_AZURESQL" : databaseEnv.Trim()) : null;
-        if (dbEnv != null && string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable(dbEnv)))
-            throw new McpException($"Set {dbEnv} to the Azure SQL connection string in your own terminal first (e.g. `set -a; . ~/secrets/neoapps-azure-test.env; set +a`), then run this again. Never paste it into the chat.");
+
         var template = NormalizeTemplate(frontendTemplate);
         if (string.IsNullOrWhiteSpace(sqlSchema) == string.IsNullOrWhiteSpace(sqlFilePath))
             throw new McpException("Provide exactly one of sqlSchema or sqlFilePath.");
@@ -151,10 +150,20 @@ public sealed class NeoAppsTools(
             List<string>? azureWarnings = null;
             if (provider == "azuresql")
             {
-                job.Log($"Putting the database on Azure SQL ({dbEnv})...");
-                var res = AzureSqlTarget.Publish(migrations.ConnectionString(state), Environment.GetEnvironmentVariable(dbEnv!)!, resetDatabase, job.Log, jct);
-                azureWarnings = res.Warnings;
-                foreach (var w in res.Warnings) job.Log("note: " + w);
+                // The app sets up its own database on first start (Db.InitializeIfEmpty), as its own identity.
+                azureWarnings = new List<string>();
+                var script = AzureSqlTarget.Script(migrations.ConnectionString(state), azureWarnings);
+                var dbDir = Path.Combine(state.BackendPath!, $"{state.Name}.API", "db");
+                Directory.CreateDirectory(dbDir);
+                File.WriteAllText(Path.Combine(dbDir, "init.azuresql.sql"), script);
+                job.Log($"Wrote {state.Name}.API/db/init.azuresql.sql: the app creates its tables on first start.");
+                foreach (var w in azureWarnings) job.Log("note: " + w);
+                var cs = Environment.GetEnvironmentVariable(dbEnv!);
+                if (resetDatabase && !string.IsNullOrWhiteSpace(cs))
+                {
+                    var dropped = AzureSqlTarget.Reset(cs, job.Log);
+                    if (dropped > 0) job.Log($"Emptied the Azure SQL database ({dropped} tables) for the fresh app.");
+                }
                 SetDatabaseProvider(state, job);
             }
 
