@@ -69,16 +69,16 @@ namespace nkv.MicroService.API.Jobs
                 lock (SchemaLock)
                     if (!_schemaReady)
                     {
-                        Exec(c, @"CREATE TABLE IF NOT EXISTS background_jobs (job_id CHAR(32) NOT NULL PRIMARY KEY, kind VARCHAR(100) NOT NULL,
+                        Exec(c, Db.CreateTableIfMissing("background_jobs", @"job_id CHAR(32) NOT NULL PRIMARY KEY, kind VARCHAR(100) NOT NULL,
                             title VARCHAR(255) NULL, owner_name VARCHAR(255) NOT NULL, tenant_id INT NULL, user_id INT NOT NULL, username VARCHAR(255) NOT NULL,
                             status VARCHAR(30) NOT NULL, progress INT NULL, input JSON NULL, state JSON NULL, result JSON NULL, decision JSON NULL,
                             error TEXT NULL, attempts INT NOT NULL DEFAULT 0, createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
                             startedAt DATETIME NULL, finishedAt DATETIME NULL,
                             modifiedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                            KEY ix_jobs_owner (owner_name, user_id, createdAt), KEY ix_jobs_status (status))");
-                        Exec(c, @"CREATE TABLE IF NOT EXISTS background_job_events (event_id BIGINT AUTO_INCREMENT PRIMARY KEY, job_id CHAR(32) NOT NULL,
+                            KEY ix_jobs_owner (owner_name, user_id, createdAt), KEY ix_jobs_status (status)"));
+                        Exec(c, Db.CreateTableIfMissing("background_job_events", @"event_id BIGINT AUTO_INCREMENT PRIMARY KEY, job_id CHAR(32) NOT NULL,
                             level VARCHAR(10) NOT NULL, message VARCHAR(1000) NOT NULL, progress INT NULL, data JSON NULL,
-                            createdAt DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3), KEY ix_job_events (job_id, event_id))");
+                            createdAt DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3), KEY ix_job_events (job_id, event_id)"));
                         _schemaReady = true;
                     }
             return c;
@@ -102,7 +102,7 @@ namespace nkv.MicroService.API.Jobs
             var id = Guid.NewGuid().ToString("N");
             using var c = Open();
             Exec(c, @"INSERT INTO background_jobs (job_id, kind, title, owner_name, tenant_id, user_id, username, status, input, createdAt)
-                      VALUES (@id, @k, @t, @o, @tn, @u, @un, 'queued', @in, UTC_TIMESTAMP())",
+                      VALUES (@id, @k, @t, @o, @tn, @u, @un, 'queued', @in, " + Db.UtcNow + ")",
                 ("@id", id), ("@k", kind), ("@t", Trim(title, 255)), ("@o", user.Owner), ("@tn", tenantId), ("@u", user.UserId),
                 ("@un", user.Username), ("@in", input?.ToJsonString()));
             AddEvent(id, "info", "Queued.", 0, null);
@@ -121,9 +121,9 @@ namespace nkv.MicroService.API.Jobs
         public List<JobRow> List(JobUser user, int? tenantId, string status, int limit)
         {
             using var c = Open();
-            using var cmd = Cmd(c, $@"SELECT * FROM background_jobs WHERE owner_name=@o AND tenant_id <=> @tn
+            using var cmd = Cmd(c, $@"SELECT {Db.Top("(@l)")}* FROM background_jobs WHERE owner_name=@o AND {Db.NullSafeEq("tenant_id", "@tn")}
                                       {(user.IsAdmin ? "" : "AND user_id=@u")} {(string.IsNullOrEmpty(status) ? "" : "AND status=@s")}
-                                      ORDER BY createdAt DESC LIMIT @l",
+                                      ORDER BY createdAt DESC{Db.LimitEnd("@l")}",
                 ("@o", user.Owner), ("@tn", tenantId), ("@u", user.UserId), ("@s", status), ("@l", Math.Clamp(limit, 1, 200)));
             using var r = cmd.ExecuteReader();
             var list = new List<JobRow>();
@@ -134,7 +134,7 @@ namespace nkv.MicroService.API.Jobs
         public List<JsonObject> Events(string id, long after)
         {
             using var c = Open();
-            using var cmd = Cmd(c, "SELECT event_id, level, message, progress, data, createdAt FROM background_job_events WHERE job_id=@id AND event_id>@a ORDER BY event_id LIMIT 500",
+            using var cmd = Cmd(c, $"SELECT {Db.Top(500)}event_id, level, message, progress, data, createdAt FROM background_job_events WHERE job_id=@id AND event_id>@a ORDER BY event_id{Db.LimitEnd(500)}",
                 ("@id", id), ("@a", after));
             using var r = cmd.ExecuteReader();
             var list = new List<JsonObject>();
@@ -155,7 +155,7 @@ namespace nkv.MicroService.API.Jobs
         {
             using (var c = Open())
             {
-                Exec(c, "INSERT INTO background_job_events (job_id, level, message, progress, data, createdAt) VALUES (@id, @l, @m, @p, @d, UTC_TIMESTAMP(3))",
+                Exec(c, "INSERT INTO background_job_events (job_id, level, message, progress, data, createdAt) VALUES (@id, @l, @m, @p, @d, " + Db.UtcNowMs + ")",
                     ("@id", id), ("@l", level), ("@m", Trim(message, 1000)), ("@p", progress), ("@d", data?.ToJsonString()));
                 if (progress != null) Exec(c, "UPDATE background_jobs SET progress=@p WHERE job_id=@id", ("@p", progress), ("@id", id));
             }
@@ -174,8 +174,8 @@ namespace nkv.MicroService.API.Jobs
             if (result != null) sets.Add("result=@res");
             if (decision != null) sets.Add("decision=@dec");
             if (error != null) sets.Add("error=@err");
-            if (started) sets.Add("startedAt=COALESCE(startedAt, UTC_TIMESTAMP())");
-            if (finished) sets.Add("finishedAt=UTC_TIMESTAMP()");
+            if (started) sets.Add($"startedAt=COALESCE(startedAt, {Db.UtcNow})");
+            if (finished) sets.Add($"finishedAt={Db.UtcNow}");
             if (countAttempt) sets.Add("attempts=attempts+1");
             using var cmd = Cmd(c, $"UPDATE background_jobs SET {string.Join(", ", sets)} WHERE job_id=@id AND status=@from",
                 ("@to", to), ("@res", result?.ToJsonString()), ("@dec", decision?.ToJsonString()), ("@err", Trim(error, 4000)), ("@id", id), ("@from", from));

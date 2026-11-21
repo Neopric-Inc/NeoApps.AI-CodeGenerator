@@ -70,8 +70,12 @@ namespace nkv.MicroService.Utility
         public static string LimitEnd(object n) => IsSqlServer ? "" : $" LIMIT {n}";
         public static string MonthStart => IsSqlServer ? "DATEFROMPARTS(YEAR(SYSUTCDATETIME()), MONTH(SYSUTCDATETIME()), 1)" : "DATE_FORMAT(UTC_TIMESTAMP(), '%Y-%m-01')";
 
+        /// <summary>a equals b, where NULL equals NULL (MySQL's &lt;=&gt;).</summary>
+        public static string NullSafeEq(string a, string b) => IsSqlServer ? $"({a} = {b} OR ({a} IS NULL AND {b} IS NULL))" : $"{a} <=> {b}";
+
         public static string Now => IsSqlServer ? "SYSDATETIME()" : "NOW()";
         public static string UtcNow => IsSqlServer ? "SYSUTCDATETIME()" : "UTC_TIMESTAMP()";
+        public static string UtcNowMs => IsSqlServer ? "SYSUTCDATETIME()" : "UTC_TIMESTAMP(3)";
         public static string IfNull => IsSqlServer ? "ISNULL" : "IFNULL";
         public static string TextType => IsSqlServer ? "NVARCHAR(MAX)" : "TEXT";
         public static string LongTextType => IsSqlServer ? "NVARCHAR(MAX)" : "MEDIUMTEXT";
@@ -101,7 +105,8 @@ namespace nkv.MicroService.Utility
             s = R(s, @"\bUNIQUE\s+KEY\s+(\w+)\s*\(", $"CONSTRAINT {table}_$1 UNIQUE (");
             s = R(s, @"(,\s*)KEY\s+(\w+)\s*\(", "$1INDEX $2 (");
             s = R(s, @"\bAUTO_INCREMENT\b", "IDENTITY(1,1)");
-            s = R(s, @"\bON\s+UPDATE\s+CURRENT_TIMESTAMP\b", "");
+            s = R(s, @"\bON\s+UPDATE\s+CURRENT_TIMESTAMP(\(\d\))?", "");
+            s = R(s, @"\bCURRENT_TIMESTAMP\(\d\)", "SYSDATETIME()");
             s = R(s, @"\bTINYINT\(1\)", "BIT");
             s = R(s, @"\b(MEDIUMTEXT|LONGTEXT|TEXT|JSON)\b", "NVARCHAR(MAX)");
             s = R(s, @"\bVARCHAR\(", "NVARCHAR(");

@@ -72,7 +72,7 @@ namespace nkv.MicroService.DataAccess.Impl
                 var connection = mySqlDatabaseConnector.GetConnection();
                 using (var cmd = connection.CreateCommand())
                 {
-                    cmd.CommandText = @"SELECT  t.* FROM entities t ORDER BY column LIMIT @Offset, @ItemsPerPage";
+                    cmd.CommandText = @"SELECT  t.* FROM entities t ORDER BY column " + Db.Page("@Offset", "@ItemsPerPage") + @"";
                     cmd.CommandText = Helper.ConverOrderListToSQL(cmd.CommandText, orderBy);
                     cmd.Parameters.AddWithValue("@Offset", offset);
                     cmd.Parameters.AddWithValue("@ItemsPerPage", itemsPerPage);
@@ -113,7 +113,7 @@ namespace nkv.MicroService.DataAccess.Impl
                 var connection = mySqlDatabaseConnector.GetConnection();
                 using (var cmd = connection.CreateCommand())
                 {
-                    cmd.CommandText = @"SELECT t.* FROM entities t WHERE t.entity_name LIKE CONCAT('%',@SearchKey,'%') ORDER BY column LIMIT @Offset, @ItemsPerPage";
+                    cmd.CommandText = @"SELECT t.* FROM entities t WHERE t.entity_name LIKE CONCAT('%',@SearchKey,'%') ORDER BY column " + Db.Page("@Offset", "@ItemsPerPage") + @"";
                     cmd.CommandText = Helper.ConverOrderListToSQL(cmd.CommandText, orderBy);
                     cmd.Parameters.AddWithValue("@SearchKey", searchKey);
                     cmd.Parameters.AddWithValue("@Offset", offset);
@@ -231,7 +231,7 @@ namespace nkv.MicroService.DataAccess.Impl
                     //cmd.Parameters.AddWithValue("@createdBy", model.createdBy);
                     cmd.Parameters.AddWithValue("@modifiedAt", model.modifiedAt);
                     cmd.Parameters.AddWithValue("@modifiedBy", model.modifiedBy);
-                    var recs = cmd.ExecuteNonQuery();
+                    var recs = Db.Execute(cmd);
                     if (recs > 0)
                     {
                         return true;
@@ -261,10 +261,10 @@ namespace nkv.MicroService.DataAccess.Impl
                     cmd.Parameters.AddWithValue("@createdBy", model.createdBy);
                     cmd.Parameters.AddWithValue("@modifiedAt", model.modifiedAt);
                     cmd.Parameters.AddWithValue("@modifiedBy", model.modifiedBy);
-                    var recs = cmd.ExecuteNonQuery();
+                    var recs = Db.Execute(cmd);
                     if (recs == 1)
                     {
-                        return cmd.LastInsertedId;
+                        return Db.LastInsertedId(cmd);
                     }
                 }
             }
@@ -287,7 +287,7 @@ namespace nkv.MicroService.DataAccess.Impl
                 {
                     cmd.CommandText = @"DELETE FROM entities Where entity_id=@entity_id";
                     cmd.Parameters.AddWithValue("@entity_id", entity_id);
-                    var recs = cmd.ExecuteNonQuery();
+                    var recs = Db.Execute(cmd);
                     if (recs > 0)
                     {
                         return true;
@@ -311,7 +311,7 @@ namespace nkv.MicroService.DataAccess.Impl
                 var connection = mySqlDatabaseConnector.GetConnection();
                 using (var cmd = connection.CreateCommand())
                 {
-                    cmd.CommandText = @"SELECT  t.* FROM Entities t {filterColumns} ORDER BY column LIMIT @Offset, @ItemsPerPage ";
+                    cmd.CommandText = @"SELECT  t.* FROM Entities t {filterColumns} ORDER BY column " + Db.Page("@Offset", "@ItemsPerPage") + @" ";
                     cmd.CommandText = Helper.ConverOrderListToSQL(cmd.CommandText, orderBy);
 
                     if (filterBy != null && filterBy.Count > 0)
@@ -497,7 +497,7 @@ namespace nkv.MicroService.DataAccess.Impl
                         cmd.Parameters.AddWithValue("@" + r.ColumnName, r.ColumnValue);
                         count++;
                     }
-                    var recs = cmd.ExecuteNonQuery();
+                    var recs = Db.Execute(cmd);
                     if (recs > 0)
                     {
                         transaction.Commit();

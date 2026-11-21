@@ -1,4 +1,5 @@
 using System;
+using nkv.MicroService.Utility;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -54,7 +55,7 @@ namespace nkv.MicroService.API.Ai
         {
             using var c = _data.Open();
             int id; string owner, path, name;
-            using (var r = AiData.Cmd(c, "SELECT file_id, owner_name, storage_path, file_name FROM ai_files WHERE status='needs_ocr' ORDER BY file_id LIMIT 1").ExecuteReader())
+            using (var r = AiData.Cmd(c, $"SELECT {Db.Top(1)}file_id, owner_name, storage_path, file_name FROM ai_files WHERE status='needs_ocr' ORDER BY file_id{Db.LimitEnd(1)}").ExecuteReader())
             {
                 if (!r.Read()) return false;
                 (id, owner, path, name) = (r.GetInt32(0), r.GetString(1), r.GetString(2), r.GetString(3));

@@ -115,8 +115,8 @@ namespace nkv.MicroService.API.Controllers
             using var cmd = Db.Command("INSERT INTO roles (role_name, createdBy, modifiedBy, isActive) VALUES (@n, @u, @u, 1)", conn);
             cmd.Parameters.AddWithValue("@n", input.role_name.Trim());
             cmd.Parameters.AddWithValue("@u", Username);
-            cmd.ExecuteNonQuery();
-            var id = (int)cmd.LastInsertedId;
+            Db.Execute(cmd);
+            var id = (int)Db.LastInsertedId(cmd);
             // New roles start read-only on every table.
             SaveRoleTemplate(conn, id, Entities(conn).Select(e => new PermissionInput { entity = e.Value, read = true }).ToList());
             return Ok(new APIResponse(ResponseCode.SUCCESS, "Role created", new { role_id = id }));
@@ -212,8 +212,8 @@ namespace nkv.MicroService.API.Controllers
             cmd.Parameters.AddWithValue("@p", PasswordHasher.Hash(input.password));
             cmd.Parameters.AddWithValue("@r", input.role_id);
             cmd.Parameters.AddWithValue("@by", Username);
-            cmd.ExecuteNonQuery();
-            var userId = (int)cmd.LastInsertedId;
+            Db.Execute(cmd);
+            var userId = (int)Db.LastInsertedId(cmd);
             // tenancy: tenant admins add members to their own tenant; platform admins choose (0 = platform user, omitted = unassigned).
             // Without tenancy nothing is stored, so enabling it later never turns existing members into platform users.
             if (DataGuard.TenancyEnabled)
@@ -239,7 +239,7 @@ namespace nkv.MicroService.API.Controllers
             if (!IsPlatformAdmin || !DataGuard.TenancyEnabled) return Forbid();
             using var conn = Open();
             if (DataGuard.TenantTable != null && DataGuard.TenantTablePk != null &&
-                Scalar<long>(conn, $"SELECT COUNT(*) FROM `{DataGuard.TenantTable}` WHERE `{DataGuard.TenantTablePk}` = @t AND isActive = 1", ("@t", input.tenant_id)) == 0)
+                Scalar<long>(conn, $"SELECT COUNT(*) FROM {Db.Q(DataGuard.TenantTable)} WHERE {Db.Q(DataGuard.TenantTablePk)} = @t AND isActive = 1", ("@t", input.tenant_id)) == 0)
                 return BadRequest(new APIResponse(ResponseCode.ERROR, "Unknown tenant"));
             var members = MembersOfTenant(conn);
             List<int> targets;
@@ -270,7 +270,7 @@ namespace nkv.MicroService.API.Controllers
                 return BadRequest(new APIResponse(ResponseCode.ERROR, weak));
             var before = (role: Scalar<int>(conn, "SELECT role_id FROM users WHERE user_id = @id", ("@id", userId)),
                           active: Convert.ToInt32(Scalar<object>(conn, "SELECT isActive FROM users WHERE user_id = @id", ("@id", userId))));
-            var sets = new List<string> { "role_id = @r", "modifiedBy = @by", "modifiedAt = NOW()" };
+            var sets = new List<string> { "role_id = @r", "modifiedBy = @by", "modifiedAt = " + Db.Now };
             if (input.isActive.HasValue) sets.Add("isActive = @a");
             if (!string.IsNullOrWhiteSpace(input.password)) sets.Add("password_hash = @p");
             using (var cmd = Db.Command($"UPDATE users SET {string.Join(", ", sets)} WHERE user_id = @id", conn))
@@ -280,7 +280,7 @@ namespace nkv.MicroService.API.Controllers
                 cmd.Parameters.AddWithValue("@a", input.isActive ?? 1);
                 cmd.Parameters.AddWithValue("@p", string.IsNullOrWhiteSpace(input.password) ? "" : PasswordHasher.Hash(input.password));
                 cmd.Parameters.AddWithValue("@id", userId);
-                cmd.ExecuteNonQuery();
+                Db.Execute(cmd);
             }
             if (DataGuard.TenancyEnabled && DataTenant == null && input.tenant_id.HasValue)
                 DataGuard.SetTenantOfUser(conn, userId, input.tenant_id > 0 ? input.tenant_id : null);
@@ -316,7 +316,7 @@ namespace nkv.MicroService.API.Controllers
             if (hash == null || !PasswordHasher.Verify(input?.current_password ?? "", hash))
                 return BadRequest(new APIResponse(ResponseCode.ERROR, "The current password is wrong."));
             if (AuthGuard.PasswordProblem(input.new_password, Username) is string weak) return BadRequest(new APIResponse(ResponseCode.ERROR, weak));
-            Exec(conn, "UPDATE users SET password_hash = @p, modifiedBy = @u, modifiedAt = NOW() WHERE user_id = @id",
+            Exec(conn, $"UPDATE users SET password_hash = @p, modifiedBy = @u, modifiedAt = {Db.Now} WHERE user_id = @id",
                 ("@p", PasswordHasher.Hash(input.new_password)), ("@u", Username), ("@id", UserId));
             AuthGuard.RevokeTokens(UserId, passwordChanged: true);
             SessionCookie.Clear(Response);
@@ -353,8 +353,8 @@ namespace nkv.MicroService.API.Controllers
         public ActionResult GetUiConfig()
         {
             using var conn = Open();
-            var json = Scalar<string>(conn, @"SELECT layout FROM dnd_ui_versions WHERE dnd_ui_type = @t AND createdBy = @o AND isActive = 1
-                ORDER BY dnd_ui_version_id DESC LIMIT 1", ("@t", UiConfigType), ("@o", Truncate(Tenant)));
+            var json = Scalar<string>(conn, $@"SELECT {Db.Top(1)}layout FROM dnd_ui_versions WHERE dnd_ui_type = @t AND createdBy = @o AND isActive = 1
+                ORDER BY dnd_ui_version_id DESC{Db.LimitEnd(1)}", ("@t", UiConfigType), ("@o", Truncate(Tenant)));
             return Ok(new APIResponse(ResponseCode.SUCCESS, "OK", json == null ? null : JsonDocument.Parse(json).RootElement));
         }
 
@@ -394,7 +394,7 @@ namespace nkv.MicroService.API.Controllers
         {
             using var cmd = Db.Command(sql, conn);
             foreach (var (k, v) in ps) cmd.Parameters.AddWithValue(k, v);
-            cmd.ExecuteNonQuery();
+            Db.Execute(cmd);
         }
 
         private static Dictionary<int, string> Entities(DbConnection conn)

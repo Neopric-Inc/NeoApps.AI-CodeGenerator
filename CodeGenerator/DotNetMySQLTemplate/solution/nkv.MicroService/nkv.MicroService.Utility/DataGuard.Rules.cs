@@ -631,7 +631,7 @@ namespace nkv.MicroService.Utility
             using var ins = Db.Command($"INSERT INTO {Db.Q(table)} ({string.Join(", ", names.Select(Db.Q))}) VALUES ({string.Join(", ", names.Select((_, i) => "@p" + i))})",
                 c.Connection, c.Transaction);
             for (var i = 0; i < names.Count; i++) ins.Parameters.AddWithValue("@p" + i, v[names[i]] ?? DBNull.Value);
-            ins.ExecuteNonQuery();
+            Db.Execute(ins);
         }
 
         /// <summary>Background jobs: insert a row (plus its audit and outbox rows) as the system, in the source row's workspace and tenant.</summary>

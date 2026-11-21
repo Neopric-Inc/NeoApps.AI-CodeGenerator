@@ -66,8 +66,8 @@ namespace nkv.MicroService.API.Ai
             {
                 using var conn = Db.Connection(_connectionString);
                 conn.Open();
-                using var cmd = Db.Command(@"SELECT layout FROM dnd_ui_versions WHERE dnd_ui_type='neoapps-ui-config' AND createdBy=@o AND isActive=1
-                                                   ORDER BY dnd_ui_version_id DESC LIMIT 1", conn);
+                using var cmd = Db.Command($@"SELECT {Db.Top(1)}layout FROM dnd_ui_versions WHERE dnd_ui_type='neoapps-ui-config' AND createdBy=@o AND isActive=1
+                                                   ORDER BY dnd_ui_version_id DESC{Db.LimitEnd(1)}", conn);
                 cmd.Parameters.AddWithValue("@o", tenant == null ? "" : tenant.Length <= 45 ? tenant : tenant.Substring(0, 45));
                 if (cmd.ExecuteScalar() is string saved && JsonNode.Parse(saved) is JsonObject s)
                 {

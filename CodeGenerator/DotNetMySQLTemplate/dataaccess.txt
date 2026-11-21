@@ -350,7 +350,7 @@ namespace {projectName}.DataAccess.Impl
                     var recs = DataGuard.NonQuery(cmd);
                     if (recs ==1)
                     {
-                        return cmd.LastInsertedId ;
+                        return Db.LastInsertedId(cmd) ;
                     }
                 }
             }
@@ -397,7 +397,7 @@ namespace {projectName}.DataAccess.Impl
                 var connection = mySqlDatabaseConnector.GetConnection();
                 using (var cmd = connection.CreateCommand())
                 {
-                    cmd.CommandText = @"SELECT  t.* FROM {tableName} t {filterColumns} ORDER BY column LIMIT @Offset, @ItemsPerPage ";
+                    cmd.CommandText = @"SELECT  t.* FROM {tableName} t {filterColumns} ORDER BY column " + Db.Page("@Offset", "@ItemsPerPage") + @" ";
                     cmd.CommandText = Helper.ConverOrderListToSQL(cmd.CommandText, orderBy);
 
                     if (filterBy != null && filterBy.Count > 0)

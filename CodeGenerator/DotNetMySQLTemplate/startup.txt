@@ -127,6 +127,7 @@ namespace {projectName}.API
             });
 
             services.AddSingleton<IConfiguration>(Configuration);
+            Db.Configure(Configuration["Database:Provider"]); // mysql (default) or azuresql
             string connectionString = Configuration.GetConnectionString("MySQLDatabase");
         string rabbitMqConnection = Configuration.GetConnectionString("RabitMQ");
             ConnectionFactory factory = new ConnectionFactory();
@@ -219,8 +220,8 @@ namespace {projectName}.API
                 endpoints.MapGet("/health/ready", async (IConnectionMultiplexer redis) =>
                 {
                     var checks = new Dictionary<string, string>();
-                    try { using var c = new MySqlConnector.DbConnection(Configuration.GetConnectionString("MySQLDatabase")); await c.OpenAsync(); using var q = new MySqlConnector.DbCommand("SELECT 1", c); await q.ExecuteScalarAsync(); checks["mysql"] = "ok"; }
-                    catch { checks["mysql"] = "unreachable"; }
+                    try { using var c = Db.Connection(Configuration.GetConnectionString("MySQLDatabase")); await c.OpenAsync(); using var q = Db.Command("SELECT 1", c); await q.ExecuteScalarAsync(); checks[Db.IsSqlServer ? "azuresql" : "mysql"] = "ok"; }
+                    catch { checks[Db.IsSqlServer ? "azuresql" : "mysql"] = "unreachable"; }
                     try { await redis.GetDatabase().PingAsync(); checks["redis"] = "ok"; } catch { checks["redis"] = "unreachable"; }
                     var rabbit = Configuration.GetConnectionString("RabitMQ");
                     if (!string.IsNullOrEmpty(rabbit))

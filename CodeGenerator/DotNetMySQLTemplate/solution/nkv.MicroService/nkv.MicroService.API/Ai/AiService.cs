@@ -49,8 +49,8 @@ namespace nkv.MicroService.API.Ai
             var cmd = AiData.Cmd(c, @"INSERT INTO ai_files (owner_name, table_name, record_id, file_name, content_type, size_bytes, status, storage_path, createdBy, tenant_id)
                                      VALUES (@o, @t, @r, @n, @ct, @s, 'indexing', @p, @by, @tn)",
                 ("@o", u.Tenant), ("@t", table), ("@r", recordId), ("@n", fileName), ("@ct", contentType), ("@s", new FileInfo(path).Length), ("@p", path), ("@by", u.Username), ("@tn", dataTenant));
-            cmd.ExecuteNonQuery();
-            var fileId = (int)cmd.LastInsertedId;
+            Db.Execute(cmd);
+            var fileId = (int)Db.LastInsertedId(cmd);
             try
             {
                 // Text formats are indexed now; scans and images wait for the background OCR worker (AiFileWorker).
@@ -168,9 +168,10 @@ namespace nkv.MicroService.API.Ai
                 using var r = cmd.ExecuteReader();
                 while (r.Read()) rows.Add((r.GetInt32(0), r.GetString(1), r.GetInt32(2), r.GetString(3), r.GetString(4), r.GetString(5)));
             }
-            Read(AiData.Cmd(c, $@"SELECT k.file_id, f.file_name, k.page, f.table_name, f.record_id, k.text FROM ai_chunks k JOIN ai_files f ON f.file_id=k.file_id
+            // MySQL FULLTEXT ranking; on SQL Server the substring match below is used (full-text search comes with the AI milestone)
+            if (!Db.IsSqlServer) Read(AiData.Cmd(c, $@"SELECT {Db.Top(Math.Clamp(limit, 1, 12))}k.file_id, f.file_name, k.page, f.table_name, f.record_id, k.text FROM ai_chunks k JOIN ai_files f ON f.file_id=k.file_id
                                   WHERE k.owner_name=@o AND f.table_name IN ({tableFilter}){extra} AND MATCH(k.text) AGAINST (@q IN NATURAL LANGUAGE MODE)
-                                  ORDER BY MATCH(k.text) AGAINST (@q IN NATURAL LANGUAGE MODE) DESC LIMIT {Math.Clamp(limit, 1, 12)}", ps.ToArray()));
+                                  ORDER BY MATCH(k.text) AGAINST (@q IN NATURAL LANGUAGE MODE) DESC{Db.LimitEnd(Math.Clamp(limit, 1, 12))}", ps.ToArray()));
             if (rows.Count == 0)
             {
                 // Short or very common terms are ignored by FULLTEXT; fall back to a substring match on the longest word.
@@ -178,8 +179,8 @@ namespace nkv.MicroService.API.Ai
                 if (word != null)
                 {
                     ps.Add(("@w", word));
-                    Read(AiData.Cmd(c, $@"SELECT k.file_id, f.file_name, k.page, f.table_name, f.record_id, k.text FROM ai_chunks k JOIN ai_files f ON f.file_id=k.file_id
-                                          WHERE k.owner_name=@o AND f.table_name IN ({tableFilter}){extra} AND k.text LIKE CONCAT('%', @w, '%') LIMIT {Math.Clamp(limit, 1, 12)}", ps.ToArray()));
+                    Read(AiData.Cmd(c, $@"SELECT {Db.Top(Math.Clamp(limit, 1, 12))}k.file_id, f.file_name, k.page, f.table_name, f.record_id, k.text FROM ai_chunks k JOIN ai_files f ON f.file_id=k.file_id
+                                          WHERE k.owner_name=@o AND f.table_name IN ({tableFilter}){extra} AND k.text LIKE CONCAT('%', @w, '%'){Db.LimitEnd(Math.Clamp(limit, 1, 12))}", ps.ToArray()));
                 }
             }
             var result = new List<Source>();
@@ -440,14 +441,14 @@ namespace nkv.MicroService.API.Ai
             {
                 var ins = AiData.Cmd(c, @"INSERT INTO ai_conversations (owner_name, user_id, title, context_table, context_record) VALUES (@o, @u, @t, @ct, @cr)",
                     ("@o", u.Tenant), ("@u", u.UserId), ("@t", Trim(question, 120)), ("@ct", contextTable), ("@cr", contextRecord));
-                ins.ExecuteNonQuery();
-                convId = (int)ins.LastInsertedId;
+                Db.Execute(ins);
+                convId = (int)Db.LastInsertedId(ins);
             }
 
             // Recent history (text only) for follow-up questions.
             var messages = new JsonArray();
-            foreach (var m in AiData.Rows(AiData.Cmd(c, @"SELECT role, content FROM (SELECT message_id, role, content FROM ai_messages WHERE conversation_id=@id
-                                                         ORDER BY message_id DESC LIMIT 10) x ORDER BY message_id", ("@id", convId))))
+            foreach (var m in AiData.Rows(AiData.Cmd(c, $@"SELECT role, content FROM (SELECT {Db.Top(10)}message_id, role, content FROM ai_messages WHERE conversation_id=@id
+                                                         ORDER BY message_id DESC{Db.LimitEnd(10)}) x ORDER BY message_id", ("@id", convId))))
                 messages.Add(new JsonObject { ["role"] = m!["role"]!.GetValue<string>(), ["content"] = m["content"]!.GetValue<string>() });
             var contextNote = contextTable != null && contextRecord != null
                 ? $"\n\n(The user is looking at {contextTable} record {contextRecord}: \"{_data.RecordLabel(c, u, contextTable, contextRecord)}\". Prefer documents attached to it when relevant.)"
@@ -488,7 +489,7 @@ How to answer:
             AiData.Cmd(c, "INSERT INTO ai_messages (conversation_id, role, content) VALUES (@c, 'user', @t)", ("@c", convId), ("@t", question)).ExecuteNonQuery();
             AiData.Cmd(c, "INSERT INTO ai_messages (conversation_id, role, content, citations, tools) VALUES (@c, 'assistant', @t, @ci, @to)",
                 ("@c", convId), ("@t", answer), ("@ci", citations.ToJsonString()), ("@to", toolsJson.ToJsonString())).ExecuteNonQuery();
-            AiData.Cmd(c, "UPDATE ai_conversations SET modifiedAt=NOW() WHERE conversation_id=@c", ("@c", convId)).ExecuteNonQuery();
+            AiData.Cmd(c, $"UPDATE ai_conversations SET modifiedAt={Db.Now} WHERE conversation_id=@c", ("@c", convId)).ExecuteNonQuery();
 
             return new JsonObject
             {
@@ -502,8 +503,8 @@ How to answer:
         public JsonArray Conversations(AiUser u)
         {
             using var c = _data.Open();
-            return AiData.Rows(AiData.Cmd(c, @"SELECT conversation_id, title, context_table, context_record, modifiedAt FROM ai_conversations
-                                              WHERE owner_name=@o AND user_id=@u ORDER BY modifiedAt DESC LIMIT 50", ("@o", u.Tenant), ("@u", u.UserId)));
+            return AiData.Rows(AiData.Cmd(c, $@"SELECT {Db.Top(50)}conversation_id, title, context_table, context_record, modifiedAt FROM ai_conversations
+                                              WHERE owner_name=@o AND user_id=@u ORDER BY modifiedAt DESC{Db.LimitEnd(50)}", ("@o", u.Tenant), ("@u", u.UserId)));
         }
 
         public JsonArray Messages(AiUser u, int conversationId)
@@ -815,7 +816,7 @@ When done, call propose_records exactly once with all rows.";
                 var table = ready["table"]!.GetValue<string>();
                 var values = ready["values"]!.AsObject();
                 var names = values.Select(kv => kv.Key).ToList();
-                var cmd = AiData.Cmd(c, $"INSERT INTO `{table}` ({string.Join(", ", names.Select(n => "`" + n + "`"))}{(names.Count > 0 ? ", " : "")}createdBy, modifiedBy, isActive) " +
+                var cmd = AiData.Cmd(c, $"INSERT INTO {Db.Q(table)} ({string.Join(", ", names.Select(Db.Q))}{(names.Count > 0 ? ", " : "")}createdBy, modifiedBy, isActive) " +
                                         $"VALUES ({string.Join(", ", names.Select((_, i) => "@v" + i))}{(names.Count > 0 ? ", " : "")}@o, @o, 1)", ("@o", u.Tenant));
                 for (var i = 0; i < names.Count; i++)
                 {
@@ -827,8 +828,8 @@ When done, call propose_records exactly once with all rows.";
                 }
                 cmd.Transaction = tx;
                 try { DataGuard.NonQuery(cmd); }
-                catch (MySqlException ex) { throw new AiException($"Couldn't create a {table} row: {ex.Message}"); }
-                ids[ready["ref"]!.GetValue<string>()] = cmd.LastInsertedId;
+                catch (Exception ex) when (Db.IsDbError(ex)) { throw new AiException($"Couldn't create a {table} row: {ex.Message}"); }
+                ids[ready["ref"]!.GetValue<string>()] = Db.LastInsertedId(cmd);
                 created[table] = created.GetValueOrDefault(table) + 1;
             }
             var summary = string.Join(", ", created.Select(kv => $"{kv.Value} {kv.Key}"));

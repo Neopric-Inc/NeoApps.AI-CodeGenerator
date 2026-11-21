@@ -88,7 +88,7 @@ namespace nkv.MicroService.Utility
             using var c = Db.Connection(connectionString);
             c.Open();
             using (var cmd = Db.Command(Db.CreateTableIfMissing("user_tenants",
-                $"user_id INT NOT NULL PRIMARY KEY, tenant_id INT NULL, createdAt {Db.DateTimeType} NOT NULL DEFAULT CURRENT_TIMESTAMP"), c)) cmd.ExecuteNonQuery();
+                $"user_id INT NOT NULL PRIMARY KEY, tenant_id INT NULL, createdAt {Db.DateTimeType} NOT NULL DEFAULT CURRENT_TIMESTAMP"), c)) Db.Execute(cmd);
             AddUserColumns(c);
             LoadSchema(c);
             if (TenancyEnabled) UpgradeForTenancy(c);
@@ -350,7 +350,7 @@ namespace nkv.MicroService.Utility
             using var cmd = Db.Command(Db.Upsert("user_tenants", new[] { "user_id", "tenant_id" }, new[] { "user_id" }), c);
             cmd.Parameters.AddWithValue("@user_id", userId);
             cmd.Parameters.AddWithValue("@tenant_id", (object)tenantId ?? DBNull.Value);
-            cmd.ExecuteNonQuery();
+            Db.Execute(cmd);
         }
 
         // ------------------------------------------------------------------ the choke point

@@ -128,22 +128,22 @@ namespace nkv.MicroService.API.Jobs
                         seenKeys[k] = rowNo;
                         if (Exists(c, tx, table, key, kv0)) { skipped++; continue; }
                     }
-                    if (!commit) Exec(c, tx, "SAVEPOINT import_row");
+                    if (!commit) tx.Save("import_row"); // SAVEPOINT / SAVE TRANSACTION
                     try
                     {
                         var names = values.Keys.ToList();
                         using var cmd = Db.Command(
-                            $"INSERT INTO `{table}` ({string.Join(", ", names.Select(n => "`" + n + "`"))}{(names.Count > 0 ? ", " : "")}createdBy, modifiedBy, isActive) " +
+                            $"INSERT INTO {Db.Q(table)} ({string.Join(", ", names.Select(Db.Q))}{(names.Count > 0 ? ", " : "")}createdBy, modifiedBy, isActive) " +
                             $"VALUES ({string.Join(", ", names.Select((_, j) => "@v" + j))}{(names.Count > 0 ? ", " : "")}@o, @o, 1)", c, tx);
                         for (var j = 0; j < names.Count; j++) cmd.Parameters.AddWithValue("@v" + j, values[names[j]] ?? DBNull.Value);
                         cmd.Parameters.AddWithValue("@o", ctx.User.Owner);
                         DataGuard.NonQuery(cmd);
                         ready++;
                     }
-                    catch (Exception ex) when (ex is DataGuardException || ex is MySqlException || ex is FormatException)
+                    catch (Exception ex) when (ex is DataGuardException || Db.IsDbError(ex) || ex is FormatException)
                     {
                         if (commit) throw new ImportRowException(rowNo, Friendly(ex));
-                        Exec(c, tx, "ROLLBACK TO SAVEPOINT import_row");
+                        tx.Rollback("import_row");
                         errors.Add((rowNo, Friendly(ex)));
                     }
                     if (rowNo % 250 == 0) ctx.Progress($"{(commit ? "Imported" : "Checked")} {i + 1} of {rows.Count} rows", (i + 1) * 100 / rows.Count);
@@ -173,7 +173,7 @@ namespace nkv.MicroService.API.Jobs
         /// <summary>Whether a visible, active row already has this key value (scoped like any read by this person).</summary>
         private static bool Exists(DbConnection c, DbTransaction tx, string table, string key, object value)
         {
-            using var cmd = Db.Command($"SELECT 1 FROM `{table}` WHERE `{key}` = @k AND isActive = 1 LIMIT 1", c, tx);
+            using var cmd = Db.Command($"SELECT {Db.Top(1)}1 FROM {Db.Q(table)} WHERE {Db.Q(key)} = @k AND isActive = 1{Db.LimitEnd(1)}", c, tx);
             cmd.Parameters.AddWithValue("@k", value);
             return DataGuard.Apply(cmd).ExecuteScalar() != null;
         }
@@ -209,6 +209,14 @@ namespace nkv.MicroService.API.Jobs
 
         private static string Friendly(Exception ex) => ex switch
         {
+            Microsoft.Data.SqlClient.SqlException s => Db.Classify(s) switch
+            {
+                Db.Error.ForeignKey => "It points at a related record that doesn't exist.",
+                Db.Error.Duplicate => "A record with the same unique value already exists.",
+                Db.Error.Required => System.Text.RegularExpressions.Regex.Match(s.Message, "column '([^']+)'") is { Success: true } m ? $"Required field '{m.Groups[1].Value}' is empty." : "A required field is empty.",
+                Db.Error.TooLong => "A value is too long for its field.",
+                _ => s.Message,
+            },
             MySqlException { Number: 1452 } => "It points at a related record that doesn't exist.",
             MySqlException { Number: 1062 } => "A record with the same unique value already exists.",
             MySqlException { Number: 1364 } m => System.Text.RegularExpressions.Regex.Replace(m.Message, "^Field '(.+)' doesn't have a default value$", "Required field '$1' is empty."),

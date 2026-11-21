@@ -25,6 +25,7 @@ namespace nkv.MicroService.API
             var host = CreateHostBuilder(args).Build();
             var config = host.Services.GetRequiredService<IConfiguration>();
             var connectionString = config.GetConnectionString("MySQLDatabase");
+            nkv.MicroService.Utility.Db.Configure(config["Database:Provider"]); // mysql (default) or azuresql
 
             // --migrate / --baseline / --migrations-status / --migrate-down=VERSION: run that and exit.
             if (MigrationHost.RunFromArgs(args, connectionString, typeof(Program).Assembly) is int exitCode)

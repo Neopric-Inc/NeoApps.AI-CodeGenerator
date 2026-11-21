@@ -54,32 +54,27 @@ namespace nkv.MicroService.API.Ai
                 if (_schemaReady) return;
                 foreach (var sql in new[]
                 {
-                    @"CREATE TABLE IF NOT EXISTS ai_files (file_id INT AUTO_INCREMENT PRIMARY KEY, owner_name VARCHAR(255) NOT NULL,
+                    Db.CreateTableIfMissing("ai_files", @"file_id INT AUTO_INCREMENT PRIMARY KEY, owner_name VARCHAR(255) NOT NULL,
                         table_name VARCHAR(64) NOT NULL, record_id VARCHAR(64) NOT NULL, file_name VARCHAR(255) NOT NULL, content_type VARCHAR(150),
                         size_bytes BIGINT, pages INT, status VARCHAR(20) NOT NULL, error TEXT, storage_path VARCHAR(500) NOT NULL,
-                        createdBy VARCHAR(255), tenant_id INT NULL, createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, KEY ix_files_record (owner_name, table_name, record_id))",
-                    @"CREATE TABLE IF NOT EXISTS ai_chunks (chunk_id INT AUTO_INCREMENT PRIMARY KEY, file_id INT NOT NULL, owner_name VARCHAR(255) NOT NULL,
-                        page INT NOT NULL, text MEDIUMTEXT NOT NULL, tenant_id INT NULL, KEY ix_chunks_file (file_id), FULLTEXT KEY ft_chunks_text (text)) ENGINE=InnoDB",
-                    @"CREATE TABLE IF NOT EXISTS ai_conversations (conversation_id INT AUTO_INCREMENT PRIMARY KEY, owner_name VARCHAR(255) NOT NULL,
+                        createdBy VARCHAR(255), tenant_id INT NULL, createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, KEY ix_files_record (owner_name, table_name, record_id)"),
+                    Db.CreateTableIfMissing("ai_chunks", @"chunk_id INT AUTO_INCREMENT PRIMARY KEY, file_id INT NOT NULL, owner_name VARCHAR(255) NOT NULL,
+                        page INT NOT NULL, text MEDIUMTEXT NOT NULL, tenant_id INT NULL, KEY ix_chunks_file (file_id), FULLTEXT KEY ft_chunks_text (text)"),
+                    Db.CreateTableIfMissing("ai_conversations", @"conversation_id INT AUTO_INCREMENT PRIMARY KEY, owner_name VARCHAR(255) NOT NULL,
                         user_id INT NOT NULL, title VARCHAR(255) NOT NULL, context_table VARCHAR(64), context_record VARCHAR(64),
-                        createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, modifiedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, KEY ix_conv_user (owner_name, user_id))",
-                    @"CREATE TABLE IF NOT EXISTS ai_messages (message_id INT AUTO_INCREMENT PRIMARY KEY, conversation_id INT NOT NULL, role VARCHAR(20) NOT NULL,
-                        content MEDIUMTEXT NOT NULL, citations JSON NULL, tools JSON NULL, createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, KEY ix_msg_conv (conversation_id))",
-                    @"CREATE TABLE IF NOT EXISTS ai_runs (run_id INT AUTO_INCREMENT PRIMARY KEY, owner_name VARCHAR(255) NOT NULL, user_id INT NOT NULL,
+                        createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, modifiedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, KEY ix_conv_user (owner_name, user_id)"),
+                    Db.CreateTableIfMissing("ai_messages", @"message_id INT AUTO_INCREMENT PRIMARY KEY, conversation_id INT NOT NULL, role VARCHAR(20) NOT NULL,
+                        content MEDIUMTEXT NOT NULL, citations JSON NULL, tools JSON NULL, createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, KEY ix_msg_conv (conversation_id)"),
+                    Db.CreateTableIfMissing("ai_runs", @"run_id INT AUTO_INCREMENT PRIMARY KEY, owner_name VARCHAR(255) NOT NULL, user_id INT NOT NULL,
                         workflow VARCHAR(100) NOT NULL, table_name VARCHAR(64), record_id VARCHAR(64), status VARCHAR(20) NOT NULL, summary TEXT,
-                        created_records INT NOT NULL DEFAULT 0, createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP)",
+                        created_records INT NOT NULL DEFAULT 0, createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP"),
                 })
                 {
                     using var cmd = Db.Command(sql, c);
                     cmd.ExecuteNonQuery();
                 }
                 // databases created before tenancy: tag AI files and chunks with their data tenant
-                foreach (var t in new[] { "ai_files", "ai_chunks" })
-                {
-                    using var has = Db.Command("SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name=@t AND column_name='tenant_id'", c);
-                    has.Parameters.AddWithValue("@t", t);
-                    if (Convert.ToInt64(has.ExecuteScalar()) == 0) { using var alter = Db.Command($"ALTER TABLE {t} ADD COLUMN tenant_id INT NULL", c); alter.ExecuteNonQuery(); }
-                }
+                foreach (var t in new[] { "ai_files", "ai_chunks" }) Db.AddColumnIfMissing(c, t, "tenant_id", "INT NULL");
                 _schemaReady = true;
             }
         }
@@ -113,27 +108,20 @@ namespace nkv.MicroService.API.Ai
         public List<string> AppTables(DbConnection c)
         {
             var list = new List<string>();
-            using var r = Cmd(c, "SELECT table_name FROM information_schema.tables WHERE table_schema=DATABASE() AND table_type='BASE TABLE' ORDER BY table_name").ExecuteReader();
-            while (r.Read()) { var t = r.GetString(0).ToLowerInvariant(); if (!System.Contains(t)) list.Add(t); }
+            foreach (var name in Db.Tables(c)) { var t = name.ToLowerInvariant(); if (!System.Contains(t)) list.Add(t); }
             return list;
         }
 
         public List<ColumnInfo> Columns(DbConnection c, string table)
         {
-            var fks = new Dictionary<string, (string, string)>(StringComparer.OrdinalIgnoreCase);
-            using (var r = Cmd(c, @"SELECT column_name, referenced_table_name, referenced_column_name FROM information_schema.key_column_usage
-                                    WHERE table_schema=DATABASE() AND table_name=@t AND referenced_table_name IS NOT NULL", ("@t", table)).ExecuteReader())
-                while (r.Read()) fks[r.GetString(0)] = (r.GetString(1).ToLowerInvariant(), r.GetString(2));
+            var fks = Db.ForeignKeys(c, table).ToDictionary(f => f.Column, f => (f.RefTable.ToLowerInvariant(), f.RefColumn), StringComparer.OrdinalIgnoreCase);
             var cols = new List<ColumnInfo>();
-            using (var r = Cmd(c, @"SELECT column_name, data_type, column_type, is_nullable, column_default, column_key, extra FROM information_schema.columns
-                                    WHERE table_schema=DATABASE() AND table_name=@t ORDER BY ordinal_position", ("@t", table)).ExecuteReader())
-                while (r.Read())
-                {
-                    if (DataGuard.IsHidden(table, r.GetString(0))) continue; // per-role hidden fields: the AI neither reads nor writes them
-                    fks.TryGetValue(r.GetString(0), out var fk);
-                    cols.Add(new ColumnInfo(r.GetString(0), r.GetString(1).ToLowerInvariant(), r.GetString(2).ToLowerInvariant(), r.GetString(3) == "YES",
-                        !r.IsDBNull(4), r.GetString(5) == "PRI", r.GetString(6).Contains("auto_increment"), fk.Item1, fk.Item2));
-                }
+            foreach (var x in Db.Columns(c, table))
+            {
+                if (DataGuard.IsHidden(table, x.Name)) continue; // per-role hidden fields: the AI neither reads nor writes them
+                fks.TryGetValue(x.Name, out var fk);
+                cols.Add(new ColumnInfo(x.Name, x.DataType, x.ColumnType, x.Nullable, x.HasDefault, x.IsPk, x.AutoIncrement, fk.Item1, fk.Item2));
+            }
             return cols;
         }
 
@@ -200,9 +188,9 @@ namespace nkv.MicroService.API.Ai
                 var val = f["value"] is JsonValue v ? v.ToString() : f["value"]?.ToJsonString();
                 string sql = op switch
                 {
-                    "eq" => $"t.`{col}` = {p}", "ne" => $"t.`{col}` <> {p}", "gt" => $"t.`{col}` > {p}", "gte" => $"t.`{col}` >= {p}",
-                    "lt" => $"t.`{col}` < {p}", "lte" => $"t.`{col}` <= {p}", "contains" => $"t.`{col}` LIKE CONCAT('%', {p}, '%')",
-                    "is_null" => $"t.`{col}` IS NULL", "not_null" => $"t.`{col}` IS NOT NULL",
+                    "eq" => $"t.{Db.Q(col)} = {p}", "ne" => $"t.{Db.Q(col)} <> {p}", "gt" => $"t.{Db.Q(col)} > {p}", "gte" => $"t.{Db.Q(col)} >= {p}",
+                    "lt" => $"t.{Db.Q(col)} < {p}", "lte" => $"t.{Db.Q(col)} <= {p}", "contains" => $"t.{Db.Q(col)} LIKE CONCAT('%', {p}, '%')",
+                    "is_null" => $"t.{Db.Q(col)} IS NULL", "not_null" => $"t.{Db.Q(col)} IS NOT NULL",
                     _ => throw new AiException($"Unknown op '{op}'. Use eq, ne, gt, gte, lt, lte, contains, is_null, not_null."),
                 };
                 if (op != "is_null" && op != "not_null") ps.Add((p, val));
@@ -225,12 +213,12 @@ namespace nkv.MicroService.API.Ai
             var ps = new List<(string, object)> { ("@tenant", u.Tenant) };
             var where = Where(cols, Filters(input["filters"]), ps);
             var select = input["columns"] is JsonArray sc && sc.Count > 0
-                ? string.Join(", ", sc.Select(x => "t.`" + CheckColumn(cols, x!.GetValue<string>()) + "`"))
-                : string.Join(", ", cols.Where(x => !Audit.Contains(x.Name) || x.Name == "createdAt").Select(x => "t.`" + x.Name + "`"));
-            var order = input["order_by"]?.GetValue<string>() is { Length: > 0 } ob ? $" ORDER BY t.`{CheckColumn(cols, ob)}` {(input["descending"]?.GetValue<bool>() == true ? "DESC" : "ASC")}" : "";
+                ? string.Join(", ", sc.Select(x => "t." + Db.Q(CheckColumn(cols, x!.GetValue<string>()))))
+                : string.Join(", ", cols.Where(x => !Audit.Contains(x.Name) || x.Name == "createdAt").Select(x => "t." + Db.Q(x.Name)));
+            var order = input["order_by"]?.GetValue<string>() is { Length: > 0 } ob ? $" ORDER BY t.{Db.Q(CheckColumn(cols, ob))} {(input["descending"]?.GetValue<bool>() == true ? "DESC" : "ASC")}" : "";
             var limit = Math.Clamp(input["limit"]?.GetValue<int>() ?? 25, 1, 100);
-            var count = Convert.ToInt64(Cmd(c, $"SELECT COUNT(*) FROM `{table}` t WHERE {where}", ps.ToArray()).ExecuteScalar());
-            var rows = Rows(Cmd(c, $"SELECT {select} FROM `{table}` t WHERE {where}{order} LIMIT {limit}", ps.ToArray()));
+            var count = Convert.ToInt64(Cmd(c, $"SELECT COUNT(*) FROM {Db.Q(table)} t WHERE {where}", ps.ToArray()).ExecuteScalar());
+            var rows = Rows(Cmd(c, $"SELECT {Db.Top(limit)}{select} FROM {Db.Q(table)} t WHERE {where}{order}{Db.LimitEnd(limit)}", ps.ToArray()));
             return new JsonObject { ["table"] = table, ["total_matching"] = count, ["returned"] = rows.Count, ["rows"] = rows }.ToJsonString();
         }
 
@@ -240,20 +228,20 @@ namespace nkv.MicroService.API.Ai
             var cols = Columns(c, table);
             var metric = (input["metric"]?.GetValue<string>() ?? "count").ToLowerInvariant();
             if (!new[] { "count", "sum", "avg", "min", "max" }.Contains(metric)) throw new AiException("metric must be count, sum, avg, min or max");
-            var expr = metric == "count" ? "COUNT(*)" : $"{metric.ToUpperInvariant()}(t.`{CheckColumn(cols, input["column"]?.GetValue<string>())}`)";
+            var expr = metric == "count" ? "COUNT(*)" : $"{metric.ToUpperInvariant()}(t.{Db.Q(CheckColumn(cols, input["column"]?.GetValue<string>()))})";
             var ps = new List<(string, object)> { ("@tenant", u.Tenant) };
             var where = Where(cols, Filters(input["filters"]), ps);
             var group = input["group_by"]?.GetValue<string>() is { Length: > 0 } g ? CheckColumn(cols, g) : null;
             var sql = group == null
-                ? $"SELECT {expr} AS value FROM `{table}` t WHERE {where}"
-                : $"SELECT t.`{group}` AS `{group}`, {expr} AS value FROM `{table}` t WHERE {where} GROUP BY t.`{group}` ORDER BY value DESC LIMIT 50";
+                ? $"SELECT {expr} AS value FROM {Db.Q(table)} t WHERE {where}"
+                : $"SELECT {Db.Top(50)}t.{Db.Q(group)} AS {Db.Q(group)}, {expr} AS value FROM {Db.Q(table)} t WHERE {where} GROUP BY t.{Db.Q(group)} ORDER BY value DESC{Db.LimitEnd(50)}";
             return new JsonObject { ["table"] = table, ["metric"] = metric, ["rows"] = Rows(Cmd(c, sql, ps.ToArray())) }.ToJsonString();
         }
 
         public static JsonArray Rows(DbCommand cmd)
         {
             var arr = new JsonArray();
-            var from = Regex.Match(cmd.CommandText ?? "", @"\bFROM\s+`?(\w+)`?", RegexOptions.IgnoreCase);
+            var from = Regex.Match(cmd.CommandText ?? "", @"\bFROM\s+[`\[]?(\w+)[`\]]?", RegexOptions.IgnoreCase);
             var hidden = from.Success ? DataGuard.HiddenFields(from.Groups[1].Value) : new HashSet<string>();
             using var r = cmd.ExecuteReader();
             while (r.Read())
@@ -293,7 +281,7 @@ namespace nkv.MicroService.API.Ai
                 var label = new[] { "title", "name", "full_name", "protocol_number", "visit_name" }.Select(n => cols.FirstOrDefault(x => x.Name == n)?.Name).FirstOrDefault(n => n != null)
                     ?? cols.FirstOrDefault(x => x.DataType == "varchar" && !Audit.Contains(x.Name))?.Name;
                 if (pk == null || label == null) return $"{table} #{recordId}";
-                return Cmd(c, $"SELECT `{label}` FROM `{table}` WHERE `{pk}`=@id AND createdBy=@o AND isActive=1", ("@id", recordId), ("@o", u.Tenant))
+                return Cmd(c, $"SELECT {Db.Q(label)} FROM {Db.Q(table)} WHERE {Db.Q(pk)}=@id AND createdBy=@o AND isActive=1", ("@id", recordId), ("@o", u.Tenant))
                     .ExecuteScalar()?.ToString() ?? $"{table} #{recordId}";
             }
             catch { return $"{table} #{recordId}"; }

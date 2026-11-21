@@ -72,7 +72,7 @@ namespace nkv.MicroService.DataAccess.Impl
                 var connection = mySqlDatabaseConnector.GetConnection();
                 using (var cmd = connection.CreateCommand())
                 {
-                    cmd.CommandText = @"SELECT  t.* FROM users t ORDER BY column LIMIT @Offset, @ItemsPerPage";
+                    cmd.CommandText = @"SELECT  t.* FROM users t ORDER BY column " + Db.Page("@Offset", "@ItemsPerPage") + @"";
                     cmd.CommandText = Helper.ConverOrderListToSQL(cmd.CommandText, orderBy);
                     cmd.Parameters.AddWithValue("@Offset", offset);
                     cmd.Parameters.AddWithValue("@ItemsPerPage", itemsPerPage);
@@ -114,7 +114,7 @@ namespace nkv.MicroService.DataAccess.Impl
                 var connection = mySqlDatabaseConnector.GetConnection();
                 using (var cmd = connection.CreateCommand())
                 {
-                    cmd.CommandText = @"SELECT t.* FROM users t WHERE t.username LIKE CONCAT('%',@SearchKey,'%') ORDER BY column LIMIT @Offset, @ItemsPerPage";
+                    cmd.CommandText = @"SELECT t.* FROM users t WHERE t.username LIKE CONCAT('%',@SearchKey,'%') ORDER BY column " + Db.Page("@Offset", "@ItemsPerPage") + @"";
                     cmd.CommandText = Helper.ConverOrderListToSQL(cmd.CommandText, orderBy);
                     cmd.Parameters.AddWithValue("@SearchKey", searchKey);
                     cmd.Parameters.AddWithValue("@Offset", offset);
@@ -245,7 +245,7 @@ namespace nkv.MicroService.DataAccess.Impl
                     cmd.Parameters.AddWithValue("@user_id", model.user_id);
                     cmd.Parameters.AddWithValue("@username", model.username);
                     cmd.Parameters.AddWithValue("@isActive", model.isActive);
-                    var recs = cmd.ExecuteNonQuery();
+                    var recs = Db.Execute(cmd);
                     if (recs > 0)
                     {
                         return true;
@@ -278,10 +278,10 @@ namespace nkv.MicroService.DataAccess.Impl
                     cmd.Parameters.AddWithValue("@user_id", model.user_id);
                     cmd.Parameters.AddWithValue("@username", model.username);
                     cmd.Parameters.AddWithValue("@isActive", model.isActive);
-                    var recs = cmd.ExecuteNonQuery();
+                    var recs = Db.Execute(cmd);
                     if (recs == 1)
                     {
-                        return cmd.LastInsertedId;
+                        return Db.LastInsertedId(cmd);
                     }
                 }
             }
@@ -304,7 +304,7 @@ namespace nkv.MicroService.DataAccess.Impl
                 {
                     cmd.CommandText = @"DELETE FROM users Where user_id=@user_id";
                     cmd.Parameters.AddWithValue("@user_id", user_id);
-                    var recs = cmd.ExecuteNonQuery();
+                    var recs = Db.Execute(cmd);
                     if (recs > 0)
                     {
                         return true;
@@ -328,7 +328,7 @@ namespace nkv.MicroService.DataAccess.Impl
                 var connection = mySqlDatabaseConnector.GetConnection();
                 using (var cmd = connection.CreateCommand())
                 {
-                    cmd.CommandText = @"SELECT  t.* FROM Users t {filterColumns} ORDER BY column LIMIT @Offset, @ItemsPerPage ";
+                    cmd.CommandText = @"SELECT  t.* FROM Users t {filterColumns} ORDER BY column " + Db.Page("@Offset", "@ItemsPerPage") + @" ";
                     cmd.CommandText = Helper.ConverOrderListToSQL(cmd.CommandText, orderBy);
 
                     if (filterBy != null && filterBy.Count > 0)
@@ -516,7 +516,7 @@ namespace nkv.MicroService.DataAccess.Impl
                         cmd.Parameters.AddWithValue("@" + r.ColumnName, r.ColumnValue);
                         count++;
                     }
-                    var recs = cmd.ExecuteNonQuery();
+                    var recs = Db.Execute(cmd);
                     if (recs > 0)
                     {
                         transaction.Commit();

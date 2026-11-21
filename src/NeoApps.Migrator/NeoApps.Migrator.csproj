@@ -17,11 +17,14 @@
 
   <ItemGroup>
     <PackageReference Include="FluentMigrator.Runner.MySql" Version="8.0.1" />
+    <PackageReference Include="FluentMigrator.Runner.SqlServer" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="7.1.2" />
     <PackageReference Include="MySqlConnector" Version="2.6.2" />
   </ItemGroup>
 
   <ItemGroup>
     <Compile Include="..\..\CodeGenerator\DotNetMySQLTemplate\solution\nkv.MicroService\nkv.MicroService.API\Migrations\MigrationSupport.cs" Link="MigrationSupport.cs" />
+    <Compile Include="..\..\CodeGenerator\DotNetMySQLTemplate\solution\nkv.MicroService\nkv.MicroService.Utility\Db.cs" Link="Db.cs" />
     <Compile Remove="obj\**;bin\**" />
     <Compile Include="$(MigrationsDir)\*.cs" Condition="'$(MigrationsDir)' != ''" />
   </ItemGroup>

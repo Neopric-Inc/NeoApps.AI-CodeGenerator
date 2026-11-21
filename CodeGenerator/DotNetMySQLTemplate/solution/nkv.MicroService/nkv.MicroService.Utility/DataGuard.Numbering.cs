@@ -31,7 +31,7 @@ namespace nkv.MicroService.Utility
             _numbering.Clear();
             if (Config["numbering"] is not JsonObject all) return;
             using (var cmd = Db.Command(Db.CreateTableIfMissing("number_sequences", @"seq_key VARCHAR(191) NOT NULL PRIMARY KEY,
-                next_value BIGINT NOT NULL, updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP"), c)) cmd.ExecuteNonQuery();
+                next_value BIGINT NOT NULL, updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP"), c)) Db.Execute(cmd);
             foreach (var (table, node) in all)
                 foreach (var o in (node is JsonArray a ? a.OfType<JsonObject>() : new[] { node as JsonObject }).Where(x => x != null))
                 {
