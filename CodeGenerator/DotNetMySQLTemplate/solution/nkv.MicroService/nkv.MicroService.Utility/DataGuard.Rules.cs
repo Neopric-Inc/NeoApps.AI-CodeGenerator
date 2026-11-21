@@ -592,6 +592,7 @@ namespace nkv.MicroService.Utility
         static void WriteOutbox(DbCommand c, Caller caller, string table, string on, object id, Dictionary<string, object> row, Dictionary<string, object> before)
         {
             if (_outboxTable == null || table.Equals(_outboxTable, StringComparison.OrdinalIgnoreCase) || !Columns.ContainsKey(_outboxTable)) return;
+            GuardJobs.WakeOutbox(); // serverless: publish after this write instead of polling
             var events = new List<string>();
             foreach (var r in _outboxRules.Where(r => r.Table.Equals(table, StringComparison.OrdinalIgnoreCase) && r.On.Equals(on, StringComparison.OrdinalIgnoreCase)))
             {

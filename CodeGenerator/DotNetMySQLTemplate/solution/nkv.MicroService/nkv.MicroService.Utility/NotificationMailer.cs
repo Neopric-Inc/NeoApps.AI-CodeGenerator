@@ -47,13 +47,26 @@ namespace nkv.MicroService.Utility
             var relay = !string.IsNullOrEmpty(_relayUrl) && !string.IsNullOrEmpty(_relayToken);
             if (!relay) _relayUrl = null;
             Enabled = relay || (!string.IsNullOrEmpty(_from) && (!string.IsNullOrEmpty(_acs) || !string.IsNullOrEmpty(_smtpHost)));
-            if (!Enabled || _timer != null) return;
-            _timer = new Timer(_ => SendPending(), null, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(15));
+            if (!Enabled || _timer != null || _wake != null) return;
+            if (Db.PauseFriendly)
+            {
+                // send after notifications are written (Wake), plus once now for anything left from before a restart
+                _wake = new WakeTimer(() => { SendPending(); if (_retry) Wake(TimeSpan.FromSeconds(60)); });
+                _wake.Wake(TimeSpan.FromSeconds(10));
+            }
+            else _timer = new Timer(_ => SendPending(), null, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(15));
             Console.WriteLine($"Notifications: email on via {(_relayUrl != null ? "the NeoApps relay" : string.IsNullOrEmpty(_acs) ? "SMTP" : "Azure Communication Services")}.");
         }
 
+        static WakeTimer _wake;
+        static volatile bool _retry;
+
+        /// <summary>New email-pending notifications were written (serverless: no polling).</summary>
+        public static void Wake(TimeSpan? after = null) => _wake?.Wake(after);
+
         public static int SendPending()
         {
+            _retry = false;
             if (!Enabled || Interlocked.Exchange(ref _busy, 1) == 1) return 0;
             var sent = 0;
             try
@@ -66,6 +79,7 @@ namespace nkv.MicroService.Utility
                     WHERE n.email_status = 'pending' AND s.email_on = 1 AND s.email IS NOT NULL ORDER BY n.notification_id{Db.LimitEnd(50)}", c))
                 using (var r = q.ExecuteReader())
                     while (r.Read()) rows.Add((r.GetInt64(0), r.GetString(1), r.IsDBNull(2) ? null : r.GetString(2), r.IsDBNull(3) ? null : r.GetString(3), r.GetString(4)));
+                if (rows.Count == 50) _retry = true; // more waiting
                 foreach (var row in rows)
                 {
                     string error = null;
@@ -75,17 +89,20 @@ namespace nkv.MicroService.Utility
                         else Send(row.to, row.title, Body(row.title, row.table, row.record));
                         sent++; Sent++;
                     }
-                    catch (Exception ex) { error = ex.Message.Length > 450 ? ex.Message[..450] : ex.Message; Failed++; }
+                    catch (Exception ex) { error = ex.Message.Length > 450 ? ex.Message[..450] : ex.Message; Failed++; _retry = true; }
                     using var u = Db.Command(error == null
                         ? "UPDATE user_notifications SET email_status = 'sent', email_error = NULL WHERE notification_id = @id"
-                        : "UPDATE user_notifications SET email_attempts = email_attempts + 1, email_error = @e, email_status = IF(email_attempts >= 5, 'failed', 'pending') WHERE notification_id = @id", c);
+                        : Db.IsSqlServer // SQL Server evaluates every SET from the old row, MySQL left to right
+                            ? "UPDATE user_notifications SET email_attempts = email_attempts + 1, email_error = @e, email_status = CASE WHEN email_attempts + 1 >= 5 THEN 'failed' ELSE 'pending' END WHERE notification_id = @id"
+                            : "UPDATE user_notifications SET email_attempts = email_attempts + 1, email_error = @e, email_status = IF(email_attempts >= 5, 'failed', 'pending') WHERE notification_id = @id", c);
                     u.Parameters.AddWithValue("@id", row.id);
                     u.Parameters.AddWithValue("@e", error);
                     u.ExecuteNonQuery();
                 }
                 // people who turned email off since: don't keep their rows pending forever
-                using (var off = Db.Command(@"UPDATE user_notifications n LEFT JOIN user_notification_settings s ON s.user_id = n.user_id
-                    SET n.email_status = 'none' WHERE n.email_status = 'pending' AND (s.user_id IS NULL OR s.email_on = 0 OR s.email IS NULL OR s.email = '')", c))
+                using (var off = Db.Command(@"UPDATE user_notifications SET email_status = 'none' WHERE email_status = 'pending'
+                    AND NOT EXISTS (SELECT 1 FROM user_notification_settings s WHERE s.user_id = user_notifications.user_id
+                                    AND s.email_on = 1 AND s.email IS NOT NULL AND s.email <> '')", c))
                     off.ExecuteNonQuery();
             }
             catch (Exception ex) { Console.WriteLine("Notifications: email run failed, will retry: " + ex.Message); }

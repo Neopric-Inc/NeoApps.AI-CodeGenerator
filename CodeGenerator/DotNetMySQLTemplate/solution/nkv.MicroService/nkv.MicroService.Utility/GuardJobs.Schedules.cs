@@ -28,6 +28,8 @@ namespace nkv.MicroService.Utility
             if (DataGuard.Config["jobs"] is not JsonObject jobs) return;
             var every = jobs["everySeconds"]?.GetValue<int>() ?? 60;
             _jobsTimer = new Timer(_ => RunScheduledNow(), null, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(every));
+            if (Db.PauseFriendly)
+                Console.WriteLine($"DataGuard: scheduled checks (\"jobs\") query the database every {every}s, so a serverless database won't auto-pause while this API runs.");
         }
 
         public static JsonObject JobsSummary() => new JsonObject

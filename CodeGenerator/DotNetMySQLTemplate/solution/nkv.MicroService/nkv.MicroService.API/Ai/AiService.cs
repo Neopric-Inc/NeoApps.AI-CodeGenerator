@@ -67,6 +67,7 @@ namespace nkv.MicroService.API.Ai
                     : result.Note;
                 AiData.Cmd(c, "UPDATE ai_files SET status=@s, pages=@p, error=@e WHERE file_id=@id",
                     ("@s", result.Status), ("@p", pages.Count), ("@e", note), ("@id", fileId)).ExecuteNonQuery();
+                if (result.Status == "needs_ocr") AiFileWorker.Wake();
             }
             catch (Exception ex)
             {

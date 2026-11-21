@@ -29,7 +29,26 @@ namespace nkv.MicroService.Utility
             };
 
         public static DbConnection Connection(string connectionString) =>
-            IsSqlServer ? new SqlConnection(connectionString) : new MySqlConnection(connectionString);
+            IsSqlServer ? new SqlConnection(connectionString) { RetryLogicProvider = ResumeRetry } : new MySqlConnection(connectionString);
+
+        /// <summary>
+        /// Azure SQL serverless pauses when idle; the first login after that fails with 40613 while it resumes (about a
+        /// minute). Opening a connection retries those transient errors for up to ~2 minutes. Commands are not retried.
+        /// </summary>
+        static readonly SqlRetryLogicBaseProvider ResumeRetry = SqlConfigurableRetryFactory.CreateExponentialRetryProvider(new SqlRetryLogicOption
+        {
+            NumberOfTries = 7,
+            DeltaTime = TimeSpan.FromSeconds(4),
+            MaxTimeInterval = TimeSpan.FromSeconds(30),
+            TransientErrors = new[] { 40613, 40197, 40501, 49918, 49919, 49920, 4060, 4221, 10928, 10929, 40540, 233, 64, 10053, 10054, 10060 },
+        });
+
+        /// <summary>
+        /// Background work that should run after writes instead of polling. A serverless database pauses only when no
+        /// session or query touches it for the auto-pause delay, so a loop that checks the database every few seconds
+        /// keeps it (and its bill) running all day. On MySQL the old timers stay.
+        /// </summary>
+        public static bool PauseFriendly => IsSqlServer;
 
         public static DbConnection Open(string connectionString)
         {
@@ -300,5 +319,19 @@ namespace nkv.MicroService.Utility
         public static Guid GetGuid(this DbDataReader r, string name) => r.GetGuid(r.GetOrdinal(name));
         public static object GetValue(this DbDataReader r, string name) => r.GetValue(r.GetOrdinal(name));
         public static bool IsDBNull(this DbDataReader r, string name) => r.IsDBNull(r.GetOrdinal(name));
+    }
+
+    /// <summary>A one-shot runner: Wake() runs the action once after a short delay (several wakes before it runs = one run).</summary>
+    public sealed class WakeTimer
+    {
+        readonly System.Threading.Timer _timer;
+        int _scheduled;
+        public WakeTimer(Action action) =>
+            _timer = new System.Threading.Timer(_ => { System.Threading.Interlocked.Exchange(ref _scheduled, 0); action(); }, null, System.Threading.Timeout.Infinite, System.Threading.Timeout.Infinite);
+        public void Wake(TimeSpan? after = null)
+        {
+            if (System.Threading.Interlocked.Exchange(ref _scheduled, 1) == 0)
+                _timer.Change(after ?? TimeSpan.FromSeconds(2), System.Threading.Timeout.InfiniteTimeSpan);
+        }
     }
 }

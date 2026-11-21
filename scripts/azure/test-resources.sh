@@ -62,7 +62,7 @@ echo "Firewall allows your IP $MYIP."
 if ! az sql db show -g "$RG" -s "$SQL_SERVER" -n "$SQL_DB" -o none 2>/dev/null; then
   echo "Creating database $SQL_DB (free offer: pauses when idle, no charge within the monthly free limit)..."
   az sql db create -g "$RG" -s "$SQL_SERVER" -n "$SQL_DB" -e GeneralPurpose -f Gen5 -c 2 \
-      --compute-model Serverless --use-free-limit --free-limit-exhaustion-behavior AutoPause --tags $TAGS -o none \
+      --compute-model Serverless --auto-pause-delay 60 --use-free-limit --free-limit-exhaustion-behavior AutoPause --tags $TAGS -o none \
   || { echo "Free offer not available here; creating smallest serverless database (auto-pause after 1 hour)."
        az sql db create -g "$RG" -s "$SQL_SERVER" -n "$SQL_DB" -e GeneralPurpose -f Gen5 -c 1 --min-capacity 0.5 \
          --compute-model Serverless --auto-pause-delay 60 --backup-storage-redundancy Local --tags $TAGS -o none; }
@@ -95,7 +95,7 @@ NEOAPPS_AZURESQL_SERVER=$SQL_SERVER.database.windows.net
 NEOAPPS_AZURESQL_DATABASE=$SQL_DB
 NEOAPPS_AZURESQL_USER=$SQL_ADMIN
 NEOAPPS_AZURESQL_PASSWORD=$SQL_PASSWORD
-NEOAPPS_AZURESQL="Server=tcp:$SQL_SERVER.database.windows.net,1433;Database=$SQL_DB;User ID=$SQL_ADMIN;Password=$SQL_PASSWORD;Encrypt=True;TrustServerCertificate=False;Connection Timeout=90"
+NEOAPPS_AZURESQL="Server=tcp:$SQL_SERVER.database.windows.net,1433;Database=$SQL_DB;User ID=$SQL_ADMIN;Password=$SQL_PASSWORD;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30"
 AZURE_STORAGE_CONNECTION_STRING="$STORAGE_CS"
 AZURE_STORAGE_CONTAINER=documents
 SERVICEBUS_CONNECTION_STRING="$BUS_CS"

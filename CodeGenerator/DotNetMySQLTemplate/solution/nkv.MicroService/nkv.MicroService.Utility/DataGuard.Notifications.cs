@@ -101,6 +101,7 @@ namespace nkv.MicroService.Utility
                     ins.Parameters.AddWithValue("@es", email != null ? "pending" : "none");
                     ins.Parameters.AddWithValue("@read", r.InApp ? DBNull.Value : DateTime.UtcNow); // email-only rules don't fill the bell
                     ins.ExecuteNonQuery();
+                    if (email != null) NotificationMailer.Wake(TimeSpan.FromSeconds(5)); // after the write's transaction commits
                 }
             }
         }
