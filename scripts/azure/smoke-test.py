@@ -19,6 +19,12 @@ if proj.get("DbProvider") == "azuresql":
         env["Storage__BlobConnectionString"] = os.environ["AZURE_STORAGE_CONNECTION_STRING"]
         env["Storage__Container"] = "".join(ch for ch in app.lower() if ch.isalnum())[:63] or "app-files"
         print("files: Azure Blob container", env["Storage__Container"])
+    if os.environ.get("SERVICEBUS_CONNECTION_STRING"):  # serverless: jobs on Service Bus, no Redis or RabbitMQ
+        env["ServiceBus__ConnectionString"] = os.environ["SERVICEBUS_CONNECTION_STRING"]
+        env["ServiceBus__JobsQueue"] = os.environ.get("SERVICEBUS_QUEUE", "jobs")
+        env["ConnectionStrings__Redis"] = ""
+        env["ConnectionStrings__RabitMQ"] = ""
+        print("jobs: Service Bus queue", env["ServiceBus__JobsQueue"], "(no Redis, no RabbitMQ)")
 log_path = os.path.join(root, "workspace", app, "smoke-api.log")
 log = open(log_path, "w")
 p = subprocess.Popen(["dotnet", "run", "--no-build", "--no-launch-profile"], cwd=api_dir, env=env, stdout=log, stderr=subprocess.STDOUT)
@@ -97,6 +103,35 @@ try:
         except urllib.error.HTTPError as e: got = e.read()
         check("file download (same bytes)", got == text, got[:100])
         s, r = req("DELETE", f"/v1/api/Ai/files/{fid}", token=tok); check("file delete", s == 200, r)
+    # background job on the queue (RabbitMQ or Service Bus): CSV import -> waits for approval -> approve -> rows created
+    def job_until(jid, states, secs=120):
+        t0 = time.time(); j = {}
+        while time.time() - t0 < secs:
+            s2, j = req("GET", f"/v1/api/Jobs/{jid}", token=tok)
+            if isinstance(j, dict) and j.get("status") in states: return j
+            time.sleep(2)
+        return j if isinstance(j, dict) else {"status": str(j)[:100]}
+    s, r = req("POST", "/v1/api/Jobs", {"kind": "data.import", "input": {"table": "todo_lists", "rows": [{"name": "Imported A"}, {"name": "Imported B"}]}}, tok)
+    jid = r.get("job_id") if isinstance(r, dict) else None
+    check("job: queued", s == 200 and jid, str(r)[:200])
+    if jid:
+        j = job_until(jid, ("awaiting_approval", "failed", "completed"))
+        check("job: picked up from the queue and waits for approval", j.get("status") == "awaiting_approval", j.get("status"))
+        s, r = req("POST", f"/v1/api/Jobs/{jid}/approve", {"decision": {}}, tok)
+        j = job_until(jid, ("completed", "failed"))
+        check("job: approved, resumed and completed", j.get("status") == "completed", str(j.get("error") or j.get("status")))
+        s, r = req("GET", "/v1/api/Todo_lists?pageNo=1&pageSize=50", token=tok)
+        check("job: rows imported", "Imported B" in str(r), str(r)[:150])
+    # a job file: rows with problems -> import-problems.csv attached to the job (local disk or Blob)
+    s, r = req("POST", "/v1/api/Jobs", {"kind": "data.import", "input": {"table": "todo_lists", "rows": [{"color": "no name"}]}}, tok)
+    jid = r.get("job_id") if isinstance(r, dict) else None
+    if jid:
+        j = job_until(jid, ("completed", "failed"))
+        fr = urllib.request.Request(f"{base}/v1/api/Jobs/{jid}/files/import-problems.csv", headers={"Authorization": "Bearer " + tok})
+        try:
+            with urllib.request.urlopen(fr, timeout=60) as resp: got = resp.read().decode()
+        except urllib.error.HTTPError as e: got = f"HTTP {e.code}"
+        check("job file: problems CSV attached and readable", got.startswith("row,problem"), got[:120])
     s, r = req("GET", "/v1/api/Todo_lists?pageNo=1&pageSize=10&orderBy=no_such_column|ASC", token=tok)
     check("sort: unknown column refused", s == 400, f"{s} {str(r)[:150]}")
     s, r = req("DELETE", f"/v1/api/Todo_lists/{lid}", token=tok); print("delete list (has todo):", s, str(r)[:200])

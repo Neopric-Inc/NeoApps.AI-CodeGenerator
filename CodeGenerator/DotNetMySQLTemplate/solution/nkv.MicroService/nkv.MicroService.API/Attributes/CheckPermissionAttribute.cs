@@ -23,13 +23,36 @@ namespace nkv.MicroService.API.Attributes
             _actionType = actionType;
         }
 
+        // Without Redis, decisions are kept in memory for a minute per instance (a permission change reaches every
+        // instance within that minute); with Redis they are shared and cleared when permissions change.
+        static readonly System.Collections.Concurrent.ConcurrentDictionary<string, (string value, DateTime until)> Local = new();
+        static readonly TimeSpan LocalTtl = TimeSpan.FromSeconds(60);
+
+        private string CacheGet(string key)
+        {
+            if (_db != null) return _db.StringGet(key);
+            return Local.TryGetValue(key, out var e) && e.until > DateTime.UtcNow ? e.value : null;
+        }
+
+        private void CacheSet(string key, string value)
+        {
+            if (_db != null) { _db.StringSet(key, value); return; }
+            Local[key] = (value, DateTime.UtcNow + LocalTtl);
+        }
+
+        /// <summary>Drops this instance's in-memory decisions for a workspace (Redis entries are cleared by AccessController).</summary>
+        public static void ClearLocal(string tenant)
+        {
+            foreach (var k in Local.Keys) if (k.Contains(":" + tenant + ":")) Local.TryRemove(k, out _);
+        }
+
         public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
         {
             var httpContextAccessor = context.HttpContext.RequestServices.GetService<IHttpContextAccessor>();
             var entitiesManager = context.HttpContext.RequestServices.GetService<IEntitiesManager>();
             var permissionmatrixManager = context.HttpContext.RequestServices.GetService<IPermissionmatrixManager>();
             var redis = context.HttpContext.RequestServices.GetService<IConnectionMultiplexer>();
-            _db = redis.GetDatabase();
+            _db = redis?.GetDatabase(); // null: no Redis (serverless) -> short in-memory cache
 
             var claimsIdentity = httpContextAccessor.HttpContext.User.Identity as ClaimsIdentity;
 
@@ -49,7 +72,7 @@ namespace nkv.MicroService.API.Attributes
 
             // To get last update time 
             string timeKey = $"{permissionKey}:time";
-            string cachedTime = _db.StringGet(timeKey);
+            string cachedTime = CacheGet(timeKey);
 
             // If cachedTime is null, then its first visit of user 
             if (!string.IsNullOrEmpty(cachedTime))
@@ -66,7 +89,7 @@ namespace nkv.MicroService.API.Attributes
                 }
                 else
                 {
-                    cachedPermission = _db.StringGet(permissionKey);
+                    cachedPermission = CacheGet(permissionKey);
 
 
                     if ((!string.IsNullOrEmpty(cachedPermission)) && (cachedPermission == "1"))
@@ -124,9 +147,9 @@ namespace nkv.MicroService.API.Attributes
                 }
 
                 // Store the permission in the cache for future requests
-                _db.StringSet(permissionKey, isAuthorized ? "1" : "0");
+                CacheSet(permissionKey, isAuthorized ? "1" : "0");
                 DateTime currentDateTime = DateTime.Now;
-                _db.StringSet(timeKey, currentDateTime.ToString("yyyy-MM-dd HH:mm:ss"));
+                CacheSet(timeKey, currentDateTime.ToString("yyyy-MM-dd HH:mm:ss"));
 
             }
 

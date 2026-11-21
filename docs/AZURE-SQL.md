@@ -24,6 +24,17 @@ afterwards fails with **error 40613** while it resumes (usually under a minute).
   database awake while the API runs. The API logs this at startup.
 - **Connection pool:** idle pooled connections close after a few minutes, well inside the 15-minute minimum delay.
 
+## Serverless services (no Redis, no RabbitMQ)
+
+Set in the API's environment; leave them out and the app works as before (disk, RabbitMQ, Redis).
+
+| Setting | Use |
+|---|---|
+| `Storage__Provider=azureblob`, `Storage__BlobAccountUrl` (managed identity) or `Storage__BlobConnectionString`, `Storage__Container` | AI documents and job files in Azure Blob (container disks are wiped on restart) |
+| `ServiceBus__Namespace` (managed identity) or `ServiceBus__ConnectionString`, `ServiceBus__JobsQueue` | Background jobs on Azure Service Bus |
+| `ServiceBus__Outbox` | Data-rule outbox events to a Service Bus queue or topic (topics need the Standard tier) |
+| `ConnectionStrings__Redis=` and `ConnectionStrings__RabitMQ=` (empty) | No Redis: permission decisions cached in memory for 60 s per instance, job feeds read the database. No RabbitMQ: the legacy workflow events are dropped |
+
 ## For deploying (Container Apps)
 
 - Probe `/health` (no database). `/health/ready` queries the database: as a liveness or readiness probe it keeps the
@@ -35,8 +46,9 @@ afterwards fails with **error 40613** while it resumes (usually under a minute).
 - Free tier (100,000 vCore-seconds a month): with `AutoPause` the database stays paused for the rest of the month once
   that is used up, and the free tier has no SLA. Fine for tests; customer apps use a regular (paid) serverless database.
 - The NeoApps control plane must not poll app databases; check the app's `/health` instead.
+- Scale on the jobs queue (KEDA azure-servicebus rule) so a queued job wakes an app that scaled to zero.
 
 ## Not yet on Azure SQL
 
-`evolve`, `preview` and `neoapps test` against Azure SQL; files in Blob storage; jobs on Service Bus; AI document
-search ranking (uses a substring match on SQL Server for now).
+`evolve`, `preview` and `neoapps test` against Azure SQL; scheduled checks (`jobs`) as an Azure scheduled job; AI
+document search ranking (uses a substring match on SQL Server for now).

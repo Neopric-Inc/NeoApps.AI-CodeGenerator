@@ -7,6 +7,7 @@
     <!-- log4net 2.0.15 (pulled in above) has advisory GHSA-4f7c-pmjv-c25w -->
     <PackageReference Include="log4net" Version="3.6.0" />
     <PackageReference Include="Azure.Identity" Version="1.17.1" />
+    <PackageReference Include="Azure.Messaging.ServiceBus" Version="7.20.1" />
     <PackageReference Include="Azure.Storage.Blobs" Version="12.26.0" />
     <PackageReference Include="Microsoft.Data.SqlClient" Version="7.1.2" />
     <PackageReference Include="MySqlConnector" Version="2.6.2" />

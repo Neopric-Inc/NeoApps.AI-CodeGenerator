@@ -40,7 +40,16 @@ namespace nkv.MicroService.Utility
                 _exchange = ob["exchange"]?.GetValue<string>() ?? _exchange;
                 _maxAttempts = ob["maxAttempts"]?.GetValue<int>() ?? _maxAttempts;
                 var every = ob["publishEverySeconds"]?.GetValue<int>() ?? 5;
-                if (DataGuard.OutboxTable != null && !string.IsNullOrEmpty(_rabbitUri))
+                // Azure Service Bus queue or topic when configured (serverless), else RabbitMQ exchange
+                var busCs = cfg?["ServiceBus:ConnectionString"]; var busNs = cfg?["ServiceBus:Namespace"];
+                var topic = cfg?["ServiceBus:Outbox"]; // a queue or a topic
+                if (!string.IsNullOrWhiteSpace(topic) && (!string.IsNullOrWhiteSpace(busCs) || !string.IsNullOrWhiteSpace(busNs)))
+                {
+                    var client = !string.IsNullOrWhiteSpace(busCs) ? new Azure.Messaging.ServiceBus.ServiceBusClient(busCs)
+                        : new Azure.Messaging.ServiceBus.ServiceBusClient(busNs, new Azure.Identity.DefaultAzureCredential());
+                    _busSender = client.CreateSender(topic);
+                }
+                if (DataGuard.OutboxTable != null && (_busSender != null || !string.IsNullOrEmpty(_rabbitUri)))
                 {
                     if (Db.PauseFriendly)
                     {
@@ -56,6 +65,7 @@ namespace nkv.MicroService.Utility
         static partial void StartImpl(IServiceProvider services);
 
         /// <summary>Publishes pending outbox rows once. Safe to call concurrently (one run at a time, rows locked with SKIP LOCKED).</summary>
+        static Azure.Messaging.ServiceBus.ServiceBusSender _busSender;
         static WakeTimer _outboxWake;
         static volatile bool _outboxMore;
 
@@ -71,7 +81,8 @@ namespace nkv.MicroService.Utility
             {
                 var table = DataGuard.OutboxTable;
                 var pk = DataGuard.PrimaryKeys[table];
-                IModel channel;
+                IModel channel = null;
+                if (_busSender == null)
                 try
                 {
                     if (_rabbit == null || !_rabbit.IsOpen) _rabbit = new ConnectionFactory { Uri = new Uri(_rabbitUri), AutomaticRecoveryEnabled = true }.CreateConnection("neoapps-outbox");
@@ -100,6 +111,18 @@ namespace nkv.MicroService.Utility
                         string status; var attempts = row.attempts + 1;
                         try
                         {
+                            if (_busSender != null)
+                            {
+                                var msg = new Azure.Messaging.ServiceBus.ServiceBusMessage(Encoding.UTF8.GetBytes(row.payload))
+                                {
+                                    MessageId = $"{table}:{row.id}", Subject = row.type, ContentType = "application/json",
+                                };
+                                msg.ApplicationProperties["tenant"] = row.tenant ?? "";
+                                msg.ApplicationProperties["attempt"] = attempts;
+                                _busSender.SendMessageAsync(msg).GetAwaiter().GetResult();
+                                status = "published"; sent++; Published++;
+                                goto stored;
+                            }
                             var props = channel.CreateBasicProperties();
                             props.Persistent = true;
                             props.MessageId = $"{table}:{row.id}";
@@ -116,9 +139,10 @@ namespace nkv.MicroService.Utility
                             status = attempts >= _maxAttempts ? "dead_letter" : "failed";
                             if (status == "failed") _outboxMore = true;
                             Console.WriteLine($"Outbox: event {row.id} ({row.type}) attempt {attempts} failed: {ex.Message}");
-                            if (status == "dead_letter")
+                            if (status == "dead_letter" && channel != null)
                                 try { channel.BasicPublish(_exchange + ".dlx", row.type, false, null, Encoding.UTF8.GetBytes(row.payload)); } catch { }
                         }
+                        stored:;
                         using var u = Db.Command($"UPDATE {Db.Q(table)} SET status = @s, attempts = @a{(status == "published" && DataGuard.Columns[table].Contains("published_at") ? ", published_at = " + Db.UtcNow : "")} WHERE {Db.Q(pk)} = @id", c, tx);
                         u.Parameters.AddWithValue("@s", status); u.Parameters.AddWithValue("@a", attempts); u.Parameters.AddWithValue("@id", row.id);
                         u.ExecuteNonQuery();

@@ -1,39 +1,74 @@
+using System;
 using System.Text;
+using Azure.Identity;
+using Azure.Messaging.ServiceBus;
 using Microsoft.Extensions.Configuration;
-using MySqlConnector;
+using Microsoft.Extensions.DependencyInjection;
 using nkv.MicroService.Utility;
 using RabbitMQ.Client;
 
 namespace nkv.MicroService.API.Jobs
 {
     /// <summary>
-    /// Puts job ids on a durable RabbitMQ queue (one per app database). Workers take them one at a time per free slot,
-    /// so heavy jobs never pile up on the web server, and a job whose worker dies is handed to another worker.
+    /// Puts job ids on a durable queue. Workers take them one at a time per free slot, so heavy jobs never pile up on the
+    /// web server, and a job whose worker dies is handed to another worker.
+    ///   Azure Service Bus  when ServiceBus:ConnectionString or ServiceBus:Namespace (managed identity) is set; queue
+    ///                      ServiceBus:JobsQueue (default "jobs"). Serverless: nothing runs while the app is idle.
+    ///   RabbitMQ           otherwise (ConnectionStrings:RabitMQ), one queue per app database, as before.
     /// </summary>
     public sealed class JobQueue
     {
-        private readonly IConnection _connection;
+        private readonly IServiceProvider _services;
         private readonly object _lock = new();
         private IModel _channel;
+        private readonly ServiceBusSender _sender;
 
-        public JobQueue(IConnection connection, IConfiguration configuration)
+        public JobQueue(IServiceProvider services, IConfiguration configuration)
         {
-            _connection = connection;
-            Name = "neoapps.jobs." + Db.DatabaseName(configuration.GetConnectionString("MySQLDatabase"));
+            _services = services;
+            Bus = CreateServiceBus(configuration);
+            if (Bus != null)
+            {
+                Name = configuration["ServiceBus:JobsQueue"] is { Length: > 0 } q ? q : "jobs";
+                _sender = Bus.CreateSender(Name);
+            }
+            else Name = "neoapps.jobs." + Db.DatabaseName(configuration.GetConnectionString("MySQLDatabase"));
         }
 
+        /// <summary>The queue name (Service Bus queue or RabbitMQ queue).</summary>
         public string Name { get; }
+
+        /// <summary>A queue is configured (Service Bus or RabbitMQ).</summary>
+        public bool HasBroker => Bus != null || _services.GetService<IConnection>() != null;
+
+        /// <summary>The Service Bus client when the app uses Service Bus; null for RabbitMQ.</summary>
+        public ServiceBusClient Bus { get; }
+
+        public static ServiceBusClient CreateServiceBus(IConfiguration configuration)
+        {
+            var cs = configuration["ServiceBus:ConnectionString"];
+            var ns = configuration["ServiceBus:Namespace"]; // e.g. myapp-bus.servicebus.windows.net
+            if (!string.IsNullOrWhiteSpace(cs)) return new ServiceBusClient(cs);
+            if (!string.IsNullOrWhiteSpace(ns)) return new ServiceBusClient(ns, new DefaultAzureCredential());
+            return null;
+        }
 
         public static void Declare(IModel channel, string name) =>
             channel.QueueDeclare(queue: name, durable: true, exclusive: false, autoDelete: false, arguments: null);
 
         public void Enqueue(string jobId)
         {
+            if (_sender != null)
+            {
+                _sender.SendMessageAsync(new ServiceBusMessage(jobId) { MessageId = jobId + ":" + Guid.NewGuid().ToString("N") }).GetAwaiter().GetResult();
+                return;
+            }
+            if (!HasBroker) throw new JobException("Background jobs aren't set up on this server: it needs Azure Service Bus (ServiceBus:*) or RabbitMQ.");
             lock (_lock)
             {
                 if (_channel == null || _channel.IsClosed)
                 {
-                    _channel = _connection.CreateModel();
+                    _channel = _services.GetRequiredService<IConnection>().CreateModel();
                     Declare(_channel, Name);
                 }
                 var props = _channel.CreateBasicProperties();

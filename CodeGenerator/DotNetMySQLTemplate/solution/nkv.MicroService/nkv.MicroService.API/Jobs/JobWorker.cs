@@ -45,10 +45,13 @@ namespace nkv.MicroService.API.Jobs
             // DataGuard must be ready before any job runs: without it queries would not be scoped to the job's user.
             while (!DataGuard.Ready && !stop.IsCancellationRequested) await Task.Delay(500, stop);
 
+            _signals.OnCancelRequested(id => { if (_running.TryGetValue(id, out var c)) c.Cancel(); });
+            if (_queue.Bus != null) { await RunServiceBus(stop); return; }
+            if (!_queue.HasBroker) { _log.LogWarning("Background jobs are off: no Azure Service Bus (ServiceBus:*) or RabbitMQ configured."); return; }
+
             var channel = _services.GetRequiredService<IConnection>().CreateModel();
             JobQueue.Declare(channel, _queue.Name);
             channel.BasicQos(0, (ushort)Setting("Concurrency", 2), false);
-            _signals.OnCancelRequested(id => { if (_running.TryGetValue(id, out var cts)) cts.Cancel(); });
 
             var consumer = new EventingBasicConsumer(channel);
             consumer.Received += (_, ea) =>
@@ -72,6 +75,37 @@ namespace nkv.MicroService.API.Jobs
             try { await Task.Delay(Timeout.Infinite, stop); }
             catch (OperationCanceledException) { }
             try { lock (channel) channel.Close(); } catch { }
+        }
+
+        /// <summary>Azure Service Bus: the message lock is renewed while the job runs; on shutdown the message is abandoned
+        /// so another instance (or this one after a restart) picks the job up again.</summary>
+        private async Task RunServiceBus(CancellationToken stop)
+        {
+            await using var processor = _queue.Bus.CreateProcessor(_queue.Name, new Azure.Messaging.ServiceBus.ServiceBusProcessorOptions
+            {
+                MaxConcurrentCalls = Setting("Concurrency", 2),
+                AutoCompleteMessages = false,
+                MaxAutoLockRenewalDuration = TimeSpan.FromMinutes(Setting("TimeoutMinutes", 30) + 5),
+            });
+            processor.ProcessMessageAsync += async args =>
+            {
+                var jobId = args.Message.Body.ToString();
+                var ack = true;
+                try { ack = await Process(jobId, args.Message.DeliveryCount > 1, stop); }
+                catch (Exception ex) { _log.LogError(ex, "Job {JobId} crashed the worker loop", jobId); }
+                if (ack) await args.CompleteMessageAsync(args.Message, CancellationToken.None);
+                else await args.AbandonMessageAsync(args.Message, cancellationToken: CancellationToken.None);
+            };
+            processor.ProcessErrorAsync += args =>
+            {
+                _log.LogWarning("Service Bus job queue: {Message}", args.Exception.Message);
+                return Task.CompletedTask;
+            };
+            await processor.StartProcessingAsync(stop);
+            _log.LogInformation("Job worker listening on Service Bus queue {Queue}", _queue.Name);
+            try { await Task.Delay(Timeout.Infinite, stop); }
+            catch (OperationCanceledException) { }
+            try { await processor.StopProcessingAsync(); } catch { }
         }
 
         /// <summary>Runs or resumes one job. Returns false when the message should go back on the queue (shutdown).</summary>

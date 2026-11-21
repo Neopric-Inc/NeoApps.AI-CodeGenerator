@@ -1,4 +1,5 @@
 using System;
+using nkv.MicroService.API.Attributes;
 using System.Data.Common;
 using System.Collections.Generic;
 using System.Linq;
@@ -30,7 +31,7 @@ namespace nkv.MicroService.API.Controllers
         private readonly string _connectionString;
         private readonly IConnectionMultiplexer _redis;
 
-        public AccessController(IConfiguration configuration, IConnectionMultiplexer redis)
+        public AccessController(IConfiguration configuration, IConnectionMultiplexer redis = null)
         {
             _connectionString = configuration.GetConnectionString("MySQLDatabase");
             _redis = redis;
@@ -490,6 +491,8 @@ namespace nkv.MicroService.API.Controllers
         /// <summary>CheckPermissionAttribute caches decisions in Redis for 30 minutes; drop this tenant's entries.</summary>
         private void ClearPermissionCache()
         {
+            CheckPermissionAttribute.ClearLocal(Tenant);
+            if (_redis == null) return;
             try
             {
                 foreach (var endpoint in _redis.GetEndPoints())
