@@ -33,7 +33,7 @@ az group create -n "$RG" -l "$LOCATION" --tags $TAGS -o none
 # One random suffix per resource group, kept as a tag so re-runs reuse the same names.
 SUFFIX=$(az group show -n "$RG" --query "tags.suffix" -o tsv)
 if [ -z "$SUFFIX" ] || [ "$SUFFIX" = "None" ]; then
-  SUFFIX=$(LC_ALL=C tr -dc 'a-z0-9' </dev/urandom | head -c 6)
+  SUFFIX=$(openssl rand -hex 3)
   az group update -n "$RG" --set tags.suffix="$SUFFIX" -o none
 fi
 SQL_SERVER="neoapps-sql-$SUFFIX"; SQL_DB="neoapps_test"; SQL_ADMIN="neoappsadmin"
@@ -44,12 +44,12 @@ if az sql server show -g "$RG" -n "$SQL_SERVER" -o none 2>/dev/null; then
   echo "SQL server $SQL_SERVER exists."
   if [ -f "$ENV_FILE" ]; then SQL_PASSWORD=$(sed -n 's/^NEOAPPS_AZURESQL_PASSWORD=//p' "$ENV_FILE"); fi
   if [ -z "${SQL_PASSWORD:-}" ]; then
-    SQL_PASSWORD="$(LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom | head -c 28)Aa1-"
+    SQL_PASSWORD="$(openssl rand -base64 48 | tr -dc 'A-Za-z0-9' | cut -c1-28)Aa1-"
     az sql server update -g "$RG" -n "$SQL_SERVER" -p "$SQL_PASSWORD" -o none
     echo "Reset the admin password (env file was missing)."
   fi
 else
-  SQL_PASSWORD="$(LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom | head -c 28)Aa1-"
+  SQL_PASSWORD="$(openssl rand -base64 48 | tr -dc 'A-Za-z0-9' | cut -c1-28)Aa1-"
   echo "Creating SQL server $SQL_SERVER (2-3 min)..."
   az sql server create -g "$RG" -n "$SQL_SERVER" -l "$LOCATION" -u "$SQL_ADMIN" -p "$SQL_PASSWORD" \
     --minimal-tls-version 1.2 -o none
