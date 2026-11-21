@@ -1,4 +1,5 @@
 using MySqlConnector;
+using System.Data.Common;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -33,17 +34,17 @@ namespace nkv.MicroService.Utility
         static readonly List<NotifyRule> _notifyRules = new();
         public static int NotificationRules => _notifyRules.Count;
 
-        static void InitNotifications(MySqlConnection c)
+        static void InitNotifications(DbConnection c)
         {
             _notifyRules.Clear();
-            using (var t = new MySqlCommand(@"CREATE TABLE IF NOT EXISTS user_notifications (notification_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+            using (var t = Db.Command(Db.CreateTableIfMissing("user_notifications", @"notification_id BIGINT AUTO_INCREMENT PRIMARY KEY,
                     user_id INT NOT NULL, title VARCHAR(500) NOT NULL, table_name VARCHAR(100) NULL, record_id VARCHAR(100) NULL,
                     actor VARCHAR(255) NULL, createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, read_at DATETIME NULL,
                     email_status VARCHAR(10) NOT NULL DEFAULT 'none', email_attempts INT NOT NULL DEFAULT 0, email_error VARCHAR(500) NULL,
-                    KEY ix_notifications_user (user_id, read_at, notification_id), KEY ix_notifications_email (email_status))", c)) t.ExecuteNonQuery();
-            using (var t = new MySqlCommand(@"CREATE TABLE IF NOT EXISTS user_notification_settings (user_id INT NOT NULL PRIMARY KEY,
+                    KEY ix_notifications_user (user_id, read_at, notification_id), KEY ix_notifications_email (email_status)"), c)) t.ExecuteNonQuery();
+            using (var t = Db.Command(Db.CreateTableIfMissing("user_notification_settings", @"user_id INT NOT NULL PRIMARY KEY,
                     email VARCHAR(255) NULL, email_on TINYINT(1) NOT NULL DEFAULT 1,
-                    modifiedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)", c)) t.ExecuteNonQuery();
+                    modifiedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"), c)) t.ExecuteNonQuery();
             if (Config["notifications"] is not JsonArray rules) return;
             foreach (var n in rules.OfType<JsonObject>())
             {
@@ -64,7 +65,7 @@ namespace nkv.MicroService.Utility
         }
 
         /// <summary>Called after a write commits its own rows (same transaction): writes one notification per recipient.</summary>
-        static void Notify(MySqlCommand c, Caller caller, string table, string action, object id, Dictionary<string, object> row, Dictionary<string, object> before)
+        static void Notify(DbCommand c, Caller caller, string table, string action, object id, Dictionary<string, object> row, Dictionary<string, object> before)
         {
             if (_notifyRules.Count == 0 || row == null) return;
             foreach (var r in _notifyRules)
@@ -90,8 +91,8 @@ namespace nkv.MicroService.Utility
                 {
                     var email = r.Email ? EmailFor(c, u) : null;
                     if (!r.InApp && email == null) continue;
-                    using var ins = new MySqlCommand(@"INSERT INTO user_notifications (user_id, title, table_name, record_id, actor, email_status, read_at, createdAt)
-                        VALUES (@u, @t, @tb, @id, @a, @es, @read, UTC_TIMESTAMP())", c.Connection, c.Transaction);
+                    using var ins = Db.Command(@"INSERT INTO user_notifications (user_id, title, table_name, record_id, actor, email_status, read_at, createdAt)
+                        VALUES (@u, @t, @tb, @id, @a, @es, @read, " + Db.UtcNow + ")", c.Connection, c.Transaction);
                     ins.Parameters.AddWithValue("@u", u);
                     ins.Parameters.AddWithValue("@t", title.Length > 500 ? title[..500] : title);
                     ins.Parameters.AddWithValue("@tb", table);
@@ -108,15 +109,15 @@ namespace nkv.MicroService.Utility
             Regex.Replace(template, @"\{(\w+)\}", m => m.Groups[1].Value.Equals("id", StringComparison.OrdinalIgnoreCase) ? id?.ToString() ?? ""
                 : Str(row.GetValueOrDefault(m.Groups[1].Value)) ?? "");
 
-        static string EmailFor(MySqlCommand c, int userId)
+        static string EmailFor(DbCommand c, int userId)
         {
-            using var q = new MySqlCommand("SELECT email FROM user_notification_settings WHERE user_id = @u AND email_on = 1 AND email IS NOT NULL AND email <> ''", c.Connection, c.Transaction);
+            using var q = Db.Command("SELECT email FROM user_notification_settings WHERE user_id = @u AND email_on = 1 AND email IS NOT NULL AND email <> ''", c.Connection, c.Transaction);
             q.Parameters.AddWithValue("@u", userId);
             return q.ExecuteScalar() as string;
         }
 
         /// <summary>Active users behind one "notify" entry. Within a tenant, only users of the same tenant.</summary>
-        static IEnumerable<int> Recipients(MySqlCommand c, Caller caller, string table, JsonNode who, Dictionary<string, object> row)
+        static IEnumerable<int> Recipients(DbCommand c, Caller caller, string table, JsonNode who, Dictionary<string, object> row)
         {
             var ids = new List<int>();
             string sql = null; object p = null;
@@ -138,12 +139,12 @@ namespace nkv.MicroService.Utility
                 var t = o["table"]?.GetValue<string>();
                 var uc = o["userColumn"]?.GetValue<string>() ?? "user_id";
                 if (t != null && PrimaryKeys.TryGetValue(t, out var key))
-                { sql = $"SELECT u.user_id FROM `{SafeIdentifier(t)}` x JOIN users u ON (u.user_id = x.`{SafeIdentifier(uc)}` OR u.username = x.`{SafeIdentifier(uc)}`) WHERE x.`{SafeIdentifier(key)}` = @p AND u.isActive = 1"; p = fk; }
+                { sql = $"SELECT u.user_id FROM {Db.Q(SafeIdentifier(t))} x JOIN users u ON (u.user_id = x.{Db.Q(SafeIdentifier(uc))} OR u.username = x.{Db.Q(SafeIdentifier(uc))}) WHERE x.{Db.Q(SafeIdentifier(key))} = @p AND u.isActive = 1"; p = fk; }
             }
             if (sql == null) return ids;
             if (TenancyEnabled && caller?.Tenant != null)
                 sql = $"SELECT q.user_id FROM ({sql}) q JOIN user_tenants ut ON ut.user_id = q.user_id WHERE ut.tenant_id = {caller.Tenant.Value}";
-            using var cmd = new MySqlCommand(sql, c.Connection, c.Transaction);
+            using var cmd = Db.Command(sql, c.Connection, c.Transaction);
             cmd.Parameters.AddWithValue("@p", p);
             using var rd = cmd.ExecuteReader();
             while (rd.Read()) ids.Add(Convert.ToInt32(rd.GetValue(0)));

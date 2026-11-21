@@ -1,4 +1,6 @@
 using System;
+using nkv.MicroService.Utility;
+using System.Data.Common;
 using System.Collections.Generic;
 using System.IO;
 using Microsoft.AspNetCore.Hosting;
@@ -59,9 +61,9 @@ namespace nkv.MicroService.API.Jobs
             return safe;
         }
 
-        public MySqlConnection Open()
+        public DbConnection Open()
         {
-            var c = new MySqlConnection(_cs);
+            var c = Db.Connection(_cs);
             c.Open();
             if (!_schemaReady)
                 lock (SchemaLock)
@@ -82,15 +84,15 @@ namespace nkv.MicroService.API.Jobs
             return c;
         }
 
-        private static void Exec(MySqlConnection c, string sql, params (string, object)[] ps)
+        private static void Exec(DbConnection c, string sql, params (string, object)[] ps)
         {
             using var cmd = Cmd(c, sql, ps);
             cmd.ExecuteNonQuery();
         }
 
-        private static MySqlCommand Cmd(MySqlConnection c, string sql, params (string, object)[] ps)
+        private static DbCommand Cmd(DbConnection c, string sql, params (string, object)[] ps)
         {
-            var cmd = new MySqlCommand(sql, c);
+            var cmd = Db.Command(sql, c);
             foreach (var (n, v) in ps) cmd.Parameters.AddWithValue(n, v ?? DBNull.Value);
             return cmd;
         }
@@ -212,7 +214,7 @@ namespace nkv.MicroService.API.Jobs
 
         public bool IsTerminal => JobStore.Terminal.Contains(Status);
 
-        internal static JobRow From(MySqlDataReader r)
+        internal static JobRow From(DbDataReader r)
         {
             string S(string n) => r.IsDBNull(r.GetOrdinal(n)) ? null : r.GetString(n);
             int? I(string n) => r.IsDBNull(r.GetOrdinal(n)) ? null : r.GetInt32(n);

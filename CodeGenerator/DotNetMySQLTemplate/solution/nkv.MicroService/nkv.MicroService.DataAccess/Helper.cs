@@ -1,5 +1,5 @@
-using MySqlConnector;
 using System;
+using System.Data.Common;
 using nkv.MicroService.Utility;
 using System.Collections.Generic;
 using System.Security.Cryptography;
@@ -10,16 +10,19 @@ namespace nkv.MicroService.DataAccess
 {
     public static class Helper
     {
-        public static int GetColumnOrder(MySqlDataReader reader, string name)
+        public static int GetColumnOrder(DbDataReader reader, string name)
         {
             int columnOrdinal = reader.GetOrdinal(name);
             return columnOrdinal;
         }
-        public static T GetValue<T>(this MySqlDataReader sqlDataReader, string columnName)
+        public static T GetValue<T>(this DbDataReader sqlDataReader, string columnName)
         {
             var value = sqlDataReader[columnName];
-
-            return value == System.DBNull.Value ? default(T) : (T)value;
+            if (value == System.DBNull.Value) return default(T);
+            if (value is T t) return t;
+            // SQL Server returns byte/bool where MySQL returns sbyte, etc.
+            var target = Nullable.GetUnderlyingType(typeof(T)) ?? typeof(T);
+            return (T)Convert.ChangeType(value, target, System.Globalization.CultureInfo.InvariantCulture);
         }
         public static string GetMD5HashData(string data)
         {
@@ -62,7 +65,7 @@ namespace nkv.MicroService.DataAccess
             if (orderBy != null && orderBy.Count > 0)
             {
                 var newCommandText = commandText;
-                Regex yourRegex = new Regex(@"(?<=BY\s+).*?(?=\s+LIMIT)");
+                Regex yourRegex = new Regex(@"(?<=BY\s+).*?(?=\s+(LIMIT|OFFSET)\b)");
                 string orderStr = "";
                 foreach (var r in orderBy)
                 {
@@ -81,7 +84,8 @@ namespace nkv.MicroService.DataAccess
                 // string pattern = @"\sORDER\sBY\sbackend_stack_id\b";
 
                 var newcommandText = commandText;
-                newcommandText = yourRegex.Replace(newcommandText, "");
+                // SQL Server pages with OFFSET/FETCH, which needs an ORDER BY
+                newcommandText = yourRegex.Replace(newcommandText, Db.IsSqlServer ? " ORDER BY (SELECT NULL)" : "");
                 ApiHardening.Sql(newcommandText);
 
                 return newcommandText;

@@ -6,7 +6,7 @@ public int Add{tableName}Transactional({tableName}TransactionalModel model)
 
         using (var cmd = connection.CreateCommand())
         {
-            MySqlTransaction transaction = connection.BeginTransaction();
+            DbTransaction transaction = connection.BeginTransaction();
             cmd.Transaction = transaction;
             bool isroll = false;
             try
@@ -46,7 +46,7 @@ public bool Update{tableName}Transactional({tableName}TransactionalModel model)
 
         using (var cmd = connection.CreateCommand())
         {
-            MySqlTransaction transaction = connection.BeginTransaction();
+            DbTransaction transaction = connection.BeginTransaction();
             cmd.Transaction = transaction;
             bool isroll = false;
             try

@@ -1,4 +1,5 @@
 using System;
+using System.Data.Common;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -42,7 +43,7 @@ namespace nkv.MicroService.API.Jobs
         }
 
         /// <summary>Checks the input and the person's create permission; returns the table, rows, writable columns and key.</summary>
-        private (string Table, List<JsonObject> Rows, Dictionary<string, ColumnInfo> Columns, string Key) Read(MySqlConnection c, JobUser user, JsonObject input)
+        private (string Table, List<JsonObject> Rows, Dictionary<string, ColumnInfo> Columns, string Key) Read(DbConnection c, JobUser user, JsonObject input)
         {
             var table = input["table"]?.ToString()?.ToLowerInvariant();
             if (string.IsNullOrEmpty(table) || !_data.AppTables(c).Contains(table)) throw new JobException("Say which table to import into (input.table).");
@@ -106,7 +107,7 @@ namespace nkv.MicroService.API.Jobs
         /// Inserts every row in one transaction through DataGuard. Trial (commit false): each row in its own savepoint so all
         /// problems are found, then everything is rolled back. Real run: any failure rolls back the whole file.
         /// </summary>
-        private static Outcome Insert(MySqlConnection c, JobContext ctx, string table, List<JsonObject> rows,
+        private static Outcome Insert(DbConnection c, JobContext ctx, string table, List<JsonObject> rows,
             Dictionary<string, ColumnInfo> columns, string key, bool commit)
         {
             var errors = new List<(int, string)>();
@@ -131,7 +132,7 @@ namespace nkv.MicroService.API.Jobs
                     try
                     {
                         var names = values.Keys.ToList();
-                        using var cmd = new MySqlCommand(
+                        using var cmd = Db.Command(
                             $"INSERT INTO `{table}` ({string.Join(", ", names.Select(n => "`" + n + "`"))}{(names.Count > 0 ? ", " : "")}createdBy, modifiedBy, isActive) " +
                             $"VALUES ({string.Join(", ", names.Select((_, j) => "@v" + j))}{(names.Count > 0 ? ", " : "")}@o, @o, 1)", c, tx);
                         for (var j = 0; j < names.Count; j++) cmd.Parameters.AddWithValue("@v" + j, values[names[j]] ?? DBNull.Value);
@@ -163,16 +164,16 @@ namespace nkv.MicroService.API.Jobs
             public ImportRowException(int row, string message) : base(message) => Row = row;
         }
 
-        private static void Exec(MySqlConnection c, MySqlTransaction tx, string sql)
+        private static void Exec(DbConnection c, DbTransaction tx, string sql)
         {
-            using var cmd = new MySqlCommand(sql, c, tx);
+            using var cmd = Db.Command(sql, c, tx);
             cmd.ExecuteNonQuery();
         }
 
         /// <summary>Whether a visible, active row already has this key value (scoped like any read by this person).</summary>
-        private static bool Exists(MySqlConnection c, MySqlTransaction tx, string table, string key, object value)
+        private static bool Exists(DbConnection c, DbTransaction tx, string table, string key, object value)
         {
-            using var cmd = new MySqlCommand($"SELECT 1 FROM `{table}` WHERE `{key}` = @k AND isActive = 1 LIMIT 1", c, tx);
+            using var cmd = Db.Command($"SELECT 1 FROM `{table}` WHERE `{key}` = @k AND isActive = 1 LIMIT 1", c, tx);
             cmd.Parameters.AddWithValue("@k", value);
             return DataGuard.Apply(cmd).ExecuteScalar() != null;
         }

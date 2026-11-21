@@ -1,4 +1,5 @@
 using MySqlConnector;
+using System.Data.Common;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -85,7 +86,7 @@ namespace nkv.MicroService.Utility
 
         public static bool IsHidden(string table, string column) => HiddenFields(table).Contains(column ?? "");
 
-        /// <summary>Removes the caller's hidden columns of `table` from every object inside `node` (records, pages, lists).</summary>
+        /// <summary>Removes the caller's hidden columns of `table` from every object inside node (records, pages, lists).</summary>
         public static JsonNode StripHidden(string table, JsonNode node)
         {
             var hidden = HiddenFields(table);
@@ -103,7 +104,7 @@ namespace nkv.MicroService.Utility
             else if (node is JsonArray a) foreach (var x in a) Strip(x, hidden);
         }
 
-        static List<string> ReadFilterConditions(string table, string prefix, Caller caller, MySqlCommand cmd)
+        static List<string> ReadFilterConditions(string table, string prefix, Caller caller, DbCommand cmd)
         {
             var conds = new List<string>();
             if (_readFilters.Count == 0) return conds;
@@ -116,14 +117,14 @@ namespace nkv.MicroService.Utility
                 if (!f.Table.Equals(table, StringComparison.OrdinalIgnoreCase) || !f.Roles.Contains(role) || !Columns[table].Contains(f.Column)) continue;
                 if (f.Values.Count == 0) { conds.Add(f.Negate ? "1 = 1" : "1 = 0"); continue; }
                 var ps = f.Values.Select((v, k) => { var p = $"@__rf{i}_{k}"; Bind(cmd, p, v); return p; }).ToList();
-                var col = $"{prefix}`{f.Column}`";
+                var col = $"{prefix}{Db.Q(f.Column)}";
                 conds.Add(f.Negate ? $"({col} IS NULL OR {col} NOT IN ({string.Join(", ", ps)}))" : $"{col} IN ({string.Join(", ", ps)})");
             }
             return conds;
         }
 
         /// <summary>UPDATE: assignments to hidden columns keep the stored value.</summary>
-        static void KeepHiddenOnUpdate(MySqlCommand cmd, string table, int afterSet)
+        static void KeepHiddenOnUpdate(DbCommand cmd, string table, int afterSet)
         {
             var hidden = HiddenFields(table);
             if (hidden.Count == 0) return;
@@ -132,18 +133,18 @@ namespace nkv.MicroService.Utility
             var end = FindTopLevel(setPart, 0, @"\bWHERE\b");
             var head = end < 0 ? setPart : setPart.Substring(0, end);
             foreach (var c in hidden)
-                head = Regex.Replace(head, $@"`?\b{Regex.Escape(c)}\b`?\s*=\s*@\w+", $"`{c}` = `{c}`", RegexOptions.IgnoreCase);
+                head = Regex.Replace(head, $@"[`\[\]]?\b{Regex.Escape(c)}\b[`\[\]]?\s*=\s*@\w+", $"{Db.Q(c)} = {Db.Q(c)}", RegexOptions.IgnoreCase);
             cmd.CommandText = sql.Substring(0, afterSet) + head + (end < 0 ? "" : setPart.Substring(end));
         }
 
         /// <summary>INSERT: hidden columns get their column default instead of what was sent.</summary>
-        static void DefaultHiddenOnInsert(MySqlCommand cmd, string table)
+        static void DefaultHiddenOnInsert(DbCommand cmd, string table)
         {
             var hidden = HiddenFields(table);
             if (hidden.Count == 0) return;
             var m = InsertHead.Match(cmd.CommandText);
             if (!m.Success) return;
-            var cols = m.Groups[2].Value.Split(',').Select(x => x.Trim().Trim('`').ToLowerInvariant()).ToList();
+            var cols = m.Groups[2].Value.Split(',').Select(x => x.Trim().Trim('`', '[', ']').ToLowerInvariant()).ToList();
             var open = cmd.CommandText.IndexOf('(', m.Groups[2].Index + m.Groups[2].Length + 1);
             var inner = ExtractParens(cmd.CommandText, open);
             var exprs = SplitTopLevel(inner);

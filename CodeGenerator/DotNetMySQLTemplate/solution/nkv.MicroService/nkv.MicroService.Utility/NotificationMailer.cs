@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Configuration;
+using System.Data.Common;
 using MySqlConnector;
 using System;
 using System.Collections.Generic;
@@ -57,12 +58,12 @@ namespace nkv.MicroService.Utility
             var sent = 0;
             try
             {
-                using var c = new MySqlConnection(DataGuard.ConnectionString);
+                using var c = Db.Connection(DataGuard.ConnectionString);
                 c.Open();
                 var rows = new List<(long id, string title, string table, string record, string to)>();
-                using (var q = new MySqlCommand(@"SELECT n.notification_id, n.title, n.table_name, n.record_id, s.email FROM user_notifications n
+                using (var q = Db.Command($@"SELECT {Db.Top(50)}n.notification_id, n.title, n.table_name, n.record_id, s.email FROM user_notifications n
                     JOIN user_notification_settings s ON s.user_id = n.user_id
-                    WHERE n.email_status = 'pending' AND s.email_on = 1 AND s.email IS NOT NULL ORDER BY n.notification_id LIMIT 50", c))
+                    WHERE n.email_status = 'pending' AND s.email_on = 1 AND s.email IS NOT NULL ORDER BY n.notification_id{Db.LimitEnd(50)}", c))
                 using (var r = q.ExecuteReader())
                     while (r.Read()) rows.Add((r.GetInt64(0), r.GetString(1), r.IsDBNull(2) ? null : r.GetString(2), r.IsDBNull(3) ? null : r.GetString(3), r.GetString(4)));
                 foreach (var row in rows)
@@ -75,7 +76,7 @@ namespace nkv.MicroService.Utility
                         sent++; Sent++;
                     }
                     catch (Exception ex) { error = ex.Message.Length > 450 ? ex.Message[..450] : ex.Message; Failed++; }
-                    using var u = new MySqlCommand(error == null
+                    using var u = Db.Command(error == null
                         ? "UPDATE user_notifications SET email_status = 'sent', email_error = NULL WHERE notification_id = @id"
                         : "UPDATE user_notifications SET email_attempts = email_attempts + 1, email_error = @e, email_status = IF(email_attempts >= 5, 'failed', 'pending') WHERE notification_id = @id", c);
                     u.Parameters.AddWithValue("@id", row.id);
@@ -83,7 +84,7 @@ namespace nkv.MicroService.Utility
                     u.ExecuteNonQuery();
                 }
                 // people who turned email off since: don't keep their rows pending forever
-                using (var off = new MySqlCommand(@"UPDATE user_notifications n LEFT JOIN user_notification_settings s ON s.user_id = n.user_id
+                using (var off = Db.Command(@"UPDATE user_notifications n LEFT JOIN user_notification_settings s ON s.user_id = n.user_id
                     SET n.email_status = 'none' WHERE n.email_status = 'pending' AND (s.user_id IS NULL OR s.email_on = 0 OR s.email IS NULL OR s.email = '')", c))
                     off.ExecuteNonQuery();
             }

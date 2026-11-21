@@ -9,6 +9,8 @@
 // Keep the NeoApps.Migrations namespace: generated migration classes depend on it.
 #nullable enable
 using System;
+using nkv.MicroService.Utility;
+using System.Data.Common;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
@@ -45,9 +47,9 @@ public static class MigrationHost
         var versions = scope.ServiceProvider.GetRequiredService<FluentMigrator.Runner.IVersionLoader>();
 
         // Several API instances may start at once: only one applies migrations at a time.
-        using var lockConn = new MySqlConnection(connectionString);
+        using var lockConn = Db.Connection(connectionString);
         lockConn.Open();
-        using (var take = new MySqlCommand("SELECT GET_LOCK('neoapps_migrations', 120)", lockConn))
+        using (var take = Db.Command("SELECT GET_LOCK('neoapps_migrations', 120)", lockConn))
             if (Convert.ToInt32(take.ExecuteScalar() ?? 0) != 1)
                 throw new InvalidOperationException("Timed out waiting for another process to finish migrating.");
         try
@@ -86,7 +88,7 @@ public static class MigrationHost
         }
         finally
         {
-            using var release = new MySqlCommand("SELECT RELEASE_LOCK('neoapps_migrations')", lockConn);
+            using var release = Db.Command("SELECT RELEASE_LOCK('neoapps_migrations')", lockConn);
             release.ExecuteScalar();
         }
     }

@@ -1,4 +1,5 @@
 using MySqlConnector;
+using System.Data.Common;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -81,7 +82,7 @@ namespace nkv.MicroService.Utility
         }
 
         /// <summary>Scopes that apply to this caller, with their value (null value = caller has no value: sees nothing).</summary>
-        static List<(RowScope scope, object value)> ActiveScopes(MySqlConnection c, Caller caller)
+        static List<(RowScope scope, object value)> ActiveScopes(DbConnection c, Caller caller)
         {
             var list = new List<(RowScope, object)>();
             if (_scopes.Count == 0 || caller.IsSystem) return list;
@@ -98,10 +99,10 @@ namespace nkv.MicroService.Utility
             object v = null;
             if (s.ValueTable != null)
             {
-                using var c = new MySqlConnection(ConnectionString);
+                using var c = Db.Connection(ConnectionString);
                 c.Open();
-                var tenantCond = TenantTables.Contains(s.ValueTable) && caller.Tenant != null ? $" AND `{TenantColumn}` = @t" : "";
-                using var q = new MySqlCommand($"SELECT `{s.ValueColumn}` FROM `{s.ValueTable}` WHERE `{s.MatchColumn}` = @u AND isActive = 1{tenantCond} LIMIT 1", c);
+                var tenantCond = TenantTables.Contains(s.ValueTable) && caller.Tenant != null ? $" AND {Db.Q(TenantColumn)} = @t" : "";
+                using var q = Db.Command($"SELECT {Db.Top(1)}{Db.Q(s.ValueColumn)} FROM {Db.Q(s.ValueTable)} WHERE {Db.Q(s.MatchColumn)} = @u AND isActive = 1{tenantCond}{Db.LimitEnd(1)}", c);
                 q.Parameters.AddWithValue("@u", s.MatchByUserId ? caller.UserId : caller.User);
                 if (tenantCond.Length > 0) q.Parameters.AddWithValue("@t", caller.Tenant.Value);
                 var r = q.ExecuteScalar();
@@ -111,17 +112,17 @@ namespace nkv.MicroService.Utility
             return v;
         }
 
-        /// <summary>SQL condition limiting `table` (as `alias`) to rows inside the scope; the value is bound as `param`.</summary>
+        /// <summary>SQL condition limiting `table` (as alias) to rows inside the scope; the value is bound as param.</summary>
         static string ScopeCondition(RowScope s, string table, string alias, string param, int depth = 0)
         {
-            if (s.Direct.Contains(table)) return $"{alias}.`{s.Column}` = {param}";
-            if (table.Equals(s.Home, StringComparison.OrdinalIgnoreCase)) return $"{alias}.`{PrimaryKeys[table]}` = {param}";
+            if (s.Direct.Contains(table)) return $"{alias}.{Db.Q(s.Column)} = {param}";
+            if (table.Equals(s.Home, StringComparison.OrdinalIgnoreCase)) return $"{alias}.{Db.Q(PrimaryKeys[table])} = {param}";
             var (col, parent, pk) = s.Via[table];
             var sub = $"rs{depth}";
-            return $"{alias}.`{col}` IN (SELECT {sub}.`{pk}` FROM `{parent}` {sub} WHERE {ScopeCondition(s, parent, sub, param, depth + 1)})";
+            return $"{alias}.{Db.Q(col)} IN (SELECT {sub}.{Db.Q(pk)} FROM {Db.Q(parent)} {sub} WHERE {ScopeCondition(s, parent, sub, param, depth + 1)})";
         }
 
-        static List<string> RowScopeConditions(string table, string prefix, Caller caller, MySqlCommand cmd)
+        static List<string> RowScopeConditions(string table, string prefix, Caller caller, DbCommand cmd)
         {
             var conds = new List<string>();
             var alias = prefix.TrimEnd('.');
@@ -133,13 +134,13 @@ namespace nkv.MicroService.Utility
                 if (v == null) { conds.Add("1 = 0"); continue; }
                 var p = $"@__rs{i}";
                 Bind(cmd, p, v);
-                conds.Add(ScopeCondition(s, table, alias.Length == 0 ? $"`{table}`" : alias, p));
+                conds.Add(ScopeCondition(s, table, alias.Length == 0 ? $"{Db.Q(table)}" : alias, p));
             }
             return conds;
         }
 
         /// <summary>AI files/text: hide those attached to records outside the caller's scopes.</summary>
-        static List<string> RowScopeFileConditions(string table, string alias, Caller caller, MySqlCommand cmd)
+        static List<string> RowScopeFileConditions(string table, string alias, Caller caller, DbCommand cmd)
         {
             var conds = new List<string>();
             var i = 0;
@@ -153,7 +154,7 @@ namespace nkv.MicroService.Utility
                 string FilesCond(string f) =>
                     $"({f}.table_name NOT IN ({string.Join(", ", tables.Select(t => $"'{t}'"))})" +
                     (v == null ? ")" : " OR " + string.Join(" OR ", tables.Select((t, k) =>
-                        $"({f}.table_name = '{t}' AND {f}.record_id IN (SELECT CAST(x{k}.`{PrimaryKeys[t]}` AS CHAR) FROM `{t}` x{k} WHERE {ScopeCondition(s, t, "x" + k, p)}))")) + ")");
+                        $"({f}.table_name = '{t}' AND {f}.record_id IN (SELECT {Db.AsText($"x{k}.{Db.Q(PrimaryKeys[t])}")} FROM {Db.Q(t)} x{k} WHERE {ScopeCondition(s, t, "x" + k, p)}))")) + ")");
                 conds.Add(table.Equals("ai_files", StringComparison.OrdinalIgnoreCase)
                     ? FilesCond(alias)
                     : $"{alias}.file_id IN (SELECT ff.file_id FROM ai_files ff WHERE {FilesCond("ff")})");
@@ -163,7 +164,7 @@ namespace nkv.MicroService.Utility
 
         /// <summary>Writes by scoped users: the scope column is forced to their value, new home rows are refused, and every
         /// foreign key must point at a row they can see.</summary>
-        static void GuardScopedWrite(MySqlCommand cmd, Caller caller, string table, Dictionary<string, object> values, Func<string, string> paramOf, bool insert)
+        static void GuardScopedWrite(DbCommand cmd, Caller caller, string table, Dictionary<string, object> values, Func<string, string> paramOf, bool insert)
         {
             var active = ActiveScopes(cmd.Connection, caller);
             if (active.Count == 0) return;
@@ -185,10 +186,10 @@ namespace nkv.MicroService.Utility
                 if (!values.TryGetValue(col, out var val) || val == null || val is DBNull || (val is string sv && (sv.Length == 0 || sv.StartsWith("@")))) continue;
                 if (!active.Any(a => a.scope.Covers(refTable))) continue;
                 // When the referenced table IS the tenant table, don't apply tenant filter (it's the root of tenancy)
-                var sql = $"SELECT COUNT(*) FROM `{refTable}` t WHERE t.`{refCol}` = @v AND t.isActive = 1";
+                var sql = $"SELECT COUNT(*) FROM {Db.Q(refTable)} t WHERE t.{Db.Q(refCol)} = @v AND t.isActive = 1";
                 if (!refTable.Equals(TenantTable, StringComparison.OrdinalIgnoreCase) && caller.Tenant != null)
-                    sql += $" AND t.`{TenantColumn}` = @__g_tenant";
-                using var q = new MySqlCommand(sql, cmd.Connection, cmd.Transaction);
+                    sql += $" AND t.{Db.Q(TenantColumn)} = @__g_tenant";
+                using var q = Db.Command(sql, cmd.Connection, cmd.Transaction);
                 q.Parameters.AddWithValue("@v", val);
                 if (refTable.Equals(TenantTable, StringComparison.OrdinalIgnoreCase) == false && caller.Tenant != null)
                     q.Parameters.AddWithValue("@__g_tenant", caller.Tenant.Value);

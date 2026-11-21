@@ -1,4 +1,5 @@
 using System;
+using System.Data.Common;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -37,15 +38,15 @@ namespace nkv.MicroService.API.Ai
 
         public AiData(IConfiguration configuration) => _cs = configuration.GetConnectionString("MySQLDatabase");
 
-        public MySqlConnection Open()
+        public DbConnection Open()
         {
-            var c = new MySqlConnection(_cs);
+            var c = Db.Connection(_cs);
             c.Open();
             EnsureSchema(c);
             return c;
         }
 
-        private static void EnsureSchema(MySqlConnection c)
+        private static void EnsureSchema(DbConnection c)
         {
             if (_schemaReady) return;
             lock (SchemaLock)
@@ -69,30 +70,30 @@ namespace nkv.MicroService.API.Ai
                         created_records INT NOT NULL DEFAULT 0, createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP)",
                 })
                 {
-                    using var cmd = new MySqlCommand(sql, c);
+                    using var cmd = Db.Command(sql, c);
                     cmd.ExecuteNonQuery();
                 }
                 // databases created before tenancy: tag AI files and chunks with their data tenant
                 foreach (var t in new[] { "ai_files", "ai_chunks" })
                 {
-                    using var has = new MySqlCommand("SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name=@t AND column_name='tenant_id'", c);
+                    using var has = Db.Command("SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name=@t AND column_name='tenant_id'", c);
                     has.Parameters.AddWithValue("@t", t);
-                    if (Convert.ToInt64(has.ExecuteScalar()) == 0) { using var alter = new MySqlCommand($"ALTER TABLE {t} ADD COLUMN tenant_id INT NULL", c); alter.ExecuteNonQuery(); }
+                    if (Convert.ToInt64(has.ExecuteScalar()) == 0) { using var alter = Db.Command($"ALTER TABLE {t} ADD COLUMN tenant_id INT NULL", c); alter.ExecuteNonQuery(); }
                 }
                 _schemaReady = true;
             }
         }
 
-        public static MySqlCommand Cmd(MySqlConnection c, string sql, params (string, object)[] ps)
+        public static DbCommand Cmd(DbConnection c, string sql, params (string, object)[] ps)
         {
-            var cmd = new MySqlCommand(sql, c);
+            var cmd = Db.Command(sql, c);
             foreach (var (n, v) in ps) cmd.Parameters.AddWithValue(n, v ?? DBNull.Value);
             return sql.TrimStart().StartsWith("INSERT", StringComparison.OrdinalIgnoreCase) ? cmd : DataGuard.Apply(cmd);
         }
 
         // ------------------------------------------------------------------ permissions & schema
 
-        public Dictionary<string, TablePerm> Permissions(MySqlConnection c, AiUser u)
+        public Dictionary<string, TablePerm> Permissions(DbConnection c, AiUser u)
         {
             var perms = new Dictionary<string, TablePerm>(StringComparer.OrdinalIgnoreCase);
             if (u.IsAdmin)
@@ -107,9 +108,9 @@ namespace nkv.MicroService.API.Ai
             return perms;
         }
 
-        private static bool F(MySqlDataReader r, int i) => !r.IsDBNull(i) && Convert.ToInt32(r.GetValue(i)) == 1;
+        private static bool F(DbDataReader r, int i) => !r.IsDBNull(i) && Convert.ToInt32(r.GetValue(i)) == 1;
 
-        public List<string> AppTables(MySqlConnection c)
+        public List<string> AppTables(DbConnection c)
         {
             var list = new List<string>();
             using var r = Cmd(c, "SELECT table_name FROM information_schema.tables WHERE table_schema=DATABASE() AND table_type='BASE TABLE' ORDER BY table_name").ExecuteReader();
@@ -117,7 +118,7 @@ namespace nkv.MicroService.API.Ai
             return list;
         }
 
-        public List<ColumnInfo> Columns(MySqlConnection c, string table)
+        public List<ColumnInfo> Columns(DbConnection c, string table)
         {
             var fks = new Dictionary<string, (string, string)>(StringComparer.OrdinalIgnoreCase);
             using (var r = Cmd(c, @"SELECT column_name, referenced_table_name, referenced_column_name FROM information_schema.key_column_usage
@@ -136,7 +137,7 @@ namespace nkv.MicroService.API.Ai
             return cols;
         }
 
-        public string DescribeTables(MySqlConnection c, IEnumerable<string> tables)
+        public string DescribeTables(DbConnection c, IEnumerable<string> tables)
         {
             var sb = new StringBuilder();
             foreach (var t in tables)
@@ -152,7 +153,7 @@ namespace nkv.MicroService.API.Ai
 
         private static readonly Regex Ident = new("^[A-Za-z_][A-Za-z0-9_]{0,63}$");
 
-        private string CheckTable(MySqlConnection c, AiUser u, string table)
+        private string CheckTable(DbConnection c, AiUser u, string table)
         {
             var requested = (table ?? "").Trim().ToLowerInvariant();
             // The name used in SQL is the one from information_schema, never the caller's string.
@@ -210,14 +211,14 @@ namespace nkv.MicroService.API.Ai
             return string.Join(" AND ", parts);
         }
 
-        public string ListTables(MySqlConnection c, AiUser u)
+        public string ListTables(DbConnection c, AiUser u)
         {
             var perms = Permissions(c, u);
             var readable = AppTables(c).Where(t => perms.TryGetValue(t, out var p) && p.Read).ToList();
             return "Tables you can read (column type, PK, -> foreign key):\n" + DescribeTables(c, readable);
         }
 
-        public string QueryRecords(MySqlConnection c, AiUser u, JsonObject input)
+        public string QueryRecords(DbConnection c, AiUser u, JsonObject input)
         {
             var table = CheckTable(c, u, input["table"]?.GetValue<string>());
             var cols = Columns(c, table);
@@ -233,7 +234,7 @@ namespace nkv.MicroService.API.Ai
             return new JsonObject { ["table"] = table, ["total_matching"] = count, ["returned"] = rows.Count, ["rows"] = rows }.ToJsonString();
         }
 
-        public string Aggregate(MySqlConnection c, AiUser u, JsonObject input)
+        public string Aggregate(DbConnection c, AiUser u, JsonObject input)
         {
             var table = CheckTable(c, u, input["table"]?.GetValue<string>());
             var cols = Columns(c, table);
@@ -249,7 +250,7 @@ namespace nkv.MicroService.API.Ai
             return new JsonObject { ["table"] = table, ["metric"] = metric, ["rows"] = Rows(Cmd(c, sql, ps.ToArray())) }.ToJsonString();
         }
 
-        public static JsonArray Rows(MySqlCommand cmd)
+        public static JsonArray Rows(DbCommand cmd)
         {
             var arr = new JsonArray();
             var from = Regex.Match(cmd.CommandText ?? "", @"\bFROM\s+`?(\w+)`?", RegexOptions.IgnoreCase);
@@ -280,7 +281,7 @@ namespace nkv.MicroService.API.Ai
         /// A short label for a record (its name/title-like column), used in citations and context notes. Only for app
         /// tables the user may read, and only the tenant's own active rows; otherwise a generic "table #id".
         /// </summary>
-        public string RecordLabel(MySqlConnection c, AiUser u, string table, string recordId)
+        public string RecordLabel(DbConnection c, AiUser u, string table, string recordId)
         {
             var requested = (table ?? "").Trim().ToLowerInvariant();
             try

@@ -1,4 +1,6 @@
 using System;
+using nkv.MicroService.Utility;
+using System.Data.Common;
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -62,9 +64,9 @@ namespace nkv.MicroService.API.Ai
             }
             try
             {
-                using var conn = new MySqlConnection(_connectionString);
+                using var conn = Db.Connection(_connectionString);
                 conn.Open();
-                using var cmd = new MySqlCommand(@"SELECT layout FROM dnd_ui_versions WHERE dnd_ui_type='neoapps-ui-config' AND createdBy=@o AND isActive=1
+                using var cmd = Db.Command(@"SELECT layout FROM dnd_ui_versions WHERE dnd_ui_type='neoapps-ui-config' AND createdBy=@o AND isActive=1
                                                    ORDER BY dnd_ui_version_id DESC LIMIT 1", conn);
                 cmd.Parameters.AddWithValue("@o", tenant == null ? "" : tenant.Length <= 45 ? tenant : tenant.Substring(0, 45));
                 if (cmd.ExecuteScalar() is string saved && JsonNode.Parse(saved) is JsonObject s)

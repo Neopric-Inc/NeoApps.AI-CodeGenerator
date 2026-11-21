@@ -1,4 +1,5 @@
 using System;
+using System.Data.Common;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -120,7 +121,7 @@ namespace nkv.MicroService.API.Ai
             try { File.Delete(f.path); } catch { /* already gone */ }
         }
 
-        private static (string table, string record, string path, string name, string type) FileRow(MySqlConnection c, AiUser u, int fileId)
+        private static (string table, string record, string path, string name, string type) FileRow(DbConnection c, AiUser u, int fileId)
         {
             using var r = AiData.Cmd(c, "SELECT table_name, record_id, storage_path, file_name, content_type FROM ai_files WHERE file_id=@id AND owner_name=@o",
                 ("@id", fileId), ("@o", u.Tenant)).ExecuteReader();
@@ -128,7 +129,7 @@ namespace nkv.MicroService.API.Ai
             return (r.GetString(0), r.GetString(1), r.GetString(2), r.GetString(3), r.IsDBNull(4) ? null : r.GetString(4));
         }
 
-        private void RequirePerm(MySqlConnection c, AiUser u, string table, Func<TablePerm, bool> ok, string verb)
+        private void RequirePerm(DbConnection c, AiUser u, string table, Func<TablePerm, bool> ok, string verb)
         {
             if (!_data.Permissions(c, u).TryGetValue(table ?? "", out var p) || !ok(p))
                 throw new AiException($"You don't have permission to {verb} {table}.");
@@ -150,7 +151,7 @@ namespace nkv.MicroService.API.Ai
             public string Text;
         }
 
-        private List<Source> SearchDocuments(MySqlConnection c, AiUser u, string query, string table, string recordId, int limit, Dictionary<string, Source> registry)
+        private List<Source> SearchDocuments(DbConnection c, AiUser u, string query, string table, string recordId, int limit, Dictionary<string, Source> registry)
         {
             var readable = _data.Permissions(c, u).Where(p => p.Value.Read).Select(p => p.Key).ToList();
             if (readable.Count == 0) return new List<Source>();
@@ -162,7 +163,7 @@ namespace nkv.MicroService.API.Ai
             if (!string.IsNullOrWhiteSpace(recordId)) { extra += " AND f.record_id=@r"; ps.Add(("@r", recordId)); }
 
             var rows = new List<(int fileId, string name, int page, string table, string record, string text)>();
-            void Read(MySqlCommand cmd)
+            void Read(DbCommand cmd)
             {
                 using var r = cmd.ExecuteReader();
                 while (r.Read()) rows.Add((r.GetInt32(0), r.GetString(1), r.GetInt32(2), r.GetString(3), r.GetString(4), r.GetString(5)));
@@ -537,7 +538,7 @@ How to answer:
             if (cfg["roles"] is not JsonArray roles || roles.Count == 0) return true;
             if (u.RoleId == 1) return true;
             using var c = _data.Open();
-            using var cmd = new MySqlCommand("SELECT role_name FROM roles WHERE role_id = @id", c);
+            using var cmd = Db.Command("SELECT role_name FROM roles WHERE role_id = @id", c);
             cmd.Parameters.AddWithValue("@id", u.RoleId);
             var name = cmd.ExecuteScalar() as string;
             return name != null && roles.Any(r => string.Equals(r?.GetValue<string>(), name, StringComparison.OrdinalIgnoreCase));
@@ -574,7 +575,7 @@ How to answer:
             ?? throw new AiException($"Unknown workflow '{id}'.");
 
         /// <summary>The workflow's target tables, as named in information_schema (unknown names are dropped).</summary>
-        private List<string> Targets(MySqlConnection c, JsonObject wf)
+        private List<string> Targets(DbConnection c, JsonObject wf)
         {
             var wanted = (wf["targets"] as JsonArray ?? new JsonArray()).Select(t => t!.GetValue<string>().ToLowerInvariant()).ToHashSet();
             return _data.AppTables(c).Where(wanted.Contains).ToList();
@@ -718,7 +719,7 @@ When done, call propose_records exactly once with all rows.";
             };
         }
 
-        private JsonArray ValidateProposal(MySqlConnection c, List<string> targets, JsonArray records, Dictionary<string, object> inherit, out List<string> warnings)
+        private JsonArray ValidateProposal(DbConnection c, List<string> targets, JsonArray records, Dictionary<string, object> inherit, out List<string> warnings)
         {
             warnings = new List<string>();
             var cols = targets.ToDictionary(t => t, t => _data.Columns(c, t), StringComparer.OrdinalIgnoreCase);

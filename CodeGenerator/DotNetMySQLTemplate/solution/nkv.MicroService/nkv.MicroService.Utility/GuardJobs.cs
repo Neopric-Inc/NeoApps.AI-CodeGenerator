@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Configuration;
+using System.Data.Common;
 using Microsoft.Extensions.DependencyInjection;
 using MySqlConnector;
 using RabbitMQ.Client;
@@ -66,14 +67,14 @@ namespace nkv.MicroService.Utility
                 }
                 catch (Exception ex) { Console.WriteLine("Outbox: RabbitMQ unavailable, will retry: " + ex.Message); return 0; }
                 using (channel)
-                using (var c = new MySqlConnection(DataGuard.ConnectionString))
+                using (var c = Db.Connection(DataGuard.ConnectionString))
                 {
                     c.Open();
                     using var tx = c.BeginTransaction();
                     var rows = new List<(object id, string type, string payload, int attempts, string tenant)>();
                     var hasTenant = DataGuard.Columns[table].Contains(DataGuard.TenantColumn);
-                    using (var q = new MySqlCommand($@"SELECT `{pk}`, event_type, payload, attempts{(hasTenant ? $", `{DataGuard.TenantColumn}`" : "")} FROM `{table}`
-                        WHERE status IN ('pending','failed') AND isActive = 1 ORDER BY `{pk}` LIMIT 100 FOR UPDATE SKIP LOCKED", c, tx))
+                    using (var q = Db.Command($@"SELECT {Db.Top(100)}{Db.Q(pk)}, event_type, payload, attempts{(hasTenant ? $", {Db.Q(DataGuard.TenantColumn)}" : "")} FROM {Db.Q(table)}{(Db.IsSqlServer ? " WITH (UPDLOCK, READPAST, ROWLOCK)" : "")}
+                        WHERE status IN ('pending','failed') AND isActive = 1 ORDER BY {Db.Q(pk)}{(Db.IsSqlServer ? "" : " LIMIT 100 FOR UPDATE SKIP LOCKED")}", c, tx))
                     using (var r = q.ExecuteReader())
                         while (r.Read())
                             rows.Add((r.GetValue(0), r.GetString(1), r.IsDBNull(2) ? "{}" : r.GetString(2), r.IsDBNull(3) ? 0 : Convert.ToInt32(r.GetValue(3)),
@@ -101,7 +102,7 @@ namespace nkv.MicroService.Utility
                             if (status == "dead_letter")
                                 try { channel.BasicPublish(_exchange + ".dlx", row.type, false, null, Encoding.UTF8.GetBytes(row.payload)); } catch { }
                         }
-                        using var u = new MySqlCommand($"UPDATE `{table}` SET status = @s, attempts = @a{(status == "published" && DataGuard.Columns[table].Contains("published_at") ? ", published_at = UTC_TIMESTAMP()" : "")} WHERE `{pk}` = @id", c, tx);
+                        using var u = Db.Command($"UPDATE {Db.Q(table)} SET status = @s, attempts = @a{(status == "published" && DataGuard.Columns[table].Contains("published_at") ? ", published_at = " + Db.UtcNow : "")} WHERE {Db.Q(pk)} = @id", c, tx);
                         u.Parameters.AddWithValue("@s", status); u.Parameters.AddWithValue("@a", attempts); u.Parameters.AddWithValue("@id", row.id);
                         u.ExecuteNonQuery();
                     }

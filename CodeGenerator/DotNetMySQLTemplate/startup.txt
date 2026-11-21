@@ -1,4 +1,5 @@
 using System.Text;
+using System.Data.Common;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.Builder;
@@ -218,7 +219,7 @@ namespace {projectName}.API
                 endpoints.MapGet("/health/ready", async (IConnectionMultiplexer redis) =>
                 {
                     var checks = new Dictionary<string, string>();
-                    try { using var c = new MySqlConnector.MySqlConnection(Configuration.GetConnectionString("MySQLDatabase")); await c.OpenAsync(); using var q = new MySqlConnector.MySqlCommand("SELECT 1", c); await q.ExecuteScalarAsync(); checks["mysql"] = "ok"; }
+                    try { using var c = new MySqlConnector.DbConnection(Configuration.GetConnectionString("MySQLDatabase")); await c.OpenAsync(); using var q = new MySqlConnector.DbCommand("SELECT 1", c); await q.ExecuteScalarAsync(); checks["mysql"] = "ok"; }
                     catch { checks["mysql"] = "unreachable"; }
                     try { await redis.GetDatabase().PingAsync(); checks["redis"] = "ok"; } catch { checks["redis"] = "unreachable"; }
                     var rabbit = Configuration.GetConnectionString("RabitMQ");

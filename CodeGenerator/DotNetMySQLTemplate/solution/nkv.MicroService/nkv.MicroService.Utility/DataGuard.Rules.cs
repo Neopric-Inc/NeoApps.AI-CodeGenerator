@@ -1,4 +1,5 @@
 using MySqlConnector;
+using System.Data.Common;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -71,7 +72,7 @@ namespace nkv.MicroService.Utility
         static readonly List<OutboxRule> _outboxRules = new();
         static bool _outboxAll;
         static readonly ConcurrentDictionary<int, string> _roleNames = new();
-        static readonly ConditionalWeakTable<MySqlCommand, List<Action<MySqlCommand, int>>> _after = new();
+        static readonly ConditionalWeakTable<DbCommand, List<Action<DbCommand, int>>> _after = new();
 
         public static string OutboxTable => _outboxTable;
         public static JsonObject RulesSummary()
@@ -124,7 +125,7 @@ namespace nkv.MicroService.Utility
             return s is "platform" or "none" ? s : "any";
         }
 
-        static partial void InitExtensionsImpl(MySqlConnection c)
+        static partial void InitExtensionsImpl(DbConnection c)
         {
             _lifecycles.Clear(); _immutable.Clear(); _outboxRules.Clear();
             if (Config["lifecycles"] is JsonObject lcs)
@@ -225,15 +226,15 @@ namespace nkv.MicroService.Utility
         // ------------------------------------------------------------------ write execution
 
         /// <summary>Runs an insert/update/delete with all rules applied; history, audit and outbox rows are written in the same transaction.</summary>
-        public static int NonQuery(MySqlCommand cmd)
+        public static int NonQuery(DbCommand cmd)
         {
             Apply(cmd);
-            if (!_after.TryGetValue(cmd, out var actions) || actions.Count == 0) return cmd.ExecuteNonQuery();
+            if (!_after.TryGetValue(cmd, out var actions) || actions.Count == 0) return Db.Execute(cmd);
             var own = cmd.Transaction == null ? cmd.Connection.BeginTransaction() : null;
             if (own != null) cmd.Transaction = own;
             try
             {
-                var n = cmd.ExecuteNonQuery();
+                var n = Db.Execute(cmd);
                 if (n > 0) foreach (var a in actions) a(cmd, n);
                 own?.Commit();
                 return n;
@@ -242,15 +243,15 @@ namespace nkv.MicroService.Utility
             finally { if (own != null) cmd.Transaction = null; _after.Remove(cmd); }
         }
 
-        static void After(MySqlCommand cmd, Action<MySqlCommand, int> action)
+        static void After(DbCommand cmd, Action<DbCommand, int> action)
         {
-            if (!_after.TryGetValue(cmd, out var list)) _after.Add(cmd, list = new List<Action<MySqlCommand, int>>());
+            if (!_after.TryGetValue(cmd, out var list)) _after.Add(cmd, list = new List<Action<DbCommand, int>>());
             list.Add(action);
         }
 
         // ------------------------------------------------------------------ hooks
 
-        static partial void BeforeInsertImpl(MySqlCommand cmd, Caller caller, string table, Dictionary<string, object> values)
+        static partial void BeforeInsertImpl(DbCommand cmd, Caller caller, string table, Dictionary<string, object> values)
         {
             Validate(table, values, null);
             foreach (var lim in _limits.Where(l => l.Table.Equals(table, StringComparison.OrdinalIgnoreCase)))
@@ -263,7 +264,7 @@ namespace nkv.MicroService.Utility
             }
             After(cmd, (c, _) =>
             {
-                var id = c.LastInsertedId;
+                var id = Db.LastInsertedId(c);
                 var row = new Dictionary<string, object>(values, StringComparer.OrdinalIgnoreCase);
                 if (PrimaryKeys.TryGetValue(table, out var pk)) row[pk] = id;
                 if (_lifecycles.TryGetValue(table, out var l) && row.TryGetValue(l.Column, out var st) && Str(st) != null)
@@ -278,7 +279,7 @@ namespace nkv.MicroService.Utility
             });
         }
 
-        static partial void BeforeUpdateImpl(MySqlCommand cmd, Caller caller, string table, Dictionary<string, object> values)
+        static partial void BeforeUpdateImpl(DbCommand cmd, Caller caller, string table, Dictionary<string, object> values)
         {
             var isSoftDelete = values.Count == 1 && values.TryGetValue("isactive", out var ia) && Str(ia) == "0";
             if (_immutable.TryGetValue(table, out var im) && im.Contains("*"))
@@ -353,7 +354,7 @@ namespace nkv.MicroService.Utility
             });
         }
 
-        static partial void BeforeDeleteImpl(MySqlCommand cmd, Caller caller, string table)
+        static partial void BeforeDeleteImpl(DbCommand cmd, Caller caller, string table)
         {
             if (_immutable.TryGetValue(table, out var im) && im.Contains("*"))
                 throw new DataGuardException($"{table} is append-only: records can't be deleted.", 409);
@@ -367,7 +368,7 @@ namespace nkv.MicroService.Utility
 
         /// <summary>"editableIn": a listed role may change (or delete) a record only while it is in one of its states. The change
         /// that moves a record out of such a state (submitting a draft) is made in that state, so it is allowed.</summary>
-        static void CheckEditable(MySqlCommand cmd, Caller caller, string table, Lifecycle lc, string state, string verb)
+        static void CheckEditable(DbCommand cmd, Caller caller, string table, Lifecycle lc, string state, string verb)
         {
             if (lc.EditableIn.Count == 0) return;
             var role = RoleName(cmd.Connection, caller);
@@ -376,7 +377,7 @@ namespace nkv.MicroService.Utility
             throw new DataGuardException($"This {table} record is {state}: your role ({role}) can only {verb} it while it is {string.Join(" or ", states)}.", 409);
         }
 
-        static Transition CheckTransition(MySqlCommand cmd, Caller caller, string table, Lifecycle lc, string from, string to, object id, Dictionary<string, object> current)
+        static Transition CheckTransition(DbCommand cmd, Caller caller, string table, Lifecycle lc, string from, string to, object id, Dictionary<string, object> current)
         {
             var role = RoleName(cmd.Connection, caller);
             bool Bypasses(Transition t)
@@ -418,26 +419,26 @@ namespace nkv.MicroService.Utility
         /// True when the caller is the person recorded in the column: a users id or login name directly, or (with Table/Key)
         /// a row of Table whose UserColumn is the caller (e.g. members.user_id).
         /// </summary>
-        static bool IsSamePerson(MySqlCommand cmd, Caller caller, DistinctRule d, object value)
+        static bool IsSamePerson(DbCommand cmd, Caller caller, DistinctRule d, object value)
         {
             var v = Str(value);
             if (string.IsNullOrEmpty(v)) return false;
             if (d.Table == null)
                 return v == caller.UserId.ToString() || string.Equals(v, caller.User, StringComparison.OrdinalIgnoreCase);
             var key = d.Key ?? PrimaryKeys.GetValueOrDefault(d.Table);
-            using var q = new MySqlCommand($"SELECT `{SafeIdentifier(d.UserColumn)}` FROM `{SafeIdentifier(d.Table)}` WHERE `{SafeIdentifier(key)}` = @v LIMIT 1", cmd.Connection, cmd.Transaction);
+            using var q = Db.Command($"SELECT {Db.Top(1)}{Db.Q(SafeIdentifier(d.UserColumn))} FROM {Db.Q(SafeIdentifier(d.Table))} WHERE {Db.Q(SafeIdentifier(key))} = @v{Db.LimitEnd(1)}", cmd.Connection, cmd.Transaction);
             q.Parameters.AddWithValue("@v", value);
             var u = Str(q.ExecuteScalar());
             return u != null && (u == caller.UserId.ToString() || string.Equals(u, caller.User, StringComparison.OrdinalIgnoreCase));
         }
 
         /// <summary>A related row must exist: r.Table where r.Link = (this row's r.LinkFrom column, default its primary key) and r.Where matches.</summary>
-        static bool RequirementMet(MySqlCommand cmd, string table, Requirement r, object id)
+        static bool RequirementMet(DbCommand cmd, string table, Requirement r, object id)
         {
             if (id == null) return false;
             var link = r.Link ?? PrimaryKeys.GetValueOrDefault(table);
-            var where = string.Join("", r.Where.Select((kv, i) => $" AND t.`{SafeIdentifier(kv.Key)}` = @w{i}"));
-            using var q = new MySqlCommand($"SELECT COUNT(*) FROM `{SafeIdentifier(r.Table)}` t WHERE t.`{SafeIdentifier(link)}` = @id AND t.isActive = 1{where}", cmd.Connection, cmd.Transaction);
+            var where = string.Join("", r.Where.Select((kv, i) => $" AND t.{Db.Q(SafeIdentifier(kv.Key))} = @w{i}"));
+            using var q = Db.Command($"SELECT COUNT(*) FROM {Db.Q(SafeIdentifier(r.Table))} t WHERE t.{Db.Q(SafeIdentifier(link))} = @id AND t.isActive = 1{where}", cmd.Connection, cmd.Transaction);
             q.Parameters.AddWithValue("@id", id);
             var i2 = 0; foreach (var kv in r.Where) q.Parameters.AddWithValue("@w" + i2++, kv.Value);
             return Convert.ToInt64(Apply(q).ExecuteScalar()) > 0;
@@ -450,7 +451,7 @@ namespace nkv.MicroService.Utility
         /// Electronic signature: the person doing this step re-enters their password. Wrong passwords count toward the
         /// sign-in lockout. Administrators are not exempt, and the AI or a background job can never sign.
         /// </summary>
-        static void VerifySignature(MySqlCommand cmd, Caller caller, string table, string to, string meaning)
+        static void VerifySignature(DbCommand cmd, Caller caller, string table, string to, string meaning)
         {
             if (caller.IsAi || caller.IsSystem || caller.UserId == 0)
                 throw new DataGuardException($"{table}: moving to '{to}' needs a person's signature.", 403);
@@ -462,7 +463,7 @@ namespace nkv.MicroService.Utility
                 throw new DataGuardException($"Signature required: {meaning}", 428);
             if (AuthGuard.LockedMinutes(caller.User) > 0)
                 throw new DataGuardException("Too many wrong passwords. Try again later.", 423);
-            using var q = new MySqlCommand("SELECT password_hash FROM users WHERE user_id = @u LIMIT 1", cmd.Connection, cmd.Transaction);
+            using var q = Db.Command($"SELECT {Db.Top(1)}password_hash FROM users WHERE user_id = @u{Db.LimitEnd(1)}", cmd.Connection, cmd.Transaction);
             q.Parameters.AddWithValue("@u", caller.UserId);
             if (!PasswordHasher.Verify(password, q.ExecuteScalar() as string))
             {
@@ -472,7 +473,7 @@ namespace nkv.MicroService.Utility
         }
 
 
-        static void WriteHistory(MySqlCommand c, Caller caller, Lifecycle lc, Dictionary<string, object> row, object id, string from, string to, string meaning = null)
+        static void WriteHistory(DbCommand c, Caller caller, Lifecycle lc, Dictionary<string, object> row, object id, string from, string to, string meaning = null)
         {
             if (lc.HistoryTable == null) return;
             var vals = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase)
@@ -485,33 +486,33 @@ namespace nkv.MicroService.Utility
             InsertInternal(c, lc.HistoryTable, vals, caller, row);
         }
 
-        static void StampSignature(MySqlCommand c, string table, Transition t, Caller caller, object id)
+        static void StampSignature(DbCommand c, string table, Transition t, Caller caller, object id)
         {
             var sets = new List<string>();
-            using var u = new MySqlCommand("", c.Connection, c.Transaction);
-            if (t.SignedBy != null && Columns[table].Contains(t.SignedBy)) { sets.Add($"`{SafeIdentifier(t.SignedBy)}` = @by"); u.Parameters.AddWithValue("@by", caller.User); }
-            if (t.SignedAt != null && Columns[table].Contains(t.SignedAt)) sets.Add($"`{SafeIdentifier(t.SignedAt)}` = UTC_TIMESTAMP()");
+            using var u = Db.Command("", c.Connection, c.Transaction);
+            if (t.SignedBy != null && Columns[table].Contains(t.SignedBy)) { sets.Add($"{Db.Q(SafeIdentifier(t.SignedBy))} = @by"); u.Parameters.AddWithValue("@by", caller.User); }
+            if (t.SignedAt != null && Columns[table].Contains(t.SignedAt)) sets.Add($"{Db.Q(SafeIdentifier(t.SignedAt))} = {Db.UtcNow}");
             if (sets.Count == 0) return;
-            u.CommandText = $"UPDATE `{table}` SET {string.Join(", ", sets)} WHERE `{PrimaryKeys[table]}` = @id";
+            u.CommandText = $"UPDATE {Db.Q(table)} SET {string.Join(", ", sets)} WHERE {Db.Q(PrimaryKeys[table])} = @id";
             u.Parameters.AddWithValue("@id", id);
             u.ExecuteNonQuery();
         }
 
-        static void StampTimestamp(MySqlCommand c, string table, Lifecycle lc, string state, object id)
+        static void StampTimestamp(DbCommand c, string table, Lifecycle lc, string state, object id)
         {
             if (!lc.Timestamps.TryGetValue(state, out var col) || !Columns[table].Contains(col)) return;
-            using var u = new MySqlCommand($"UPDATE `{table}` SET `{SafeIdentifier(col)}` = UTC_TIMESTAMP() WHERE `{PrimaryKeys[table]}` = @id AND `{col}` IS NULL", c.Connection, c.Transaction);
+            using var u = Db.Command($"UPDATE {Db.Q(table)} SET {Db.Q(SafeIdentifier(col))} = {Db.UtcNow} WHERE {Db.Q(PrimaryKeys[table])} = @id AND {Db.Q(col)} IS NULL", c.Connection, c.Transaction);
             u.Parameters.AddWithValue("@id", id);
             u.ExecuteNonQuery();
         }
 
         /// <summary>Leaving a state closes its open deadline (met); entering a state with SLA hours opens a new deadline row.</summary>
-        static void UpdateSla(MySqlCommand c, Caller caller, Lifecycle lc, Dictionary<string, object> row, object id, string from, string to)
+        static void UpdateSla(DbCommand c, Caller caller, Lifecycle lc, Dictionary<string, object> row, object id, string from, string to)
         {
             if (lc.SlaTable == null || !Columns.TryGetValue(lc.SlaTable, out var cols)) return;
             if (from != null && lc.SlaHours.ContainsKey(from))
             {
-                using var u = new MySqlCommand($"UPDATE `{lc.SlaTable}` SET `{lc.SlaMet}` = UTC_TIMESTAMP() WHERE `{lc.SlaLink}` = @id AND `{lc.SlaType}` = @t AND `{lc.SlaMet}` IS NULL AND isActive = 1",
+                using var u = Db.Command($"UPDATE {Db.Q(lc.SlaTable)} SET {Db.Q(lc.SlaMet)} = {Db.UtcNow} WHERE {Db.Q(lc.SlaLink)} = @id AND {Db.Q(lc.SlaType)} = @t AND {Db.Q(lc.SlaMet)} IS NULL AND isActive = 1",
                     c.Connection, c.Transaction);
                 u.Parameters.AddWithValue("@id", id); u.Parameters.AddWithValue("@t", from);
                 u.ExecuteNonQuery();
@@ -524,7 +525,7 @@ namespace nkv.MicroService.Utility
         }
 
         /// <summary>Plan/usage limits: rows (or the sum of a column) per tenant, optionally per month, against a maximum read from the tenant's subscription/plan.</summary>
-        static void CheckLimit(MySqlCommand cmd, Caller caller, Limit lim, Dictionary<string, object> values)
+        static void CheckLimit(DbCommand cmd, Caller caller, Limit lim, Dictionary<string, object> values)
         {
             if (caller.Tenant == null || !TenantTables.Contains(lim.Table)) return;
             if (lim.Where.Any(kv => !string.Equals(Str(values.GetValueOrDefault(kv.Key)), kv.Value, StringComparison.OrdinalIgnoreCase))) return;
@@ -532,11 +533,11 @@ namespace nkv.MicroService.Utility
             if (lim.MaxFrom != null)
             {
                 var from = SafeIdentifier(lim.MaxFrom);
-                var src = lim.MaxJoin != null ? $"`{SafeIdentifier(lim.MaxJoin)}` j JOIN `{from}` m ON j.`{SafeIdentifier(lim.MaxJoinOn)}` = m.`{SafeIdentifier(lim.MaxJoinOn)}`" : $"`{from}` m";
+                var src = lim.MaxJoin != null ? $"{Db.Q(SafeIdentifier(lim.MaxJoin))} j JOIN {Db.Q(from)} m ON j.{Db.Q(SafeIdentifier(lim.MaxJoinOn))} = m.{Db.Q(SafeIdentifier(lim.MaxJoinOn))}" : $"{Db.Q(from)} m";
                 var owner = lim.MaxJoin ?? from;
                 var alias = lim.MaxJoin != null ? "j" : "m";
-                var where = string.Join("", lim.MaxWhere.Select((kv, i) => $" AND {alias}.`{SafeIdentifier(kv.Key)}` = @mw{i}"));
-                using var q = new MySqlCommand($"SELECT m.`{SafeIdentifier(lim.MaxColumn)}` FROM {src} WHERE {alias}.`{TenantColumn}` = @t AND {alias}.isActive = 1{where} ORDER BY 1 DESC LIMIT 1",
+                var where = string.Join("", lim.MaxWhere.Select((kv, i) => $" AND {alias}.{Db.Q(SafeIdentifier(kv.Key))} = @mw{i}"));
+                using var q = Db.Command($"SELECT {Db.Top(1)}m.{Db.Q(SafeIdentifier(lim.MaxColumn))} FROM {src} WHERE {alias}.{Db.Q(TenantColumn)} = @t AND {alias}.isActive = 1{where} ORDER BY 1 DESC{Db.LimitEnd(1)}",
                     cmd.Connection, cmd.Transaction);
                 q.Parameters.AddWithValue("@t", caller.Tenant.Value);
                 var i2 = 0; foreach (var kv in lim.MaxWhere) q.Parameters.AddWithValue("@mw" + i2++, kv.Value);
@@ -548,10 +549,10 @@ namespace nkv.MicroService.Utility
                 if (lim.OnMissing == "block") throw new DataGuardException(lim.Message ?? $"No active plan allows creating {lim.Table}.", 402);
                 return;
             }
-            var measure = lim.Measure == "sum" ? $"COALESCE(SUM(`{SafeIdentifier(lim.SumColumn)}`), 0)" : "COUNT(*)";
-            var conds = string.Join("", lim.Where.Select((kv, i) => $" AND `{SafeIdentifier(kv.Key)}` = @w{i}"));
-            if (lim.Period == "month") conds += " AND createdAt >= DATE_FORMAT(UTC_TIMESTAMP(), '%Y-%m-01')";
-            using var u = new MySqlCommand($"SELECT {measure} FROM `{lim.Table}` WHERE `{TenantColumn}` = @t AND isActive = 1{conds}", cmd.Connection, cmd.Transaction);
+            var measure = lim.Measure == "sum" ? $"COALESCE(SUM({Db.Q(SafeIdentifier(lim.SumColumn))}), 0)" : "COUNT(*)";
+            var conds = string.Join("", lim.Where.Select((kv, i) => $" AND {Db.Q(SafeIdentifier(kv.Key))} = @w{i}"));
+            if (lim.Period == "month") conds += " AND createdAt >= " + Db.MonthStart;
+            using var u = Db.Command($"SELECT {measure} FROM {Db.Q(lim.Table)} WHERE {Db.Q(TenantColumn)} = @t AND isActive = 1{conds}", cmd.Connection, cmd.Transaction);
             u.Parameters.AddWithValue("@t", caller.Tenant.Value);
             var i3 = 0; foreach (var kv in lim.Where) u.Parameters.AddWithValue("@w" + i3++, kv.Value);
             var used = Convert.ToDecimal(u.ExecuteScalar());
@@ -562,7 +563,7 @@ namespace nkv.MicroService.Utility
 
         // ------------------------------------------------------------------ audit & outbox
 
-        static void WriteAudit(MySqlCommand c, Caller caller, string table, string action, object id, Dictionary<string, object> changes, Dictionary<string, object> before)
+        static void WriteAudit(DbCommand c, Caller caller, string table, string action, object id, Dictionary<string, object> changes, Dictionary<string, object> before)
         {
             if (_auditTable == null || _auditExclude.Contains(table) || !Columns.ContainsKey(_auditTable)) return;
             var details = new JsonObject();
@@ -588,7 +589,7 @@ namespace nkv.MicroService.Utility
             }, caller, row);
         }
 
-        static void WriteOutbox(MySqlCommand c, Caller caller, string table, string on, object id, Dictionary<string, object> row, Dictionary<string, object> before)
+        static void WriteOutbox(DbCommand c, Caller caller, string table, string on, object id, Dictionary<string, object> row, Dictionary<string, object> before)
         {
             if (_outboxTable == null || table.Equals(_outboxTable, StringComparison.OrdinalIgnoreCase) || !Columns.ContainsKey(_outboxTable)) return;
             var events = new List<string>();
@@ -617,7 +618,7 @@ namespace nkv.MicroService.Utility
         }
 
         /// <summary>Inserts a system row (history/audit/outbox) using only the columns the table has; tenant copied from the source row.</summary>
-        static void InsertInternal(MySqlCommand c, string table, Dictionary<string, object> vals, Caller caller, Dictionary<string, object> sourceRow)
+        static void InsertInternal(DbCommand c, string table, Dictionary<string, object> vals, Caller caller, Dictionary<string, object> sourceRow)
         {
             if (!Columns.TryGetValue(table, out var cols)) return;
             var v = vals.Where(kv => cols.Contains(kv.Key)).ToDictionary(kv => kv.Key, kv => kv.Value, StringComparer.OrdinalIgnoreCase);
@@ -627,17 +628,17 @@ namespace nkv.MicroService.Utility
             if (cols.Contains("modifiedby")) v["modifiedBy"] = caller.User ?? caller.Owner;
             if (cols.Contains(TenantColumn) && v[TenantColumn] is DBNull or null) return; // tenant row without a tenant: nothing to attach to
             var names = v.Keys.ToList();
-            using var ins = new MySqlCommand($"INSERT INTO `{table}` ({string.Join(", ", names.Select(n => "`" + n + "`"))}) VALUES ({string.Join(", ", names.Select((_, i) => "@p" + i))})",
+            using var ins = Db.Command($"INSERT INTO {Db.Q(table)} ({string.Join(", ", names.Select(Db.Q))}) VALUES ({string.Join(", ", names.Select((_, i) => "@p" + i))})",
                 c.Connection, c.Transaction);
             for (var i = 0; i < names.Count; i++) ins.Parameters.AddWithValue("@p" + i, v[names[i]] ?? DBNull.Value);
             ins.ExecuteNonQuery();
         }
 
         /// <summary>Background jobs: insert a row (plus its audit and outbox rows) as the system, in the source row's workspace and tenant.</summary>
-        public static void SystemInsert(MySqlConnection c, MySqlTransaction tx, string table, Dictionary<string, object> values, Dictionary<string, object> sourceRow)
+        public static void SystemInsert(DbConnection c, DbTransaction tx, string table, Dictionary<string, object> values, Dictionary<string, object> sourceRow)
         {
             var caller = new Caller { User = "system", Owner = Str(sourceRow.GetValueOrDefault("createdby")), IsSystem = true, CorrelationId = Guid.NewGuid().ToString("N") };
-            using var holder = new MySqlCommand("", c, tx);
+            using var holder = Db.Command("", c, tx);
             InsertInternal(holder, table, values, caller, sourceRow);
             WriteAudit(holder, caller, table, "create", null, values, null);
             WriteOutbox(holder, caller, table, "insert", null, new Dictionary<string, object>(values, StringComparer.OrdinalIgnoreCase) { [TenantColumn] = sourceRow.GetValueOrDefault(TenantColumn) }, null);
@@ -646,18 +647,18 @@ namespace nkv.MicroService.Utility
         // ------------------------------------------------------------------ helpers
 
         /// <summary>Rebinds the parameter assigned to <paramref name="col"/> in an UPDATE's SET list; false when it isn't a parameter.</summary>
-        static bool KeepValue(MySqlCommand cmd, string col, object value)
+        static bool KeepValue(DbCommand cmd, string col, object value)
         {
-            var m = Regex.Match(cmd.CommandText, $@"\bSET\b.*?`?\b{Regex.Escape(col)}\b`?\s*=\s*(@\w+)", RegexOptions.IgnoreCase | RegexOptions.Singleline);
+            var m = Regex.Match(cmd.CommandText, $@"\bSET\b.*?[`\[\]]?\b{Regex.Escape(col)}\b[`\[\]]?\s*=\s*(@\w+)", RegexOptions.IgnoreCase | RegexOptions.Singleline);
             if (!m.Success || !cmd.Parameters.Contains(m.Groups[1].Value)) return false;
             cmd.Parameters[m.Groups[1].Value].Value = value;
             return true;
         }
 
-        static object KeyValue(MySqlCommand cmd, string table, Dictionary<string, object> values)
+        static object KeyValue(DbCommand cmd, string table, Dictionary<string, object> values)
         {
             if (!PrimaryKeys.TryGetValue(table, out var pk)) return null;
-            var m = Regex.Match(cmd.CommandText, $@"\bWHERE\b.*?`?\b{Regex.Escape(pk)}\b`?\s*=\s*(@\w+|'(?:[^']|'')*'|-?\d+)", RegexOptions.IgnoreCase | RegexOptions.Singleline);
+            var m = Regex.Match(cmd.CommandText, $@"\bWHERE\b.*?[`\[\]]?\b{Regex.Escape(pk)}\b[`\[\]]?\s*=\s*(@\w+|'(?:[^']|'')*'|-?\d+)", RegexOptions.IgnoreCase | RegexOptions.Singleline);
             if (m.Success)
             {
                 var key = SqlValue(m.Groups[1].Value, cmd); // a parameter, or the key written in the SQL (WHERE id = 4)
@@ -667,9 +668,9 @@ namespace nkv.MicroService.Utility
             return v is string s && s.StartsWith("@") ? null : v;
         }
 
-        static Dictionary<string, object> LoadVisible(MySqlCommand cmd, string table, object id)
+        static Dictionary<string, object> LoadVisible(DbCommand cmd, string table, object id)
         {
-            using var q = new MySqlCommand($"SELECT t.* FROM `{table}` t WHERE t.`{PrimaryKeys[table]}` = @id", cmd.Connection, cmd.Transaction);
+            using var q = Db.Command($"SELECT t.* FROM {Db.Q(table)} t WHERE t.{Db.Q(PrimaryKeys[table])} = @id", cmd.Connection, cmd.Transaction);
             q.Parameters.AddWithValue("@id", id);
             using var r = Apply(q).ExecuteReader();
             if (!r.Read()) return null;
@@ -678,13 +679,13 @@ namespace nkv.MicroService.Utility
             return d;
         }
 
-        static string RoleName(MySqlConnection _, Caller caller)
+        static string RoleName(DbConnection _, Caller caller)
         {
             if (_roleNames.TryGetValue(caller.RoleId, out var n)) return n;
             // own connection: callers may be in the middle of reading from theirs
-            using var c = new MySqlConnection(ConnectionString);
+            using var c = Db.Connection(ConnectionString);
             c.Open();
-            using var q = new MySqlCommand("SELECT role_name FROM roles WHERE role_id = @r", c);
+            using var q = Db.Command("SELECT role_name FROM roles WHERE role_id = @r", c);
             q.Parameters.AddWithValue("@r", caller.RoleId);
             n = q.ExecuteScalar()?.ToString();
             if (n != null) _roleNames[caller.RoleId] = n;

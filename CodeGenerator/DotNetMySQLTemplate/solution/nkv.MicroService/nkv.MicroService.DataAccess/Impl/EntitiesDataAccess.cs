@@ -1,4 +1,5 @@
 using MySqlConnector;
+using System.Data.Common;
 using nkv.MicroService.DataAccess.Interface;
 using nkv.MicroService.Model;
 using nkv.MicroService.Utility;
@@ -478,7 +479,7 @@ namespace nkv.MicroService.DataAccess.Impl
                 var connection = mySqlDatabaseConnector.GetConnection();
                 using (var cmd = connection.CreateCommand())
                 {
-                    MySqlTransaction transaction = connection.BeginTransaction();
+                    DbTransaction transaction = connection.BeginTransaction();
                     cmd.Transaction = transaction;
                     cmd.CommandText = @"DELETE FROM Entities Where";
                     int count = 0;
