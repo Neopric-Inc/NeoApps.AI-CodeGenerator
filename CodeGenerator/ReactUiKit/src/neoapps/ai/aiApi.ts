@@ -117,6 +117,7 @@ export const deleteFile = (id: number) => call("DELETE", `files/${id}`);
  */
 export async function openFile(id: number, name: string) {
   const tab = window.open("", "_blank");
+  if (!tab) return downloadFile(id, name); // pop-ups blocked: download instead
   if (tab) { tab.document.title = name; tab.document.body.innerHTML = '<p style="font:14px system-ui,sans-serif;padding:16px;color:#555">Opening\u2026</p>'; }
   const res = await apiFetch(`Ai/files/${id}/content`);
   if (!res.ok) {
@@ -152,6 +153,20 @@ export async function openFile(id: number, name: string) {
   a.href = url;
   a.download = name;
   a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
+}
+
+/** Downloads an uploaded file (no new tab, so pop-up blockers don't get in the way). */
+export async function downloadFile(id: number, name: string) {
+  const res = await apiFetch(`Ai/files/${id}/content`);
+  if (!res.ok) throw new ApiError(res.status, "Couldn't download the file. Please try again.");
+  const url = URL.createObjectURL(await res.blob());
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
 

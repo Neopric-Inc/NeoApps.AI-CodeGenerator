@@ -65,7 +65,7 @@ export const Assistant: React.FC = () => {
   if (!ai.enabled)
     return (
       <Alert severity="info">
-        The assistant isn't set up yet. {ai.configured ? "It's turned off in the app's AI settings." : "Set the ANTHROPIC_API_KEY environment variable for the API and restart it."}
+        The assistant isn't set up yet. {ai.configured ? "It's turned off in the app's AI settings." : "The app's owner can turn it on in the app's AI settings."}
       </Alert>
     );
 

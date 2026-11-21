@@ -3,8 +3,9 @@ import { Alert, Box, Button, Chip, CircularProgress, IconButton, List, ListItem,
 import UploadFile from "@mui/icons-material/UploadFile";
 import DescriptionOutlined from "@mui/icons-material/DescriptionOutlined";
 import DeleteOutline from "@mui/icons-material/DeleteOutlineOutlined";
+import FileDownloadOutlined from "@mui/icons-material/FileDownloadOutlined";
 import { useApp } from "../AppContext";
-import { AiFile, deleteFile, listFiles, openFile, uploadFile } from "./aiApi";
+import { AiFile, deleteFile, downloadFile, listFiles, openFile, uploadFile } from "./aiApi";
 
 const size = (n: number) => (n > 1_000_000 ? `${(n / 1_000_000).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1000))} KB`);
 const STATUS: Record<string, { label: string; color: "success" | "warning" | "error" | "default" }> = {
@@ -89,15 +90,18 @@ export const FilesPanel: React.FC<{ table: string; recordId: string; onChange?: 
         <List dense disablePadding>
           {files.map((f) => (
             <ListItem key={f.file_id} disableGutters
-              secondaryAction={can(table, "update") || can(table, "delete") ? (
-                <Tooltip title="Remove file"><IconButton edge="end" size="small" onClick={async () => { await deleteFile(f.file_id).catch((e) => setError(e.message)); load(); onChange?.(); }}>
-                  <DeleteOutline fontSize="small" /></IconButton></Tooltip>
-              ) : undefined}>
+              secondaryAction={<>
+                <Tooltip title="Download"><IconButton size="small" aria-label={`Download ${f.file_name}`} onClick={() => downloadFile(f.file_id, f.file_name).catch((e) => setError(e.message))}>
+                  <FileDownloadOutlined fontSize="small" /></IconButton></Tooltip>
+                {(can(table, "update") || can(table, "delete")) && (
+                <Tooltip title="Remove file"><IconButton edge="end" size="small" aria-label={`Remove ${f.file_name}`} onClick={async () => { await deleteFile(f.file_id).catch((e) => setError(e.message)); load(); onChange?.(); }}>
+                  <DeleteOutline fontSize="small" /></IconButton></Tooltip>)}
+              </>}>
               <ListItemIcon sx={{ minWidth: 34 }}><DescriptionOutlined fontSize="small" /></ListItemIcon>
               <ListItemText
-                primary={<Box component="span" sx={{ cursor: "pointer", "&:hover": { textDecoration: "underline" } }} onClick={() => openFile(f.file_id, f.file_name).catch((e) => setError(e.message))}>{f.file_name}</Box>}
+                primary={<Box component="span" sx={{ cursor: "pointer", color: "primary.main", "&:hover": { textDecoration: "underline" } }} title="Open" onClick={() => openFile(f.file_id, f.file_name).catch((e) => setError(e.message))}>{f.file_name}</Box>}
                 secondary={`${size(f.size_bytes)}${f.pages ? ` · ${f.pages} page${f.pages === 1 ? "" : "s"}` : ""} · ${f.createdBy} · ${new Date(f.createdAt).toLocaleDateString()}`} />
-              <Tooltip title={f.error || ""}><Chip size="small" label={STATUS[f.status]?.label || f.status} color={STATUS[f.status]?.color || "default"} variant="outlined" sx={{ mr: 4 }} /></Tooltip>
+              <Tooltip title={f.error || ""}><Chip size="small" label={STATUS[f.status]?.label || f.status} color={STATUS[f.status]?.color || "default"} variant="outlined" sx={{ mr: 9 }} /></Tooltip>
             </ListItem>
           ))}
         </List>
