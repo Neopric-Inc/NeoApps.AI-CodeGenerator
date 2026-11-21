@@ -8,7 +8,7 @@ namespace NeoApps.Mcp.Services;
 /// <summary>
 /// Puts a generated app's database on Azure SQL (SQL Server). The generator always builds the app against a scratch MySQL
 /// database; this copies that database's exact definition (tables, types, defaults, keys, indexes, foreign keys) and rows
-/// (ids kept) to SQL Server. Used by `neoapps new --db azuresql`.
+/// (ids kept) to SQL Server as a setup script the app runs on first start. Used by `neoapps new --db azuresql`.
 /// </summary>
 public static class AzureSqlTarget
 {
@@ -17,8 +17,6 @@ public static class AzureSqlTarget
     public sealed record Index(string Name, bool Unique, List<string> Columns);
     public sealed record Fk(string Name, List<string> Columns, string RefTable, List<string> RefColumns, string DeleteRule);
     public sealed record Table(string Name, List<Col> Columns, List<string> PrimaryKey, List<Index> Indexes, List<Fk> ForeignKeys);
-
-    public sealed record Result(int Tables, long Rows, List<string> Warnings);
 
     /// <summary>Reads the MySQL database's tables (the connection's current database).</summary>
     public static List<Table> ReadMySql(string mysqlConnection)
@@ -166,99 +164,89 @@ public static class AzureSqlTarget
         $"REFERENCES {Q(fk.RefTable)} ({string.Join(", ", fk.RefColumns.Select(Q))})" +
         (cascade ? fk.DeleteRule switch { "CASCADE" => " ON DELETE CASCADE", "SET NULL" => " ON DELETE SET NULL", _ => "" } : "");
 
-    // ---- publish ----------------------------------------------------------------------------------------------------
+    // ---- setup script -------------------------------------------------------------------------------------------
 
     /// <summary>
-    /// Creates every table of the MySQL database in the SQL Server database and copies the rows. The target must be empty,
-    /// unless reset is true: then every table in it is dropped first (only for a fresh `neoapps new`).
+    /// The T-SQL that creates every table of the MySQL database on SQL Server and loads its rows (ids kept), then adds
+    /// indexes and links. Batches are separated by lines holding only "GO". The generated app runs it itself on first start
+    /// (Db.InitializeIfEmpty), with its own identity, so nothing outside the app needs access to its database.
     /// </summary>
-    public static Result Publish(string mysqlConnection, string sqlServerConnection, bool reset, Action<string> log, CancellationToken ct = default)
+    public static string Script(string mysqlConnection, List<string> warnings)
     {
-        var warnings = new List<string>();
         var tables = ReadMySql(mysqlConnection);
-        using var s = new SqlConnection(sqlServerConnection);
-        OpenWithRetry(s, log);
-
-        var existing = new List<string>();
-        using (var q = new SqlCommand("SELECT name FROM sys.tables WHERE schema_id = SCHEMA_ID()", s))
-        using (var r = q.ExecuteReader()) while (r.Read()) existing.Add(r.GetString(0));
-        if (existing.Count > 0)
-        {
-            if (!reset) throw new InvalidOperationException(
-                $"The Azure SQL database already has {existing.Count} table(s). Use an empty database, or reset it (deletes its data).");
-            log($"Dropping {existing.Count} existing table(s) in the Azure SQL database (fresh app)...");
-            Exec(s, @"DECLARE @sql NVARCHAR(MAX) = N'';
-                SELECT @sql += N'ALTER TABLE ' + QUOTENAME(OBJECT_SCHEMA_NAME(parent_object_id)) + N'.' + QUOTENAME(OBJECT_NAME(parent_object_id)) +
-                               N' DROP CONSTRAINT ' + QUOTENAME(name) + N';' FROM sys.foreign_keys WHERE schema_id = SCHEMA_ID();
-                EXEC sp_executesql @sql;
-                SET @sql = N'';
-                SELECT @sql += N'DROP TABLE ' + QUOTENAME(SCHEMA_NAME(schema_id)) + N'.' + QUOTENAME(name) + N';' FROM sys.tables WHERE schema_id = SCHEMA_ID();
-                EXEC sp_executesql @sql;");
-        }
-
-        foreach (var t in tables)
-        {
-            ct.ThrowIfCancellationRequested();
-            Exec(s, CreateTableSql(t, warnings));
-        }
-        log($"Created {tables.Count} tables.");
-
-        long rows = 0;
+        var sb = new StringBuilder("-- NeoApps: database setup for SQL Server / Azure SQL. Run once on an empty database.\n");
+        foreach (var t in tables) sb.Append(CreateTableSql(t, warnings)).Append("\nGO\n");
         using (var my = new MySqlConnection(mysqlConnection))
         {
             my.Open();
-            foreach (var t in tables)
-            {
-                ct.ThrowIfCancellationRequested();
-                rows += CopyRows(my, s, t, ct);
-            }
+            foreach (var t in tables) AppendRows(sb, my, t);
         }
-        log($"Copied {rows} rows.");
-
         foreach (var t in tables)
-            foreach (var ix in IndexSql(t, warnings)) Exec(s, ix);
+            foreach (var ix in IndexSql(t, warnings)) sb.Append(ix).Append("\nGO\n");
         foreach (var t in tables)
             foreach (var fk in t.ForeignKeys)
-            {
-                try { Exec(s, FkSql(t, fk, cascade: true)); }
-                catch (SqlException e) when (e.Number == 1785) // multiple cascade paths: SQL Server refuses, keep the link without cascade
-                {
-                    Exec(s, FkSql(t, fk, cascade: false));
-                    warnings.Add($"{t.Name}.{string.Join(",", fk.Columns)}: ON DELETE {fk.DeleteRule} not possible on SQL Server (several cascade paths); deletes are blocked instead.");
-                }
-            }
-        log($"Added indexes and {tables.Sum(t => t.ForeignKeys.Count)} links.");
-        return new Result(tables.Count, rows, warnings);
+                // SQL Server refuses some cascades (several paths, error 1785): keep the link without the cascade then
+                sb.Append($"BEGIN TRY {FkSql(t, fk, cascade: true)} END TRY BEGIN CATCH {FkSql(t, fk, cascade: false)} END CATCH\nGO\n");
+        return sb.ToString();
     }
 
-    static long CopyRows(MySqlConnection my, SqlConnection s, Table t, CancellationToken ct)
+    static void AppendRows(StringBuilder sb, MySqlConnection my, Table t)
     {
         using var q = new MySqlCommand($"SELECT {string.Join(", ", t.Columns.Select(c => "`" + c.Name + "`"))} FROM `{t.Name}`", my);
         using var r = q.ExecuteReader();
-        var dt = new DataTable();
-        foreach (var c in t.Columns) dt.Columns.Add(c.Name, ClrType(SqlType(c)));
-        long total = 0;
+        var types = t.Columns.Select(c => ClrType(SqlType(c))).ToArray();
+        var identity = t.Columns.Any(c => c.AutoIncrement);
+        var head = $"INSERT INTO {Q(t.Name)} ({string.Join(", ", t.Columns.Select(c => Q(c.Name)))}) VALUES\n";
+        var rows = new List<string>();
         void Flush()
         {
-            if (dt.Rows.Count == 0) return;
-            using var bulk = new SqlBulkCopy(s, SqlBulkCopyOptions.KeepIdentity | SqlBulkCopyOptions.KeepNulls, null)
-                { DestinationTableName = Q(t.Name), BulkCopyTimeout = 600 };
-            foreach (var c in t.Columns) bulk.ColumnMappings.Add(c.Name, c.Name);
-            bulk.WriteToServer(dt);
-            total += dt.Rows.Count;
-            dt.Clear();
+            if (rows.Count == 0) return;
+            if (identity) sb.Append($"SET IDENTITY_INSERT {Q(t.Name)} ON;\n");
+            sb.Append(head).Append(string.Join(",\n", rows)).Append(";\n");
+            if (identity) sb.Append($"SET IDENTITY_INSERT {Q(t.Name)} OFF;\n");
+            sb.Append("GO\n");
+            rows.Clear();
         }
         while (r.Read())
         {
-            ct.ThrowIfCancellationRequested();
-            var row = dt.NewRow();
-            for (var i = 0; i < t.Columns.Count; i++)
-                row[i] = r.IsDBNull(i) ? DBNull.Value : ToTarget(r.GetValue(i), dt.Columns[i].DataType);
-            dt.Rows.Add(row);
-            if (dt.Rows.Count >= 5000) Flush();
+            var vals = new string[t.Columns.Count];
+            for (var i = 0; i < vals.Length; i++) vals[i] = r.IsDBNull(i) ? "NULL" : Literal(ToTarget(r.GetValue(i), types[i]));
+            rows.Add("(" + string.Join(", ", vals) + ")");
+            if (rows.Count == 500) Flush(); // SQL Server allows up to 1000 rows per VALUES list
         }
         Flush();
-        return total;
+    }
+
+    static string Literal(object v) => v switch
+    {
+        null or DBNull => "NULL",
+        bool b => b ? "1" : "0",
+        string s => "N'" + s.Replace("'", "''") + "'",
+        DateTime d => "'" + d.ToString("yyyy-MM-ddTHH:mm:ss.fffffff", System.Globalization.CultureInfo.InvariantCulture) + "'",
+        TimeSpan ts => "'" + ts.ToString(@"hh\:mm\:ss", System.Globalization.CultureInfo.InvariantCulture) + "'",
+        byte[] bytes => "0x" + Convert.ToHexString(bytes),
+        double dbl => dbl.ToString("R", System.Globalization.CultureInfo.InvariantCulture),
+        float f => f.ToString("R", System.Globalization.CultureInfo.InvariantCulture),
+        IFormattable n => n.ToString(null, System.Globalization.CultureInfo.InvariantCulture),
+        _ => "N'" + v.ToString()!.Replace("'", "''") + "'",
+    };
+
+    /// <summary>Drops every table of the SQL Server database (a fresh `neoapps new`); the app then sets itself up again.</summary>
+    public static int Reset(string sqlServerConnection, Action<string> log)
+    {
+        using var s = new SqlConnection(sqlServerConnection);
+        OpenWithRetry(s, log);
+        using var count = new SqlCommand("SELECT COUNT(*) FROM sys.tables WHERE schema_id = SCHEMA_ID()", s);
+        var n = Convert.ToInt32(count.ExecuteScalar());
+        if (n == 0) return 0;
+        Exec(s, @"DECLARE @sql NVARCHAR(MAX) = N'';
+            SELECT @sql += N'ALTER TABLE ' + QUOTENAME(OBJECT_SCHEMA_NAME(parent_object_id)) + N'.' + QUOTENAME(OBJECT_NAME(parent_object_id)) +
+                           N' DROP CONSTRAINT ' + QUOTENAME(name) + N';' FROM sys.foreign_keys WHERE schema_id = SCHEMA_ID();
+            EXEC sp_executesql @sql;
+            SET @sql = N'';
+            SELECT @sql += N'DROP TABLE ' + QUOTENAME(SCHEMA_NAME(schema_id)) + N'.' + QUOTENAME(name) + N';' FROM sys.tables WHERE schema_id = SCHEMA_ID();
+            EXEC sp_executesql @sql;");
+        return n;
     }
 
     static Type ClrType(string sqlType) => sqlType switch

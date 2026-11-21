@@ -269,6 +269,53 @@ namespace nkv.MicroService.Utility
             a.ExecuteNonQuery();
         }
 
+        // ---- first start on SQL Server ---------------------------------------------------------------------------------
+
+        /// <summary>
+        /// SQL Server only: when the database has no tables yet, runs the app's setup script (db/init.azuresql.sql, written by
+        /// the generator: tables, starting rows, indexes, links) in one transaction. Several instances starting at once take
+        /// turns (sp_getapplock). Then, when Bootstrap:AdminUsername / Bootstrap:AdminPasswordHash are set (first deploy on
+        /// NeoApps Cloud), the first administrator gets that username and BCrypt hash. Returns true when it set up the database.
+        /// </summary>
+        public static bool InitializeIfEmpty(string connectionString, string scriptPath, string adminUsername, string adminPasswordHash, Action<string> log)
+        {
+            if (!IsSqlServer || string.IsNullOrEmpty(scriptPath) || !System.IO.File.Exists(scriptPath)) return false;
+            using var c = Open(connectionString);
+            using (var lockCmd = Command("DECLARE @r INT; EXEC @r = sp_getapplock @Resource = 'neoapps_init', @LockMode = 'Exclusive', @LockOwner = 'Session', @LockTimeout = 300000; SELECT @r", c))
+                if (Convert.ToInt32(lockCmd.ExecuteScalar()) < 0) throw new InvalidOperationException("Timed out waiting for another instance to set up the database.");
+            try
+            {
+                if (Tables(c).Count > 0) return false;
+                log?.Invoke("Database is empty: running db/init.azuresql.sql");
+                var batches = System.Text.RegularExpressions.Regex.Split(System.IO.File.ReadAllText(scriptPath), @"^\s*GO\s*$",
+                    System.Text.RegularExpressions.RegexOptions.Multiline);
+                using var tx = c.BeginTransaction();
+                foreach (var b in batches)
+                {
+                    if (string.IsNullOrWhiteSpace(b)) continue;
+                    using var cmd = Command(b, c, tx);
+                    cmd.CommandTimeout = 600;
+                    cmd.ExecuteNonQuery();
+                }
+                if (!string.IsNullOrWhiteSpace(adminUsername) && !string.IsNullOrWhiteSpace(adminPasswordHash))
+                {
+                    using var admin = Command(@"UPDATE users SET username = @u, password_hash = @h, isActive = 1
+                        WHERE user_id = (SELECT MIN(user_id) FROM users WHERE role_id = 1)", c, tx);
+                    admin.Parameters.AddWithValue("@u", adminUsername.Trim());
+                    admin.Parameters.AddWithValue("@h", adminPasswordHash.Trim());
+                    admin.ExecuteNonQuery();
+                }
+                tx.Commit();
+                log?.Invoke($"Database set up ({batches.Length} batches).");
+                return true;
+            }
+            finally
+            {
+                using var release = Command("EXEC sp_releaseapplock @Resource = 'neoapps_init', @LockOwner = 'Session'", c);
+                release.ExecuteNonQuery();
+            }
+        }
+
         // ---- small helpers ------------------------------------------------------------------------------------------
 
         public static long Scalar(DbConnection c, string sql, DbTransaction tx, params (string, object)[] ps)

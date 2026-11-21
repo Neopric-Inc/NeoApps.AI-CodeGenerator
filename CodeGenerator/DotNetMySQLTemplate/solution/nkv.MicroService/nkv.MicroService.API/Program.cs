@@ -27,6 +27,11 @@ namespace nkv.MicroService.API
             var connectionString = config.GetConnectionString("MySQLDatabase");
             nkv.MicroService.Utility.Db.Configure(config["Database:Provider"]); // mysql (default) or azuresql
 
+            // SQL Server (Azure SQL): a new app sets up its own empty database from db/init.azuresql.sql, before migrations.
+            nkv.MicroService.Utility.Db.InitializeIfEmpty(connectionString,
+                System.IO.Path.Combine(AppContext.BaseDirectory, "db", "init.azuresql.sql"),
+                config["Bootstrap:AdminUsername"], config["Bootstrap:AdminPasswordHash"], Console.WriteLine);
+
             // --migrate / --baseline / --migrations-status / --migrate-down=VERSION: run that and exit.
             if (MigrationHost.RunFromArgs(args, connectionString, typeof(Program).Assembly) is int exitCode)
                 return exitCode;
