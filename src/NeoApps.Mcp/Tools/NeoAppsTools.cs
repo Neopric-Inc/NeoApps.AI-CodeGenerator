@@ -98,9 +98,20 @@ public sealed class NeoAppsTools(
         [Description("Frontend template: 'app' (ready-made admin UI) or 'dnd' (drag-and-drop page designer).")] string frontendTemplate = "app",
         [Description("Drop and recreate the app's database if it already exists. Default true for a clean generation.")] bool resetDatabase = true,
         [Description("Optional ui.config.json content (see neoapps_ui_config_guide): labels, widgets, menu, theme, dashboard, roles.")] string? uiConfig = null,
+        [Description("Where the app's data lives: 'mysql' (default) or 'azuresql' (Azure SQL / SQL Server; the connection string is read from the environment variable in databaseEnv).")] string database = "mysql",
+        [Description("For azuresql: environment variable holding the connection string (default NEOAPPS_AZURESQL). Never pass the connection string itself.")] string? databaseEnv = null,
         CancellationToken ct = default)
     {
         name = ProjectStore.ValidateName(name);
+        var provider = (database ?? "mysql").Trim().ToLowerInvariant() switch
+        {
+            "mysql" or "" => "mysql",
+            "azuresql" or "sqlserver" or "mssql" => "azuresql",
+            var d => throw new McpException($"Unknown database '{d}'. Use mysql or azuresql."),
+        };
+        var dbEnv = provider == "azuresql" ? (string.IsNullOrWhiteSpace(databaseEnv) ? "NEOAPPS_AZURESQL" : databaseEnv.Trim()) : null;
+        if (dbEnv != null && string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable(dbEnv)))
+            throw new McpException($"Set {dbEnv} to the Azure SQL connection string in your own terminal first (e.g. `set -a; . ~/secrets/neoapps-azure-test.env; set +a`), then run this again. Never paste it into the chat.");
         var template = NormalizeTemplate(frontendTemplate);
         if (string.IsNullOrWhiteSpace(sqlSchema) == string.IsNullOrWhiteSpace(sqlFilePath))
             throw new McpException("Provide exactly one of sqlSchema or sqlFilePath.");
@@ -120,6 +131,8 @@ public sealed class NeoAppsTools(
         state.SchemaFile = schemaFile;
         state.ApiPort = apiPort;
         state.WebPort = webPort;
+        state.DbProvider = provider;
+        state.DbEnv = dbEnv;
         store.Save(state);
 
         return jobs.StartAndWaitAsync("create", name, async (job, jct) =>
@@ -135,6 +148,16 @@ public sealed class NeoAppsTools(
                 if (!b.Ok) throw new InvalidOperationException("Could not baseline migrations:\n" + b.Tail());
             }
 
+            List<string>? azureWarnings = null;
+            if (provider == "azuresql")
+            {
+                job.Log($"Putting the database on Azure SQL ({dbEnv})...");
+                var res = AzureSqlTarget.Publish(migrations.ConnectionString(state), Environment.GetEnvironmentVariable(dbEnv!)!, resetDatabase, job.Log, jct);
+                azureWarnings = res.Warnings;
+                foreach (var w in res.Warnings) job.Log("note: " + w);
+                SetDatabaseProvider(state, job);
+            }
+
             GeneratorResult? frontend = null;
             if (generateFrontend)
                 frontend = await GenerateFrontendCoreAsync(state, template, job, jct);
@@ -142,6 +165,9 @@ public sealed class NeoAppsTools(
             return new
             {
                 app = name,
+                database_provider = provider,
+                azureSqlNotes = azureWarnings,
+                run = provider == "azuresql" ? $"Run the API with ConnectionStrings__MySQLDatabase set to ${dbEnv} (the app reads Database:Provider=azuresql from appsettings.json)." : null,
                 backendSucceeded = backend.Success,
                 backendPath = state.BackendPath,
                 backendWarnings = backend.Errors,
@@ -704,6 +730,20 @@ public sealed class NeoAppsTools(
             text = text.Replace(anchor, anchor + step);
         }
         File.WriteAllText(dockerfile, text);
+    }
+
+    /// <summary>Points the generated API at Azure SQL: Database:Provider=azuresql. The connection string is not written to
+    /// the file; the API gets it from ConnectionStrings__MySQLDatabase in its environment.</summary>
+    private static void SetDatabaseProvider(ProjectState state, Job job)
+    {
+        if (state.DbProvider != "azuresql") return;
+        var file = Path.Combine(state.BackendPath!, $"{state.Name}.API", "appsettings.json");
+        var json = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(file))!.AsObject();
+        if (json["Database"] is not System.Text.Json.Nodes.JsonObject db) json["Database"] = db = new System.Text.Json.Nodes.JsonObject();
+        db["Provider"] = "azuresql";
+        if (json["ConnectionStrings"] is System.Text.Json.Nodes.JsonObject cs) cs["MySQLDatabase"] = "";
+        File.WriteAllText(file, json.ToJsonString(new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
+        job.Log("appsettings.json: Database:Provider = azuresql (connection string comes from the environment).");
     }
 
     /// <summary>The generated API only accepts browser calls from its own UI (Cors:AllowedOrigins), not from any website.</summary>

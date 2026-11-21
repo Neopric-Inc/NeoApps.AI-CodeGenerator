@@ -16,6 +16,10 @@ public sealed class ProjectState
     public int WebPort { get; set; }
     /// <summary>Generated .NET solution folder (contains the .sln and Dockerfile).</summary>
     public string? BackendPath { get; set; }
+    /// <summary>Where the app's data lives: "mysql" (default) or "azuresql". For azuresql, DbEnv names the environment
+    /// variable that holds the connection string (never stored here).</summary>
+    public string? DbProvider { get; set; }
+    public string? DbEnv { get; set; }
     /// <summary>Generated React project folder.</summary>
     public string? FrontendPath { get; set; }
     public string? FrontendTemplate { get; set; }
