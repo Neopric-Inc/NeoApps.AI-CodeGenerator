@@ -46,17 +46,20 @@ namespace nkv.MicroService.API.Jobs
         {
             var safe = SafeName(name);
             if (safe == null || jobId.Any(c => !char.IsLetterOrDigit(c))) return null;
-            var path = Path.Combine(FilesRoot, jobId, safe);
-            return File.Exists(path) ? path : null;
+            var path = FileStore.IsBlob ? FileStore.BlobPrefix + $"jobs/{jobId}/{safe}" : Path.Combine(FilesRoot, jobId, safe);
+            return FileStore.Exists(path) ? path : null;
         }
 
         /// <summary>Stores a file for a job and adds a feed line pointing at it (data: {file, type, size}).</summary>
         public string SaveFile(string jobId, string name, string contentType, byte[] content, string caption)
         {
             var safe = SafeName(name) ?? throw new JobException($"'{name}' isn't a valid file name.");
-            var dir = Path.Combine(FilesRoot, jobId);
-            Directory.CreateDirectory(dir);
-            File.WriteAllBytes(Path.Combine(dir, safe), content);
+            if (FileStore.SaveBlob($"jobs/{jobId}/{safe}", content, contentType) == null)
+            {
+                var dir = Path.Combine(FilesRoot, jobId);
+                Directory.CreateDirectory(dir);
+                File.WriteAllBytes(Path.Combine(dir, safe), content);
+            }
             AddEvent(jobId, "file", caption ?? safe, null, new JsonObject { ["file"] = safe, ["type"] = contentType ?? "application/octet-stream", ["size"] = content.Length });
             return safe;
         }

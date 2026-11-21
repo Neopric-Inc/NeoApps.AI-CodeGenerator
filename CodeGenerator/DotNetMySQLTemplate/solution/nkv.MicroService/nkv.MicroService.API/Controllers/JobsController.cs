@@ -130,7 +130,7 @@ namespace nkv.MicroService.API.Controllers
             var path = _store.FilePath(id, name);
             if (path == null) return NotFound(new { message = "File not found." });
             var type = new Microsoft.AspNetCore.StaticFiles.FileExtensionContentTypeProvider().TryGetContentType(path, out var t) ? t : "application/octet-stream";
-            return PhysicalFile(path, type, enableRangeProcessing: true);
+            return FileStore.IsBlobRef(path) ? File(FileStore.OpenRead(path), type, enableRangeProcessing: true) : PhysicalFile(path, type, enableRangeProcessing: true);
         }
 
         public sealed class DecisionRequest

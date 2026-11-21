@@ -128,6 +128,7 @@ namespace {projectName}.API
 
             services.AddSingleton<IConfiguration>(Configuration);
             Db.Configure(Configuration["Database:Provider"]); // mysql (default) or azuresql
+            FileStore.Configure(Configuration);              // files on disk (default) or in Azure Blob storage
             string connectionString = Configuration.GetConnectionString("MySQLDatabase");
         string rabbitMqConnection = Configuration.GetConnectionString("RabitMQ");
             ConnectionFactory factory = new ConnectionFactory();
