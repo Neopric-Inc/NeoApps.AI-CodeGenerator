@@ -53,6 +53,8 @@ namespace nkv.MicroService.Utility
         public static readonly HashSet<string> TenantTables = new(StringComparer.OrdinalIgnoreCase);
         public static readonly Dictionary<string, HashSet<string>> Columns = new(StringComparer.OrdinalIgnoreCase);
         public static readonly Dictionary<string, string> PrimaryKeys = new(StringComparer.OrdinalIgnoreCase);
+        /// <summary>Auto-numbered column of every table (app and built-in), lower case.</summary>
+        public static readonly Dictionary<string, string> IdentityColumns = new(StringComparer.OrdinalIgnoreCase);
         public static readonly Dictionary<string, List<(string Column, string RefTable, string RefColumn)>> ForeignKeys = new(StringComparer.OrdinalIgnoreCase);
 
         static readonly HashSet<string> BuiltIn = new(StringComparer.OrdinalIgnoreCase)
@@ -220,9 +222,11 @@ namespace nkv.MicroService.Utility
         public static void LoadSchema(DbConnection c)
         {
             AppTables.Clear(); TenantTables.Clear(); Columns.Clear(); PrimaryKeys.Clear(); ForeignKeys.Clear();
+            IdentityColumns.Clear();
             foreach (var x in Db.Columns(c))
             {
                 var table = x.Table.ToLowerInvariant(); var col = x.Name.ToLowerInvariant();
+                if (x.AutoIncrement) IdentityColumns[table] = col;
                 if (BuiltIn.Contains(table)) continue;
                 if (!Columns.TryGetValue(table, out var set)) Columns[table] = set = new(StringComparer.OrdinalIgnoreCase);
                 set.Add(col);
@@ -365,6 +369,7 @@ namespace nkv.MicroService.Utility
         public static DbCommand Apply(DbCommand cmd)
         {
             if (!Ready || cmd == null || _applied.TryGetValue(cmd, out _)) return cmd;
+            if (Db.IsSqlServer) { DropIdentityFromInsert(cmd); DropIdentityFromUpdate(cmd); }
             ApiHardening.ClampLimit(cmd); // no request can read more than Api:MaxPageSize rows at once
             var caller = Current;
             if (caller == null) return cmd;
@@ -385,6 +390,42 @@ namespace nkv.MicroService.Utility
                             hasAlias ? m.Index + m.Length : m.Groups[1].Index + m.Groups[1].Length + (sql.Length > m.Groups[1].Index + m.Groups[1].Length && (sql[m.Groups[1].Index + m.Groups[1].Length] == '`' || sql[m.Groups[1].Index + m.Groups[1].Length] == ']') ? 1 : 0));
             }
             return cmd;
+        }
+
+        /// <summary>
+        /// Generated inserts list the auto-numbered key with 0 ("next number" on MySQL). SQL Server refuses any value for an
+        /// IDENTITY column, so on SQL Server it is left out and the database numbers the row (Db.LastInsertedId reads it).
+        /// </summary>
+        static void DropIdentityFromInsert(DbCommand cmd)
+        {
+            var sql = cmd.CommandText ?? "";
+            var m = InsertHead.Match(sql);
+            if (!m.Success || !IdentityColumns.TryGetValue(m.Groups[1].Value, out var idCol)) return;
+            var cols = m.Groups[2].Value.Split(',').Select(x => x.Trim()).ToList();
+            var i = cols.FindIndex(x => x.Trim('`', '[', ']').Equals(idCol, StringComparison.OrdinalIgnoreCase));
+            if (i < 0) return;
+            var open = m.Index + m.Length - 1; // the "(" after VALUES
+            var inner = ExtractParens(sql, open);
+            var vals = SplitTopLevel(inner);
+            if (vals.Count != cols.Count) return; // not a simple single-row insert: leave it
+            cols.RemoveAt(i); vals.RemoveAt(i);
+            cmd.CommandText = sql.Substring(0, m.Groups[2].Index) + string.Join(",", cols) + ") VALUES (" + string.Join(",", vals.Select(v => v.Trim())) + ")" +
+                              sql.Substring(open + 1 + inner.Length + 1);
+        }
+
+        /// <summary>Generated updates also set the key to itself; SQL Server refuses any SET of an IDENTITY column.</summary>
+        static void DropIdentityFromUpdate(DbCommand cmd)
+        {
+            var sql = cmd.CommandText ?? "";
+            var m = UpdateHead.Match(sql);
+            if (!m.Success || !IdentityColumns.TryGetValue(m.Groups[1].Value, out var idCol)) return;
+            var start = m.Index + m.Length;
+            var w = FindTopLevel(sql, start, @"\bWHERE\b");
+            var end = w < 0 ? sql.Length : w;
+            var sets = SplitTopLevel(sql.Substring(start, end - start));
+            var kept = sets.Where(a => !Regex.IsMatch(a, $@"^\s*[`\[]?{Regex.Escape(idCol)}[`\]]?\s*=", RegexOptions.IgnoreCase)).ToList();
+            if (kept.Count == sets.Count || kept.Count == 0) return;
+            cmd.CommandText = sql.Substring(0, start) + " " + string.Join(",", kept.Select(a => a.Trim())) + (w < 0 ? "" : " ") + sql.Substring(end);
         }
 
         static readonly Regex AnyTable = new(@"\b(?:FROM|JOIN|UPDATE|INTO)\s+[`\[\]]?(\w+)[`\[\]]?", RegexOptions.IgnoreCase | RegexOptions.Compiled);
