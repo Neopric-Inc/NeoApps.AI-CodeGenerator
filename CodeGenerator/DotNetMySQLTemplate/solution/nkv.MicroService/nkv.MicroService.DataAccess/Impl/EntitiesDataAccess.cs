@@ -325,9 +325,9 @@ namespace nkv.MicroService.DataAccess.Impl
                                 paramCount++;
                                 if (!string.IsNullOrEmpty(whereClause))
                                 {
-                                    whereClause = whereClause + " " + andOr + " ";
+                                    whereClause = whereClause + " " + (string.Equals(andOr, "or", StringComparison.OrdinalIgnoreCase) ? "OR" : "AND") + " ";
                                 }
-                                whereClause = whereClause + "t." + r.ColumnName + " " + UtilityCommon.ConvertFilterToSQLString(r.ColumnCondition) + " @" + r.ColumnName + paramCount;
+                                whereClause = whereClause + "t." + DataGuard.KnownColumn("entities", r.ColumnName) + " " + UtilityCommon.ConvertFilterToSQLString(r.ColumnCondition) + " @f" + paramCount;
                             }
                         }
                         whereClause = whereClause.Trim();
@@ -351,14 +351,13 @@ namespace nkv.MicroService.DataAccess.Impl
                         int paramCount = 0;
                         foreach (var r in filterBy)
                         {
-                            paramCount++;
                             if (!string.IsNullOrEmpty(r.ColumnName))
                             {
+                                paramCount++;
                                 // Console.WriteLine("Before cmd is : " + cmd.CommandText);
                                 // whereClause = whereClause.Replace("@" + r.ColumnName + paramCount, r.ColumnValue);
                                 // Console.WriteLine("Replace " + "@" + r.ColumnName + paramCount + " With " + r.ColumnValue);
-                                cmd.Parameters.AddWithValue("@" + r.ColumnName + paramCount, r.ColumnValue);
-                                cmd.CommandText = cmd.CommandText.Replace("@" + r.ColumnName + paramCount, $"'{r.ColumnValue}'");
+                                cmd.Parameters.AddWithValue("@f" + paramCount, r.ColumnValue);
                             }
                         }
                     }
@@ -413,10 +412,10 @@ namespace nkv.MicroService.DataAccess.Impl
                                 paramCount++;
                                 if (!string.IsNullOrEmpty(whereClause))
                                 {
-                                    whereClause = whereClause + " " + andOr + " ";
+                                    whereClause = whereClause + " " + (string.Equals(andOr, "or", StringComparison.OrdinalIgnoreCase) ? "OR" : "AND") + " ";
                                 }
-                                whereClause = whereClause + "t." + r.ColumnName + " " + UtilityCommon.ConvertFilterToSQLString(r.ColumnCondition) + " @" + r.ColumnName + paramCount;
-                                // cmd.Parameters.AddWithValue("@" + r.ColumnName + paramCount, r.ColumnValue);
+                                whereClause = whereClause + "t." + DataGuard.KnownColumn("entities", r.ColumnName) + " " + UtilityCommon.ConvertFilterToSQLString(r.ColumnCondition) + " @f" + paramCount;
+                                // cmd.Parameters.AddWithValue("@f" + paramCount, r.ColumnValue);
                                 // Console.WriteLine("whereClause is : " + whereClause);
                                 // whereClause = whereClause.Replace("@" + r.ColumnName + paramCount, r.ColumnValue);
                                 // Console.WriteLine("Replace " + "@" + r.ColumnName + paramCount + " With " + r.ColumnValue);
@@ -436,14 +435,13 @@ namespace nkv.MicroService.DataAccess.Impl
                         int paramCount = 0;
                         foreach (var r in filterBy)
                         {
-                            paramCount++;
                             if (!string.IsNullOrEmpty(r.ColumnName))
                             {
+                                paramCount++;
                                 // Console.WriteLine("Before cmd is : " + cmd.CommandText);
                                 // whereClause = whereClause.Replace("@" + r.ColumnName + paramCount, r.ColumnValue);
                                 // Console.WriteLine("Replace " + "@" + r.ColumnName + paramCount + " With " + r.ColumnValue);
-                                cmd.Parameters.AddWithValue("@" + r.ColumnName + paramCount, r.ColumnValue);
-                                cmd.CommandText = cmd.CommandText.Replace("@" + r.ColumnName + paramCount, $"'{r.ColumnValue}'");
+                                cmd.Parameters.AddWithValue("@f" + paramCount, r.ColumnValue);
                             }
                         }
                     }
@@ -488,13 +486,13 @@ namespace nkv.MicroService.DataAccess.Impl
                     {
                         if (count == 0)
                         {
-                            cmd.CommandText = cmd.CommandText + " " + r.ColumnName + "=@" + r.ColumnName;
+                            cmd.CommandText = cmd.CommandText + " " + DataGuard.KnownColumn("entities", r.ColumnName) + "=@d" + count;
                         }
                         else
                         {
-                            cmd.CommandText = cmd.CommandText + " " + andOr + " " + r.ColumnName + "=@" + r.ColumnName;
+                            cmd.CommandText = cmd.CommandText + " " + (string.Equals(andOr, "or", StringComparison.OrdinalIgnoreCase) ? "OR" : "AND") + " " + DataGuard.KnownColumn("entities", r.ColumnName) + "=@d" + count;
                         }
-                        cmd.Parameters.AddWithValue("@" + r.ColumnName, r.ColumnValue);
+                        cmd.Parameters.AddWithValue("@d" + count, r.ColumnValue);
                         count++;
                     }
                     var recs = Db.Execute(cmd);

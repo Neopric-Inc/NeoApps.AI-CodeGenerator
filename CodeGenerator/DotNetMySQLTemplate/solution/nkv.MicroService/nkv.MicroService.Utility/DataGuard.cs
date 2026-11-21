@@ -53,6 +53,23 @@ namespace nkv.MicroService.Utility
         public static readonly HashSet<string> TenantTables = new(StringComparer.OrdinalIgnoreCase);
         public static readonly Dictionary<string, HashSet<string>> Columns = new(StringComparer.OrdinalIgnoreCase);
         public static readonly Dictionary<string, string> PrimaryKeys = new(StringComparer.OrdinalIgnoreCase);
+        /// <summary>Every table's columns as stored in the database (lower-case name -> stored name), built-in tables included.</summary>
+        static readonly Dictionary<string, Dictionary<string, string>> SchemaColumns = new(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>
+        /// The stored name of a column of the table, for building SQL from request input (sort and filter columns). The
+        /// returned name comes from the database's schema, never from the request; unknown names are refused (400).
+        /// An "alias.column" input is accepted and only the column part is used.
+        /// </summary>
+        public static string KnownColumn(string table, string name)
+        {
+            var n = name ?? "";
+            var dot = n.LastIndexOf('.');
+            if (dot >= 0) n = n.Substring(dot + 1);
+            if (table != null && SchemaColumns.TryGetValue(table, out var cols) && cols.TryGetValue(n.Trim().Trim('`', '[', ']'), out var stored)) return stored;
+            throw new DataGuardException($"Unknown column for {table}.", 400);
+        }
+
         /// <summary>Auto-numbered column of every table (app and built-in), lower case.</summary>
         public static readonly Dictionary<string, string> IdentityColumns = new(StringComparer.OrdinalIgnoreCase);
         public static readonly Dictionary<string, List<(string Column, string RefTable, string RefColumn)>> ForeignKeys = new(StringComparer.OrdinalIgnoreCase);
@@ -222,11 +239,13 @@ namespace nkv.MicroService.Utility
         public static void LoadSchema(DbConnection c)
         {
             AppTables.Clear(); TenantTables.Clear(); Columns.Clear(); PrimaryKeys.Clear(); ForeignKeys.Clear();
-            IdentityColumns.Clear();
+            IdentityColumns.Clear(); SchemaColumns.Clear();
             foreach (var x in Db.Columns(c))
             {
                 var table = x.Table.ToLowerInvariant(); var col = x.Name.ToLowerInvariant();
                 if (x.AutoIncrement) IdentityColumns[table] = col;
+                if (!SchemaColumns.TryGetValue(table, out var all)) SchemaColumns[table] = all = new(StringComparer.OrdinalIgnoreCase);
+                all[col] = x.Name;
                 if (BuiltIn.Contains(table)) continue;
                 if (!Columns.TryGetValue(table, out var set)) Columns[table] = set = new(StringComparer.OrdinalIgnoreCase);
                 set.Add(col);

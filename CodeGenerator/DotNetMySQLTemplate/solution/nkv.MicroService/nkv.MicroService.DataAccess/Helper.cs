@@ -66,10 +66,12 @@ namespace nkv.MicroService.DataAccess
             {
                 var newCommandText = commandText;
                 Regex yourRegex = new Regex(@"(?<=BY\s+).*?(?=\s+(LIMIT|OFFSET)\b)");
+                // the query's own table (generated text, not request input); column names come from its schema
+                var table = Regex.Match(commandText, @"\bFROM\s+[`\[]?(\w+)", RegexOptions.IgnoreCase).Groups[1].Value;
                 string orderStr = "";
                 foreach (var r in orderBy)
                 {
-                    orderStr = orderStr + DataGuard.SafeIdentifier(r.ColumnName) + " " + (string.Equals(r.OrderDir?.Trim(), "desc", StringComparison.OrdinalIgnoreCase) ? "DESC" : "ASC") + ",";
+                    orderStr = orderStr + DataGuard.KnownColumn(table, r.ColumnName) + " " + (string.Equals(r.OrderDir?.Trim(), "desc", StringComparison.OrdinalIgnoreCase) ? "DESC" : "ASC") + ",";
                 }
                 orderStr = orderStr.Trim(',');
                 newCommandText = yourRegex.Replace(newCommandText, orderStr);
