@@ -14,7 +14,8 @@ namespace nkv.MicroService.API.Jobs
     /// <summary>
     /// Redis pub/sub for jobs: "this job changed" pings that wake long-polling feeds at once, and cancel requests that
     /// reach whichever worker instance runs the job. Channels are prefixed with the database name, so apps sharing a Redis
-    /// don't see each other. If Redis is down, feeds fall back to checking MySQL every second.
+    /// don't see each other. Without Redis (serverless apps have none, or it is down) listeners on this instance are woken
+    /// directly and feeds on other instances check the database every second while someone watches them.
     /// </summary>
     public sealed class JobSignals
     {
@@ -37,7 +38,9 @@ namespace nkv.MicroService.API.Jobs
         private ISubscriber Sub()
         {
             if (_sub != null) return _sub;
-            try { _sub = _services.GetRequiredService<IConnectionMultiplexer>().GetSubscriber(); }
+            var redis = _services.GetService<IConnectionMultiplexer>();
+            if (redis == null) return null; // no Redis configured
+            try { _sub = redis.GetSubscriber(); }
             catch (Exception ex) { _log.LogWarning("Redis unavailable for job signals: {Message}", ex.Message); }
             return _sub;
         }
@@ -60,6 +63,7 @@ namespace nkv.MicroService.API.Jobs
         /// <summary>Tells every open feed of this job that it changed.</summary>
         public void Changed(string jobId)
         {
+            if (_waiters.TryGetValue(jobId, out var local)) foreach (var t in local.Keys) t.TrySetResult(); // same instance: at once
             try { Sub()?.Publish(RedisChannel.Literal(_changed + jobId), "1", CommandFlags.FireAndForget); }
             catch { /* feeds still see the change on their next check */ }
         }
@@ -106,14 +110,18 @@ namespace nkv.MicroService.API.Jobs
             }
         }
 
+        private Action<string> _cancelHandler;
+
         public void RequestCancel(string jobId)
         {
+            _cancelHandler?.Invoke(jobId); // a job running on this instance stops at once
             try { Sub()?.Publish(RedisChannel.Literal(_cancel), jobId, CommandFlags.FireAndForget); }
             catch { /* the worker also notices the status change before its next step */ }
         }
 
         public void OnCancelRequested(Action<string> handler)
         {
+            _cancelHandler = handler;
             try { Sub()?.Subscribe(RedisChannel.Literal(_cancel), (_, v) => handler(v)); }
             catch (Exception ex) { _log.LogWarning("Couldn't subscribe to job cancellations: {Message}", ex.Message); }
         }

@@ -1,4 +1,5 @@
 using System;
+using nkv.MicroService.Utility;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -57,7 +58,7 @@ namespace nkv.MicroService.API.Ai
         public static Result Read(string path, string fileName, Ocr ocr = null)
         {
             var r = new Result();
-            try { r.Pages = ReadAny(File.ReadAllBytes(path), fileName, ocr, r, 0); }
+            try { r.Pages = ReadAny(FileStore.ReadAllBytes(path), fileName, ocr, r, 0); } // a local path or blob:key
             catch (Exception ex) when (ex is not AiException) { throw new AiException($"Couldn't read {fileName}: {ex.Message}"); }
             r.Pages = r.Pages.Where(p => !string.IsNullOrWhiteSpace(p)).ToList();
             if (r.NeedsOcr && ocr == null) r.Status = "needs_ocr";

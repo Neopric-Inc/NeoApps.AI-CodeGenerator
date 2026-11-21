@@ -80,7 +80,7 @@ namespace nkv.MicroService.API.Controllers
             try
             {
                 var (path, name, type) = _ai.FileContent(Me(), id);
-                return PhysicalFile(path, type, name);
+                return Serve(path, type, name);
             }
             catch (AiException ex) { return BadRequest(new { message = ex.Message }); }
         }
@@ -92,9 +92,13 @@ namespace nkv.MicroService.API.Controllers
         [AllowAnonymous, HttpGet, Route(Route + "/files/{id:int}/signed")]
         public ActionResult SignedDownload(int id, [FromQuery] long exp, [FromQuery] string sig)
         {
-            try { var (path, name, type) = _ai.SignedFileContent(id, exp, sig); return PhysicalFile(path, type, name); }
+            try { var (path, name, type) = _ai.SignedFileContent(id, exp, sig); return Serve(path, type, name); }
             catch (AiException ex) { return StatusCode(403, new { message = ex.Message }); }
         }
+
+        /// <summary>A stored file (local path or blob:key) as a download.</summary>
+        private ActionResult Serve(string stored, string type, string name) =>
+            FileStore.IsBlobRef(stored) ? File(FileStore.OpenRead(stored), type, name, enableRangeProcessing: true) : PhysicalFile(stored, type, name);
 
         [HttpDelete, Route(Route + "/files/{id:int}")]
         public Task<ActionResult> DeleteFile(int id) => Run(() => { _ai.DeleteFile(Me(), id); return new { ok = true }; });

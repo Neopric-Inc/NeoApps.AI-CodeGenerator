@@ -40,15 +40,27 @@ namespace nkv.MicroService.API.Ai
             using var c = _data.Open();
             RequirePerm(c, u, table, p => p.Update || p.Create, "attach files to");
             if (!DataGuard.RecordVisible(c, table, recordId)) throw new AiException("Record not found.");
-            var dir = Path.Combine(_settings.FilesRoot, Safe(u.Tenant), DataGuard.StoragePrefix());
-            Directory.CreateDirectory(dir);
-            var path = Path.Combine(dir, Guid.NewGuid().ToString("N") + Path.GetExtension(fileName).ToLowerInvariant());
-            using (var fs = File.Create(path)) content.CopyTo(fs);
+            var stored = Guid.NewGuid().ToString("N") + Path.GetExtension(fileName).ToLowerInvariant();
+            string path; long size;
+            if (FileStore.IsBlob)
+            {
+                using var ms = new MemoryStream();
+                content.CopyTo(ms); size = ms.Length; ms.Position = 0;
+                path = FileStore.SaveBlob($"ai/{Safe(u.Tenant)}/{DataGuard.StoragePrefix()}/{stored}".Replace("//", "/"), ms, contentType);
+            }
+            else
+            {
+                var dir = Path.Combine(_settings.FilesRoot, Safe(u.Tenant), DataGuard.StoragePrefix());
+                Directory.CreateDirectory(dir);
+                path = Path.Combine(dir, stored);
+                using (var fs = File.Create(path)) content.CopyTo(fs);
+                size = new FileInfo(path).Length;
+            }
 
             var dataTenant = (object)DataGuard.Current?.Tenant ?? DBNull.Value;
             var cmd = AiData.Cmd(c, @"INSERT INTO ai_files (owner_name, table_name, record_id, file_name, content_type, size_bytes, status, storage_path, createdBy, tenant_id)
                                      VALUES (@o, @t, @r, @n, @ct, @s, 'indexing', @p, @by, @tn)",
-                ("@o", u.Tenant), ("@t", table), ("@r", recordId), ("@n", fileName), ("@ct", contentType), ("@s", new FileInfo(path).Length), ("@p", path), ("@by", u.Username), ("@tn", dataTenant));
+                ("@o", u.Tenant), ("@t", table), ("@r", recordId), ("@n", fileName), ("@ct", contentType), ("@s", size), ("@p", path), ("@by", u.Username), ("@tn", dataTenant));
             Db.Execute(cmd);
             var fileId = (int)Db.LastInsertedId(cmd);
             try
@@ -119,7 +131,7 @@ namespace nkv.MicroService.API.Ai
             RequirePerm(c, u, f.table, p => p.Update || p.Delete, "remove files from");
             AiData.Cmd(c, "DELETE FROM ai_chunks WHERE file_id=@id", ("@id", fileId)).ExecuteNonQuery();
             AiData.Cmd(c, "DELETE FROM ai_files WHERE file_id=@id", ("@id", fileId)).ExecuteNonQuery();
-            try { File.Delete(f.path); } catch { /* already gone */ }
+            FileStore.Delete(f.path);
         }
 
         private static (string table, string record, string path, string name, string type) FileRow(DbConnection c, AiUser u, int fileId)

@@ -68,10 +68,22 @@ namespace {projectName}.API
                        else builder.SetIsOriginAllowed(_ => false);
                    });
             });
-            services.AddSingleton<IConnectionMultiplexer>(x =>
-            ConnectionMultiplexer.Connect(Configuration.GetConnectionString("Redis")));
-        services.AddScoped<IRabitMQProducer, RabitMQProducer>();
-            services.AddScoped<IRabitMQAsyncProducer, RabitMQAsyncProducer>();
+            // Redis and RabbitMQ are optional: serverless apps (Azure) leave their connection strings empty and use the
+            // database (permission cache, job feeds), Azure Service Bus (jobs, outbox) and Blob storage (files) instead.
+            var hasRedis = !string.IsNullOrWhiteSpace(Configuration.GetConnectionString("Redis"));
+            var hasRabbit = !string.IsNullOrWhiteSpace(Configuration.GetConnectionString("RabitMQ"));
+            if (hasRedis)
+                services.AddSingleton<IConnectionMultiplexer>(x => ConnectionMultiplexer.Connect(Configuration.GetConnectionString("Redis")));
+            if (hasRabbit)
+            {
+                services.AddScoped<IRabitMQProducer, RabitMQProducer>();
+                services.AddScoped<IRabitMQAsyncProducer, RabitMQAsyncProducer>();
+            }
+            else
+            {
+                services.AddSingleton<IRabitMQProducer, NoMessageBroker>();
+                services.AddSingleton<IRabitMQAsyncProducer, NoMessageBroker>();
+            }
             services.AddControllers(o => o.Filters.Add<FieldAccessFilter>()); // per-role hidden fields on table endpoints
 
             var appSettingsSection = Configuration.GetSection("AppSettings");
@@ -128,12 +140,16 @@ namespace {projectName}.API
 
             services.AddSingleton<IConfiguration>(Configuration);
             Db.Configure(Configuration["Database:Provider"]); // mysql (default) or azuresql
+            FileStore.Configure(Configuration);              // files on disk (default) or in Azure Blob storage
             string connectionString = Configuration.GetConnectionString("MySQLDatabase");
         string rabbitMqConnection = Configuration.GetConnectionString("RabitMQ");
-            ConnectionFactory factory = new ConnectionFactory();
-            factory.Uri = new Uri(rabbitMqConnection);
-            IConnection connection = factory.CreateConnection();
-            services.AddSingleton<IConnection>(connection);
+            if (hasRabbit)
+            {
+                ConnectionFactory factory = new ConnectionFactory();
+                factory.Uri = new Uri(rabbitMqConnection);
+                IConnection connection = factory.CreateConnection();
+                services.AddSingleton<IConnection>(connection);
+            }
             //services.AddTransient(_ => new MySqlDatabase(connectionString));
             services.AddTransient(_ => new MySqlDatabaseConnector(connectionString));
         services.AddTransient(_ => new RabbitMqConnection(rabbitMqConnection));
@@ -141,7 +157,7 @@ namespace {projectName}.API
             
             services.AddTransient<ICurrentUserService, CurrentUserService>();
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
-            services.AddSingleton<IChannelManager, ChannelManager>();
+            if (hasRabbit) services.AddSingleton<IChannelManager, ChannelManager>();
             // AI assistant (Claude API). Enabled when ANTHROPIC_API_KEY is set.
             services.AddSingleton<{projectName}.API.Ai.AiSettings>();
             services.AddSingleton<{projectName}.API.Ai.AiData>();
@@ -217,12 +233,13 @@ namespace {projectName}.API
                 endpoints.MapControllers();
                 endpoints.MapGet("/health", () => Results.Ok(new { status = "ok" }));
                 // readiness: the API can reach its database, cache and message broker
-                endpoints.MapGet("/health/ready", async (IConnectionMultiplexer redis) =>
+                endpoints.MapGet("/health/ready", async (IServiceProvider sp) =>
                 {
                     var checks = new Dictionary<string, string>();
                     try { using var c = Db.Connection(Configuration.GetConnectionString("MySQLDatabase")); await c.OpenAsync(); using var q = Db.Command("SELECT 1", c); await q.ExecuteScalarAsync(); checks[Db.IsSqlServer ? "azuresql" : "mysql"] = "ok"; }
                     catch { checks[Db.IsSqlServer ? "azuresql" : "mysql"] = "unreachable"; }
-                    try { await redis.GetDatabase().PingAsync(); checks["redis"] = "ok"; } catch { checks["redis"] = "unreachable"; }
+                    if (sp.GetService<IConnectionMultiplexer>() is { } redis)
+                        try { await redis.GetDatabase().PingAsync(); checks["redis"] = "ok"; } catch { checks["redis"] = "unreachable"; }
                     var rabbit = Configuration.GetConnectionString("RabitMQ");
                     if (!string.IsNullOrEmpty(rabbit))
                         try { using var conn = new ConnectionFactory { Uri = new Uri(rabbit), RequestedConnectionTimeout = TimeSpan.FromSeconds(3) }.CreateConnection(); checks["rabbitmq"] = "ok"; }
