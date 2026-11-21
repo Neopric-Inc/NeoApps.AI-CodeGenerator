@@ -75,7 +75,7 @@ namespace nkv.MicroService.API.Ai
                         ("@f", fileId), ("@o", u.Tenant), ("@p", i + 1), ("@t", text), ("@tn", dataTenant)).ExecuteNonQuery();
                 }
                 var note = result.Status == "needs_ocr"
-                    ? (_settings.HasKey ? "Scanned pages or images: reading them with AI in the background." : "Scanned pages or images: they will be read once AI is configured (ANTHROPIC_API_KEY).")
+                    ? (_settings.HasKey ? "Scanned pages or images: reading them with AI in the background." : "Scanned pages or images: they'll be read once AI is turned on for this app. You can still open and download the file.")
                     : result.Note;
                 AiData.Cmd(c, "UPDATE ai_files SET status=@s, pages=@p, error=@e WHERE file_id=@id",
                     ("@s", result.Status), ("@p", pages.Count), ("@e", note), ("@id", fileId)).ExecuteNonQuery();
@@ -561,7 +561,7 @@ How to answer:
         private void RequireAi(AiUser u, JsonObject cfg)
         {
             if (!RoleAllowed(u, cfg)) throw new AiException("AI tools are not available for your role.");
-            if (!_settings.Enabled(cfg)) throw new AiException("AI is not configured. Set ANTHROPIC_API_KEY, or OPENAI_API_KEY + OPENAI_BASE_URL, for the API.");
+            if (!_settings.Enabled(cfg)) throw new AiException("AI isn't turned on for this app yet. The app's owner can turn it on in the app's AI settings.");
         }
 
         public JsonObject Status(AiUser u)
