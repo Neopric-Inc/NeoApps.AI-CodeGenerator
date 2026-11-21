@@ -50,6 +50,10 @@ namespace nkv.MicroService.Utility
         /// </summary>
         public static bool PauseFriendly => IsSqlServer;
 
+        /// <summary>The database name in a connection string (used to name queues and channels per app).</summary>
+        public static string DatabaseName(string connectionString) =>
+            IsSqlServer ? new SqlConnectionStringBuilder(connectionString).InitialCatalog : new MySqlConnectionStringBuilder(connectionString).Database;
+
         public static DbConnection Open(string connectionString)
         {
             var c = Connection(connectionString);
