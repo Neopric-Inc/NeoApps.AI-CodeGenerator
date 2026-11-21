@@ -1,4 +1,5 @@
 using System;
+using nkv.MicroService.Utility;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -20,6 +21,10 @@ namespace nkv.MicroService.API.Ai
         private readonly AiSettings _settings;
         private readonly AiData _data;
         private readonly ILogger<AiFileWorker> _log;
+
+        // Serverless SQL: no idle polling (it would keep the database from pausing); uploads wake the worker instead.
+        static readonly SemaphoreSlim Signal = new(0);
+        public static void Wake() { if (Signal.CurrentCount == 0) Signal.Release(); }
 
         public AiFileWorker(IServiceProvider services, AiSettings settings, AiData data, ILogger<AiFileWorker> log)
         {
@@ -46,7 +51,9 @@ namespace nkv.MicroService.API.Ai
                 try { if (_settings.HasKey) worked = await ProcessNext(stop); }
                 catch (OperationCanceledException) when (stop.IsCancellationRequested) { break; }
                 catch (Exception ex) { _log.LogError(ex, "AI file worker failed"); }
-                await Task.Delay(worked ? TimeSpan.FromSeconds(1) : TimeSpan.FromSeconds(_settings.HasKey ? 10 : 60), stop);
+                if (worked) await Task.Delay(TimeSpan.FromSeconds(1), stop);
+                else if (Db.PauseFriendly) await Signal.WaitAsync(stop);
+                else await Task.Delay(TimeSpan.FromSeconds(_settings.HasKey ? 10 : 60), stop);
             }
         }
 
@@ -54,7 +61,7 @@ namespace nkv.MicroService.API.Ai
         {
             using var c = _data.Open();
             int id; string owner, path, name;
-            using (var r = AiData.Cmd(c, "SELECT file_id, owner_name, storage_path, file_name FROM ai_files WHERE status='needs_ocr' ORDER BY file_id LIMIT 1").ExecuteReader())
+            using (var r = AiData.Cmd(c, $"SELECT {Db.Top(1)}file_id, owner_name, storage_path, file_name FROM ai_files WHERE status='needs_ocr' ORDER BY file_id{Db.LimitEnd(1)}").ExecuteReader())
             {
                 if (!r.Read()) return false;
                 (id, owner, path, name) = (r.GetInt32(0), r.GetString(1), r.GetString(2), r.GetString(3));

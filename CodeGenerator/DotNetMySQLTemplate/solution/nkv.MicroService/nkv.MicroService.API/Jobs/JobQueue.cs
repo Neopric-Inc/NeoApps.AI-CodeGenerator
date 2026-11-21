@@ -1,6 +1,7 @@
 using System.Text;
 using Microsoft.Extensions.Configuration;
 using MySqlConnector;
+using nkv.MicroService.Utility;
 using RabbitMQ.Client;
 
 namespace nkv.MicroService.API.Jobs
@@ -18,7 +19,7 @@ namespace nkv.MicroService.API.Jobs
         public JobQueue(IConnection connection, IConfiguration configuration)
         {
             _connection = connection;
-            Name = "neoapps.jobs." + new MySqlConnectionStringBuilder(configuration.GetConnectionString("MySQLDatabase")).Database;
+            Name = "neoapps.jobs." + Db.DatabaseName(configuration.GetConnectionString("MySQLDatabase"));
         }
 
         public string Name { get; }

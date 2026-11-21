@@ -1,4 +1,5 @@
 using MySqlConnector;
+using System.Data.Common;
 using nkv.MicroService.DataAccess.Interface;
 using nkv.MicroService.Model;
 using nkv.MicroService.Utility;
@@ -123,7 +124,7 @@ namespace nkv.MicroService.DataAccess.Impl
                 var connection = mySqlDatabaseConnector.GetConnection();
                 using (var cmd = connection.CreateCommand())
                 {
-                    cmd.CommandText = @"SELECT  t.* FROM s3bucket_folders t  WHERE t.isActive=1 ORDER BY column LIMIT @Offset, @ItemsPerPage";
+                    cmd.CommandText = @"SELECT  t.* FROM s3bucket_folders t  WHERE t.isActive=1 ORDER BY column " + Db.Page("@Offset", "@ItemsPerPage") + @"";
                     cmd.CommandText = Helper.ConverOrderListToSQL(cmd.CommandText, orderBy);
                     cmd.Parameters.AddWithValue("@Offset", offset);
                     cmd.Parameters.AddWithValue("@ItemsPerPage", itemsPerPage);
@@ -164,7 +165,7 @@ namespace nkv.MicroService.DataAccess.Impl
                 var connection = mySqlDatabaseConnector.GetConnection();
                 using (var cmd = connection.CreateCommand())
                 {
-                    cmd.CommandText = @"SELECT  t.* FROM s3bucket_folders t  WHERE t.isActive=1 AND t.createdBy=@ownername ORDER BY column LIMIT @Offset, @ItemsPerPage";
+                    cmd.CommandText = @"SELECT  t.* FROM s3bucket_folders t  WHERE t.isActive=1 AND t.createdBy=@ownername ORDER BY column " + Db.Page("@Offset", "@ItemsPerPage") + @"";
                     cmd.CommandText = Helper.ConverOrderListToSQL(cmd.CommandText, orderBy);
                     cmd.Parameters.AddWithValue("@Offset", offset);
                     cmd.Parameters.AddWithValue("@ownername", ownername);
@@ -205,7 +206,7 @@ namespace nkv.MicroService.DataAccess.Impl
                 var connection = mySqlDatabaseConnector.GetConnection();
                 using (var cmd = connection.CreateCommand())
                 {
-                    cmd.CommandText = @"SELECT t.* FROM s3bucket_folders t WHERE t.isActive=1 AND t.folder_name LIKE CONCAT('%',@SearchKey,'%') OR t.modifiedBy LIKE CONCAT('%',@SearchKey,'%') OR t.createdBy LIKE CONCAT('%',@SearchKey,'%') ORDER BY column LIMIT @Offset, @ItemsPerPage";
+                    cmd.CommandText = @"SELECT t.* FROM s3bucket_folders t WHERE t.isActive=1 AND t.folder_name LIKE CONCAT('%',@SearchKey,'%') OR t.modifiedBy LIKE CONCAT('%',@SearchKey,'%') OR t.createdBy LIKE CONCAT('%',@SearchKey,'%') ORDER BY column " + Db.Page("@Offset", "@ItemsPerPage") + @"";
                     cmd.CommandText = Helper.ConverOrderListToSQL(cmd.CommandText, orderBy);
                     cmd.Parameters.AddWithValue("@SearchKey", searchKey);
                     cmd.Parameters.AddWithValue("@Offset", offset);
@@ -245,7 +246,7 @@ namespace nkv.MicroService.DataAccess.Impl
                 var connection = mySqlDatabaseConnector.GetConnection();
                 using (var cmd = connection.CreateCommand())
                 {
-                    cmd.CommandText = @"SELECT t.* FROM s3bucket_folders t WHERE t.isActive=1 AND t.createdBy=@ownername AND t.folder_name LIKE CONCAT('%',@SearchKey,'%') OR t.modifiedBy LIKE CONCAT('%',@SearchKey,'%') OR t.createdBy LIKE CONCAT('%',@SearchKey,'%') ORDER BY column LIMIT @Offset, @ItemsPerPage";
+                    cmd.CommandText = @"SELECT t.* FROM s3bucket_folders t WHERE t.isActive=1 AND t.createdBy=@ownername AND t.folder_name LIKE CONCAT('%',@SearchKey,'%') OR t.modifiedBy LIKE CONCAT('%',@SearchKey,'%') OR t.createdBy LIKE CONCAT('%',@SearchKey,'%') ORDER BY column " + Db.Page("@Offset", "@ItemsPerPage") + @"";
                     cmd.CommandText = Helper.ConverOrderListToSQL(cmd.CommandText, orderBy);
                     cmd.Parameters.AddWithValue("@SearchKey", searchKey);
                     cmd.Parameters.AddWithValue("@ownername", ownername);
@@ -373,7 +374,7 @@ namespace nkv.MicroService.DataAccess.Impl
                     cmd.Parameters.AddWithValue("@modifiedBy", model.modifiedBy);
                     cmd.Parameters.AddWithValue("@modifiedAt", DateTime.UtcNow);
                     cmd.Parameters.AddWithValue("@isActive", 1);
-                    var recs = cmd.ExecuteNonQuery();
+                    var recs = Db.Execute(cmd);
                     if (recs > 0)
                     {
                         return true;
@@ -411,10 +412,10 @@ namespace nkv.MicroService.DataAccess.Impl
                     cmd.Parameters.AddWithValue("@modifiedAt", DateTime.UtcNow);
                     cmd.Parameters.AddWithValue("@createdAt", DateTime.UtcNow);
                     cmd.Parameters.AddWithValue("@isActive", 1);
-                    var recs = cmd.ExecuteNonQuery();
+                    var recs = Db.Execute(cmd);
                     if (recs == 1)
                     {
-                        return cmd.LastInsertedId;
+                        return Db.LastInsertedId(cmd);
                     }
                 }
             }
@@ -437,7 +438,7 @@ namespace nkv.MicroService.DataAccess.Impl
                 {
                     cmd.CommandText = @"UPDATE s3bucket_folders SET isActive=0 Where folder_id=@folder_id";
                     cmd.Parameters.AddWithValue("@folder_id", folder_id);
-                    var recs = cmd.ExecuteNonQuery();
+                    var recs = Db.Execute(cmd);
                     if (recs > 0)
                     {
                         return true;
@@ -461,7 +462,7 @@ namespace nkv.MicroService.DataAccess.Impl
                 var connection = mySqlDatabaseConnector.GetConnection();
                 using (var cmd = connection.CreateCommand())
                 {
-                    cmd.CommandText = @"SELECT  t.* FROM S3bucket_folders t {filterColumns} ORDER BY column LIMIT @Offset, @ItemsPerPage ";
+                    cmd.CommandText = @"SELECT  t.* FROM S3bucket_folders t {filterColumns} ORDER BY column " + Db.Page("@Offset", "@ItemsPerPage") + @" ";
                     cmd.CommandText = Helper.ConverOrderListToSQL(cmd.CommandText, orderBy);
 
                     if (filterBy != null && filterBy.Count > 0)
@@ -475,9 +476,9 @@ namespace nkv.MicroService.DataAccess.Impl
                                 paramCount++;
                                 if (!string.IsNullOrEmpty(whereClause))
                                 {
-                                    whereClause = whereClause + " " + andOr + " ";
+                                    whereClause = whereClause + " " + (string.Equals(andOr, "or", StringComparison.OrdinalIgnoreCase) ? "OR" : "AND") + " ";
                                 }
-                                whereClause = whereClause + "t." + r.ColumnName + " " + UtilityCommon.ConvertFilterToSQLString(r.ColumnCondition) + " @" + r.ColumnName + paramCount;
+                                whereClause = whereClause + "t." + DataGuard.KnownColumn("s3bucket_folders", r.ColumnName) + " " + UtilityCommon.ConvertFilterToSQLString(r.ColumnCondition) + " @f" + paramCount;
                             }
                         }
                         whereClause = whereClause.Trim();
@@ -501,14 +502,13 @@ namespace nkv.MicroService.DataAccess.Impl
                         int paramCount = 0;
                         foreach (var r in filterBy)
                         {
-                            paramCount++;
                             if (!string.IsNullOrEmpty(r.ColumnName))
                             {
+                                paramCount++;
                                 // Console.WriteLine("Before cmd is : " + cmd.CommandText);
                                 // whereClause = whereClause.Replace("@" + r.ColumnName + paramCount, r.ColumnValue);
                                 // Console.WriteLine("Replace " + "@" + r.ColumnName + paramCount + " With " + r.ColumnValue);
-                                cmd.Parameters.AddWithValue("@" + r.ColumnName + paramCount, r.ColumnValue);
-                                cmd.CommandText = cmd.CommandText.Replace("@" + r.ColumnName + paramCount, $"'{r.ColumnValue}'");
+                                cmd.Parameters.AddWithValue("@f" + paramCount, r.ColumnValue);
                             }
                         }
                     }
@@ -564,10 +564,10 @@ namespace nkv.MicroService.DataAccess.Impl
                                 paramCount++;
                                 if (!string.IsNullOrEmpty(whereClause))
                                 {
-                                    whereClause = whereClause + " " + andOr + " ";
+                                    whereClause = whereClause + " " + (string.Equals(andOr, "or", StringComparison.OrdinalIgnoreCase) ? "OR" : "AND") + " ";
                                 }
-                                whereClause = whereClause + "t." + r.ColumnName + " " + UtilityCommon.ConvertFilterToSQLString(r.ColumnCondition) + " @" + r.ColumnName + paramCount;
-                                // cmd.Parameters.AddWithValue("@" + r.ColumnName + paramCount, r.ColumnValue);
+                                whereClause = whereClause + "t." + DataGuard.KnownColumn("s3bucket_folders", r.ColumnName) + " " + UtilityCommon.ConvertFilterToSQLString(r.ColumnCondition) + " @f" + paramCount;
+                                // cmd.Parameters.AddWithValue("@f" + paramCount, r.ColumnValue);
                                 // Console.WriteLine("whereClause is : " + whereClause);
                                 // whereClause = whereClause.Replace("@" + r.ColumnName + paramCount, r.ColumnValue);
                                 // Console.WriteLine("Replace " + "@" + r.ColumnName + paramCount + " With " + r.ColumnValue);
@@ -587,14 +587,13 @@ namespace nkv.MicroService.DataAccess.Impl
                         int paramCount = 0;
                         foreach (var r in filterBy)
                         {
-                            paramCount++;
                             if (!string.IsNullOrEmpty(r.ColumnName))
                             {
+                                paramCount++;
                                 // Console.WriteLine("Before cmd is : " + cmd.CommandText);
                                 // whereClause = whereClause.Replace("@" + r.ColumnName + paramCount, r.ColumnValue);
                                 // Console.WriteLine("Replace " + "@" + r.ColumnName + paramCount + " With " + r.ColumnValue);
-                                cmd.Parameters.AddWithValue("@" + r.ColumnName + paramCount, r.ColumnValue);
-                                cmd.CommandText = cmd.CommandText.Replace("@" + r.ColumnName + paramCount, $"'{r.ColumnValue}'");
+                                cmd.Parameters.AddWithValue("@f" + paramCount, r.ColumnValue);
                             }
                         }
                     }
@@ -630,7 +629,7 @@ namespace nkv.MicroService.DataAccess.Impl
                 var connection = mySqlDatabaseConnector.GetConnection();
                 using (var cmd = connection.CreateCommand())
                 {
-                    MySqlTransaction transaction = connection.BeginTransaction();
+                    DbTransaction transaction = connection.BeginTransaction();
                     cmd.Transaction = transaction;
                     cmd.CommandText = @"UPDATE S3bucket_folders SET isActive=0 Where";
                     int count = 0;
@@ -639,16 +638,16 @@ namespace nkv.MicroService.DataAccess.Impl
                     {
                         if (count == 0)
                         {
-                            cmd.CommandText = cmd.CommandText + " " + r.ColumnName + "=@" + r.ColumnName;
+                            cmd.CommandText = cmd.CommandText + " " + DataGuard.KnownColumn("s3bucket_folders", r.ColumnName) + "=@d" + count;
                         }
                         else
                         {
-                            cmd.CommandText = cmd.CommandText + " " + andOr + " " + r.ColumnName + "=@" + r.ColumnName;
+                            cmd.CommandText = cmd.CommandText + " " + (string.Equals(andOr, "or", StringComparison.OrdinalIgnoreCase) ? "OR" : "AND") + " " + DataGuard.KnownColumn("s3bucket_folders", r.ColumnName) + "=@d" + count;
                         }
-                        cmd.Parameters.AddWithValue("@" + r.ColumnName, r.ColumnValue);
+                        cmd.Parameters.AddWithValue("@d" + count, r.ColumnValue);
                         count++;
                     }
-                    var recs = cmd.ExecuteNonQuery();
+                    var recs = Db.Execute(cmd);
                     if (recs > 0)
                     {
                         transaction.Commit();

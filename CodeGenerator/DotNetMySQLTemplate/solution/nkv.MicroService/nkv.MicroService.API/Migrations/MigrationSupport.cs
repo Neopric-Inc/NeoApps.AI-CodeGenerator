@@ -9,6 +9,8 @@
 // Keep the NeoApps.Migrations namespace: generated migration classes depend on it.
 #nullable enable
 using System;
+using nkv.MicroService.Utility;
+using System.Data.Common;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
@@ -24,7 +26,7 @@ using MySqlConnector;
 
 namespace NeoApps.Migrations;
 
-/// <summary>Runs the migrations compiled into an assembly against a MySQL database.</summary>
+/// <summary>Runs the migrations compiled into an assembly against the app's database (MySQL or SQL Server, per Db.Kind).</summary>
 public static class MigrationHost
 {
     /// <summary>
@@ -37,7 +39,7 @@ public static class MigrationHost
         log ??= Console.WriteLine;
         using var services = new ServiceCollection()
             .AddFluentMigratorCore()
-            .ConfigureRunner(rb => rb.AddMySql8().WithGlobalConnectionString(connectionString).ScanIn(assembly).For.Migrations())
+            .ConfigureRunner(rb => (Db.IsSqlServer ? rb.AddSqlServer() : rb.AddMySql8()).WithGlobalConnectionString(connectionString).ScanIn(assembly).For.Migrations())
             .AddLogging(lb => lb.AddFluentMigratorConsole().SetMinimumLevel(LogLevel.Information))
             .BuildServiceProvider(false);
         using var scope = services.CreateScope();
@@ -45,9 +47,11 @@ public static class MigrationHost
         var versions = scope.ServiceProvider.GetRequiredService<FluentMigrator.Runner.IVersionLoader>();
 
         // Several API instances may start at once: only one applies migrations at a time.
-        using var lockConn = new MySqlConnection(connectionString);
+        using var lockConn = Db.Connection(connectionString);
         lockConn.Open();
-        using (var take = new MySqlCommand("SELECT GET_LOCK('neoapps_migrations', 120)", lockConn))
+        using (var take = Db.Command(Db.IsSqlServer
+                   ? "DECLARE @r INT; EXEC @r = sp_getapplock @Resource = 'neoapps_migrations', @LockMode = 'Exclusive', @LockOwner = 'Session', @LockTimeout = 120000; SELECT CASE WHEN @r >= 0 THEN 1 ELSE 0 END"
+                   : "SELECT GET_LOCK('neoapps_migrations', 120)", lockConn))
             if (Convert.ToInt32(take.ExecuteScalar() ?? 0) != 1)
                 throw new InvalidOperationException("Timed out waiting for another process to finish migrating.");
         try
@@ -86,7 +90,9 @@ public static class MigrationHost
         }
         finally
         {
-            using var release = new MySqlCommand("SELECT RELEASE_LOCK('neoapps_migrations')", lockConn);
+            using var release = Db.Command(Db.IsSqlServer
+                ? "EXEC sp_releaseapplock @Resource = 'neoapps_migrations', @LockOwner = 'Session'"
+                : "SELECT RELEASE_LOCK('neoapps_migrations')", lockConn);
             release.ExecuteScalar();
         }
     }
@@ -133,8 +139,8 @@ public static class NeoAppsMigrationExtensions
         m.Execute.WithConnection((c, tx) =>
         {
             Exec(c, tx, @"INSERT INTO entities (entity_name, createdBy, modifiedBy, isActive)
-                SELECT @n, 'migration', 'migration', 1 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM entities WHERE LOWER(entity_name) = LOWER(@n))", ("@n", table));
-            var entityId = Convert.ToInt32(Scalar(c, tx, "SELECT entity_id FROM entities WHERE LOWER(entity_name) = LOWER(@n) ORDER BY entity_id LIMIT 1", ("@n", table)));
+                SELECT @n, 'migration', 'migration', 1" + (Db.IsSqlServer ? "" : " FROM DUAL") + @" WHERE NOT EXISTS (SELECT 1 FROM entities WHERE LOWER(entity_name) = LOWER(@n))", ("@n", table));
+            var entityId = Convert.ToInt32(Scalar(c, tx, $"SELECT {Db.Top(1)}entity_id FROM entities WHERE LOWER(entity_name) = LOWER(@n) ORDER BY entity_id{Db.LimitEnd(1)}", ("@n", table)));
 
             // Administrators (every admin user and every member holding the Administrator role).
             Exec(c, tx, @"INSERT INTO permissionmatrix (role_id, entity_id, can_read, can_write, can_update, can_delete, user_id, owner_name, createdBy, modifiedBy, isActive)
@@ -156,8 +162,11 @@ public static class NeoAppsMigrationExtensions
 
             // The consumer service keys its queues on the table's model name.
             if (TableExists(c, tx, "messagequeue"))
-                Exec(c, tx, "REPLACE INTO messagequeue (queueName, PrimaryKey) VALUES (@q, @pk)",
-                    ("@q", char.ToUpperInvariant(table[0]) + table.Substring(1) + "Model"), ("@pk", primaryKey));
+            {
+                var queue = char.ToUpperInvariant(table[0]) + table.Substring(1) + "Model";
+                Exec(c, tx, "DELETE FROM messagequeue WHERE queueName = @q", ("@q", queue)); // replace (both databases)
+                Exec(c, tx, "INSERT INTO messagequeue (queueName, PrimaryKey) VALUES (@q, @pk)", ("@q", queue), ("@pk", primaryKey));
+            }
         });
 
     /// <summary>Removes a table from RBAC (used by Down() and when a table is dropped).</summary>
@@ -253,7 +262,7 @@ public static class NeoAppsMigrationExtensions
     private static int Has(string letters, char c) => letters.Contains(c) ? 1 : 0;
 
     private static bool TableExists(IDbConnection c, IDbTransaction tx, string table) =>
-        Convert.ToInt64(Scalar(c, tx, "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND LOWER(table_name) = LOWER(@t)", ("@t", table))) > 0;
+        Convert.ToInt64(Scalar(c, tx, $"SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = {(Db.IsSqlServer ? "SCHEMA_NAME()" : "DATABASE()")} AND LOWER(table_name) = LOWER(@t)", ("@t", table))) > 0;
 
     private static IDbCommand Command(IDbConnection c, IDbTransaction tx, string sql, (string, object)[] ps)
     {

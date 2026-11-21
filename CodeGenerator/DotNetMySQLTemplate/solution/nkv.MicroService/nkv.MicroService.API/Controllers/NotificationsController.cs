@@ -1,4 +1,5 @@
 using System;
+using System.Data.Common;
 using System.Collections.Generic;
 using System.Security.Claims;
 using System.Text.RegularExpressions;
@@ -21,9 +22,9 @@ namespace nkv.MicroService.API.Controllers
 
         private int UserId => int.TryParse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var id) ? id : 0;
 
-        private static MySqlConnection Open()
+        private static DbConnection Open()
         {
-            var c = new MySqlConnection(DataGuard.ConnectionString);
+            var c = Db.Connection(DataGuard.ConnectionString);
             c.Open();
             return c;
         }
@@ -35,8 +36,8 @@ namespace nkv.MicroService.API.Controllers
             if (UserId == 0) return Unauthorized();
             using var c = Open();
             var items = new List<object>();
-            using (var q = new MySqlCommand(@"SELECT notification_id, title, table_name, record_id, actor, createdAt, read_at FROM user_notifications
-                WHERE user_id = @u ORDER BY notification_id DESC LIMIT @n", c))
+            using (var q = Db.Command($@"SELECT {Db.Top("(@n)")}notification_id, title, table_name, record_id, actor, createdAt, read_at FROM user_notifications
+                WHERE user_id = @u ORDER BY notification_id DESC{Db.LimitEnd("@n")}", c))
             {
                 q.Parameters.AddWithValue("@u", UserId);
                 q.Parameters.AddWithValue("@n", Math.Clamp(limit, 1, 100));
@@ -60,9 +61,9 @@ namespace nkv.MicroService.API.Controllers
             return Ok(new APIResponse(ResponseCode.SUCCESS, "OK", new { unread = Unread(c) }));
         }
 
-        private long Unread(MySqlConnection c)
+        private long Unread(DbConnection c)
         {
-            using var q = new MySqlCommand("SELECT COUNT(*) FROM user_notifications WHERE user_id = @u AND read_at IS NULL", c);
+            using var q = Db.Command("SELECT COUNT(*) FROM user_notifications WHERE user_id = @u AND read_at IS NULL", c);
             q.Parameters.AddWithValue("@u", UserId);
             return Convert.ToInt64(q.ExecuteScalar());
         }
@@ -79,7 +80,7 @@ namespace nkv.MicroService.API.Controllers
         {
             if (UserId == 0) return Unauthorized();
             using var c = Open();
-            using var q = new MySqlCommand($"UPDATE user_notifications SET read_at = UTC_TIMESTAMP() WHERE user_id = @u AND read_at IS NULL {filter}", c);
+            using var q = Db.Command($"UPDATE user_notifications SET read_at = {Db.UtcNow} WHERE user_id = @u AND read_at IS NULL {filter}", c);
             q.Parameters.AddWithValue("@u", UserId);
             q.Parameters.AddWithValue("@id", id);
             q.ExecuteNonQuery();
@@ -98,7 +99,7 @@ namespace nkv.MicroService.API.Controllers
         {
             if (UserId == 0) return Unauthorized();
             using var c = Open();
-            using var q = new MySqlCommand("SELECT email, email_on FROM user_notification_settings WHERE user_id = @u", c);
+            using var q = Db.Command("SELECT email, email_on FROM user_notification_settings WHERE user_id = @u", c);
             q.Parameters.AddWithValue("@u", UserId);
             using var r = q.ExecuteReader();
             var found = r.Read();
@@ -119,11 +120,10 @@ namespace nkv.MicroService.API.Controllers
             if (!string.IsNullOrEmpty(email) && (email.Length > 255 || !Regex.IsMatch(email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$")))
                 return BadRequest(new APIResponse(ResponseCode.ERROR, "Enter a valid email address."));
             using var c = Open();
-            using var q = new MySqlCommand(@"INSERT INTO user_notification_settings (user_id, email, email_on) VALUES (@u, @e, @on)
-                ON DUPLICATE KEY UPDATE email = @e, email_on = @on", c);
-            q.Parameters.AddWithValue("@u", UserId);
-            q.Parameters.AddWithValue("@e", string.IsNullOrEmpty(email) ? null : email);
-            q.Parameters.AddWithValue("@on", input?.emailOn == true && !string.IsNullOrEmpty(email) ? 1 : 0);
+            using var q = Db.Command(Db.Upsert("user_notification_settings", new[] { "user_id", "email", "email_on" }, new[] { "user_id" }), c);
+            q.Parameters.AddWithValue("@user_id", UserId);
+            q.Parameters.AddWithValue("@email", string.IsNullOrEmpty(email) ? null : email);
+            q.Parameters.AddWithValue("@email_on", input?.emailOn == true && !string.IsNullOrEmpty(email) ? 1 : 0);
             q.ExecuteNonQuery();
             return Ok(new APIResponse(ResponseCode.SUCCESS, "Saved"));
         }

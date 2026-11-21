@@ -27,8 +27,8 @@ check("CORS: the generated UI's origin is allowed", h.get("Access-Control-Allow-
 # errors
 st, h, b = req("POST", A + "Cases/filter?andOr=AND", [{"ColumnName": "no_such_column", "ColumnCondition": 1, "ColumnValue": "x"}], T)
 body = j(b) or {}
-check("unexpected error: generic 500 with a reference, no SQL details", st == 500 and "Reference" in json.dumps(body) and "no_such_column" not in json.dumps(body) and "Unknown column" not in json.dumps(body), (st, body))
-check("reference matches the X-Correlation-Id header", h.get("X-Correlation-Id", "?") in json.dumps(body), (h.get("X-Correlation-Id"), body))
+check("unknown filter column: 400 before any SQL, input not echoed", st == 400 and "no_such_column" not in json.dumps(body), (st, body))
+check("error responses carry X-Correlation-Id", bool(h.get("X-Correlation-Id")), h.get("X-Correlation-Id"))
 st, h, b = req("POST", A + "Ai_models", {"ai_provider_id": 99999, "model_code": "x", "name": "x", "status": "active", "timeout_seconds": 1, "max_retries": 0}, T)
 check("constraint error: readable 409 instead of the database message", st == 409 and "doesn't exist" in json.dumps(j(b)) and "foreign key" not in json.dumps(j(b)).lower(), (st, j(b)))
 st, h, b = req("GET", A + "Cases", None, T, headers={"X-Correlation-Id": "trace-abc-123"})

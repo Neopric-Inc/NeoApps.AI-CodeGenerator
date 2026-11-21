@@ -1,4 +1,5 @@
 using System;
+using nkv.MicroService.Utility;
 using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
@@ -28,7 +29,7 @@ namespace nkv.MicroService.API.Jobs
         {
             _services = services;
             _log = log;
-            var db = new MySqlConnectionStringBuilder(configuration.GetConnectionString("MySQLDatabase")).Database;
+            var db = Db.DatabaseName(configuration.GetConnectionString("MySQLDatabase"));
             _changed = $"neoapps:{db}:job:";
             _cancel = $"neoapps:{db}:job-cancel";
         }

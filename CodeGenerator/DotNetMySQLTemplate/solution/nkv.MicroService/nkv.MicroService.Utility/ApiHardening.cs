@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Http;
+using System.Data.Common;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using MySqlConnector;
@@ -39,7 +40,8 @@ namespace nkv.MicroService.Utility
         public static (int status, string message) MapError(Exception ex, string reference)
         {
             var my = ex as MySqlException ?? ex.InnerException as MySqlException ?? ex.GetBaseException() as MySqlException;
-            (int, string)? known = my?.Number switch
+            var ms = ex as Microsoft.Data.SqlClient.SqlException ?? ex.InnerException as Microsoft.Data.SqlClient.SqlException ?? ex.GetBaseException() as Microsoft.Data.SqlClient.SqlException;
+            (int, string)? known = my != null ? my.Number switch
             {
                 1062 => (409, "A record with the same value already exists."),
                 1451 => (409, "This record is still used by other records."),
@@ -49,10 +51,20 @@ namespace nkv.MicroService.Utility
                 1264 => (400, "A number is out of range."),
                 1292 or 1366 => (400, "A value has the wrong format."),
                 _ => null,
+            } : ms?.Number switch
+            {
+                2627 or 2601 => (409, "A record with the same value already exists."),
+                547 when ms.Message.Contains("DELETE", StringComparison.OrdinalIgnoreCase) => (409, "This record is still used by other records."),
+                547 => (409, "A linked record doesn't exist."),
+                515 => (400, "A required value is missing."),
+                2628 or 8152 => (400, "A value is too long."),
+                220 or 8115 => (400, "A number is out of range."),
+                241 or 242 or 245 or 8114 => (400, "A value has the wrong format."),
+                _ => null,
             };
             if (known is { } k)
             {
-                Console.Error.WriteLine($"[{reference}] {k.Item1}: {my!.Number} {my.Message}");
+                Console.Error.WriteLine($"[{reference}] {k.Item1}: {my?.Number ?? ms!.Number} {my?.Message ?? ms!.Message}");
                 return k;
             }
             Console.Error.WriteLine($"[{reference}] 500: {ex}");
@@ -88,13 +100,14 @@ namespace nkv.MicroService.Utility
         }
 
         static readonly Regex LimitPair = new(@"\bLIMIT\s+(@\w+|\d+)\s*,\s*(@\w+|\d+)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        static readonly Regex OffsetFetch = new(@"\bOFFSET\s+(@\w+|\d+)\s+ROWS\s+FETCH\s+NEXT\s+(@\w+|\d+)\s+ROWS\s+ONLY", RegexOptions.IgnoreCase | RegexOptions.Compiled);
         static readonly Regex LimitOne = new(@"\bLIMIT\s+(@\w+|\d+)(?!\s*,)(?:\s+OFFSET\s+(@\w+|\d+))?", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         /// <summary>Caps the row count of LIMIT clauses (literal or parameter) at MaxPageSize; negative offsets become 0.</summary>
-        public static void ClampLimit(MySqlCommand cmd)
+        public static void ClampLimit(DbCommand cmd)
         {
             var sql = cmd.CommandText;
-            if (sql == null || sql.IndexOf("LIMIT", StringComparison.OrdinalIgnoreCase) < 0) return;
+            if (sql == null || (sql.IndexOf("LIMIT", StringComparison.OrdinalIgnoreCase) < 0 && sql.IndexOf("FETCH", StringComparison.OrdinalIgnoreCase) < 0)) return;
             string Fix(string token, int min, int max)
             {
                 if (token.StartsWith("@"))
@@ -105,8 +118,10 @@ namespace nkv.MicroService.Utility
                 }
                 return long.TryParse(token, out var n) ? Math.Clamp(n, min, max).ToString() : token;
             }
-            var m = LimitPair.Match(sql);
+            var m = OffsetFetch.Match(sql);
             if (m.Success)
+                cmd.CommandText = sql.Substring(0, m.Index) + $"OFFSET {Fix(m.Groups[1].Value, 0, int.MaxValue)} ROWS FETCH NEXT {Fix(m.Groups[2].Value, 1, MaxPageSize)} ROWS ONLY" + sql.Substring(m.Index + m.Length);
+            else if ((m = LimitPair.Match(sql)).Success)
                 cmd.CommandText = sql.Substring(0, m.Index) + $"LIMIT {Fix(m.Groups[1].Value, 0, int.MaxValue)}, {Fix(m.Groups[2].Value, 1, MaxPageSize)}" + sql.Substring(m.Index + m.Length);
             else if ((m = LimitOne.Match(sql)).Success)
                 cmd.CommandText = sql.Substring(0, m.Index) + $"LIMIT {Fix(m.Groups[1].Value, 1, MaxPageSize)}" +

@@ -38,7 +38,7 @@ public static class Cli
                     var ok = await RunJob(jobs, tools.CreateApp(Name(), sqlFilePath: Path.GetFullPath(schema),
                         uiConfig: ui == null ? null : await File.ReadAllTextAsync(ui),
                         generateFrontend: !Flag("--no-frontend"), frontendTemplate: Opt("--template") ?? "app",
-                        resetDatabase: !Flag("--keep-db"), ct: ct));
+                        resetDatabase: !Flag("--keep-db"), database: Opt("--db") ?? "mysql", databaseEnv: Opt("--db-env"), ct: ct));
                     if (ok && Flag("--deploy"))
                         ok = await RunJob(jobs, tools.DeployApp(Name(), Flag("--consumer"), ct: ct));
                     if (ok) Print(await tools.AppStatus(Name(), ct));

@@ -130,6 +130,10 @@ namespace NoCodeAppGenerator
 
     class Program : Renaming
     {
+        // Paging is chosen at runtime by the generated app's Db layer (MySQL LIMIT or SQL Server OFFSET/FETCH); the
+        // queries are emitted inside verbatim strings, so this closes the string, appends the call and reopens it.
+        const string PageClause = "\" + Db.Page(\"@Offset\", \"@ItemsPerPage\") + @\"";
+
         public static string databaseName;
         public static bool isRbac = true;
 
@@ -957,10 +961,10 @@ WHERE
                 ProcessStringQuery(ref querybycreatedby, ref qrybycreatedBy, tblInfo);
                 map.Add("{searchRecordCountQuery}", query);
                 map.Add("{searchRecordCountQueryByCreatedBy}", querybycreatedby);
-                map.Add("{selectAllQuery}", "SELECT  t.* FROM " + tbl + " t  WHERE t.isActive=1 ORDER BY column LIMIT @Offset, @ItemsPerPage");
-                map.Add("{selectAllQueryByCreatedBy}", "SELECT  t.* FROM " + tbl + " t  WHERE t.isActive=1 AND t.createdBy=@ownername ORDER BY column LIMIT @Offset, @ItemsPerPage");
-                map.Add("{searchQuery}", qry + " ORDER BY column LIMIT @Offset, @ItemsPerPage");
-                map.Add("{searchQueryByCreatedBy}", qrybycreatedBy + " ORDER BY column LIMIT @Offset, @ItemsPerPage");
+                map.Add("{selectAllQuery}", "SELECT  t.* FROM " + tbl + " t  WHERE t.isActive=1 ORDER BY column " + PageClause);
+                map.Add("{selectAllQueryByCreatedBy}", "SELECT  t.* FROM " + tbl + " t  WHERE t.isActive=1 AND t.createdBy=@ownername ORDER BY column " + PageClause);
+                map.Add("{searchQuery}", qry + " ORDER BY column " + PageClause);
+                map.Add("{searchQueryByCreatedBy}", qrybycreatedBy + " ORDER BY column " + PageClause);
                 map.Add("{convertSQL}", "cmd.CommandText = Helper.ConverOrderListToSQL(cmd.CommandText, orderBy);");
                 string singleQueryByCreatedBy = "SELECT  t.* FROM " + tbl + " t  WHERE t.isActive=1 AND t.createdBy=@ownername AND ";
                 string singleQuery = "SELECT  t.* FROM " + tbl + " t  WHERE t.isActive=1 AND ";

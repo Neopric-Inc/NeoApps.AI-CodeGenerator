@@ -6,7 +6,7 @@ public int Add{tableName}Transactional({tableName}TransactionalModel model)
 
         using (var cmd = connection.CreateCommand())
         {
-            MySqlTransaction transaction = connection.BeginTransaction();
+            DbTransaction transaction = connection.BeginTransaction();
             cmd.Transaction = transaction;
             bool isroll = false;
             try
@@ -14,7 +14,7 @@ public int Add{tableName}Transactional({tableName}TransactionalModel model)
                 cmd.CommandText = @"{insertQuery}";
                 {insertQueryParameter}
                 var recs = DataGuard.NonQuery(cmd);
-                int insertedId = (int)cmd.LastInsertedId;
+                int insertedId = (int)Db.LastInsertedId(cmd);
 
                 {addrelatedfunctioncall}
 
@@ -46,7 +46,7 @@ public bool Update{tableName}Transactional({tableName}TransactionalModel model)
 
         using (var cmd = connection.CreateCommand())
         {
-            MySqlTransaction transaction = connection.BeginTransaction();
+            DbTransaction transaction = connection.BeginTransaction();
             cmd.Transaction = transaction;
             bool isroll = false;
             try

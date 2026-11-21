@@ -1,4 +1,4 @@
-// neoapps-migrator <up|baseline|status|down:VERSION> --connection "<MySQL connection string>"
+// neoapps-migrator <up|baseline|status|down:VERSION> --connection "<connection string>" [--provider mysql|azuresql]
 using NeoApps.Migrations;
 
 var mode = args.FirstOrDefault(a => !a.StartsWith("--")) ?? "status";
@@ -9,6 +9,8 @@ if (string.IsNullOrWhiteSpace(connection))
     Console.Error.WriteLine("usage: neoapps-migrator <up|baseline|status|down:VERSION> --connection \"server=...;database=...\"");
     return 2;
 }
+var p = Array.IndexOf(args, "--provider");
+nkv.MicroService.Utility.Db.Configure(p >= 0 && p + 1 < args.Length ? args[p + 1] : Environment.GetEnvironmentVariable("NEOAPPS_DB_PROVIDER"));
 try
 {
     return MigrationHost.Run(connection, typeof(Program).Assembly, mode);

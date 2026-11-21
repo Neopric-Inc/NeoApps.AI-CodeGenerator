@@ -1,4 +1,5 @@
 using MySqlConnector;
+using System.Data.Common;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -27,6 +28,8 @@ namespace nkv.MicroService.Utility
             if (DataGuard.Config["jobs"] is not JsonObject jobs) return;
             var every = jobs["everySeconds"]?.GetValue<int>() ?? 60;
             _jobsTimer = new Timer(_ => RunScheduledNow(), null, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(every));
+            if (Db.PauseFriendly)
+                Console.WriteLine($"DataGuard: scheduled checks (\"jobs\") query the database every {every}s, so a serverless database won't auto-pause while this API runs.");
         }
 
         public static JsonObject JobsSummary() => new JsonObject
@@ -56,12 +59,12 @@ namespace nkv.MicroService.Utility
             var due = DataGuard.SafeIdentifier(rule["due"]?.GetValue<string>() ?? "due_at");
             var met = DataGuard.SafeIdentifier(rule["met"]?.GetValue<string>() ?? "met_at");
             var flag = DataGuard.SafeIdentifier(rule["breached"]?.GetValue<string>() ?? "is_breached");
-            using var c = new MySqlConnection(DataGuard.ConnectionString);
+            using var c = Db.Connection(DataGuard.ConnectionString);
             c.Open();
             using var tx = c.BeginTransaction();
             var rows = new List<Dictionary<string, object>>();
-            using (var q = new MySqlCommand($@"SELECT * FROM `{table}` WHERE isActive = 1 AND `{met}` IS NULL AND COALESCE(`{flag}`, 0) = 0
-                AND `{due}` < UTC_TIMESTAMP() LIMIT 500 FOR UPDATE SKIP LOCKED", c, tx))
+            using (var q = Db.Command($@"SELECT {Db.Top(500)}* FROM {Db.Q(table)}{(Db.IsSqlServer ? " WITH (UPDLOCK, READPAST, ROWLOCK)" : "")} WHERE isActive = 1 AND {Db.Q(met)} IS NULL AND COALESCE({Db.Q(flag)}, 0) = 0
+                AND {Db.Q(due)} < {Db.UtcNow}{(Db.IsSqlServer ? "" : " LIMIT 500 FOR UPDATE SKIP LOCKED")}", c, tx))
             using (var r = q.ExecuteReader())
                 while (r.Read())
                 {
@@ -71,7 +74,7 @@ namespace nkv.MicroService.Utility
                 }
             foreach (var row in rows)
             {
-                using (var u = new MySqlCommand($"UPDATE `{table}` SET `{flag}` = 1 WHERE `{pk}` = @id", c, tx))
+                using (var u = Db.Command($"UPDATE {Db.Q(table)} SET {Db.Q(flag)} = 1 WHERE {Db.Q(pk)} = @id", c, tx))
                 { u.Parameters.AddWithValue("@id", row[pk]); u.ExecuteNonQuery(); }
                 _breaches++;
                 if (rule["escalate"] is JsonObject esc && esc["table"] is JsonValue et && esc["values"] is JsonObject tmpl)

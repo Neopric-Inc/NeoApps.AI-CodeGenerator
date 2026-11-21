@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Http;
+using System.Data.Common;
 using MySqlConnector;
 using System;
 using System.Collections.Generic;
@@ -52,6 +53,25 @@ namespace nkv.MicroService.Utility
         public static readonly HashSet<string> TenantTables = new(StringComparer.OrdinalIgnoreCase);
         public static readonly Dictionary<string, HashSet<string>> Columns = new(StringComparer.OrdinalIgnoreCase);
         public static readonly Dictionary<string, string> PrimaryKeys = new(StringComparer.OrdinalIgnoreCase);
+        /// <summary>Every table's columns as stored in the database (lower-case name -> stored name), built-in tables included.</summary>
+        static readonly Dictionary<string, Dictionary<string, string>> SchemaColumns = new(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>
+        /// The stored name of a column of the table, for building SQL from request input (sort and filter columns). The
+        /// returned name comes from the database's schema, never from the request; unknown names are refused (400).
+        /// An "alias.column" input is accepted and only the column part is used.
+        /// </summary>
+        public static string KnownColumn(string table, string name)
+        {
+            var n = name ?? "";
+            var dot = n.LastIndexOf('.');
+            if (dot >= 0) n = n.Substring(dot + 1);
+            if (table != null && SchemaColumns.TryGetValue(table, out var cols) && cols.TryGetValue(n.Trim().Trim('`', '[', ']'), out var stored)) return stored;
+            throw new DataGuardException($"Unknown column for {table}.", 400);
+        }
+
+        /// <summary>Auto-numbered column of every table (app and built-in), lower case.</summary>
+        public static readonly Dictionary<string, string> IdentityColumns = new(StringComparer.OrdinalIgnoreCase);
         public static readonly Dictionary<string, List<(string Column, string RefTable, string RefColumn)>> ForeignKeys = new(StringComparer.OrdinalIgnoreCase);
 
         static readonly HashSet<string> BuiltIn = new(StringComparer.OrdinalIgnoreCase)
@@ -62,7 +82,7 @@ namespace nkv.MicroService.Utility
             "ai_messages", "ai_runs", "versioninfo", "user_tenants", "login_attempts", "user_security", "number_sequences", "guard_audit", "guard_outbox", "background_jobs", "background_job_events"
         };
 
-        static readonly ConditionalWeakTable<MySqlCommand, object> _applied = new();
+        static readonly ConditionalWeakTable<DbCommand, object> _applied = new();
 
         /// <summary>Loads the rules (ui.config.json next to the API) and the schema metadata. Call once at startup.</summary>
         public static void Init(IHttpContextAccessor accessor, string connectionString, string contentRoot)
@@ -84,10 +104,10 @@ namespace nkv.MicroService.Utility
                 if (t["sharedWritable"] is JsonArray sw) _sharedWritable = new(sw.Select(x => x!.GetValue<string>()), StringComparer.OrdinalIgnoreCase);
             }
 
-            using var c = new MySqlConnection(connectionString);
+            using var c = Db.Connection(connectionString);
             c.Open();
-            using (var cmd = new MySqlCommand(@"CREATE TABLE IF NOT EXISTS user_tenants (user_id INT NOT NULL PRIMARY KEY, tenant_id INT NULL,
-                createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP)", c)) cmd.ExecuteNonQuery();
+            using (var cmd = Db.Command(Db.CreateTableIfMissing("user_tenants",
+                $"user_id INT NOT NULL PRIMARY KEY, tenant_id INT NULL, createdAt {Db.DateTimeType} NOT NULL DEFAULT CURRENT_TIMESTAMP"), c)) Db.Execute(cmd);
             AddUserColumns(c);
             LoadSchema(c);
             if (TenancyEnabled) UpgradeForTenancy(c);
@@ -104,40 +124,43 @@ namespace nkv.MicroService.Utility
         /// Upgrading an existing app to tenancy: tag AI files and their text with the tenant of the record they are attached
         /// to (deterministic, repeatable), and count members that still need a tenant (they get no data access until assigned).
         /// </summary>
-        static void UpgradeForTenancy(MySqlConnection c)
+        static void UpgradeForTenancy(DbConnection c)
         {
-            static long Scalar(MySqlConnection c, string sql, params (string, object)[] ps)
+            static long Scalar(DbConnection c, string sql, params (string, object)[] ps)
             {
-                using var q = new MySqlCommand(sql, c);
+                using var q = Db.Command(sql, c);
                 foreach (var (n, v) in ps) q.Parameters.AddWithValue(n, v);
                 var v2 = q.ExecuteScalar();
                 return v2 == null || v2 is DBNull ? 0 : Convert.ToInt64(v2);
             }
-            static void Exec(MySqlConnection c, string sql, params (string, object)[] ps)
+            static void Exec(DbConnection c, string sql, params (string, object)[] ps)
             {
-                using var q = new MySqlCommand(sql, c);
+                using var q = Db.Command(sql, c);
                 foreach (var (n, v) in ps) q.Parameters.AddWithValue(n, v);
                 q.ExecuteNonQuery();
             }
             foreach (var t in new[] { "ai_files", "ai_chunks" })
-                if (Scalar(c, "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = @t", ("@t", t)) > 0 &&
-                    Scalar(c, "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = @t AND column_name = 'tenant_id'", ("@t", t)) == 0)
-                    Exec(c, $"ALTER TABLE {t} ADD COLUMN tenant_id INT NULL");
-            if (Scalar(c, "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'ai_files'") > 0)
+                if (Db.TableExists(c, t)) Db.AddColumnIfMissing(c, t, "tenant_id", "INT NULL");
+            if (Db.TableExists(c, "ai_files"))
             {
                 var tagged = 0L;
                 var tables = new List<string>();
-                using (var q = new MySqlCommand("SELECT DISTINCT LOWER(table_name) FROM ai_files WHERE tenant_id IS NULL", c))
+                using (var q = Db.Command("SELECT DISTINCT LOWER(table_name) FROM ai_files WHERE tenant_id IS NULL", c))
                 using (var r = q.ExecuteReader()) while (r.Read()) tables.Add(r.GetString(0));
                 foreach (var t in tables.Where(t => TenantTables.Contains(t) && PrimaryKeys.ContainsKey(t)))
                 {
-                    using var u = new MySqlCommand($@"UPDATE ai_files f JOIN `{t}` r ON CAST(r.`{PrimaryKeys[t]}` AS CHAR) = f.record_id
-                        SET f.tenant_id = r.`{TenantColumn}` WHERE f.table_name = @t AND f.tenant_id IS NULL", c);
+                    using var u = Db.Command(Db.IsSqlServer
+                        ? $@"UPDATE f SET f.tenant_id = r.{Db.Q(TenantColumn)} FROM ai_files f JOIN {Db.Q(t)} r ON {Db.AsText("r." + Db.Q(PrimaryKeys[t]))} = f.record_id
+                            WHERE f.table_name = @t AND f.tenant_id IS NULL"
+                        : $@"UPDATE ai_files f JOIN {Db.Q(t)} r ON CAST(r.{Db.Q(PrimaryKeys[t])} AS CHAR) = f.record_id
+                            SET f.tenant_id = r.{Db.Q(TenantColumn)} WHERE f.table_name = @t AND f.tenant_id IS NULL", c);
                     u.Parameters.AddWithValue("@t", t);
                     tagged += u.ExecuteNonQuery();
                 }
-                if (Scalar(c, "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'ai_chunks'") > 0)
-                    Exec(c, "UPDATE ai_chunks k JOIN ai_files f ON f.file_id = k.file_id SET k.tenant_id = f.tenant_id WHERE k.tenant_id IS NULL AND f.tenant_id IS NOT NULL");
+                if (Db.TableExists(c, "ai_chunks"))
+                    Exec(c, Db.IsSqlServer
+                        ? "UPDATE k SET k.tenant_id = f.tenant_id FROM ai_chunks k JOIN ai_files f ON f.file_id = k.file_id WHERE k.tenant_id IS NULL AND f.tenant_id IS NOT NULL"
+                        : "UPDATE ai_chunks k JOIN ai_files f ON f.file_id = k.file_id SET k.tenant_id = f.tenant_id WHERE k.tenant_id IS NULL AND f.tenant_id IS NOT NULL");
                 if (tagged > 0) Console.WriteLine($"DataGuard: tagged {tagged} existing AI files with their record's tenant.");
             }
             UnassignedMembers = (int)Scalar(c, @"SELECT COUNT(*) FROM users u LEFT JOIN user_tenants ut ON ut.user_id = u.user_id
@@ -152,17 +175,17 @@ namespace nkv.MicroService.Utility
         // stamped on every write here and never taken from the client.
         public const string CreatedByUser = "created_by_user", ModifiedByUser = "modified_by_user";
 
-        static void AddUserColumns(MySqlConnection c)
+        static void AddUserColumns(DbConnection c)
         {
             var missing = new List<(string table, string col)>();
-            using (var q = new MySqlCommand(@"SELECT t.table_name, x.col FROM information_schema.columns t
-                    JOIN (SELECT 'created_by_user' col UNION ALL SELECT 'modified_by_user') x
-                    WHERE t.table_schema = DATABASE() AND LOWER(t.column_name) = 'createdby'
-                      AND NOT EXISTS (SELECT 1 FROM information_schema.columns k WHERE k.table_schema = t.table_schema
-                                      AND k.table_name = t.table_name AND LOWER(k.column_name) = x.col)", c))
-            using (var r = q.ExecuteReader()) while (r.Read()) if (!BuiltIn.Contains(r.GetString(0))) missing.Add((r.GetString(0), r.GetString(1)));
+            foreach (var g in Db.Columns(c).GroupBy(x => x.Table))
+            {
+                var names = new HashSet<string>(g.Select(x => x.Name), StringComparer.OrdinalIgnoreCase);
+                if (!names.Contains("createdby") || BuiltIn.Contains(g.Key)) continue;
+                foreach (var col in new[] { CreatedByUser, ModifiedByUser }) if (!names.Contains(col)) missing.Add((g.Key, col));
+            }
             foreach (var (table, col) in missing)
-                using (var a = new MySqlCommand($"ALTER TABLE `{SafeIdentifier(table)}` ADD COLUMN `{col}` VARCHAR(255) NULL", c)) a.ExecuteNonQuery();
+                using (var a = Db.Command($"ALTER TABLE {Db.Q(SafeIdentifier(table))} ADD {(Db.IsSqlServer ? "" : "COLUMN ")}{Db.Q(col)} {(Db.IsSqlServer ? "NVARCHAR" : "VARCHAR")}(255) NULL", c)) a.ExecuteNonQuery();
             if (missing.Count > 0) Console.WriteLine($"DataGuard: added {CreatedByUser}/{ModifiedByUser} to {missing.Select(m => m.table).Distinct().Count()} table(s).");
         }
 
@@ -172,7 +195,7 @@ namespace nkv.MicroService.Utility
 
         static bool HasCol(string table, string col) => Columns.TryGetValue(table, out var cs) && cs.Contains(col);
 
-        static void StampInsert(MySqlCommand cmd, Caller caller, string table, List<string> cols, List<string> exprs, Dictionary<string, object> values)
+        static void StampInsert(DbCommand cmd, Caller caller, string table, List<string> cols, List<string> exprs, Dictionary<string, object> values)
         {
             var actor = ActorName(caller);
             var missing = false;
@@ -186,47 +209,48 @@ namespace nkv.MicroService.Utility
             if (missing && PrimaryKeys.TryGetValue(table, out var pk))
                 After(cmd, (c, _) =>
                 {
-                    using var u = new MySqlCommand($"UPDATE `{table}` SET `{CreatedByUser}` = @__u, `{ModifiedByUser}` = @__u WHERE `{pk}` = @__id", c.Connection, c.Transaction);
-                    u.Parameters.AddWithValue("@__u", actor); u.Parameters.AddWithValue("@__id", c.LastInsertedId);
+                    using var u = Db.Command($"UPDATE {Db.Q(table)} SET {Db.Q(CreatedByUser)} = @__u, {Db.Q(ModifiedByUser)} = @__u WHERE {Db.Q(pk)} = @__id", c.Connection, c.Transaction);
+                    u.Parameters.AddWithValue("@__u", actor); u.Parameters.AddWithValue("@__id", Db.LastInsertedId(c));
                     u.ExecuteNonQuery();
                 });
         }
 
         /// <summary>created_by_user can't be changed; modified_by_user is set to the caller.</summary>
-        static void StampUpdate(MySqlCommand cmd, Caller caller, string table, int afterSet, Dictionary<string, object> values)
+        static void StampUpdate(DbCommand cmd, Caller caller, string table, int afterSet, Dictionary<string, object> values)
         {
             if (!HasCol(table, ModifiedByUser)) return;
             var head = cmd.CommandText.Substring(0, afterSet);
-            var tail = Regex.Replace(cmd.CommandText.Substring(afterSet), $@"`?\b{CreatedByUser}\b`?\s*=\s*@\w+", $"`{CreatedByUser}` = `{CreatedByUser}`", RegexOptions.IgnoreCase);
+            var tail = Regex.Replace(cmd.CommandText.Substring(afterSet), $@"[`\[\]]?\b{CreatedByUser}\b[`\[\]]?\s*=\s*@\w+", $"{Db.Q(CreatedByUser)} = {Db.Q(CreatedByUser)}", RegexOptions.IgnoreCase);
             cmd.CommandText = head + tail;
             values.Remove(CreatedByUser); values.Remove(ModifiedByUser);
             var actor = ActorName(caller);
-            var pm = Regex.Match(tail, $@"`?\b{ModifiedByUser}\b`?\s*=\s*(@\w+)", RegexOptions.IgnoreCase);
+            var pm = Regex.Match(tail, $@"[`\[\]]?\b{ModifiedByUser}\b[`\[\]]?\s*=\s*(@\w+)", RegexOptions.IgnoreCase);
             if (pm.Success) { Bind(cmd, pm.Groups[1].Value, actor); return; }
             var id = KeyValue(cmd, table, values);
             if (id == null || !PrimaryKeys.TryGetValue(table, out var pk)) return;
             After(cmd, (c, _) =>
             {
-                using var u = new MySqlCommand($"UPDATE `{table}` SET `{ModifiedByUser}` = @__u WHERE `{pk}` = @__id", c.Connection, c.Transaction);
+                using var u = Db.Command($"UPDATE {Db.Q(table)} SET {Db.Q(ModifiedByUser)} = @__u WHERE {Db.Q(pk)} = @__id", c.Connection, c.Transaction);
                 u.Parameters.AddWithValue("@__u", actor); u.Parameters.AddWithValue("@__id", id);
                 u.ExecuteNonQuery();
             });
         }
 
-        public static void LoadSchema(MySqlConnection c)
+        public static void LoadSchema(DbConnection c)
         {
             AppTables.Clear(); TenantTables.Clear(); Columns.Clear(); PrimaryKeys.Clear(); ForeignKeys.Clear();
-            using (var cmd = new MySqlCommand(@"SELECT LOWER(table_name), LOWER(column_name), column_key FROM information_schema.columns
-                WHERE table_schema = DATABASE() ORDER BY table_name, ordinal_position", c))
-            using (var r = cmd.ExecuteReader())
-                while (r.Read())
-                {
-                    var table = r.GetString(0); var col = r.GetString(1);
-                    if (BuiltIn.Contains(table)) continue;
-                    if (!Columns.TryGetValue(table, out var set)) Columns[table] = set = new(StringComparer.OrdinalIgnoreCase);
-                    set.Add(col);
-                    if (r.GetString(2) == "PRI" && !PrimaryKeys.ContainsKey(table)) PrimaryKeys[table] = col;
-                }
+            IdentityColumns.Clear(); SchemaColumns.Clear();
+            foreach (var x in Db.Columns(c))
+            {
+                var table = x.Table.ToLowerInvariant(); var col = x.Name.ToLowerInvariant();
+                if (x.AutoIncrement) IdentityColumns[table] = col;
+                if (!SchemaColumns.TryGetValue(table, out var all)) SchemaColumns[table] = all = new(StringComparer.OrdinalIgnoreCase);
+                all[col] = x.Name;
+                if (BuiltIn.Contains(table)) continue;
+                if (!Columns.TryGetValue(table, out var set)) Columns[table] = set = new(StringComparer.OrdinalIgnoreCase);
+                set.Add(col);
+                if (x.IsPk && !PrimaryKeys.ContainsKey(table)) PrimaryKeys[table] = col;
+            }
             foreach (var (table, cols) in Columns)
             {
                 if (!cols.Contains("createdby")) continue; // only generated app tables
@@ -234,14 +258,12 @@ namespace nkv.MicroService.Utility
                 if (TenancyEnabled && cols.Contains(TenantColumn)) TenantTables.Add(table);
             }
             if (TenancyEnabled && TenantTable != null && PrimaryKeys.TryGetValue(TenantTable, out var tpk)) TenantTablePk = tpk;
-            using (var cmd = new MySqlCommand(@"SELECT LOWER(table_name), LOWER(column_name), LOWER(referenced_table_name), LOWER(referenced_column_name)
-                FROM information_schema.key_column_usage WHERE table_schema = DATABASE() AND referenced_table_name IS NOT NULL", c))
-            using (var r = cmd.ExecuteReader())
-                while (r.Read())
-                {
-                    if (!ForeignKeys.TryGetValue(r.GetString(0), out var list)) ForeignKeys[r.GetString(0)] = list = new();
-                    list.Add((r.GetString(1), r.GetString(2), r.GetString(3)));
-                }
+            foreach (var fk in Db.ForeignKeys(c))
+            {
+                var t = fk.Table.ToLowerInvariant();
+                if (!ForeignKeys.TryGetValue(t, out var list)) ForeignKeys[t] = list = new();
+                list.Add((fk.Column.ToLowerInvariant(), fk.RefTable.ToLowerInvariant(), fk.RefColumn.ToLowerInvariant()));
+            }
         }
 
         // ------------------------------------------------------------------ caller
@@ -327,9 +349,9 @@ namespace nkv.MicroService.Utility
         {
             if (!TenancyEnabled || ConnectionString == null) return (null, false);
             if (_tenantCache.TryGetValue(userId, out var hit) && (DateTime.UtcNow - hit.at).TotalSeconds < 30) return (hit.tenant, hit.unassigned);
-            using var c = new MySqlConnection(ConnectionString);
+            using var c = Db.Connection(ConnectionString);
             c.Open();
-            using var cmd = new MySqlCommand("SELECT tenant_id FROM user_tenants WHERE user_id = @u", c);
+            using var cmd = Db.Command("SELECT tenant_id FROM user_tenants WHERE user_id = @u", c);
             cmd.Parameters.AddWithValue("@u", userId);
             (int? tenant, bool unassigned) result;
             using (var r = cmd.ExecuteReader())
@@ -345,28 +367,28 @@ namespace nkv.MicroService.Utility
             return unassigned ? "unassigned" : t?.ToString() ?? "";
         }
 
-        public static void SetTenantOfUser(MySqlConnection c, int userId, int? tenantId)
+        public static void SetTenantOfUser(DbConnection c, int userId, int? tenantId)
         {
             _tenantCache.TryRemove(userId, out _);
-            using var cmd = new MySqlCommand(@"INSERT INTO user_tenants (user_id, tenant_id) VALUES (@u, @t)
-                ON DUPLICATE KEY UPDATE tenant_id = VALUES(tenant_id)", c);
-            cmd.Parameters.AddWithValue("@u", userId);
-            cmd.Parameters.AddWithValue("@t", (object)tenantId ?? DBNull.Value);
-            cmd.ExecuteNonQuery();
+            using var cmd = Db.Command(Db.Upsert("user_tenants", new[] { "user_id", "tenant_id" }, new[] { "user_id" }), c);
+            cmd.Parameters.AddWithValue("@user_id", userId);
+            cmd.Parameters.AddWithValue("@tenant_id", (object)tenantId ?? DBNull.Value);
+            Db.Execute(cmd);
         }
 
         // ------------------------------------------------------------------ the choke point
 
-        static readonly Regex SelectFrom = new(@"\bFROM\s+`?(\w+)`?(?:\s+(?:AS\s+)?`?(\w+)`?)?", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-        static readonly Regex UpdateHead = new(@"^\s*UPDATE\s+`?(\w+)`?\s+SET\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-        static readonly Regex InsertHead = new(@"^\s*INSERT\s+INTO\s+`?(\w+)`?\s*\(([^)]*)\)\s*VALUES\s*\(", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-        static readonly Regex DeleteHead = new(@"^\s*DELETE\s+FROM\s+`?(\w+)`?", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-        static readonly HashSet<string> NotAlias = new(StringComparer.OrdinalIgnoreCase) { "where", "order", "group", "limit", "join", "left", "right", "inner", "outer", "cross", "having", "for", "union", "on" };
+        static readonly Regex SelectFrom = new(@"\bFROM\s+[`\[\]]?(\w+)[`\[\]]?(?:\s+(?:AS\s+)?[`\[\]]?(\w+)[`\[\]]?)?", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        static readonly Regex UpdateHead = new(@"^\s*UPDATE\s+[`\[\]]?(\w+)[`\[\]]?\s+SET\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        static readonly Regex InsertHead = new(@"^\s*INSERT\s+INTO\s+[`\[\]]?(\w+)[`\[\]]?\s*\(([^)]*)\)\s*VALUES\s*\(", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        static readonly Regex DeleteHead = new(@"^\s*DELETE\s+FROM\s+[`\[\]]?(\w+)[`\[\]]?", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        static readonly HashSet<string> NotAlias = new(StringComparer.OrdinalIgnoreCase) { "where", "order", "group", "limit", "join", "left", "right", "inner", "outer", "cross", "having", "for", "union", "on", "with", "offset" };
 
         /// <summary>Rewrites/validates the command for the current caller. Call right before Execute*. Idempotent.</summary>
-        public static MySqlCommand Apply(MySqlCommand cmd)
+        public static DbCommand Apply(DbCommand cmd)
         {
             if (!Ready || cmd == null || _applied.TryGetValue(cmd, out _)) return cmd;
+            if (Db.IsSqlServer) { DropIdentityFromInsert(cmd); DropIdentityFromUpdate(cmd); }
             ApiHardening.ClampLimit(cmd); // no request can read more than Api:MaxPageSize rows at once
             var caller = Current;
             if (caller == null) return cmd;
@@ -384,16 +406,52 @@ namespace nkv.MicroService.Utility
                 var hasAlias = m.Groups[2].Success && !NotAlias.Contains(m.Groups[2].Value);
                 // without an alias the optional group may have swallowed a keyword (FROM t WHERE ...): continue right after the table name
                 GuardSelect(cmd, caller, m.Groups[1].Value.ToLowerInvariant(), hasAlias ? m.Groups[2].Value : null,
-                            hasAlias ? m.Index + m.Length : m.Groups[1].Index + m.Groups[1].Length + (sql.Length > m.Groups[1].Index + m.Groups[1].Length && sql[m.Groups[1].Index + m.Groups[1].Length] == '`' ? 1 : 0));
+                            hasAlias ? m.Index + m.Length : m.Groups[1].Index + m.Groups[1].Length + (sql.Length > m.Groups[1].Index + m.Groups[1].Length && (sql[m.Groups[1].Index + m.Groups[1].Length] == '`' || sql[m.Groups[1].Index + m.Groups[1].Length] == ']') ? 1 : 0));
             }
             return cmd;
         }
 
-        static readonly Regex AnyTable = new(@"\b(?:FROM|JOIN|UPDATE|INTO)\s+`?(\w+)`?", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        /// <summary>
+        /// Generated inserts list the auto-numbered key with 0 ("next number" on MySQL). SQL Server refuses any value for an
+        /// IDENTITY column, so on SQL Server it is left out and the database numbers the row (Db.LastInsertedId reads it).
+        /// </summary>
+        static void DropIdentityFromInsert(DbCommand cmd)
+        {
+            var sql = cmd.CommandText ?? "";
+            var m = InsertHead.Match(sql);
+            if (!m.Success || !IdentityColumns.TryGetValue(m.Groups[1].Value, out var idCol)) return;
+            var cols = m.Groups[2].Value.Split(',').Select(x => x.Trim()).ToList();
+            var i = cols.FindIndex(x => x.Trim('`', '[', ']').Equals(idCol, StringComparison.OrdinalIgnoreCase));
+            if (i < 0) return;
+            var open = m.Index + m.Length - 1; // the "(" after VALUES
+            var inner = ExtractParens(sql, open);
+            var vals = SplitTopLevel(inner);
+            if (vals.Count != cols.Count) return; // not a simple single-row insert: leave it
+            cols.RemoveAt(i); vals.RemoveAt(i);
+            cmd.CommandText = sql.Substring(0, m.Groups[2].Index) + string.Join(",", cols) + ") VALUES (" + string.Join(",", vals.Select(v => v.Trim())) + ")" +
+                              sql.Substring(open + 1 + inner.Length + 1);
+        }
+
+        /// <summary>Generated updates also set the key to itself; SQL Server refuses any SET of an IDENTITY column.</summary>
+        static void DropIdentityFromUpdate(DbCommand cmd)
+        {
+            var sql = cmd.CommandText ?? "";
+            var m = UpdateHead.Match(sql);
+            if (!m.Success || !IdentityColumns.TryGetValue(m.Groups[1].Value, out var idCol)) return;
+            var start = m.Index + m.Length;
+            var w = FindTopLevel(sql, start, @"\bWHERE\b");
+            var end = w < 0 ? sql.Length : w;
+            var sets = SplitTopLevel(sql.Substring(start, end - start));
+            var kept = sets.Where(a => !Regex.IsMatch(a, $@"^\s*[`\[]?{Regex.Escape(idCol)}[`\]]?\s*=", RegexOptions.IgnoreCase)).ToList();
+            if (kept.Count == sets.Count || kept.Count == 0) return;
+            cmd.CommandText = sql.Substring(0, start) + " " + string.Join(",", kept.Select(a => a.Trim())) + (w < 0 ? "" : " ") + sql.Substring(end);
+        }
+
+        static readonly Regex AnyTable = new(@"\b(?:FROM|JOIN|UPDATE|INTO)\s+[`\[\]]?(\w+)[`\[\]]?", RegexOptions.IgnoreCase | RegexOptions.Compiled);
         static bool TouchesData(string sql) =>
             AnyTable.Matches(sql ?? "").Any(m => AppTables.Contains(m.Groups[1].Value) || TaggedBuiltIns.Contains(m.Groups[1].Value));
 
-        static List<string> ScopeConditions(string table, string prefix, Caller caller, MySqlCommand cmd)
+        static List<string> ScopeConditions(string table, string prefix, Caller caller, DbCommand cmd)
         {
             var conds = new List<string>();
             if (caller.Owner != null && Columns[table].Contains("createdby"))
@@ -403,8 +461,8 @@ namespace nkv.MicroService.Utility
             }
             if (caller.Tenant != null)
             {
-                if (table.Equals(TenantTable, StringComparison.OrdinalIgnoreCase) && TenantTablePk != null) conds.Add($"{prefix}`{TenantTablePk}` = @__g_tenant");
-                else if (TenantTables.Contains(table)) conds.Add($"{prefix}`{TenantColumn}` = @__g_tenant");
+                if (table.Equals(TenantTable, StringComparison.OrdinalIgnoreCase) && TenantTablePk != null) conds.Add($"{prefix}{Db.Q(TenantTablePk)} = @__g_tenant");
+                else if (TenantTables.Contains(table)) conds.Add($"{prefix}{Db.Q(TenantColumn)} = @__g_tenant");
                 if (conds.Count > 0) Bind(cmd, "@__g_tenant", caller.Tenant.Value);
             }
             conds.AddRange(RowScopeConditions(table, prefix, caller, cmd));
@@ -416,16 +474,16 @@ namespace nkv.MicroService.Utility
         static readonly HashSet<string> TaggedBuiltIns = new(StringComparer.OrdinalIgnoreCase) { "ai_files", "ai_chunks" };
 
         /// <summary>True when the caller may see this active record (workspace + tenant rules).</summary>
-        public static bool RecordVisible(MySqlConnection c, string table, string id)
+        public static bool RecordVisible(DbConnection c, string table, string id)
         {
             table = (table ?? "").ToLowerInvariant();
             if (!AppTables.Contains(table) || !PrimaryKeys.TryGetValue(table, out var pk)) return false;
-            using var q = new MySqlCommand($"SELECT COUNT(*) FROM `{table}` t WHERE t.`{pk}` = @id AND t.isActive = 1", c);
+            using var q = Db.Command($"SELECT COUNT(*) FROM {Db.Q(table)} t WHERE t.{Db.Q(pk)} = @id AND t.isActive = 1", c);
             q.Parameters.AddWithValue("@id", id);
             return Convert.ToInt64(Apply(q).ExecuteScalar()) > 0;
         }
 
-        static void GuardSelect(MySqlCommand cmd, Caller caller, string table, string alias, int afterFrom)
+        static void GuardSelect(DbCommand cmd, Caller caller, string table, string alias, int afterFrom)
         {
             if (TaggedBuiltIns.Contains(table))
             {
@@ -436,11 +494,11 @@ namespace nkv.MicroService.Utility
                 return;
             }
             if (!AppTables.Contains(table)) return;
-            var conds = ScopeConditions(table, (alias ?? $"`{table}`") + ".", caller, cmd);
+            var conds = ScopeConditions(table, (alias ?? $"{Db.Q(table)}") + ".", caller, cmd);
             if (conds.Count > 0) cmd.CommandText = InjectWhere(cmd.CommandText, afterFrom, string.Join(" AND ", conds));
         }
 
-        static void GuardUpdate(MySqlCommand cmd, Caller caller, string table, int afterSet)
+        static void GuardUpdate(DbCommand cmd, Caller caller, string table, int afterSet)
         {
             if (!AppTables.Contains(table)) return;
             CheckWritable(table, caller);
@@ -448,14 +506,14 @@ namespace nkv.MicroService.Utility
             var setPart = cmd.CommandText.Substring(afterSet);
             // tenant column can't be moved to another tenant
             if (caller.Tenant != null && TenantTables.Contains(table))
-                foreach (Match pm in Regex.Matches(setPart, $@"`?\b{Regex.Escape(TenantColumn)}\b`?\s*=\s*(@\w+)", RegexOptions.IgnoreCase))
+                foreach (Match pm in Regex.Matches(setPart, $@"[`\[\]]?\b{Regex.Escape(TenantColumn)}\b[`\[\]]?\s*=\s*(@\w+)", RegexOptions.IgnoreCase))
                     Bind(cmd, pm.Groups[1].Value, caller.Tenant.Value);
             var values = SetAssignments(setPart, cmd);
             foreach (var h in HiddenFields(table)) values.Remove(h);
             StampUpdate(cmd, caller, table, afterSet, values);
             GuardScopedWrite(cmd, caller, table, values, col =>
             {
-                var pm = Regex.Match(setPart, $@"`?\b{Regex.Escape(col)}\b`?\s*=\s*(@\w+)", RegexOptions.IgnoreCase);
+                var pm = Regex.Match(setPart, $@"[`\[\]]?\b{Regex.Escape(col)}\b[`\[\]]?\s*=\s*(@\w+)", RegexOptions.IgnoreCase);
                 return pm.Success ? pm.Groups[1].Value : null;
             }, insert: false);
             CheckForeignKeys(cmd, caller, table, values);
@@ -464,7 +522,7 @@ namespace nkv.MicroService.Utility
             if (conds.Count > 0) cmd.CommandText = InjectWhere(cmd.CommandText, afterSet, string.Join(" AND ", conds));
         }
 
-        static void GuardDelete(MySqlCommand cmd, Caller caller, string table, int afterTable)
+        static void GuardDelete(DbCommand cmd, Caller caller, string table, int afterTable)
         {
             if (!AppTables.Contains(table)) return;
             CheckWritable(table, caller);
@@ -473,11 +531,11 @@ namespace nkv.MicroService.Utility
             if (conds.Count > 0) cmd.CommandText = InjectWhere(cmd.CommandText, afterTable, string.Join(" AND ", conds));
         }
 
-        static void GuardInsert(MySqlCommand cmd, Caller caller, string table, string columnList)
+        static void GuardInsert(DbCommand cmd, Caller caller, string table, string columnList)
         {
             if (!AppTables.Contains(table)) return;
             CheckWritable(table, caller);
-            var cols = columnList.Split(',').Select(x => x.Trim().Trim('`').ToLowerInvariant()).ToList();
+            var cols = columnList.Split(',').Select(x => x.Trim().Trim('`', '[', ']').ToLowerInvariant()).ToList();
             var valuesStart = cmd.CommandText.IndexOf('(', InsertHead.Match(cmd.CommandText).Groups[2].Index + columnList.Length + 1);
             var exprs = SplitTopLevel(ExtractParens(cmd.CommandText, valuesStart));
             var values = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
@@ -519,7 +577,7 @@ namespace nkv.MicroService.Utility
         }
 
         /// <summary>Every foreign key of a written row must point at a row of the same tenant (composite tenant integrity).</summary>
-        static void CheckForeignKeys(MySqlCommand cmd, Caller caller, string table, Dictionary<string, object> values)
+        static void CheckForeignKeys(DbCommand cmd, Caller caller, string table, Dictionary<string, object> values)
         {
             if (!TenancyEnabled || !ForeignKeys.TryGetValue(table, out var fks)) return;
             object rowTenant = caller.Tenant;
@@ -535,9 +593,9 @@ namespace nkv.MicroService.Utility
                     if (Convert.ToString(v) != Convert.ToString(rowTenant)) throw new DataGuardException($"{table}.{col} points at another tenant.");
                     continue;
                 }
-                if (TenantTables.Contains(refTable)) check = $"SELECT COUNT(*) FROM `{refTable}` WHERE `{refCol}` = @v AND `{TenantColumn}` = @t";
+                if (TenantTables.Contains(refTable)) check = $"SELECT COUNT(*) FROM {Db.Q(refTable)} WHERE {Db.Q(refCol)} = @v AND {Db.Q(TenantColumn)} = @t";
                 if (check == null) continue;
-                using var q = new MySqlCommand(check, cmd.Connection, cmd.Transaction);
+                using var q = Db.Command(check, cmd.Connection, cmd.Transaction);
                 q.Parameters.AddWithValue("@v", v);
                 q.Parameters.AddWithValue("@t", rowTenant);
                 if (Convert.ToInt64(q.ExecuteScalar()) == 0)
@@ -547,7 +605,7 @@ namespace nkv.MicroService.Utility
 
         // ------------------------------------------------------------------ SQL helpers
 
-        public static void Bind(MySqlCommand cmd, string name, object value)
+        public static void Bind(DbCommand cmd, string name, object value)
         {
             if (cmd.Parameters.Contains(name)) cmd.Parameters[name].Value = value ?? DBNull.Value;
             else cmd.Parameters.AddWithValue(name, value ?? DBNull.Value);
@@ -557,7 +615,7 @@ namespace nkv.MicroService.Utility
         /// <summary>The value an INSERT/UPDATE expression stands for: a parameter's value, a quoted string literal without its
         /// quotes ('it''s' -> it's), NULL as null; anything else (numbers, functions) as written. Rules such as lifecycles,
         /// validations and audit compare these, so SET status = 'sent' and SET status = @s behave the same.</summary>
-        static object SqlValue(string e, MySqlCommand cmd)
+        static object SqlValue(string e, DbCommand cmd)
         {
             e = e.Trim();
             if (e.StartsWith("@") && cmd.Parameters.Contains(e)) return cmd.Parameters[e].Value;
@@ -580,14 +638,14 @@ namespace nkv.MicroService.Utility
             return e;
         }
 
-        static Dictionary<string, object> SetAssignments(string setPart, MySqlCommand cmd)
+        static Dictionary<string, object> SetAssignments(string setPart, DbCommand cmd)
         {
             var end = FindTopLevel(setPart, 0, @"\bWHERE\b");
             var assignments = SplitTopLevel(end < 0 ? setPart : setPart.Substring(0, end));
             var d = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
             foreach (var a in assignments)
             {
-                var m = Regex.Match(a, @"^\s*`?(\w+)`?\s*=\s*(.+?)\s*$", RegexOptions.Singleline);
+                var m = Regex.Match(a, @"^\s*[`\[\]]?(\w+)[`\[\]]?\s*=\s*(.+?)\s*$", RegexOptions.Singleline);
                 if (!m.Success) continue;
                 var e = m.Groups[2].Value;
                 d[m.Groups[1].Value.ToLowerInvariant()] = SqlValue(e, cmd);
@@ -621,7 +679,7 @@ namespace nkv.MicroService.Utility
             {
                 var ch = sql[i];
                 if (quote != '\0') { if (ch == quote) quote = '\0'; continue; }
-                if (ch == '\'' || ch == '"' || ch == '`') { quote = ch; continue; }
+                if (ch == '\'' || ch == '"' || ch == '`' || ch == '[') { quote = ch == '[' ? ']' : ch; continue; }
                 if (ch == '(') { depth++; continue; }
                 if (ch == ')') { depth--; continue; }
                 if (depth == 0 && (i == 0 || !char.IsLetterOrDigit(sql[i - 1]) && sql[i - 1] != '_') && re.IsMatch(sql, i)) return i;
@@ -636,7 +694,7 @@ namespace nkv.MicroService.Utility
             {
                 var ch = sql[i];
                 if (quote != '\0') { if (ch == quote) quote = '\0'; continue; }
-                if (ch == '\'' || ch == '"' || ch == '`') { quote = ch; continue; }
+                if (ch == '\'' || ch == '"' || ch == '`' || ch == '[') { quote = ch == '[' ? ']' : ch; continue; }
                 if (ch == '(') depth++;
                 else if (ch == ')' && --depth == 0) return sql.Substring(open + 1, i - open - 1);
             }
@@ -650,7 +708,7 @@ namespace nkv.MicroService.Utility
             {
                 var ch = s[i];
                 if (quote != '\0') { if (ch == quote) quote = '\0'; continue; }
-                if (ch == '\'' || ch == '"' || ch == '`') { quote = ch; continue; }
+                if (ch == '\'' || ch == '"' || ch == '`' || ch == '[') { quote = ch == '[' ? ']' : ch; continue; }
                 if (ch == '(') depth++;
                 else if (ch == ')') depth--;
                 else if (ch == ',' && depth == 0) { parts.Add(s.Substring(start, i - start)); start = i + 1; }
@@ -698,7 +756,7 @@ namespace nkv.MicroService.Utility
         static byte[] _signingKey = System.Security.Cryptography.RandomNumberGenerator.GetBytes(32);
         public static void SetSigningSecret(string secret) { if (!string.IsNullOrEmpty(secret)) _signingKey = System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes("files:" + secret)); }
 
-        /// <summary>Signature for a short-lived download link of a resource (e.g. "ai_file:12"), valid until `expires` (unix seconds).</summary>
+        /// <summary>Signature for a short-lived download link of a resource (e.g. "ai_file:12"), valid until expires (unix seconds).</summary>
         public static string Sign(string resource, long expires)
         {
             using var h = new System.Security.Cryptography.HMACSHA256(_signingKey);
@@ -709,13 +767,13 @@ namespace nkv.MicroService.Utility
             System.Security.Cryptography.CryptographicOperations.FixedTimeEquals(System.Text.Encoding.ASCII.GetBytes(Sign(resource, expires)), System.Text.Encoding.ASCII.GetBytes(sig));
 
         // Extension points filled in by the other DataGuard parts (lifecycle, audit/outbox, immutability).
-        static partial void InitExtensionsImpl(MySqlConnection c);
-        static partial void BeforeInsertImpl(MySqlCommand cmd, Caller caller, string table, Dictionary<string, object> values);
-        static partial void BeforeUpdateImpl(MySqlCommand cmd, Caller caller, string table, Dictionary<string, object> values);
-        static partial void BeforeDeleteImpl(MySqlCommand cmd, Caller caller, string table);
-        static void InitExtensions(MySqlConnection c) => InitExtensionsImpl(c);
-        static void BeforeInsert(MySqlCommand cmd, Caller caller, string table, Dictionary<string, object> values) => BeforeInsertImpl(cmd, caller, table, values);
-        static void BeforeUpdate(MySqlCommand cmd, Caller caller, string table, Dictionary<string, object> values) => BeforeUpdateImpl(cmd, caller, table, values);
-        static void BeforeDelete(MySqlCommand cmd, Caller caller, string table) => BeforeDeleteImpl(cmd, caller, table);
+        static partial void InitExtensionsImpl(DbConnection c);
+        static partial void BeforeInsertImpl(DbCommand cmd, Caller caller, string table, Dictionary<string, object> values);
+        static partial void BeforeUpdateImpl(DbCommand cmd, Caller caller, string table, Dictionary<string, object> values);
+        static partial void BeforeDeleteImpl(DbCommand cmd, Caller caller, string table);
+        static void InitExtensions(DbConnection c) => InitExtensionsImpl(c);
+        static void BeforeInsert(DbCommand cmd, Caller caller, string table, Dictionary<string, object> values) => BeforeInsertImpl(cmd, caller, table, values);
+        static void BeforeUpdate(DbCommand cmd, Caller caller, string table, Dictionary<string, object> values) => BeforeUpdateImpl(cmd, caller, table, values);
+        static void BeforeDelete(DbCommand cmd, Caller caller, string table) => BeforeDeleteImpl(cmd, caller, table);
     }
 }

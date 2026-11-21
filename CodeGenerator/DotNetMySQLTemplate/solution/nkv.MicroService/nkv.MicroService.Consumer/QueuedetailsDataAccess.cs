@@ -1,4 +1,5 @@
 using nkv.MicroService.Utility;
+using System.Data.Common;
 using MySqlConnector;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Configuration.Json;
@@ -22,7 +23,7 @@ namespace nkv.MicroService.Consumer
         
         public List<string> fetchQueueName()
         {
-            var cmd = MySqlDatabase.Connection.CreateCommand() as MySqlCommand;
+            var cmd = MySqlDatabase.Connection.CreateCommand() as DbCommand;
             {fetchQueueName}
             using (var reader = cmd.ExecuteReader()){
                 while (reader.Read())
@@ -36,7 +37,7 @@ namespace nkv.MicroService.Consumer
         }
         public string findPrimaryKey(string name)
         {
-            var cmd = MySqlDatabase.Connection.CreateCommand() as MySqlCommand;
+            var cmd = MySqlDatabase.Connection.CreateCommand() as DbCommand;
             {findPimaryKey}
             string key = "Not Found";
             using (var reader = cmd.ExecuteReader()){

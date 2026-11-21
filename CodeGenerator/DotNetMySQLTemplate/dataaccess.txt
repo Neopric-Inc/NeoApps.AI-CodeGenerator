@@ -1,4 +1,5 @@
 using MySqlConnector;
+using System.Data.Common;
 using {projectName}.DataAccess.Interface;
 using {projectName}.Model;
 using {projectName}.Utility;
@@ -349,7 +350,7 @@ namespace {projectName}.DataAccess.Impl
                     var recs = DataGuard.NonQuery(cmd);
                     if (recs ==1)
                     {
-                        return cmd.LastInsertedId ;
+                        return Db.LastInsertedId(cmd) ;
                     }
                 }
             }
@@ -396,7 +397,7 @@ namespace {projectName}.DataAccess.Impl
                 var connection = mySqlDatabaseConnector.GetConnection();
                 using (var cmd = connection.CreateCommand())
                 {
-                    cmd.CommandText = @"SELECT  t.* FROM {tableName} t {filterColumns} ORDER BY column LIMIT @Offset, @ItemsPerPage ";
+                    cmd.CommandText = @"SELECT  t.* FROM {tableName} t {filterColumns} ORDER BY column " + Db.Page("@Offset", "@ItemsPerPage") + @" ";
                     cmd.CommandText = Helper.ConverOrderListToSQL(cmd.CommandText, orderBy);
 
                     if (filterBy != null && filterBy.Count > 0)
@@ -412,7 +413,7 @@ namespace {projectName}.DataAccess.Impl
                                 {
                                     whereClause = whereClause + " " + (string.Equals(andOr, "or", StringComparison.OrdinalIgnoreCase) ? "OR" : "AND") + " ";
                                 }
-                                whereClause = whereClause + "t." + DataGuard.SafeIdentifier(r.ColumnName) + " " + UtilityCommon.ConvertFilterToSQLString(r.ColumnCondition) + " @" + r.ColumnName + paramCount;
+                                whereClause = whereClause + "t." + DataGuard.KnownColumn("{tableName}", r.ColumnName) + " " + UtilityCommon.ConvertFilterToSQLString(r.ColumnCondition) + " @f" + paramCount;
                             }
                         }
                         whereClause = whereClause.Trim();
@@ -442,7 +443,7 @@ namespace {projectName}.DataAccess.Impl
                                 // Console.WriteLine("Before cmd is : " + cmd.CommandText);
                                 // whereClause = whereClause.Replace("@" + r.ColumnName + paramCount, r.ColumnValue);
                                 // Console.WriteLine("Replace " + "@" + r.ColumnName + paramCount + " With " + r.ColumnValue);
-                                cmd.Parameters.AddWithValue("@" + r.ColumnName + paramCount, r.ColumnValue);
+                                cmd.Parameters.AddWithValue("@f" + paramCount, r.ColumnValue);
                             }
                         }
                     }
@@ -492,8 +493,8 @@ namespace {projectName}.DataAccess.Impl
                                 {
                                     whereClause = whereClause + " " + (string.Equals(andOr, "or", StringComparison.OrdinalIgnoreCase) ? "OR" : "AND") + " ";
                                 }
-                                whereClause = whereClause + "t." + DataGuard.SafeIdentifier(r.ColumnName) + " " + UtilityCommon.ConvertFilterToSQLString(r.ColumnCondition) + " @" + r.ColumnName + paramCount;
-                                // cmd.Parameters.AddWithValue("@" + r.ColumnName + paramCount, r.ColumnValue);
+                                whereClause = whereClause + "t." + DataGuard.KnownColumn("{tableName}", r.ColumnName) + " " + UtilityCommon.ConvertFilterToSQLString(r.ColumnCondition) + " @f" + paramCount;
+                                // cmd.Parameters.AddWithValue("@f" + paramCount, r.ColumnValue);
                                 // Console.WriteLine("whereClause is : " + whereClause);
                                 // whereClause = whereClause.Replace("@" + r.ColumnName + paramCount, r.ColumnValue);
                                 // Console.WriteLine("Replace " + "@" + r.ColumnName + paramCount + " With " + r.ColumnValue);
@@ -519,7 +520,7 @@ namespace {projectName}.DataAccess.Impl
                                 // Console.WriteLine("Before cmd is : " + cmd.CommandText);
                                 // whereClause = whereClause.Replace("@" + r.ColumnName + paramCount, r.ColumnValue);
                                 // Console.WriteLine("Replace " + "@" + r.ColumnName + paramCount + " With " + r.ColumnValue);
-                                cmd.Parameters.AddWithValue("@" + r.ColumnName + paramCount, r.ColumnValue);
+                                cmd.Parameters.AddWithValue("@f" + paramCount, r.ColumnValue);
                             }
                         }
                     }
@@ -551,7 +552,7 @@ namespace {projectName}.DataAccess.Impl
                 var connection = mySqlDatabaseConnector.GetConnection();
                 using (var cmd = connection.CreateCommand())
                 {
-                    MySqlTransaction transaction = connection.BeginTransaction();
+                    DbTransaction transaction = connection.BeginTransaction();
                     cmd.Transaction = transaction;
                     cmd.CommandText = @"UPDATE {tableName} SET isActive=0 Where";
                     int count = 0;
@@ -560,13 +561,13 @@ namespace {projectName}.DataAccess.Impl
                     {
                         if (count == 0)
                         {
-                            cmd.CommandText = cmd.CommandText + " " + DataGuard.SafeIdentifier(r.ColumnName) + "=@" + r.ColumnName;
+                            cmd.CommandText = cmd.CommandText + " " + DataGuard.KnownColumn("{tableName}", r.ColumnName) + "=@d" + count;
                         }
                         else
                         {
-                            cmd.CommandText = cmd.CommandText + " " + (string.Equals(andOr, "or", StringComparison.OrdinalIgnoreCase) ? "OR" : "AND") + " " + DataGuard.SafeIdentifier(r.ColumnName) + "=@" + r.ColumnName;
+                            cmd.CommandText = cmd.CommandText + " " + (string.Equals(andOr, "or", StringComparison.OrdinalIgnoreCase) ? "OR" : "AND") + " " + DataGuard.KnownColumn("{tableName}", r.ColumnName) + "=@d" + count;
                         }
-                        cmd.Parameters.AddWithValue("@" + r.ColumnName, r.ColumnValue);
+                        cmd.Parameters.AddWithValue("@d" + count, r.ColumnValue);
                         count++;
                     }
                     var recs = DataGuard.NonQuery(cmd);

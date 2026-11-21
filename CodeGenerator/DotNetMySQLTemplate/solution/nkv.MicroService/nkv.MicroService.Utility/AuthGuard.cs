@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Configuration;
+using System.Data.Common;
 using MySqlConnector;
 using System;
 using System.Collections.Concurrent;
@@ -38,22 +39,24 @@ namespace nkv.MicroService.Utility
             using var conn = Open();
             foreach (var sql in new[]
             {
-                @"CREATE TABLE IF NOT EXISTS login_attempts (username VARCHAR(255) NOT NULL PRIMARY KEY, failed INT NOT NULL DEFAULT 0,
-                    first_failed_at DATETIME NULL, locked_until DATETIME NULL)",
-                @"CREATE TABLE IF NOT EXISTS user_security (user_id INT NOT NULL PRIMARY KEY, token_version INT NOT NULL DEFAULT 1,
-                    password_changed_at DATETIME NULL)",
+                Db.CreateTableIfMissing("login_attempts", $@"username {(Db.IsSqlServer ? "NVARCHAR" : "VARCHAR")}(255) NOT NULL PRIMARY KEY, failed INT NOT NULL DEFAULT 0,
+                    first_failed_at {Db.DateTimeType} NULL, locked_until {Db.DateTimeType} NULL"),
+                Db.CreateTableIfMissing("user_security", $@"user_id INT NOT NULL PRIMARY KEY, token_version INT NOT NULL DEFAULT 1,
+                    password_changed_at {Db.DateTimeType} NULL"),
             })
-            { using var cmd = new MySqlCommand(sql, conn); cmd.ExecuteNonQuery(); }
+            { using var cmd = Db.Command(sql, conn); cmd.ExecuteNonQuery(); }
         }
 
-        static MySqlConnection Open() { var c = new MySqlConnection(_cs); c.Open(); return c; }
+        static DbConnection Open() { var c = Db.Connection(_cs); c.Open(); return c; }
         static string Key(string username) => (username ?? "").Trim().ToLowerInvariant();
 
         /// <summary>Minutes left on a lockout for this username, or 0.</summary>
         public static int LockedMinutes(string username)
         {
             using var c = Open();
-            using var q = new MySqlCommand("SELECT TIMESTAMPDIFF(SECOND, UTC_TIMESTAMP(), locked_until) FROM login_attempts WHERE username = @u AND locked_until > UTC_TIMESTAMP()", c);
+            using var q = Db.Command(Db.IsSqlServer
+                ? "SELECT DATEDIFF(SECOND, SYSUTCDATETIME(), locked_until) FROM login_attempts WHERE username = @u AND locked_until > SYSUTCDATETIME()"
+                : "SELECT TIMESTAMPDIFF(SECOND, UTC_TIMESTAMP(), locked_until) FROM login_attempts WHERE username = @u AND locked_until > UTC_TIMESTAMP()", c);
             q.Parameters.AddWithValue("@u", Key(username));
             var v = q.ExecuteScalar();
             return v == null || v is DBNull ? 0 : (int)Math.Ceiling(Convert.ToDouble(v) / 60.0);
@@ -63,7 +66,16 @@ namespace nkv.MicroService.Utility
         public static void RecordFailure(string username)
         {
             using var c = Open();
-            using var q = new MySqlCommand(@"INSERT INTO login_attempts (username, failed, first_failed_at, locked_until)
+            using var q = Db.Command(Db.IsSqlServer
+                ? @"MERGE login_attempts WITH (HOLDLOCK) AS t USING (SELECT @u AS username) AS s ON t.username = s.username
+                    WHEN MATCHED THEN UPDATE SET
+                      failed = CASE WHEN t.first_failed_at IS NULL OR t.first_failed_at < DATEADD(MINUTE, -@m, SYSUTCDATETIME()) THEN 1 ELSE t.failed + 1 END,
+                      first_failed_at = CASE WHEN t.first_failed_at IS NULL OR t.first_failed_at < DATEADD(MINUTE, -@m, SYSUTCDATETIME()) THEN SYSUTCDATETIME() ELSE t.first_failed_at END,
+                      locked_until = CASE WHEN (CASE WHEN t.first_failed_at IS NULL OR t.first_failed_at < DATEADD(MINUTE, -@m, SYSUTCDATETIME()) THEN 1 ELSE t.failed + 1 END) >= @max
+                                          THEN DATEADD(MINUTE, @m, SYSUTCDATETIME()) ELSE t.locked_until END
+                    WHEN NOT MATCHED THEN INSERT (username, failed, first_failed_at, locked_until)
+                      VALUES (@u, 1, SYSUTCDATETIME(), CASE WHEN 1 >= @max THEN DATEADD(MINUTE, @m, SYSUTCDATETIME()) ELSE NULL END);"
+                : @"INSERT INTO login_attempts (username, failed, first_failed_at, locked_until)
                 VALUES (@u, 1, UTC_TIMESTAMP(), IF(1 >= @max, UTC_TIMESTAMP() + INTERVAL @m MINUTE, NULL))
                 ON DUPLICATE KEY UPDATE
                   failed = IF(first_failed_at IS NULL OR first_failed_at < UTC_TIMESTAMP() - INTERVAL @m MINUTE, 1, failed + 1),
@@ -78,7 +90,7 @@ namespace nkv.MicroService.Utility
         public static void RecordSuccess(string username)
         {
             using var c = Open();
-            using var q = new MySqlCommand("DELETE FROM login_attempts WHERE username = @u", c);
+            using var q = Db.Command("DELETE FROM login_attempts WHERE username = @u", c);
             q.Parameters.AddWithValue("@u", Key(username));
             q.ExecuteNonQuery();
         }
@@ -89,7 +101,7 @@ namespace nkv.MicroService.Utility
         public static int TokenVersion(int userId)
         {
             using var c = Open();
-            using var q = new MySqlCommand("SELECT token_version FROM user_security WHERE user_id = @u", c);
+            using var q = Db.Command("SELECT token_version FROM user_security WHERE user_id = @u", c);
             q.Parameters.AddWithValue("@u", userId);
             var v = q.ExecuteScalar();
             return v == null || v is DBNull ? 1 : Convert.ToInt32(v);
@@ -99,7 +111,11 @@ namespace nkv.MicroService.Utility
         public static void RevokeTokens(int userId, bool passwordChanged = false)
         {
             using var c = Open();
-            using var q = new MySqlCommand($@"INSERT INTO user_security (user_id, token_version{(passwordChanged ? ", password_changed_at" : "")})
+            using var q = Db.Command(Db.IsSqlServer
+                ? $@"MERGE user_security WITH (HOLDLOCK) AS t USING (SELECT @u AS user_id) AS s ON t.user_id = s.user_id
+                    WHEN MATCHED THEN UPDATE SET token_version = t.token_version + 1{(passwordChanged ? ", password_changed_at = SYSUTCDATETIME()" : "")}
+                    WHEN NOT MATCHED THEN INSERT (user_id, token_version{(passwordChanged ? ", password_changed_at" : "")}) VALUES (@u, 2{(passwordChanged ? ", SYSUTCDATETIME()" : "")});"
+                : $@"INSERT INTO user_security (user_id, token_version{(passwordChanged ? ", password_changed_at" : "")})
                 VALUES (@u, 2{(passwordChanged ? ", UTC_TIMESTAMP()" : "")})
                 ON DUPLICATE KEY UPDATE token_version = token_version + 1{(passwordChanged ? ", password_changed_at = UTC_TIMESTAMP()" : "")}", c);
             q.Parameters.AddWithValue("@u", userId);
@@ -114,7 +130,7 @@ namespace nkv.MicroService.Utility
             if (!_cache.TryGetValue(userId, out var e) || (DateTime.UtcNow - e.at).TotalSeconds > 30)
             {
                 using var c = Open();
-                using var q = new MySqlCommand(@"SELECT COALESCE(s.token_version, 1), u.isActive FROM users u
+                using var q = Db.Command(@"SELECT COALESCE(s.token_version, 1), u.isActive FROM users u
                     LEFT JOIN user_security s ON s.user_id = u.user_id WHERE u.user_id = @u", c);
                 q.Parameters.AddWithValue("@u", userId);
                 using var r = q.ExecuteReader();

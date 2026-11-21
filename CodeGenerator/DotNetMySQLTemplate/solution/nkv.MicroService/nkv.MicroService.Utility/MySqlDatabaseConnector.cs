@@ -1,7 +1,7 @@
-using MySqlConnector;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -15,15 +15,15 @@ namespace nkv.MicroService.Utility
     }
     public class MySqlDatabaseConnector : IDisposable
     {
-        private MySqlConnection mySqlConnection;
+        private DbConnection mySqlConnection;
         public bool disposed = false;
         private readonly string _connectionString;
 
         public MySqlDatabaseConnector(string connectionString)
         {
-            mySqlConnection = new MySqlConnection(connectionString);
+            mySqlConnection = Db.Connection(connectionString); // MySQL or SQL Server, per Database:Provider
         }
-        public MySqlConnection GetConnection()
+        public DbConnection GetConnection()
         {
 
             return mySqlConnection;

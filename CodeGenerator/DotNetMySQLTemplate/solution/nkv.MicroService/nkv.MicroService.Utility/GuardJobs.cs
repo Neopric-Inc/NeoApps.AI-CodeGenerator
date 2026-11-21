@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Configuration;
+using System.Data.Common;
 using Microsoft.Extensions.DependencyInjection;
 using MySqlConnector;
 using RabbitMQ.Client;
@@ -40,16 +41,31 @@ namespace nkv.MicroService.Utility
                 _maxAttempts = ob["maxAttempts"]?.GetValue<int>() ?? _maxAttempts;
                 var every = ob["publishEverySeconds"]?.GetValue<int>() ?? 5;
                 if (DataGuard.OutboxTable != null && !string.IsNullOrEmpty(_rabbitUri))
-                    _outboxTimer = new Timer(_ => PublishOutbox(), null, TimeSpan.FromSeconds(3), TimeSpan.FromSeconds(every));
+                {
+                    if (Db.PauseFriendly)
+                    {
+                        // publish after outbox rows are written (WakeOutbox), retry while some are left; once now for leftovers
+                        _outboxWake = new WakeTimer(() => { PublishOutbox(); if (_outboxMore) _outboxWake.Wake(TimeSpan.FromSeconds(every)); });
+                        _outboxWake.Wake(TimeSpan.FromSeconds(3));
+                    }
+                    else _outboxTimer = new Timer(_ => PublishOutbox(), null, TimeSpan.FromSeconds(3), TimeSpan.FromSeconds(every));
+                }
             }
             StartImpl(services);
         }
         static partial void StartImpl(IServiceProvider services);
 
         /// <summary>Publishes pending outbox rows once. Safe to call concurrently (one run at a time, rows locked with SKIP LOCKED).</summary>
+        static WakeTimer _outboxWake;
+        static volatile bool _outboxMore;
+
+        /// <summary>Outbox rows were written (serverless: no polling).</summary>
+        public static void WakeOutbox() => _outboxWake?.Wake(TimeSpan.FromSeconds(5));
+
         public static int PublishOutbox()
         {
-            if (Interlocked.Exchange(ref _outboxBusy, 1) == 1) return 0;
+            if (Interlocked.Exchange(ref _outboxBusy, 1) == 1) { _outboxMore = true; return 0; }
+            _outboxMore = false;
             var sent = 0;
             try
             {
@@ -64,20 +80,21 @@ namespace nkv.MicroService.Utility
                     channel.ExchangeDeclare(_exchange + ".dlx", ExchangeType.Fanout, durable: true);
                     channel.ConfirmSelect();
                 }
-                catch (Exception ex) { Console.WriteLine("Outbox: RabbitMQ unavailable, will retry: " + ex.Message); return 0; }
+                catch (Exception ex) { Console.WriteLine("Outbox: RabbitMQ unavailable, will retry: " + ex.Message); _outboxMore = true; return 0; }
                 using (channel)
-                using (var c = new MySqlConnection(DataGuard.ConnectionString))
+                using (var c = Db.Connection(DataGuard.ConnectionString))
                 {
                     c.Open();
                     using var tx = c.BeginTransaction();
                     var rows = new List<(object id, string type, string payload, int attempts, string tenant)>();
                     var hasTenant = DataGuard.Columns[table].Contains(DataGuard.TenantColumn);
-                    using (var q = new MySqlCommand($@"SELECT `{pk}`, event_type, payload, attempts{(hasTenant ? $", `{DataGuard.TenantColumn}`" : "")} FROM `{table}`
-                        WHERE status IN ('pending','failed') AND isActive = 1 ORDER BY `{pk}` LIMIT 100 FOR UPDATE SKIP LOCKED", c, tx))
+                    using (var q = Db.Command($@"SELECT {Db.Top(100)}{Db.Q(pk)}, event_type, payload, attempts{(hasTenant ? $", {Db.Q(DataGuard.TenantColumn)}" : "")} FROM {Db.Q(table)}{(Db.IsSqlServer ? " WITH (UPDLOCK, READPAST, ROWLOCK)" : "")}
+                        WHERE status IN ('pending','failed') AND isActive = 1 ORDER BY {Db.Q(pk)}{(Db.IsSqlServer ? "" : " LIMIT 100 FOR UPDATE SKIP LOCKED")}", c, tx))
                     using (var r = q.ExecuteReader())
                         while (r.Read())
                             rows.Add((r.GetValue(0), r.GetString(1), r.IsDBNull(2) ? "{}" : r.GetString(2), r.IsDBNull(3) ? 0 : Convert.ToInt32(r.GetValue(3)),
                                       hasTenant && !r.IsDBNull(4) ? r.GetValue(4).ToString() : null));
+                    if (rows.Count == 100) _outboxMore = true;
                     foreach (var row in rows)
                     {
                         string status; var attempts = row.attempts + 1;
@@ -97,18 +114,19 @@ namespace nkv.MicroService.Utility
                         {
                             Failed++;
                             status = attempts >= _maxAttempts ? "dead_letter" : "failed";
+                            if (status == "failed") _outboxMore = true;
                             Console.WriteLine($"Outbox: event {row.id} ({row.type}) attempt {attempts} failed: {ex.Message}");
                             if (status == "dead_letter")
                                 try { channel.BasicPublish(_exchange + ".dlx", row.type, false, null, Encoding.UTF8.GetBytes(row.payload)); } catch { }
                         }
-                        using var u = new MySqlCommand($"UPDATE `{table}` SET status = @s, attempts = @a{(status == "published" && DataGuard.Columns[table].Contains("published_at") ? ", published_at = UTC_TIMESTAMP()" : "")} WHERE `{pk}` = @id", c, tx);
+                        using var u = Db.Command($"UPDATE {Db.Q(table)} SET status = @s, attempts = @a{(status == "published" && DataGuard.Columns[table].Contains("published_at") ? ", published_at = " + Db.UtcNow : "")} WHERE {Db.Q(pk)} = @id", c, tx);
                         u.Parameters.AddWithValue("@s", status); u.Parameters.AddWithValue("@a", attempts); u.Parameters.AddWithValue("@id", row.id);
                         u.ExecuteNonQuery();
                     }
                     tx.Commit();
                 }
             }
-            catch (Exception ex) { Console.WriteLine("Outbox publisher error: " + ex.Message); }
+            catch (Exception ex) { Console.WriteLine("Outbox publisher error: " + ex.Message); _outboxMore = true; }
             finally { Interlocked.Exchange(ref _outboxBusy, 0); }
             return sent;
         }
