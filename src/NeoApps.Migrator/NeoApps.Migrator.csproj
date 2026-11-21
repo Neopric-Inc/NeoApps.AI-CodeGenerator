@@ -11,7 +11,8 @@
     <LangVersion>latest</LangVersion>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <InvariantGlobalization>true</InvariantGlobalization>
+    <!-- false: the SQL Server driver (Azure SQL) needs ICU; the dotnet images include it -->
+    <InvariantGlobalization>false</InvariantGlobalization>
     <AssemblyName>neoapps-migrator</AssemblyName>
   </PropertyGroup>
 
