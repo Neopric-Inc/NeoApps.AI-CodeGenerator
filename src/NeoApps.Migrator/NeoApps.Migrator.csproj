@@ -20,6 +20,8 @@
     <PackageReference Include="FluentMigrator.Runner.MySql" Version="8.0.1" />
     <PackageReference Include="FluentMigrator.Runner.SqlServer" Version="8.0.1" />
     <PackageReference Include="Microsoft.Data.SqlClient" Version="7.1.2" />
+    <!-- Entra ID sign-in (managed identity, az login): a separate package since SqlClient 7 -->
+    <PackageReference Include="Microsoft.Data.SqlClient.Extensions.Azure" Version="7.1.2" />
     <PackageReference Include="MySqlConnector" Version="2.6.2" />
   </ItemGroup>
 

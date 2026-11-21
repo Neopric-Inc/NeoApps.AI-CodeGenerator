@@ -19,6 +19,8 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Data.SqlClient" Version="7.1.2" />
+    <!-- Entra ID sign-in (managed identity, az login): a separate package since SqlClient 7 -->
+    <PackageReference Include="Microsoft.Data.SqlClient.Extensions.Azure" Version="7.1.2" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="11.0.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.14" />
     <PackageReference Include="ModelContextProtocol" Version="1.4.1" />
