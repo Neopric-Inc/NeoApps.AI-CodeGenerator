@@ -117,7 +117,8 @@ namespace nkv.MicroService.Utility
             IsSqlServer ? $"IF OBJECT_ID(N'{table}', N'U') IS NULL CREATE TABLE {Q(table)} ({Ddl(body, table)})"
                         : $"CREATE TABLE IF NOT EXISTS {Q(table)} ({body})";
 
-        /// <summary>Translates the platform's MySQL column definitions to SQL Server (types, identity, inline indexes).</summary>
+        /// <summary>Translates the platform's MySQL column definitions to SQL Server (types, identity, inline indexes).
+        /// Types are only rewritten right after a column name, so a column called "text" or "json" keeps its name.</summary>
         public static string Ddl(string body, string table = "t")
         {
             if (!IsSqlServer) return body;
@@ -130,12 +131,12 @@ namespace nkv.MicroService.Utility
             s = R(s, @"\bAUTO_INCREMENT\b", "IDENTITY(1,1)");
             s = R(s, @"\bON\s+UPDATE\s+CURRENT_TIMESTAMP(\(\d\))?", "");
             s = R(s, @"\bCURRENT_TIMESTAMP\(\d\)", "SYSDATETIME()");
-            s = R(s, @"\bTINYINT\(1\)", "BIT");
-            s = R(s, @"\b(MEDIUMTEXT|LONGTEXT|TEXT|JSON)\b", "NVARCHAR(MAX)");
-            s = R(s, @"\bVARCHAR\(", "NVARCHAR(");
-            s = R(s, @"\bDATETIME\b", "DATETIME2");
-            s = R(s, @"\bDOUBLE\b", "FLOAT");
-            s = R(s, @"\bLONGBLOB|MEDIUMBLOB|BLOB\b", "VARBINARY(MAX)");
+            s = R(s, @"(?<=\b\w+\s+)TINYINT\(1\)", "BIT");
+            s = R(s, @"(?<=\b\w+\s+)(MEDIUMTEXT|LONGTEXT|TEXT|JSON)\b", "NVARCHAR(MAX)");
+            s = R(s, @"(?<=\b\w+\s+)VARCHAR\(", "NVARCHAR(");
+            s = R(s, @"(?<=\b\w+\s+)DATETIME\b", "DATETIME2");
+            s = R(s, @"(?<=\b\w+\s+)DOUBLE\b", "FLOAT");
+            s = R(s, @"(?<=\b\w+\s+)(LONGBLOB|MEDIUMBLOB|BLOB)\b", "VARBINARY(MAX)");
             return s;
         }
 
