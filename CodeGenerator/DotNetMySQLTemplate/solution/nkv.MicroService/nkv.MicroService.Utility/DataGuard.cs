@@ -55,6 +55,15 @@ namespace nkv.MicroService.Utility
         public static readonly Dictionary<string, string> PrimaryKeys = new(StringComparer.OrdinalIgnoreCase);
         /// <summary>Every table's columns as stored in the database (lower-case name -> stored name), built-in tables included.</summary>
         static readonly Dictionary<string, Dictionary<string, string>> SchemaColumns = new(StringComparer.OrdinalIgnoreCase);
+        /// <summary>App tables as stored in the database (lower-case name -> stored name).</summary>
+        static readonly Dictionary<string, string> AppTableNames = new(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>
+        /// The stored name of an app table, for building SQL from request input (a table name in the URL). The returned
+        /// name comes from the database's schema, never from the request; null when it isn't an app table.
+        /// </summary>
+        public static string KnownTable(string name) =>
+            name != null && AppTableNames.TryGetValue(name.Trim(), out var stored) ? stored : null;
 
         /// <summary>
         /// The stored name of a column of the table, for building SQL from request input (sort and filter columns). The
@@ -254,7 +263,7 @@ namespace nkv.MicroService.Utility
         public static void LoadSchema(DbConnection c)
         {
             AppTables.Clear(); TenantTables.Clear(); Columns.Clear(); PrimaryKeys.Clear(); ForeignKeys.Clear();
-            IdentityColumns.Clear(); SchemaColumns.Clear();
+            IdentityColumns.Clear(); SchemaColumns.Clear(); AppTableNames.Clear();
             foreach (var x in Db.Columns(c))
             {
                 var table = x.Table.ToLowerInvariant(); var col = x.Name.ToLowerInvariant();
@@ -262,6 +271,7 @@ namespace nkv.MicroService.Utility
                 if (!SchemaColumns.TryGetValue(table, out var all)) SchemaColumns[table] = all = new(StringComparer.OrdinalIgnoreCase);
                 all[col] = x.Name;
                 if (BuiltIn.Contains(table)) continue;
+                AppTableNames[table] = x.Table;
                 if (!Columns.TryGetValue(table, out var set)) Columns[table] = set = new(StringComparer.OrdinalIgnoreCase);
                 set.Add(col);
                 if (x.IsPk && !PrimaryKeys.ContainsKey(table)) PrimaryKeys[table] = col;

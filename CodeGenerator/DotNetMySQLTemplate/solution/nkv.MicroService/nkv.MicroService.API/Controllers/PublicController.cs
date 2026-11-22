@@ -35,8 +35,10 @@ namespace nkv.MicroService.API.Controllers
         [HttpGet("{table}")]
         public ActionResult List(string table, int page = 1, int pageSize = 50)
         {
-            table = (table ?? "").ToLowerInvariant();
-            if (!DataGuard.PublicApiCan(table, 'r') || !DataGuard.PrimaryKeys.TryGetValue(table, out var pk)) return NotAvailable();
+            // SQL uses the table's stored name from the schema, never the URL text
+            if (DataGuard.KnownTable(table) is not { } t || !DataGuard.AppTables.Contains(t)) return NotAvailable();
+            table = t;
+            if (!DataGuard.PublicApiCan(table.ToLowerInvariant(), 'r') || !DataGuard.PrimaryKeys.TryGetValue(table, out var pk)) return NotAvailable();
             pageSize = Math.Clamp(pageSize, 1, 200); page = Math.Max(1, page);
             using var _ = DataGuard.RunAs(DataGuard.PublicCaller(HttpContext));
             using var c = Db.Open(_connectionString);
@@ -49,8 +51,10 @@ namespace nkv.MicroService.API.Controllers
         [HttpGet("{table}/{id:int}")]
         public ActionResult One(string table, int id)
         {
-            table = (table ?? "").ToLowerInvariant();
-            if (!DataGuard.PublicApiCan(table, 'r') || !DataGuard.PrimaryKeys.TryGetValue(table, out var pk)) return NotAvailable();
+            // SQL uses the table's stored name from the schema, never the URL text
+            if (DataGuard.KnownTable(table) is not { } t || !DataGuard.AppTables.Contains(t)) return NotAvailable();
+            table = t;
+            if (!DataGuard.PublicApiCan(table.ToLowerInvariant(), 'r') || !DataGuard.PrimaryKeys.TryGetValue(table, out var pk)) return NotAvailable();
             using var _ = DataGuard.RunAs(DataGuard.PublicCaller(HttpContext));
             using var c = Db.Open(_connectionString);
             using var cmd = c.CreateCommand();
@@ -64,8 +68,10 @@ namespace nkv.MicroService.API.Controllers
         [HttpPost("{table}")]
         public ActionResult Create(string table, [FromBody] JsonObject body)
         {
-            table = (table ?? "").ToLowerInvariant();
-            if (!DataGuard.PublicApiCan(table, 'c') || !DataGuard.PrimaryKeys.TryGetValue(table, out var pk)) return NotAvailable();
+            // SQL uses the table's stored name from the schema, never the URL text
+            if (DataGuard.KnownTable(table) is not { } t || !DataGuard.AppTables.Contains(t)) return NotAvailable();
+            table = t;
+            if (!DataGuard.PublicApiCan(table.ToLowerInvariant(), 'c') || !DataGuard.PrimaryKeys.TryGetValue(table, out var pk)) return NotAvailable();
             if (body == null || body.Count == 0 || body.Count > 100) return BadRequest(new { message = "Nothing to save." });
             using var _ = DataGuard.RunAs(DataGuard.PublicCaller(HttpContext));
             var cols = new List<string>(); var values = new List<object>();
@@ -85,8 +91,16 @@ namespace nkv.MicroService.API.Controllers
             cmd.CommandText = $"INSERT INTO {Db.Q(table)} ({string.Join(", ", cols.Select(Db.Q))}) VALUES ({string.Join(", ", cols.Select((_, i) => "@p" + i))})";
             for (var i = 0; i < values.Count; i++) cmd.Parameters.AddWithValue("@p" + i, values[i] ?? DBNull.Value);
             DataGuard.Apply(cmd);
-            var id = Db.InsertReturningId(cmd);
-            return Ok(new { id, message = "Saved." });
+            try
+            {
+                var id = Db.InsertReturningId(cmd);
+                return Ok(new { id, message = "Saved." });
+            }
+            catch (System.Data.Common.DbException)
+            {
+                // a required field left out, or a value that doesn't fit: say so plainly, without database details
+                return BadRequest(new { message = "Couldn't save. Please fill in every required field and check the values." });
+            }
         }
 
         static List<Dictionary<string, object>> Read(string table, System.Data.Common.DbCommand cmd)
