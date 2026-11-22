@@ -93,7 +93,7 @@ namespace nkv.MicroService.API.Controllers
                 var r = Rooms.GetOrAdd(room, _ => new Room());
                 if (r.Peers.Count >= MaxPeers()) { Response.StatusCode = 409; await Response.WriteAsync("This room is full."); return; }
 
-                using var socket = await HttpContext.WebSockets.AcceptWebSocketAsync(new WebSocketAcceptContext { KeepAliveInterval = TimeSpan.FromSeconds(20) });
+                using var socket = await HttpContext.WebSockets.AcceptWebSocketAsync(new WebSocketAcceptContext { KeepAliveInterval = TimeSpan.FromSeconds(5), KeepAliveTimeout = TimeSpan.FromSeconds(10) });
                 var display = Clean(member ?? name) ?? "Guest";
                 var peer = new Peer { Id = "p" + Interlocked.Increment(ref _nextId), Name = display, Socket = socket };
                 var others = r.Peers.Values.Select(p => new { id = p.Id, name = p.Name }).ToArray();
