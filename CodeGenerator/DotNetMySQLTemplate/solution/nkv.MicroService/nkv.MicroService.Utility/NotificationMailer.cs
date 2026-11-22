@@ -118,6 +118,57 @@ namespace nkv.MicroService.Utility
                  + "<p style=\"font:12px sans-serif;color:#666\">You get this because email notifications are on. Turn them off from the bell in the app.</p>";
         }
 
+        // ------------------------------------------------------------------ sign-in emails (sent at once, not queued)
+
+        /// <summary>True when the app can send sign-in emails (the NeoApps relay, or its own sender with Notifications:AppUrl).</summary>
+        public static bool CanSendSignIn => Enabled && (_relayUrl != null || _appUrl != null);
+
+        /// <summary>"X invited you to App" with the one-time join link (path "/join/&lt;token&gt;"). False when it couldn't be sent.</summary>
+        public static bool SendInvite(string to, string inviter, string role, string joinPath, string appName)
+        {
+            if (!CanSendSignIn || !System.Text.RegularExpressions.Regex.IsMatch(joinPath ?? "", @"^/join/\d+\.[A-Za-z0-9_-]{20,64}$")) return false;
+            if (_relayUrl != null) return RelayAccess(new { kind = "invite", to, inviter, role, path = joinPath });
+            var link = _appUrl + joinPath;
+            var e = (Func<string, string>)WebUtility.HtmlEncode;
+            return SendNow(to, $"{inviter} invited you to {appName}",
+                $"<p style=\"font:15px sans-serif\">{e(inviter)} invited you to <b>{e(appName)}</b> as {e(role)}.</p>"
+                + $"<p style=\"font:15px sans-serif\"><a href=\"{e(link)}\">Join {e(appName)}</a></p>"
+                + "<p style=\"font:12px sans-serif;color:#666\">The link works once. If you didn't expect this, ignore this email.</p>");
+        }
+
+        /// <summary>A 6-digit sign-in code. False when it couldn't be sent.</summary>
+        public static bool SendCode(string to, string code, string appName)
+        {
+            if (!CanSendSignIn || !System.Text.RegularExpressions.Regex.IsMatch(code ?? "", @"^\d{6}$")) return false;
+            if (_relayUrl != null) return RelayAccess(new { kind = "code", to, code });
+            return SendNow(to, $"{code} is your {appName} sign-in code",
+                $"<p style=\"font:15px sans-serif\">Your sign-in code for <b>{WebUtility.HtmlEncode(appName)}</b>:</p>"
+                + $"<p style=\"font:28px monospace;letter-spacing:4px\">{code}</p>"
+                + "<p style=\"font:12px sans-serif;color:#666\">It works for 10 minutes. If you didn't ask for it, ignore this email.</p>");
+        }
+
+        static bool RelayAccess(object body)
+        {
+            try
+            {
+                using var req = new HttpRequestMessage(HttpMethod.Post, _relayUrl)
+                {
+                    Content = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json"),
+                };
+                req.Headers.TryAddWithoutValidation("Authorization", "Bearer " + _relayToken);
+                using var res = Http.Send(req);
+                if (!res.IsSuccessStatusCode) Console.WriteLine($"Sign-in email: relay answered {(int)res.StatusCode}");
+                return res.IsSuccessStatusCode;
+            }
+            catch (Exception ex) { Console.WriteLine("Sign-in email failed: " + ex.Message); return false; }
+        }
+
+        static bool SendNow(string to, string subject, string html)
+        {
+            try { Send(to, subject, html); return true; }
+            catch (Exception ex) { Console.WriteLine("Sign-in email failed: " + ex.Message); return false; }
+        }
+
         /// <summary>Hands the email to the relay: only the recipient, the title and the record's path inside the app.</summary>
         static void Relay(string to, string title, string table, string record)
         {

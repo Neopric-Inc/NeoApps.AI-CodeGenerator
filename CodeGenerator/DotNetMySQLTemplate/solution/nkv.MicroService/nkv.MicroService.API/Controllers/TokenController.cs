@@ -28,6 +28,34 @@ namespace nkv.MicroService.API.Controllers
             _usersManager = usersManager;
             this.permissionmatrixManager = permissionmatrixManager;
         }
+        /// <summary>
+        /// Signs a person in: a JWT with the usual claims (name, role, id, workspace owner, tenant, token version), set as the
+        /// HttpOnly session cookie. Used by password sign-in, email codes and email invites.
+        /// </summary>
+        public static (string jwt, DateTime validFrom, DateTime validTo) IssueSession(ControllerBase c, string secret, int userId, string username, int roleId, string owner)
+        {
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var token = tokenHandler.CreateToken(new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(new Claim[]
+                {
+                    new Claim(ClaimTypes.Name, username),
+                    new Claim(ClaimTypes.Role, roleId.ToString()),
+                    new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
+                    new Claim(ClaimTypes.Actor, owner ?? username),
+                    // informational only: DataGuard resolves the tenant from user_tenants on every request ("" = platform, "unassigned")
+                    new Claim(DataGuard.TenantClaim, DataGuard.TenantClaimValue(userId, roleId)),
+                    // token version: password/role/active changes and sign-out bump it, ending existing sessions
+                    new Claim(AuthGuard.VersionClaim, AuthGuard.TokenVersion(userId).ToString())
+                }),
+                Expires = DateTime.UtcNow.AddMinutes(AuthGuard.TokenMinutes),
+                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(Encoding.ASCII.GetBytes(secret)), SecurityAlgorithms.HmacSha256Signature)
+            });
+            var jwt = tokenHandler.WriteToken(token);
+            SessionCookie.Set(c.Response, jwt, token.ValidTo);
+            return (jwt, token.ValidFrom, token.ValidTo);
+        }
+
         [HttpPost]
         [Route(APIEndpoint.DefaultRoute)]
         [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("login")]
@@ -48,42 +76,15 @@ namespace nkv.MicroService.API.Controllers
                 {
                     usersModel.password_hash = null; // never echo credentials back to the client
                     string owner_name = permissionmatrixManager.GetPermissionmatrixOwnerIDByUserID(usersModel.user_id);
-                    var tokenHandler = new JwtSecurityTokenHandler();
-                    var key = Encoding.ASCII.GetBytes(_appSettings.Secret);
-                    var day = _appSettings.TokenValidityDay;
-                    var tokenDescriptor = new SecurityTokenDescriptor
+                    var (jwt, validFrom, validTo) = IssueSession(this, _appSettings.Secret, usersModel.user_id, usersModel.username, usersModel.role_id, owner_name);
+                    return Ok(new APIResponse(ResponseCode.SUCCESS, "Bearer Token Generated", new TokenResponse
                     {
-                        Subject = new ClaimsIdentity(new Claim[]
-                        {
-                    new Claim(ClaimTypes.Name, usersModel.username.ToString()),
-                    new Claim(ClaimTypes.Role, usersModel.role_id.ToString()),
-                    new Claim(ClaimTypes.NameIdentifier, usersModel.user_id.ToString()),
-                    new Claim(ClaimTypes.Actor, owner_name),
-                    // informational only: DataGuard resolves the tenant from user_tenants on every request ("" = platform, "unassigned")
-                    new Claim(DataGuard.TenantClaim, DataGuard.TenantClaimValue(usersModel.user_id, usersModel.role_id)),
-                    // token version: password/role/active changes and sign-out bump it, ending existing sessions
-                    new Claim(AuthGuard.VersionClaim, AuthGuard.TokenVersion(usersModel.user_id).ToString())
-                        }),
-                        Expires = DateTime.UtcNow.AddMinutes(AuthGuard.TokenMinutes),
-                        SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
-                    };
-                    var token = tokenHandler.CreateToken(tokenDescriptor);
-                    if (token != null)
-                    {
-                        var jwt = tokenHandler.WriteToken(token);
-                        SessionCookie.Set(Response, jwt, token.ValidTo);
-                        TokenResponse tokenResponse = new TokenResponse()
-                        {
-                            // the web UI signs in with the HttpOnly cookie only; API clients get the bearer token as before
-                            AccessToken = SessionCookie.IsBrowserClient(Request) ? null : jwt,
-                            ValidFrom = token.ValidFrom,
-                            ValidTo = token.ValidTo,
-                            user = usersModel
-                        };
-
-                        return Ok(new APIResponse(ResponseCode.SUCCESS, "Bearer Token Generated", tokenResponse));
-                    }
-
+                        // the web UI signs in with the HttpOnly cookie only; API clients get the bearer token as before
+                        AccessToken = SessionCookie.IsBrowserClient(Request) ? null : jwt,
+                        ValidFrom = validFrom,
+                        ValidTo = validTo,
+                        user = usersModel
+                    }));
                 }
 
                 return StatusCode(401, new APIResponse(ResponseCode.ERROR, "Invalid request"));

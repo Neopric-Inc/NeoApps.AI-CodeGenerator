@@ -19,7 +19,7 @@ export const JoinPage: React.FC = () => {
   const { token = "" } = useParams();
   const navigate = useNavigate();
   const { config, refreshSession } = useApp();
-  const [invite, setInvite] = useState<{ role: string; label?: string; invitedBy: string }>();
+  const [invite, setInvite] = useState<{ role: string; label?: string; invitedBy: string; email?: string }>();
   const [problem, setProblem] = useState<string>();
   const [error, setError] = useState<string>();
   const [busy, setBusy] = useState(false);
@@ -43,11 +43,28 @@ export const JoinPage: React.FC = () => {
     } catch (err: any) { setError(err.message); } finally { setBusy(false); }
   };
 
+  const joinByEmail = async () => {
+    setBusy(true); setError(undefined);
+    try { await call("POST", token, {}); await refreshSession(); navigate("/", { replace: true }); }
+    catch (err: any) { setError(err.message); } finally { setBusy(false); }
+  };
+
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: "background.default", display: "grid", placeItems: "center", p: 2 }}>
       <Paper variant="outlined" sx={{ width: "100%", maxWidth: 420, p: 4, borderRadius: 3 }}>
         <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>Join {name}</Typography>
-        {problem ? <Alert severity="info">{problem}</Alert> : !invite ? <CircularProgress /> : (
+        {problem ? <Alert severity="info">{problem}</Alert> : !invite ? <CircularProgress /> : invite.email ? (
+          <>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              {invite.invitedBy} invited <b>{invite.email}</b> as <b>{invite.role}</b>. No password needed: next time, sign in with a code sent to this email.
+            </Typography>
+            {error && <Alert severity="error" sx={{ mb: 1.5 }}>{error}</Alert>}
+            <Button variant="contained" fullWidth onClick={joinByEmail} disabled={busy}>
+              {busy ? <CircularProgress size={20} color="inherit" /> : `Join ${name}`}
+            </Button>
+            {error && /already a member/i.test(error) && <Button fullWidth sx={{ mt: 1 }} onClick={() => navigate("/", { replace: true })}>Go to sign in</Button>}
+          </>
+        ) : (
           <form onSubmit={join}>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
               {invite.invitedBy} invited you as <b>{invite.role}</b>. Choose a username and password to create your account.
