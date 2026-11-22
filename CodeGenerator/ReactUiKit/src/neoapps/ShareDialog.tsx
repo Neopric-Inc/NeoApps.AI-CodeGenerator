@@ -186,6 +186,13 @@ export const ShareDialog: React.FC<{ table: ResolvedTable; recordId?: any; open:
                 <Tooltip title="New link (the old one stops working)"><IconButton onClick={() => change(l, "POST", `Shares/${l.id}/regenerate`)}><Refresh fontSize="small" /></IconButton></Tooltip>
                 <Tooltip title="Delete link"><IconButton onClick={() => change(l, "DELETE", `Shares/${l.id}`)}><DeleteOutline fontSize="small" /></IconButton></Tooltip>
               </Box>
+              {l.kind === "form" && l.maxResponses && l.responses >= l.maxResponses && (
+                <Alert severity="warning" sx={{ my: 1 }} action={
+                  <Button size="small" onClick={() => change(l, "PUT", `Shares/${l.id}`, { maxResponses: (l.maxResponses || 0) + 10 })}>Allow 10 more</Button>
+                }>
+                  Full: this link has its {l.maxResponses} responses. A new link keeps the same limit; allow more to take new responses.
+                </Alert>
+              )}
               <Typography variant="caption" color="text.secondary">
                 {l.fields.map(label).join(", ")} · {l.responses}{l.maxResponses ? ` of ${l.maxResponses}` : ""} {l.kind === "form" ? "responses" : "saves"}
                 {l.expiresAt ? ` · until ${new Date(l.expiresAt).toLocaleDateString()}` : ""} · by {l.createdBy}
