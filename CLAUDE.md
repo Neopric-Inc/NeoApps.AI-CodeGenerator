@@ -57,25 +57,12 @@ Work in the app's planning folder `workspace/<App>/` (git-ignored): `requirement
    read filters, validations apply; rate-limited per IP, `Api:PublicRequestsPerMinute`). Custom public endpoints: route
    `v1/api/public/...`, `[AllowAnonymous]`, `[EnableRateLimiting("public")]`, queries inside
    `using (DataGuard.RunAs(DataGuard.PublicCaller(HttpContext)))`; prices and totals always from the database.
-   **Share links** (built in, like Google Forms): members with create rights get **Share form** on a list page (anyone with the
-   link or members only, expiry, max responses, close, new link; fixed values for reference fields) and with update rights
-   **Share** on a record (chosen fields of that record only). A plain contact or request form needs no Public role or custom
-   page. Links act as their creator (stop when the creator loses the right or the account), are HMAC-signed with the app's
-   secret, and every write runs through `DataGuard.NonQuery` ("<creator> via share link"). `"sharing": false` turns it off.
-   Form links can also show the record a fixed reference points at (`showFields`, e.g. the job's title and description, with
-   its files as downloads) and accept files (`allowFiles`: PDF/Word/text/images, 10 MB, 3 per response, attached to the new
-   record and indexed for AI; add the table to `ai.documentTables` to see them on the record page). Job posting + apply with a
-   resume = an `applications` table with `job_id`, Share form with job_id fixed, showFields and allowFiles; notify on create.
-   API: `GET/POST /v1/api/Shares`, `PUT/DELETE /Shares/{id}`, `POST /Shares/{id}/regenerate`; page `/f/<token>`.
-   **Invite links** (built in): administrators click **Invite link** in Members, pick a role (and tenant), and share the link; people
-   choose their own username and password and join with that role. Single-use or up to N people, expiry (a week by default), on/off,
-   new link. Administrator and Public roles can't be given by link. API: `GET/POST /v1/api/Access/invites`,
-   `PUT /Access/invites/{id}` (`is_open`, `regenerate`), `DELETE`; page `/join/<token>`.
-   **Email invites and code sign-in** (when the app can send email: NeoApps Cloud apps via the relay, self-hosted via
-   `Notifications:Email:*` + `Notifications:AppUrl`): Invite link with email addresses emails each person a single-use link that
-   signs them in with no password (username = email); the sign-in page offers "Email me a code" (6 digits, 10 minutes, 5 tries,
-   5 codes an hour). Administrators can set a member's sign-in email in Members. API: `POST /v1/api/public/email-code`, `/verify`,
-   `GET /public/email-code/available`, `PUT /Access/members/{id}/email`.
+   **Sharing (built in, no code):** members get **Share form** on list pages (a form anyone with the link, or only members,
+   can fill in; can show the linked record and its files above it, and accept file uploads such as resumes) and **Share** on
+   records (chosen fields of one record). Admins get **Invite link** in Members (a role; by email it sends single-use links
+   that sign people in with no password, then they sign in with an emailed code). So a contact form, "apply with a resume"
+   (applications table with job_id: Share form with the job fixed, details shown, files on, notify on create) or "let my
+   team in" needs no Public role, custom page or code. Details, security model and APIs: `docs/SHARING.md`.
    **AI:** if the app needs document Q&A, "ask your data", or AI-driven record creation, add an `ai` section to the
    ui.json (assistant instructions, `documentTables`, `tools`, `workflows`; see the guide) instead of modelling chat
    tables. It runs on the Claude API when the API process has `ANTHROPIC_API_KEY` set (never put the key in files).
