@@ -99,7 +99,9 @@ export const InviteLinks: React.FC<{
       <DialogTitle>Invite people</DialogTitle>
       <DialogContent dividers>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          Send the link to the people you want in. They choose their own username and password and join with the role you pick.
+          Type email addresses and each person gets their own link by email: they click Join and they're in, no password
+          (next time they sign in with a code sent to that email). Or leave the emails empty for one link you send yourself:
+          people who open it choose a username and password.
         </Typography>
         {choices.length === 0 ? <Alert severity="info">Create a role first (Roles). Administrators are added directly in Members.</Alert> : (
           <Stack spacing={2}>
