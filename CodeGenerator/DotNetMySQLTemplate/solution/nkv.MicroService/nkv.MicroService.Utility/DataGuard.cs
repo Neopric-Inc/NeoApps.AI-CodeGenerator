@@ -92,7 +92,7 @@ namespace nkv.MicroService.Utility
             "roles", "users", "entities", "permissionmatrix", "messagequeue", "s3bucket", "s3bucket_folders", "dnd_ui_versions",
             "project_dnd_ui_versions", "workflow", "workflows", "workflows_projects", "workflow_builds", "workflow_runs",
             "workflow_deployments", "workflow_triggers", "workflow_trigger_conditions", "ai_files", "ai_chunks", "ai_conversations",
-            "ai_messages", "ai_runs", "versioninfo", "user_tenants", "login_attempts", "user_security", "number_sequences", "guard_audit", "guard_outbox", "background_jobs", "background_job_events", "share_links"
+            "ai_messages", "ai_runs", "versioninfo", "user_tenants", "login_attempts", "user_security", "number_sequences", "guard_audit", "guard_outbox", "background_jobs", "background_job_events", "share_links", "member_invites"
         };
 
         static readonly ConditionalWeakTable<DbCommand, object> _applied = new();
