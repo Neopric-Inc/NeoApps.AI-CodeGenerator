@@ -16,6 +16,7 @@ interface Shared {
 async function call(method: string, token: string, body?: any) {
   const res = await apiFetch(`public/share/${encodeURIComponent(token)}`, {
     method, headers: body ? { "Content-Type": "application/json" } : undefined, body: body ? JSON.stringify(body) : undefined,
+    cache: "no-store", // always the current state (closed, full, used), never a copy the browser kept
   });
   let data: any = null;
   try { data = await res.json(); } catch { /* no body */ }
