@@ -16,6 +16,12 @@ interface Props {
   open: boolean;
   onClose: () => void;
   onSaved: () => void;
+  /** Share links: only these fields, sent with onSubmit instead of the table API, shown on the page instead of a dialog. */
+  fieldNames?: string[];
+  onSubmit?: (values: Record<string, any>) => Promise<void>;
+  inline?: boolean;
+  title?: string;
+  submitLabel?: string;
 }
 
 /** MySQL column default as a form value ('pharma' -> pharma); expressions like CURRENT_TIMESTAMP are left to the server. */
@@ -76,11 +82,11 @@ function ruleError(rule: FieldRule, name: string, row: Record<string, any>): str
   return undefined;
 }
 
-export const RecordForm: React.FC<Props> = ({ table, record, defaults, open, onClose, onSaved }) => {
+export const RecordForm: React.FC<Props> = ({ table, record, defaults, open, onClose, onSaved, fieldNames, onSubmit, inline, title, submitLabel }) => {
   const { config } = useApp();
   const rules = config?.validations?.[table.name] || {};
   const { refs } = useReferences(table);
-  const fields = useMemo(() => table.formFields.map((n) => table.fields[n]), [table]);
+  const fields = useMemo(() => (fieldNames || table.formFields).map((n) => table.fields[n]).filter(Boolean), [table, fieldNames]);
   const [values, setValues] = useState<Record<string, any>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
@@ -121,7 +127,7 @@ export const RecordForm: React.FC<Props> = ({ table, record, defaults, open, onC
   };
 
   const toPayload = () => {
-    const out: Record<string, any> = editing ? { ...record } : { isActive: 1 };
+    const out: Record<string, any> = onSubmit ? {} : editing ? { ...record } : { isActive: 1 };
     for (const f of fields) {
       const v = values[f.name];
       const numeric = ["int", "bigint", "smallint", "mediumint", "tinyint", "decimal", "float", "double", "year"].includes(f.column.dataType);
@@ -136,7 +142,7 @@ export const RecordForm: React.FC<Props> = ({ table, record, defaults, open, onC
     }
     // Dates the user didn't touch are sent back in API format, not the display format.
     for (const [k, f] of Object.entries(table.fields)) {
-      if ((f.widget === "date" || f.widget === "datetime") && editing && !table.formFields.includes(k)) {
+      if ((f.widget === "date" || f.widget === "datetime") && editing && !onSubmit && !table.formFields.includes(k)) {
         out[k] = f.widget === "date" ? toApiDate(toDateInput(out[k])) : toApiDateTime(toDateTimeInput(out[k]));
       }
     }
@@ -149,6 +155,7 @@ export const RecordForm: React.FC<Props> = ({ table, record, defaults, open, onC
     setError(undefined);
     try {
       const payload = toPayload();
+      if (onSubmit) { await onSubmit(payload); onSaved(); return; }
       const res = editing ? await putRecord(table.name, record![table.primaryKey], payload) : await createRecord(table.name, payload);
       if (res && res.code === 0) throw new Error(res.message || "Save failed");
       invalidateReferences(table.name);
@@ -241,24 +248,32 @@ export const RecordForm: React.FC<Props> = ({ table, record, defaults, open, onC
     }
   };
 
+  const grid = (
+    <>
+      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 2, pt: 0.5 }}>
+        {fields.map((f) => (
+          <Box key={f.name} sx={{ gridColumn: f.widget === "textarea" || f.widget === "reference" ? "1 / -1" : undefined }}>
+            {fieldInput(f)}
+          </Box>
+        ))}
+      </Box>
+      {error && <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>}
+    </>
+  );
+  const saveButton = (
+    <Button variant="contained" onClick={save} disabled={busy} data-testid="save-record">
+      {busy ? <CircularProgress size={20} color="inherit" /> : submitLabel || (editing ? "Save changes" : `Create ${table.singular}`)}
+    </Button>
+  );
+  if (inline) return <Box>{grid}<Box sx={{ mt: 3, display: "flex", justifyContent: "flex-end" }}>{saveButton}</Box></Box>;
+
   return (
     <Dialog open={open} onClose={busy ? undefined : onClose} fullWidth maxWidth="sm">
-      <DialogTitle>{editing ? `Edit ${table.singular}` : `New ${table.singular}`}</DialogTitle>
-      <DialogContent dividers>
-        <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 2, pt: 0.5 }}>
-          {fields.map((f) => (
-            <Box key={f.name} sx={{ gridColumn: f.widget === "textarea" || f.widget === "reference" ? "1 / -1" : undefined }}>
-              {fieldInput(f)}
-            </Box>
-          ))}
-        </Box>
-        {error && <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>}
-      </DialogContent>
+      <DialogTitle>{title || (editing ? `Edit ${table.singular}` : `New ${table.singular}`)}</DialogTitle>
+      <DialogContent dividers>{grid}</DialogContent>
       <DialogActions>
         <Button onClick={onClose} disabled={busy}>Cancel</Button>
-        <Button variant="contained" onClick={save} disabled={busy} data-testid="save-record">
-          {busy ? <CircularProgress size={20} color="inherit" /> : editing ? "Save changes" : `Create ${table.singular}`}
-        </Button>
+        {saveButton}
       </DialogActions>
     </Dialog>
   );

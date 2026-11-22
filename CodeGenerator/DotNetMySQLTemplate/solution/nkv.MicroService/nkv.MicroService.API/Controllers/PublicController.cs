@@ -90,10 +90,11 @@ namespace nkv.MicroService.API.Controllers
             using var cmd = c.CreateCommand();
             cmd.CommandText = $"INSERT INTO {Db.Q(table)} ({string.Join(", ", cols.Select(Db.Q))}) VALUES ({string.Join(", ", cols.Select((_, i) => "@p" + i))})";
             for (var i = 0; i < values.Count; i++) cmd.Parameters.AddWithValue("@p" + i, values[i] ?? DBNull.Value);
-            DataGuard.Apply(cmd);
             try
             {
-                var id = Db.InsertReturningId(cmd);
+                // NonQuery: rules plus their after-steps (who did it, audit, history, outbox, notifications)
+                DataGuard.NonQuery(cmd);
+                var id = Db.LastInsertedId(cmd);
                 return Ok(new { id, message = "Saved." });
             }
             catch (System.Data.Common.DbException)

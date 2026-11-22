@@ -15,6 +15,7 @@ import { SignatureDialog } from "./SignatureDialog";
 import { RecordPage } from "./RecordPage";
 import { ResourcePage } from "./ResourcePage";
 import { Shell } from "./Shell";
+import { SharedLinkPage } from "./SharedLinkPage";
 import { extensions } from "./customExtensions";
 
 registerServiceWorker();
@@ -43,6 +44,9 @@ const Routed: React.FC = () => {
   const { loading, me, error } = useApp();
   const location = useLocation();
   // pages for visitors without sign-in: shown as they are, no sign-in, no app shell
+  // share links (like Google Forms): open without the app shell; "members only" links ask for sign-in on the page
+  if (matchPath({ path: "/f/:token", end: true }, location.pathname))
+    return <Routes><Route path="/f/:token" element={<SharedLinkPage />} /></Routes>;
   const publicRoutes = extensions.publicRoutes || [];
   if (publicRoutes.some((r) => matchPath({ path: r.path, end: true }, location.pathname)))
     return <Routes>{publicRoutes.map((r) => <Route key={r.path} path={r.path} element={r.element} />)}</Routes>;

@@ -13,6 +13,8 @@ import { WorkflowButtons } from "./ai/Workflows";
 import { DataTable } from "./DataTable";
 import { exportCsv } from "./exportCsv";
 import { ImportButton } from "./ImportCsv";
+import { ShareDialog } from "./ShareDialog";
+import ShareOutlined from "@mui/icons-material/ShareOutlined";
 import { Icon } from "./icons";
 import { RecordForm } from "./RecordForm";
 import { invalidateReferences, useReferences } from "./useReferences";
@@ -120,6 +122,7 @@ const TablePage: React.FC = () => {
   const [sort, setSort] = useState<{ column: string; dir: "ASC" | "DESC" } | undefined>();
   const [editing, setEditing] = useState<Record<string, any> | null | undefined>(undefined);
   const [reload, setReload] = useState(0);
+  const [sharing, setSharing] = useState(false);
   const { labelFor } = useReferences(table, reload);
 
   useEffect(() => {
@@ -219,6 +222,9 @@ const TablePage: React.FC = () => {
             finally { setExporting(false); }
           }}>{exporting ? "Exporting…" : "Export"}</Button>
         )}
+        {can(name, "create") && (config as any).sharing !== false && (
+          <Button variant="outlined" startIcon={<ShareOutlined />} onClick={() => setSharing(true)}>Share form</Button>
+        )}
         {can(name, "create") && <ImportButton table={table} onDone={() => setReload((r) => r + 1)} />}
         {can(name, "create") && (
           <Button variant="contained" startIcon={<AddIcon />} onClick={() => setEditing(null)}>New {table.singular.toLowerCase()}</Button>
@@ -239,6 +245,7 @@ const TablePage: React.FC = () => {
           emptyText={query ? `No ${table.label.toLowerCase()} match "${query}".` : undefined}
         />
       </Paper>
+      <ShareDialog table={table} open={sharing} onClose={() => setSharing(false)} />
       <RecordForm table={table} record={editing || null} defaults={scopeDefaults} open={editing !== undefined} onClose={() => setEditing(undefined)}
         onSaved={() => { setEditing(undefined); setReload((r) => r + 1); }} />
       {del.dialog}
