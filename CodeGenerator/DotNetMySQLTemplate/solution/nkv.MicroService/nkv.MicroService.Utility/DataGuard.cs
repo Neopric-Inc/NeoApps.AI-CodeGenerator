@@ -70,6 +70,10 @@ namespace nkv.MicroService.Utility
             throw new DataGuardException($"Unknown column for {table}.", 400);
         }
 
+        /// <summary>Like KnownColumn, but null instead of an error when the table has no such column.</summary>
+        public static string TryKnownColumn(string table, string name) =>
+            table != null && SchemaColumns.TryGetValue(table, out var cols) && cols.TryGetValue(name ?? "", out var stored) ? stored : null;
+
         /// <summary>Auto-numbered column of every table (app and built-in), lower case.</summary>
         public static readonly Dictionary<string, string> IdentityColumns = new(StringComparer.OrdinalIgnoreCase);
         public static readonly Dictionary<string, List<(string Column, string RefTable, string RefColumn)>> ForeignKeys = new(StringComparer.OrdinalIgnoreCase);
@@ -95,6 +99,11 @@ namespace nkv.MicroService.Utility
                 if (File.Exists(file)) Config = JsonNode.Parse(File.ReadAllText(file)) as JsonObject ?? new JsonObject();
             }
             catch (Exception ex) { Console.WriteLine("DataGuard: could not read ui.config.json: " + ex.Message); }
+
+            // "roles": {"Public": {"products": "r", "orders": "c"}}: what visitors without sign-in may do (nothing if absent)
+            if (Config["roles"]?["Public"] is JsonObject pub)
+                foreach (var (table, letters) in pub)
+                    if (table != "*" && letters is JsonValue v && v.TryGetValue<string>(out var l)) PublicGrants[table.ToLowerInvariant()] = l.ToLowerInvariant();
 
             if (Config["tenancy"] is JsonObject t)
             {
@@ -282,6 +291,7 @@ namespace nkv.MicroService.Utility
             public string Ip;
             public string CorrelationId;
             public bool IsPlatform => Tenant == null;
+            public bool IsPublic;      // a visitor without sign-in: only what the "Public" role in ui.config.json allows
         }
 
         static readonly System.Threading.AsyncLocal<Caller> _ambient = new();
@@ -376,6 +386,55 @@ namespace nkv.MicroService.Utility
             Db.Execute(cmd);
         }
 
+        // ------------------------------------------------------------------ visitors without sign-in
+
+        /// <summary>Public role grants (table -> letters c/r/u/d). "*" is never honoured for visitors.</summary>
+        public static readonly Dictionary<string, string> PublicGrants = new(StringComparer.OrdinalIgnoreCase);
+        public const int PublicRoleId = -100;
+        public static bool PublicEnabled => PublicGrants.Count > 0 && !TenancyEnabled;
+        public static bool PublicCan(string table, char letter) =>
+            PublicEnabled && table != null && !BuiltIn.Contains(table) && PublicGrants.TryGetValue(table, out var l) && l.Contains(letter);
+
+        static string _workspaceOwner;
+        /// <summary>
+        /// The caller for a visitor without sign-in. Every query runs through Apply like any other caller, limited to the
+        /// Public role's grants, its hidden fields, read filters and validations. Use it in public endpoints only.
+        /// </summary>
+        public static Caller PublicCaller(Microsoft.AspNetCore.Http.HttpContext http = null)
+        {
+            if (!PublicEnabled) throw new DataGuardException("This page isn't available.", 404);
+            if (_workspaceOwner == null)
+            {
+                using var c = Db.Connection(ConnectionString);
+                c.Open();
+                using var q = Db.Command("SELECT MIN(owner_name) FROM permissionmatrix WHERE owner_name IS NOT NULL", c);
+                _workspaceOwner = q.ExecuteScalar()?.ToString();
+            }
+            return new Caller
+            {
+                User = "public", RoleId = PublicRoleId, IsPublic = true, Owner = _workspaceOwner,
+                Ip = http?.Connection?.RemoteIpAddress?.ToString(), CorrelationId = http?.TraceIdentifier ?? Guid.NewGuid().ToString("N"),
+            };
+        }
+
+        static readonly Regex TablesInSql = new(@"\b(?:FROM|JOIN|INTO|UPDATE)\s+[`\[\]]?(\w+)[`\[\]]?", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+        /// <summary>Visitors: one statement, and every table it touches must be granted (the written one for its verb, any other for read).</summary>
+        static void CheckPublic(string sql)
+        {
+            var text = sql.Trim().TrimEnd(';');
+            if (text.Contains(';')) throw new DataGuardException("Not available.", 403);
+            var verb = Regex.IsMatch(text, @"^\s*INSERT\b", RegexOptions.IgnoreCase) ? 'c'
+                : Regex.IsMatch(text, @"^\s*UPDATE\b", RegexOptions.IgnoreCase) ? 'u'
+                : Regex.IsMatch(text, @"^\s*DELETE\b", RegexOptions.IgnoreCase) ? 'd'
+                : Regex.IsMatch(text, @"^\s*SELECT\b", RegexOptions.IgnoreCase) ? 'r' : '?';
+            if (verb == '?') throw new DataGuardException("Not available.", 403);
+            var tables = TablesInSql.Matches(text).Select(x => x.Groups[1].Value.ToLowerInvariant()).ToList();
+            if (tables.Count == 0) return; // e.g. SELECT 1
+            for (var i = 0; i < tables.Count; i++)
+                if (!PublicCan(tables[i], i == 0 && verb != 'r' ? verb : 'r')) throw new DataGuardException("Not available.", 403);
+        }
+
         // ------------------------------------------------------------------ the choke point
 
         static readonly Regex SelectFrom = new(@"\bFROM\s+[`\[\]]?(\w+)[`\[\]]?(?:\s+(?:AS\s+)?[`\[\]]?(\w+)[`\[\]]?)?", RegexOptions.IgnoreCase | RegexOptions.Compiled);
@@ -392,6 +451,7 @@ namespace nkv.MicroService.Utility
             ApiHardening.ClampLimit(cmd); // no request can read more than Api:MaxPageSize rows at once
             var caller = Current;
             if (caller == null) return cmd;
+            if (caller.IsPublic) CheckPublic(cmd.CommandText ?? "");
             if (caller.Unassigned && TouchesData(cmd.CommandText))
                 throw new DataGuardException("Your account isn't assigned to a tenant yet. Ask a platform administrator to assign you.", 403);
             _applied.Add(cmd, null);

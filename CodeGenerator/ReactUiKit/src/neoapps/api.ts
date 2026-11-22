@@ -137,3 +137,20 @@ export async function login(username: string, password: string): Promise<void> {
   const res = await api<any>("POST", "Token", { username, password });
   if (res?.code !== 1) throw new ApiError(401, "Invalid username or password."); // the cookie is set by the response
 }
+
+/**
+ * For pages without sign-in (extensions.publicRoutes): calls v1/api/public/... without the session cookie. The server
+ * allows only what the "Public" role grants. Throws an Error with a plain message on failure.
+ */
+export async function publicApi<T = any>(method: string, path: string, body?: any): Promise<T> {
+  const res = await fetch(apiBase() + "public/" + path.replace(/^\/+/, ""), {
+    method,
+    credentials: "omit",
+    headers: body !== undefined ? { "Content-Type": "application/json" } : undefined,
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+  });
+  let data: any = null;
+  try { data = await res.json(); } catch { /* no body */ }
+  if (!res.ok) throw new Error(data?.message || (res.status === 429 ? "Too many requests. Please wait a minute and try again." : "Something went wrong. Please try again."));
+  return data as T;
+}

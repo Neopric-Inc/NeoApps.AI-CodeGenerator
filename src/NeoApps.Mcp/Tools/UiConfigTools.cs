@@ -80,6 +80,11 @@ internal static class UiConfigTools
             "Coordinator": { "*": "r", "documents": "cru", "visits": "cru" },
             "Viewer": { "*": "r" }
           },                                          // default roles if omitted: Member {"*":"cru"}, Viewer {"*":"r"}
+                                                      // "Public": visitors without sign-in (a shop, a public form), e.g.
+                                                      //   "Public": { "products": "r", "orders": "c", "order_lines": "c" }
+                                                      // only the tables listed ("*" is ignored); none = nothing public; not with tenancy.
+                                                      // Generic API: GET/POST v1/api/public/{table}; hiddenFields/readFilters for
+                                                      // "Public" apply. Pages: extensions.publicRoutes + publicApi() (Custom screens).
           "tables": {
             "studies": {
               "label": "Studies", "singular": "Study", "icon": "science",
@@ -117,6 +122,9 @@ internal static class UiConfigTools
                                                  dashboardTop: Component, recordActions: Component<{ table, record, onChanged }> };
         (types in src/neoapps/extensions.ts; use api/listRecords/createRecord/updateRecord from ../neoapps/api and useApp()
         for me/can()). Example: samples/splitshare/custom.
+        Pages for visitors without sign-in: publicRoutes: [{ path: "/shop", element: <Shop/> }] (shown outside the app
+        shell, no sign-in). They may only call publicApi(method, "products") / publicApi("POST", "orders", body) from
+        ../neoapps/api (v1/api/public/...), limited to the "Public" role's grants; never api()/listRecords there.
         Packages available to custom screens (pinned, vetted; nothing else can be imported, also on NeoApps Cloud):
           @fullcalendar/react (calendar: import FullCalendar from "@fullcalendar/react"; views from "@fullcalendar/react/daygrid",
           "/timegrid", "/list", drag and drop from "/interaction"), date-fns (dates), jspdf (PDFs in the browser),
