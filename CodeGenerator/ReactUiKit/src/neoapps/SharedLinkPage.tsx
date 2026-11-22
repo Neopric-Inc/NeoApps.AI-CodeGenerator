@@ -80,7 +80,10 @@ export const SharedLinkPage: React.FC = () => {
               return (
                 <Box key={n} sx={{ mb: 1.5 }}>
                   <Typography variant="caption" color="text.secondary">{f?.label || n}</Typography>
-                  <Typography variant="body1" sx={{ whiteSpace: long ? "pre-wrap" : undefined }}>{f ? renderValue(f, v) : String(v)}</Typography>
+                  {/* the whole text: the list formatter shortens long text */}
+                  <Typography variant="body1" sx={{ whiteSpace: long ? "pre-wrap" : undefined }}>
+                    {f && !long && !["textarea", "text", "email"].includes(f.widget) ? renderValue(f, v) : String(v)}
+                  </Typography>
                 </Box>
               );
             })}

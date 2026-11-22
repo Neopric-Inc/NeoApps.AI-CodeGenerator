@@ -26,6 +26,8 @@ namespace nkv.MicroService.API.Controllers
     /// "&lt;creator&gt; via share link". The link is "/f/&lt;id&gt;.&lt;code&gt;": the code is an HMAC of a random nonce with the
     /// app's secret, so the database alone can't produce working links. ui.config.json "sharing": false turns it off.
     /// </summary>
+    // answers change with every action (closed, used, expired): never cached, or a browser keeps showing an old one
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
     [ApiController]
     public class SharesController : ControllerBase
     {

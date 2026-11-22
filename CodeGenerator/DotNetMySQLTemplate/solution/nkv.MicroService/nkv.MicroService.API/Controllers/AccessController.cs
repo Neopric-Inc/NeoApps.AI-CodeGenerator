@@ -21,6 +21,8 @@ namespace nkv.MicroService.API.Controllers
     /// RBAC model (unchanged from the generator): permissionmatrix rows per (role, user, entity), scoped to a
     /// tenant via owner_name. Rows with user_id NULL are the role's template; member rows are copied from it.
     /// </summary>
+    // answers change with every action (closed, used, expired): never cached, or a browser keeps showing an old one
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
     [Authorize]
     [ApiController]
     public partial class AccessController : ControllerBase
