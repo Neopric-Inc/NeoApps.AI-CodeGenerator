@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Data.Common;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using Microsoft.AspNetCore.Authorization;
@@ -21,6 +22,7 @@ namespace nkv.MicroService.API.Controllers
     {
         private const string PublicInviteRoute = APIEndpoint.Version + "/" + APIEndpoint.APIRoute + "/public/invite";
         private readonly byte[] _secret;
+        private readonly string _secretText;
         private string _actingOwner, _actingUser; // set while a person joins by link (no signed-in admin)
 
         private static bool _invitesReady;
@@ -31,7 +33,10 @@ namespace nkv.MicroService.API.Controllers
                 nonce VARCHAR(64) NOT NULL, role_id INT NOT NULL, tenant_set {Db.BoolType} NOT NULL DEFAULT 0, tenant_id INT NULL,
                 label VARCHAR(200) NULL, max_uses INT NOT NULL DEFAULT 1, uses INT NOT NULL DEFAULT 0, expires_at DATETIME NULL,
                 is_open {Db.BoolType} NOT NULL DEFAULT 1, owner_name VARCHAR(255) NOT NULL, created_by_user VARCHAR(255) NOT NULL,
-                createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, last_used_at DATETIME NULL"), c)) Db.Execute(cmd);
+                createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, last_used_at DATETIME NULL, email VARCHAR(254) NULL"), c)) Db.Execute(cmd);
+            // tables made before email invites: add the column
+            try { using var probe = Db.Command("SELECT email FROM member_invites WHERE 1 = 0", c); probe.ExecuteNonQuery(); }
+            catch (DbException) { using var add = Db.Command("ALTER TABLE member_invites ADD email VARCHAR(254) NULL", c); add.ExecuteNonQuery(); }
             _invitesReady = true;
         }
 
@@ -50,7 +55,7 @@ namespace nkv.MicroService.API.Controllers
 
         private sealed class Invite
         {
-            public long Id; public string Nonce, Label, Owner, CreatedBy, RoleName; public int RoleId, MaxUses, Uses;
+            public long Id; public string Nonce, Label, Owner, CreatedBy, RoleName, Email; public int RoleId, MaxUses, Uses;
             public bool TenantSet, IsOpen; public int? TenantId; public DateTime? ExpiresAt;
         }
 
@@ -61,7 +66,7 @@ namespace nkv.MicroService.API.Controllers
             Label = r["label"] as string, MaxUses = Convert.ToInt32(r["max_uses"]), Uses = Convert.ToInt32(r["uses"]),
             ExpiresAt = r["expires_at"] is DateTime e ? DateTime.SpecifyKind(e, DateTimeKind.Utc) : null,
             IsOpen = Convert.ToInt32(r["is_open"]) == 1, Owner = (string)r["owner_name"], CreatedBy = (string)r["created_by_user"],
-            RoleName = r["role_name"] as string,
+            RoleName = r["role_name"] as string, Email = r["email"] as string,
         };
 
         private const string InviteSelect = "SELECT i.*, r.role_name FROM member_invites i LEFT JOIN roles r ON r.role_id = i.role_id";
@@ -77,7 +82,7 @@ namespace nkv.MicroService.API.Controllers
         private object DescribeInvite(Invite i) => new
         {
             id = i.Id, role_id = i.RoleId, role_name = i.RoleName, tenant_id = i.TenantSet ? i.TenantId ?? 0 : (int?)null, label = i.Label,
-            max_uses = i.MaxUses, uses = i.Uses, expires_at = i.ExpiresAt, is_open = i.IsOpen, created_by = i.CreatedBy,
+            email = i.Email, max_uses = i.MaxUses, uses = i.Uses, expires_at = i.ExpiresAt, is_open = i.IsOpen, created_by = i.CreatedBy,
             url = $"/join/{i.Id}.{InviteCode(i.Id, i.Nonce)}",
         };
 
@@ -95,6 +100,8 @@ namespace nkv.MicroService.API.Controllers
             public string label { get; set; }
             public int? max_uses { get; set; }
             public DateTime? expires_at { get; set; }
+            /// <summary>Email invites: one single-use link per address, emailed to them; opening it signs them in (no password).</summary>
+            public List<string> emails { get; set; }
         }
 
         [HttpGet]
@@ -132,18 +139,40 @@ namespace nkv.MicroService.API.Controllers
             }
             var label = string.IsNullOrWhiteSpace(input.label) ? null : input.label.Trim();
             if (label?.Length > 200) label = label[..200];
-            using var cmd = Db.Command(@"INSERT INTO member_invites (nonce, role_id, tenant_set, tenant_id, label, max_uses, expires_at, owner_name, created_by_user)
-                VALUES (@n, @r, @ts, @t, @l, @m, @e, @o, @by)", c);
-            cmd.Parameters.AddWithValue("@n", Convert.ToHexString(RandomNumberGenerator.GetBytes(24)));
-            cmd.Parameters.AddWithValue("@r", input.role_id);
-            cmd.Parameters.AddWithValue("@ts", tenantSet ? 1 : 0);
-            cmd.Parameters.AddWithValue("@t", (object)tenantId ?? DBNull.Value);
-            cmd.Parameters.AddWithValue("@l", (object)label ?? DBNull.Value);
-            cmd.Parameters.AddWithValue("@m", input.max_uses ?? 1);
-            cmd.Parameters.AddWithValue("@e", input.expires_at is { } e ? e.ToUniversalTime() : DBNull.Value);
-            cmd.Parameters.AddWithValue("@o", Tenant);
-            cmd.Parameters.AddWithValue("@by", Username);
-            var id = Db.InsertReturningId(cmd);
+            long Insert(string email, int maxUses)
+            {
+                using var cmd = Db.Command(@"INSERT INTO member_invites (nonce, role_id, tenant_set, tenant_id, label, max_uses, expires_at, owner_name, created_by_user, email)
+                    VALUES (@n, @r, @ts, @t, @l, @m, @e, @o, @by, @em)", c);
+                cmd.Parameters.AddWithValue("@n", Convert.ToHexString(RandomNumberGenerator.GetBytes(24)));
+                cmd.Parameters.AddWithValue("@r", input.role_id);
+                cmd.Parameters.AddWithValue("@ts", tenantSet ? 1 : 0);
+                cmd.Parameters.AddWithValue("@t", (object)tenantId ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@l", (object)label ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@m", maxUses);
+                cmd.Parameters.AddWithValue("@e", input.expires_at is { } e ? e.ToUniversalTime() : DBNull.Value);
+                cmd.Parameters.AddWithValue("@o", Tenant);
+                cmd.Parameters.AddWithValue("@by", Username);
+                cmd.Parameters.AddWithValue("@em", (object)email ?? DBNull.Value);
+                return Db.InsertReturningId(cmd);
+            }
+            if (input.emails is { Count: > 0 })
+            {
+                var emails = input.emails.Select(NormalEmail).Where(x => x.Length > 0).Distinct().ToList();
+                if (emails.Count > 50) return BadRequest(new APIResponse(ResponseCode.ERROR, "Invite up to 50 people at a time"));
+                var bad = emails.FirstOrDefault(x => x.Length > 254 || !EmailPattern.IsMatch(x));
+                if (bad != null) return BadRequest(new APIResponse(ResponseCode.ERROR, $"{bad} isn't a valid email address"));
+                EnsureEmailTables(c);
+                var results = new List<object>();
+                foreach (var email in emails)
+                {
+                    if (MemberByEmail(c, email) != null) { results.Add(new { email, sent = false, already = true }); continue; }
+                    var inv = LoadInvite(c, Insert(email, 1));
+                    var sent = NotificationMailer.SendInvite(email, Username, roleName, $"/join/{inv.Id}.{InviteCode(inv.Id, inv.Nonce)}", AppName);
+                    results.Add(new { email, sent, already = false, invite = DescribeInvite(inv) });
+                }
+                return Ok(new APIResponse(ResponseCode.SUCCESS, "Invites created", results));
+            }
+            var id = Insert(null, input.max_uses ?? 1);
             return Ok(new APIResponse(ResponseCode.SUCCESS, "Invite link created", DescribeInvite(LoadInvite(c, id))));
         }
 
@@ -206,7 +235,7 @@ namespace nkv.MicroService.API.Controllers
             using var c = OpenInvites();
             var i = UsableInvite(c, token, out var problem);
             if (problem != null) return problem;
-            return Ok(new { role = i.RoleName, label = i.Label, invitedBy = i.CreatedBy });
+            return Ok(new { role = i.RoleName, label = i.Label, invitedBy = i.CreatedBy, email = i.Email });
         }
 
         public class JoinInput { public string username { get; set; } public string password { get; set; } }
@@ -214,6 +243,12 @@ namespace nkv.MicroService.API.Controllers
         [AllowAnonymous, EnableRateLimiting("public"), HttpPost, Route(PublicInviteRoute + "/{token}")]
         public ActionResult Join(string token, JoinInput input)
         {
+            using (var peek = OpenInvites())
+            {
+                var inv = UsableInvite(peek, token, out var p0);
+                if (p0 != null) return p0;
+                if (inv.Email != null) return JoinByEmail(peek, inv);
+            }
             var username = input?.username?.Trim();
             if (string.IsNullOrEmpty(username) || username.Length > 100 || !System.Text.RegularExpressions.Regex.IsMatch(username, @"^[A-Za-z0-9._@-]+$"))
                 return BadRequest(new { message = "Choose a username with letters, digits, dots, dashes or @ (no spaces)." });
@@ -255,6 +290,49 @@ namespace nkv.MicroService.API.Controllers
                 return BadRequest(new { message = "That username is taken. Try another." });
             }
             return Ok(new { message = "Welcome! Your account is ready." });
+        }
+
+        /// <summary>
+        /// An emailed, single-use invite: the link reached that inbox, so opening it is the proof. The account is created with
+        /// the email as its username and no usable password (they sign in later with an emailed code), and signed in now.
+        /// </summary>
+        private ActionResult JoinByEmail(DbConnection c, Invite i)
+        {
+            EnsureEmailTables(c);
+            var email = i.Email;
+            if (MemberByEmail(c, email) != null || Scalar<long>(c, "SELECT COUNT(*) FROM users WHERE username = @u", ("@u", email)) > 0)
+                return StatusCode(409, new { message = "You're already a member. Sign in with your email instead." });
+            using (var take = Db.Command($@"UPDATE member_invites SET uses = uses + 1, last_used_at = {Db.UtcNow}
+                WHERE invite_id = @id AND is_open = 1 AND uses < max_uses", c))
+            {
+                take.Parameters.AddWithValue("@id", i.Id);
+                if (take.ExecuteNonQuery() == 0) return StatusCode(410, new { message = "This invite link has already been used. Ask for a new one." });
+            }
+            _actingOwner = i.Owner; _actingUser = $"{i.CreatedBy} (invite)";
+            int userId;
+            try
+            {
+                using var cmd = Db.Command(@"INSERT INTO users (username, password_hash, role_id, createdBy, modifiedBy, isActive)
+                    VALUES (@u, @p, @r, @by, @by, 1)", c);
+                cmd.Parameters.AddWithValue("@u", email);
+                // no password: a random one nobody knows; they sign in with emailed codes
+                cmd.Parameters.AddWithValue("@p", PasswordHasher.Hash(Convert.ToBase64String(RandomNumberGenerator.GetBytes(32))));
+                cmd.Parameters.AddWithValue("@r", i.RoleId);
+                cmd.Parameters.AddWithValue("@by", _actingUser);
+                Db.Execute(cmd);
+                userId = (int)Db.LastInsertedId(cmd);
+            }
+            catch (DbException)
+            {
+                Exec(c, "UPDATE member_invites SET uses = uses - 1 WHERE invite_id = @id AND uses > 0", ("@id", i.Id));
+                return StatusCode(409, new { message = "You're already a member. Sign in with your email instead." });
+            }
+            SetEmail(c, userId, email, verified: true);
+            if (DataGuard.TenancyEnabled && i.TenantSet) DataGuard.SetTenantOfUser(c, userId, i.TenantId);
+            WriteUserPermissions(c, userId, i.RoleId);
+            ClearPermissionCache();
+            TokenController.IssueSession(this, _secretText, userId, email, i.RoleId, i.Owner);
+            return Ok(new { message = "Welcome! You're in.", signedIn = true });
         }
     }
 }

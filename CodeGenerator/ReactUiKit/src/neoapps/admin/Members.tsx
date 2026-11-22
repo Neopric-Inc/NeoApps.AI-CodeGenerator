@@ -10,7 +10,7 @@ import { parseApiDate } from "../format";
 import { InviteLinks } from "./InviteLinks";
 import LinkIcon from "@mui/icons-material/Link";
 
-interface Member { user_id: number; username: string; role_id: number; role_name: string; isActive: number; createdAt?: string; is_you: boolean; tenant_id?: number | null; tenant_assigned?: boolean }
+interface Member { email?: string | null; user_id: number; username: string; role_id: number; role_name: string; isActive: number; createdAt?: string; is_you: boolean; tenant_id?: number | null; tenant_assigned?: boolean }
 interface Role { role_id: number; role_name: string; is_admin: boolean }
 
 export const Members: React.FC = () => {
@@ -19,6 +19,13 @@ export const Members: React.FC = () => {
   const [error, setError] = useState<string>();
   const [inviting, setInviting] = useState(false);
   const [links, setLinks] = useState(false);
+  const [emailFor, setEmailFor] = useState<{ m: Member; value: string } | null>(null);
+  const saveEmail = async () => {
+    if (!emailFor) return;
+    setError(undefined);
+    try { await api("PUT", `Access/members/${emailFor.m.user_id}/email`, { email: emailFor.value.trim() }); setEmailFor(null); load(); }
+    catch (e: any) { setError(e.message); setEmailFor(null); }
+  };
   const [form, setForm] = useState({ username: "", password: "", role_id: 0, tenant_id: 0 });
   const { me } = useApp();
   // platform administrators place members in a tenant (0 = platform user); tenant administrators' members join their own tenant
@@ -114,13 +121,16 @@ export const Members: React.FC = () => {
         <Table>
           <TableHead>
             <TableRow sx={{ "& th": { bgcolor: "grey.50", fontWeight: 600, fontSize: 12, textTransform: "uppercase", color: "text.secondary" } }}>
-              <TableCell>Username</TableCell><TableCell>Role</TableCell>{(pickTenant || me?.tenancy) && <TableCell>Tenant</TableCell>}<TableCell>Active</TableCell><TableCell>Added</TableCell>
+              <TableCell>Username</TableCell><TableCell>Sign-in email</TableCell><TableCell>Role</TableCell>{(pickTenant || me?.tenancy) && <TableCell>Tenant</TableCell>}<TableCell>Active</TableCell><TableCell>Added</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {members.map((m) => (
               <TableRow key={m.user_id}>
                 <TableCell sx={{ fontWeight: 600 }}>{m.username} {m.is_you && <Chip size="small" label="you" sx={{ ml: 1 }} />}</TableCell>
+                <TableCell>
+                  <Button size="small" sx={{ textTransform: "none" }} onClick={() => setEmailFor({ m, value: m.email || "" })}>{m.email || "Add email"}</Button>
+                </TableCell>
                 <TableCell sx={{ width: 240 }}>
                   <TextField select size="small" fullWidth value={m.role_id} disabled={m.is_you} onChange={(e) => update(m, { role_id: Number(e.target.value) })}>
                     {roles.map((r) => <MenuItem key={r.role_id} value={r.role_id}>{r.role_name}</MenuItem>)}
@@ -165,6 +175,14 @@ export const Members: React.FC = () => {
           <Button onClick={() => setInviting(false)}>Cancel</Button>
           <Button variant="contained" onClick={invite} disabled={busy || !form.username || form.password.length < 10}>Add member</Button>
         </DialogActions>
+      </Dialog>
+      <Dialog open={!!emailFor} onClose={() => setEmailFor(null)} fullWidth maxWidth="xs">
+        <DialogTitle>Sign-in email for {emailFor?.m.username}</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>They can sign in with a code sent to this email. Leave empty to remove it.</Typography>
+          <TextField autoFocus fullWidth size="small" type="email" label="Email" value={emailFor?.value || ""} onChange={(e) => emailFor && setEmailFor({ ...emailFor, value: e.target.value })} />
+        </DialogContent>
+        <DialogActions><Button onClick={() => setEmailFor(null)}>Cancel</Button><Button variant="contained" onClick={saveEmail}>Save</Button></DialogActions>
       </Dialog>
       <InviteLinks open={links} onClose={() => { setLinks(false); load(); }} roles={roles} pickTenant={pickTenant} tenants={tenants} />
     </Box>

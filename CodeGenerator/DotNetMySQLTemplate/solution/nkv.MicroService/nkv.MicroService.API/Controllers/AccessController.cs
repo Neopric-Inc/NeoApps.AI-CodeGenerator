@@ -37,6 +37,7 @@ namespace nkv.MicroService.API.Controllers
             _redis = redis;
             var secret = configuration["AppSettings:Secret"];
             _secret = string.IsNullOrEmpty(secret) ? null : System.Text.Encoding.UTF8.GetBytes(secret);
+            _secretText = secret;
         }
 
         private string Username => _actingUser ?? User.FindFirst(ClaimTypes.Name)?.Value;
@@ -166,9 +167,11 @@ namespace nkv.MicroService.API.Controllers
         {
             if (!IsAdmin) return Forbid();
             using var conn = Open();
+            EnsureEmailTables(conn);
             var list = new List<object>();
-            using var cmd = Db.Command(@"SELECT u.user_id, u.username, u.role_id, r.role_name, u.isActive, u.createdAt, ut.tenant_id, ut.user_id IS NOT NULL AS assigned
+            using var cmd = Db.Command(@"SELECT u.user_id, u.username, u.role_id, r.role_name, u.isActive, u.createdAt, ut.tenant_id, ut.user_id IS NOT NULL AS assigned, ue.email
                 FROM users u LEFT JOIN roles r ON r.role_id = u.role_id LEFT JOIN user_tenants ut ON ut.user_id = u.user_id
+                LEFT JOIN user_emails ue ON ue.user_id = u.user_id
                 WHERE u.user_id IN (SELECT DISTINCT p.user_id FROM permissionmatrix p WHERE p.owner_name = @t AND p.user_id IS NOT NULL)
                   AND (@dt IS NULL OR ut.tenant_id = @dt)
                 ORDER BY u.user_id", conn);
@@ -183,7 +186,8 @@ namespace nkv.MicroService.API.Controllers
                     createdAt = r.IsDBNull(5) ? (DateTime?)null : r.GetDateTime(5), is_you = r.GetInt32(0) == UserId,
                     tenant_id = r.IsDBNull(6) ? (int?)null : r.GetInt32(6),
                     // no mapping: only an Administrator is a platform user; anyone else has no data access until assigned
-                    tenant_assigned = Convert.ToInt32(r.GetValue(7)) == 1 || r.GetInt32(2) == AdminRoleId
+                    tenant_assigned = Convert.ToInt32(r.GetValue(7)) == 1 || r.GetInt32(2) == AdminRoleId,
+                    email = r.IsDBNull(8) ? null : r.GetString(8),
                 });
             return Ok(new APIResponse(ResponseCode.SUCCESS, "OK", list));
         }
