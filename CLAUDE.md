@@ -49,6 +49,14 @@ Work in the app's planning folder `workspace/<App>/` (git-ignored): `requirement
    **Custom screens:** if the user needs something the schema-driven UI can't do (a personal summary page, a calculation,
    a one-click action), write it in `workspace/<App>/custom/index.tsx` (exports `extensions`: `routes`, `nav`,
    `dashboardTop`, `recordActions`; example `samples/splitshare/custom`). It is copied into the app on every generate.
+   **Public pages** (a shop, a booking or contact form for people without a login): add a `Public` role in ui.config.json
+   `roles` granting only what visitors need (e.g. `{"products": "r", "orders": "c"}`; never `*`), and pages in
+   `custom/index.tsx` `publicRoutes` that call `publicApi(...)`. The generic `v1/api/public/{table}` API exposes only tables
+   also listed in `publicApi` (e.g. `{"products": "r", "contact_messages": "c"}`); tables a custom checkout writes (orders)
+   stay out of it so visitors can't write them directly. Visitors run as that role through DataGuard (hidden fields,
+   read filters, validations apply; rate-limited per IP, `Api:PublicRequestsPerMinute`). Custom public endpoints: route
+   `v1/api/public/...`, `[AllowAnonymous]`, `[EnableRateLimiting("public")]`, queries inside
+   `using (DataGuard.RunAs(DataGuard.PublicCaller(HttpContext)))`; prices and totals always from the database.
    **AI:** if the app needs document Q&A, "ask your data", or AI-driven record creation, add an `ai` section to the
    ui.json (assistant instructions, `documentTables`, `tools`, `workflows`; see the guide) instead of modelling chat
    tables. It runs on the Claude API when the API process has `ANTHROPIC_API_KEY` set (never put the key in files).

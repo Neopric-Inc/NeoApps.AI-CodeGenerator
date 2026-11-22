@@ -136,6 +136,11 @@ namespace {projectName}.API
                 o.AddPolicy("login", ctx => System.Threading.RateLimiting.RateLimitPartition.GetFixedWindowLimiter(
                     ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown",
                     _ => new System.Threading.RateLimiting.FixedWindowRateLimiterOptions { PermitLimit = loginsPerMinute, Window = TimeSpan.FromMinutes(1) }));
+                // visitors without sign-in (v1/api/public/...): per IP (Api:PublicRequestsPerMinute)
+                var publicPerMinute = Math.Max(1, Configuration.GetValue("Api:PublicRequestsPerMinute", 60));
+                o.AddPolicy("public", ctx => System.Threading.RateLimiting.RateLimitPartition.GetFixedWindowLimiter(
+                    "public:" + (ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown"),
+                    _ => new System.Threading.RateLimiting.FixedWindowRateLimiterOptions { PermitLimit = publicPerMinute, Window = TimeSpan.FromMinutes(1) }));
             });
 
             services.AddSingleton<IConfiguration>(Configuration);

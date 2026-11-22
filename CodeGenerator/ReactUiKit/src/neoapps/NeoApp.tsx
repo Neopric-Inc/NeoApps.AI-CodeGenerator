@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { BrowserRouter, matchPath, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { Alert, Box, CircularProgress, CssBaseline } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { AppProvider, useApp } from "./AppContext";
@@ -41,6 +41,11 @@ const AdminOnly: React.FC<{ element: React.JSX.Element }> = ({ element }) => {
 
 const Routed: React.FC = () => {
   const { loading, me, error } = useApp();
+  const location = useLocation();
+  // pages for visitors without sign-in: shown as they are, no sign-in, no app shell
+  const publicRoutes = extensions.publicRoutes || [];
+  if (publicRoutes.some((r) => matchPath({ path: r.path, end: true }, location.pathname)))
+    return <Routes>{publicRoutes.map((r) => <Route key={r.path} path={r.path} element={r.element} />)}</Routes>;
   if (loading) return <Box sx={{ minHeight: "100vh", display: "grid", placeItems: "center" }}><CircularProgress /></Box>;
   if (!me) return <Login />;
   return (

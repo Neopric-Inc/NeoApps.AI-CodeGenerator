@@ -682,6 +682,7 @@ namespace nkv.MicroService.Utility
 
         static string RoleName(DbConnection _, Caller caller)
         {
+            if (caller.IsPublic) return "Public";
             if (_roleNames.TryGetValue(caller.RoleId, out var n)) return n;
             // own connection: callers may be in the middle of reading from theirs
             using var c = Db.Connection(ConnectionString);
