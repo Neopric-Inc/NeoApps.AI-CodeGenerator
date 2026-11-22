@@ -271,7 +271,7 @@ COMPARE_TABLE = '''        <div class="compare-wrap" role="region" aria-label="H
             <tr><th scope="row">Who handles hosting updates</th><td>NeoApps</td><td class="featured">Your team after handover</td><td>Your team</td></tr>
             <tr><th scope="row">Your app's code</th><td>Ask your assistant for the app plan. Use the open-source generator to build the code from it.</td><td class="featured">Your team receives the source code at handover.</td><td>Your team generates and keeps the source code.</td></tr>
             <tr><th scope="row">Your records</th><td>Export any list to CSV</td><td class="featured">In your own database</td><td>In your own database</td></tr>
-            <tr><th scope="row">Price</th><td>14 days free, then from US$49/month</td><td class="featured">One-time setup from US$10,000. You pay your cloud provider.</td><td>Free generator. You cover your infrastructure and maintenance.</td></tr>
+            <tr><th scope="row">Price</th><td>Free for up to 2 apps, then from US$15/month. 1% of payments if you sell in your app.</td><td class="featured">One-time setup from US$10,000. You pay your cloud provider.</td><td>Free generator. You cover your infrastructure and maintenance.</td></tr>
             <tr><th scope="row">Get started</th><td><a class="text-link" href="get-started.html">Connect your AI assistant</a></td><td class="featured"><a class="text-link" href="mailto:info@neopric.com?subject=NeoApps%20deploy%20in%20our%20cloud">Talk to us</a></td><td><a class="text-link" href="developers.html#local">Open the local setup guide</a></td></tr>
           </tbody>
         </table></div>'''
@@ -313,7 +313,7 @@ home = """    <section class="hero">
           <a class="button" href="get-started.html">Plan my first app</a>
           <a class="button secondary" href="#industries">See example apps</a>
         </div>
-        <p class="fine">14-day Cloud trial. No card needed.</p>
+        <p class="fine">Free for up to 2 apps. No card needed.</p>
       </div>
     </section>
     <section class="works" aria-label="Assistant setup options">
@@ -359,7 +359,7 @@ home = """    <section class="hero">
 + section("proof", "Customer portal example", "ClaimKit for R&amp;D tax-credit consultants", None,
     '        <div class="video-grid"><div class="video-frame"><iframe src="https://www.youtube-nocookie.com/embed/MD_jAxglA_Y?rel=0" title="ClaimKit walkthrough" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div>'
     '<div class="video-copy"><p>Our team built ClaimKit with a coding agent and NeoApps. The portal collects documents and tracks evidence so consultants can review client submissions.</p></div></div>') \
-+ section("plans", "", "Cloud trial and pricing", "Try NeoApps Cloud for 14 days. See pricing for current plans, app limits, and what happens when the trial ends.",
++ section("plans", "", "Free plan and pricing", "Start free with up to 2 apps. See pricing for plans and app limits.",
     '        <p><a class="text-link" href="pricing.html">See NeoApps pricing →</a></p>') \
 + section("faq", "FAQ", "Before you build your first app", None,
     """        <div class="faq">
@@ -445,7 +445,7 @@ def copy_inline(text):
 PORTAL_PROMPT = CLOUD_PROMPT.replace("[describe your business app]", "a client portal where clients upload documents and see their own records. Staff review submissions, record approval decisions and notify the client when the status changes")
 
 gs = section("connect", "", "Plan your first app with NeoApps", "Connect the assistant you already use, check the app plan, and decide when to publish.",
-    f"""        <p class="needs"><strong>You'll need a NeoApps account.</strong> Connecting opens NeoApps Cloud so you can sign up or sign in. See <a class="text-link" href="pricing.html#faq">trial and plan details</a>.</p>
+    f"""        <p class="needs"><strong>You'll need a NeoApps account.</strong> Connecting opens NeoApps Cloud so you can sign up or sign in. See <a class="text-link" href="pricing.html#faq">free plan and plan details</a>.</p>
         <div class="connect-visual"><div class="connect-copy"><h2>Choose your assistant</h2><p>Add NeoApps from the assistant’s settings. If you use a work account, you may need an administrator to enable connectors or custom apps.</p></div>""" + MOCK_CONNECT + f"""</div>
         <div class="connect">
           <details name="assistant-setup"><summary>Claude</summary><ol><li>Open the Claude desktop app: Settings → Connectors → Add custom connector.</li><li>Paste {copy_inline(CLOUD_URL)}</li><li>Click Connect and sign in to NeoApps. It also works in the Claude mobile app.</li></ol></details>
@@ -488,11 +488,13 @@ page("get-started.html", "Get started · NeoApps.AI", "Connect NeoApps to Claude
 # ---------------------------------------------------------------- Pricing
 pr = section("plans", "Pricing", "Choose where your app runs.", "Use NeoApps Cloud for managed hosting, run the open-source generator yourself, or have NeoApps set it up in your own cloud.",
     """        <div class="paths">
-          <article class="path-card"><div class="path-label">Private cloud</div><h3>Deploy in your cloud</h3><div class="price">From US$10,000</div><p>One-time setup in your AWS, Azure or Google Cloud account, with handover to your team.</p><a class="button secondary" href="mailto:info@neopric.com?subject=NeoApps%20private%20cloud">Discuss private cloud setup</a></article>
+          <article class="path-card"><div class="path-label">NeoApps Cloud</div><h3>Free</h3><div class="price">US$0</div><p>Up to 2 apps, each with its own live link, database and sign-in. No card, no end date.</p><a class="button secondary" href="get-started.html">Connect your AI assistant</a></article>
+          <article class="path-card featured"><div class="path-label">NeoApps Cloud</div><h3>Starter</h3><div class="price">US$15<small>/month</small></div><p>Up to 3 apps. Hosting, database, sign-in and backups included. Built and published from your assistant.</p><a class="button" href="get-started.html">Connect your AI assistant</a></article>
+          <article class="path-card"><div class="path-label">NeoApps Cloud</div><h3>Business</h3><div class="price">US$99<small>/month</small></div><p>Up to 30 apps, everything in Starter, and help from a person when you need it.</p><a class="button secondary" href="get-started.html">Connect your AI assistant</a></article>
           <article class="path-card"><div class="path-label">Open source</div><h3>Run it yourself</h3><div class="price">Free</div><p>Generate and host apps on your own machines. You manage hosting and updates.</p><a class="button secondary" href="developers.html">Developer setup</a></article>
-          <article class="path-card featured"><div class="path-label">NeoApps Cloud</div><h3>One app</h3><div class="price">US$49<small>/month</small></div><p>Hosting, database and sign-in included. Built and published from your assistant. Try it free for 14 days, no card.</p><a class="button" href="get-started.html">Connect your AI assistant</a></article>
-          <article class="path-card"><div class="path-label">NeoApps Cloud</div><h3>Up to three apps</h3><div class="price">US$149<small>/month</small></div><p>Everything in One app, for up to three apps.</p><a class="button secondary" href="get-started.html">Connect your AI assistant</a></article>
+          <article class="path-card"><div class="path-label">Private cloud</div><h3>Deploy in your cloud</h3><div class="price">From US$10,000</div><p>One-time setup in your AWS, Azure or Google Cloud account, with handover to your team.</p><a class="button secondary" href="mailto:info@neopric.com?subject=NeoApps%20private%20cloud">Discuss private cloud setup</a></article>
         </div>
+        <p style="margin:18px 0 0">Selling something in your app? If your customers pay through your app, we keep 1% of each payment, on top of Stripe's own fee. Selling nothing costs nothing extra.</p>
         <p><a class="text-link" href="#compare">Compare hosting options →</a></p>
         <p style="margin:18px 0 0;color:var(--muted)">Your assistant plan is separate. Optional AI features inside an app use your own Anthropic or OpenAI-compatible key, and your AI provider bills you for that usage.</p>
         <p style="margin:8px 0 0;color:var(--muted)">Need it built for you? <a class="text-link" href="mailto:info@neopric.com?subject=NeoApps%20custom%20build">Talk to us</a> about custom apps, hosting and support.</p>""", white=True, first=True) \
@@ -504,8 +506,9 @@ pr = section("plans", "Pricing", "Choose where your app runs.", "Use NeoApps Clo
     '<li><b>Add the next workflow</b> once the first one sticks.</li></ol>') \
 + section("faq", "FAQ", "Questions people ask.", None, '        <div class="faq" style="max-width:820px">' + "".join(
     f"<details><summary>{q}</summary><p>{a}</p></details>" for q, a in [
-        ("What can I do in the free trial?", "Confirm your email to try NeoApps Cloud for 14 days without a card. You can build and publish one app during the trial."),
-        ("What happens when my trial ends?", "Choose a plan to keep your app running. Without a paid plan, the app pauses and NeoApps keeps it for 30 days."),
+        ("What do I get for free?", "Confirm your email and build up to 2 apps, each with its own live link. No card and no end date."),
+        ("What if I need more apps?", "Choose Starter (3 apps, US$15/month) or Business (30 apps, US$99/month). Your apps and data stay as they are."),
+        ("Do you take a cut when I sell?", "Only if your customers pay through your app: we keep 1% of each payment, on top of Stripe\'s own fee. Selling nothing costs nothing extra."),
         ("Do I need to code?", "No. You describe your business in Claude, ChatGPT, Codex or Gemini. You review a preview and approve it."),
         ("Is it a prototype or a real app?", "A real app: sign-in, roles, data rules enforced on the server, and an audit trail. Teams run their business on it."),
         ("How do I get a live link?", 'Approve your preview, then ask your assistant to publish it to NeoApps Cloud. Once the app is live, open the link from your assistant. <a class="text-link" href="get-started.html">See the first-app steps</a>.'),
@@ -523,7 +526,7 @@ pr = section("plans", "Pricing", "Choose where your app runs.", "Use NeoApps Clo
         ("What can't it do?", "It's for business records and workflows. It isn't for games, design tools or heavy number-crunching."),
         ("What if I cancel?", "Your apps stay available for 30 days so you can take your data with you. Then they're closed."),
     ]) + "</div>")
-page("pricing.html", "Pricing · NeoApps.AI", "NeoApps Cloud: 14 days free, no card. Then US$49/month for one app, US$149/month for up to three. Free and open source to self-host.", pr)
+page("pricing.html", "Pricing · NeoApps.AI", "NeoApps Cloud: free for up to 2 apps, no card. Starter US$15/month for 3 apps, Business US$99/month for 30. If you sell in your app, we keep 1% of each payment. Free and open source to self-host.", pr)
 
 # ---------------------------------------------------------------- Developers
 INSTALL_COMMAND = "curl -fsSL https://raw.githubusercontent.com/Neopric-Inc/NeoApps.AI-CodeGenerator/main/install.sh | bash"
