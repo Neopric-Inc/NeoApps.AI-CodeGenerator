@@ -169,7 +169,7 @@ namespace nkv.MicroService.API.Controllers
             using var conn = Open();
             EnsureEmailTables(conn);
             var list = new List<object>();
-            using var cmd = Db.Command(@"SELECT u.user_id, u.username, u.role_id, r.role_name, u.isActive, u.createdAt, ut.tenant_id, ut.user_id IS NOT NULL AS assigned, ue.email
+            using var cmd = Db.Command(@"SELECT u.user_id, u.username, u.role_id, r.role_name, u.isActive, u.createdAt, ut.tenant_id, CASE WHEN ut.user_id IS NULL THEN 0 ELSE 1 END AS assigned, ue.email
                 FROM users u LEFT JOIN roles r ON r.role_id = u.role_id LEFT JOIN user_tenants ut ON ut.user_id = u.user_id
                 LEFT JOIN user_emails ue ON ue.user_id = u.user_id
                 WHERE u.user_id IN (SELECT DISTINCT p.user_id FROM permissionmatrix p WHERE p.owner_name = @t AND p.user_id IS NOT NULL)
