@@ -61,7 +61,14 @@ namespace nkv.MicroService.API.Controllers
                 fields {Db.TextType} NOT NULL, fixed_values {Db.TextType} NULL, access VARCHAR(10) NOT NULL, title VARCHAR(200) NULL,
                 expires_at DATETIME NULL, max_responses INT NULL, responses INT NOT NULL DEFAULT 0, is_open {Db.BoolType} NOT NULL DEFAULT 1,
                 owner_name VARCHAR(255) NOT NULL, user_id INT NOT NULL, role_id INT NOT NULL, created_by_user VARCHAR(255) NOT NULL,
-                createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, last_used_at DATETIME NULL"), c)) Db.Execute(cmd);
+                createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, last_used_at DATETIME NULL,
+                show_fields {Db.TextType} NULL, allow_files {Db.BoolType} NOT NULL DEFAULT 0"), c)) Db.Execute(cmd);
+            // tables made before these options: add the columns
+            foreach (var (col, def) in new[] { ("show_fields", $"{Db.TextType} NULL"), ("allow_files", $"{Db.BoolType} NOT NULL DEFAULT 0") })
+            {
+                try { using var probe = Db.Command($"SELECT {col} FROM share_links WHERE 1 = 0", c); probe.ExecuteNonQuery(); }
+                catch (DbException) { using var add = Db.Command($"ALTER TABLE share_links ADD {col} {def}", c); add.ExecuteNonQuery(); }
+            }
             _ensured = true;
         }
 
@@ -78,7 +85,7 @@ namespace nkv.MicroService.API.Controllers
         sealed class Link
         {
             public long Id; public string Nonce, Table, Kind, RecordId, Access, Title, Owner, CreatedBy;
-            public List<string> Fields; public JsonObject Fixed;
+            public List<string> Fields; public JsonObject Fixed; public JsonObject Show; public bool AllowFiles;
             public DateTime? ExpiresAt; public int? MaxResponses; public int Responses; public bool IsOpen; public int UserId, RoleId;
         }
 
@@ -93,6 +100,8 @@ namespace nkv.MicroService.API.Controllers
             Responses = Convert.ToInt32(r["responses"]), IsOpen = Convert.ToInt32(r["is_open"]) == 1,
             Owner = (string)r["owner_name"], UserId = Convert.ToInt32(r["user_id"]), RoleId = Convert.ToInt32(r["role_id"]),
             CreatedBy = (string)r["created_by_user"],
+            Show = r["show_fields"] is string sf && sf.Length > 0 ? JsonNode.Parse(sf) as JsonObject : null,
+            AllowFiles = Convert.ToInt32(r["allow_files"]) == 1,
         };
 
         static Link Load(DbConnection c, long id)
@@ -196,6 +205,11 @@ namespace nkv.MicroService.API.Controllers
             public string title { get; set; }
             public DateTime? expiresAt { get; set; }
             public int? maxResponses { get; set; }
+            /// <summary>Form links: details of the record a fixed reference points at, shown above the form (with its files),
+            /// e.g. {"job_id": ["title", "description", "location"]}.</summary>
+            public Dictionary<string, List<string>> showFields { get; set; }
+            /// <summary>Form links: people may attach files (a resume): PDF, Word, text or images, up to 10 MB, 3 per response.</summary>
+            public bool allowFiles { get; set; }
         }
 
         DataGuard.Caller Me => DataGuard.Current;
@@ -204,7 +218,7 @@ namespace nkv.MicroService.API.Controllers
         object Describe(Link l) => new
         {
             id = l.Id, table = l.Table, kind = l.Kind, recordId = l.RecordId, fields = l.Fields, fixedValues = l.Fixed, access = l.Access,
-            title = l.Title, expiresAt = l.ExpiresAt, maxResponses = l.MaxResponses, responses = l.Responses, isOpen = l.IsOpen,
+            title = l.Title, showFields = l.Show, allowFiles = l.AllowFiles, expiresAt = l.ExpiresAt, maxResponses = l.MaxResponses, responses = l.Responses, isOpen = l.IsOpen,
             createdBy = l.CreatedBy, url = Url(l.Id, l.Nonce),
         };
 
@@ -252,6 +266,29 @@ namespace nkv.MicroService.API.Controllers
                     fields.RemoveAll(f => f.Equals(col, StringComparison.OrdinalIgnoreCase));
                 }
             }
+            JsonObject show = null;
+            if (kind == "form" && req.showFields is { Count: > 0 })
+            {
+                show = new JsonObject();
+                foreach (var (refCol, wanted) in req.showFields)
+                {
+                    var col = DataGuard.TryKnownColumn(t, refCol);
+                    var fk = col == null ? default : (DataGuard.ForeignKeys.TryGetValue(t, out var fks) ? fks.FirstOrDefault(x => x.Column.Equals(col, StringComparison.OrdinalIgnoreCase)) : default);
+                    if (fk.Column == null || fixedValues?[col] == null)
+                        return BadRequest(new { message = $"{refCol}: details can only be shown for a link field with a fixed value." });
+                    var target = DataGuard.KnownTable(fk.RefTable);
+                    if (target == null) return BadRequest(new { message = $"{refCol}: unknown linked table." });
+                    var cols = new JsonArray();
+                    foreach (var n in CleanFields(target, wanted, allowReferences: true)) cols.Add(n);
+                    if (cols.Count == 0 || cols.Count > 30) return BadRequest(new { message = "Choose up to 30 details to show." });
+                    // the creator must be able to see that record now
+                    using var _ = DataGuard.RunAs(Me);
+                    using var q = Db.Command($"SELECT COUNT(*) FROM {Db.Q(target)} WHERE {Db.Q(DataGuard.PrimaryKeys[target])} = @id", c);
+                    q.Parameters.AddWithValue("@id", Value(fixedValues[col]));
+                    if (Convert.ToInt32(DataGuard.Apply(q).ExecuteScalar()) == 0) return Gone("The linked record wasn't found.");
+                    show[col] = new JsonObject { ["table"] = target, ["fields"] = cols };
+                }
+            }
             if (kind == "record")
             {
                 // the creator must be able to see the record now
@@ -264,7 +301,9 @@ namespace nkv.MicroService.API.Controllers
             if (req.maxResponses is < 1) return BadRequest(new { message = "Maximum responses must be at least 1." });
             var nonce = NewNonce();
             using var ins = Db.Command(@"INSERT INTO share_links (nonce, table_name, kind, record_id, fields, fixed_values, access, title, expires_at, max_responses,
-                owner_name, user_id, role_id, created_by_user) VALUES (@n, @t, @k, @rid, @f, @fx, @a, @ti, @e, @m, @o, @u, @r, @cb)", c);
+                owner_name, user_id, role_id, created_by_user, show_fields, allow_files) VALUES (@n, @t, @k, @rid, @f, @fx, @a, @ti, @e, @m, @o, @u, @r, @cb, @sf, @af)", c);
+            ins.Parameters.AddWithValue("@sf", show == null ? DBNull.Value : show.ToJsonString());
+            ins.Parameters.AddWithValue("@af", kind == "form" && req.allowFiles ? 1 : 0);
             ins.Parameters.AddWithValue("@n", nonce);
             ins.Parameters.AddWithValue("@t", t);
             ins.Parameters.AddWithValue("@k", kind);
@@ -334,17 +373,75 @@ namespace nkv.MicroService.API.Controllers
             return Ok(new { message = "Link deleted." });
         }
 
+        // ------------------------------------------------------------------ files on a response
+
+        static readonly HashSet<string> UploadTypes = new(StringComparer.OrdinalIgnoreCase) { ".pdf", ".doc", ".docx", ".txt", ".rtf", ".odt", ".png", ".jpg", ".jpeg" };
+        const long MaxUploadBytes = 10 * 1024 * 1024;
+        const int MaxUploadsPerResponse = 3;
+
+        string UploadSig(Link link, string recordId, long until)
+        {
+            using var h = new HMACSHA256(_secret);
+            return Convert.ToHexString(h.ComputeHash(Encoding.UTF8.GetBytes($"share-upload:{link.Id}:{link.Nonce}:{recordId}:{until}"))).ToLowerInvariant();
+        }
+
+        public sealed class UploadForm { public Microsoft.AspNetCore.Http.IFormFile file { get; set; } public string key { get; set; } }
+
+        /// <summary>
+        /// Attaches a file to the response just sent through this link. The key (from the submit answer) names that one
+        /// record and works for 30 minutes; PDF, Word, text or images, up to 10 MB, 3 per response. Stored and indexed like
+        /// files added in the app, so the record page and the AI see it.
+        /// </summary>
+        [AllowAnonymous, EnableRateLimiting("public"), HttpPost, Route(PublicRoute + "/{token}/files"), RequestSizeLimit(12_000_000)]
+        public ActionResult Upload(string token, [FromForm] UploadForm form)
+        {
+            using var c = Open();
+            var problem = Usable(c, token, out var link, out var caller, forUpload: true);
+            if (problem != null) return problem;
+            if (!link.AllowFiles || link.Kind != "form") return Gone("Files can't be added here.");
+            var parts = (form?.key ?? "").Split('.');
+            if (parts.Length != 3 || !long.TryParse(parts[0], out _) || !long.TryParse(parts[1], out var until) || until < DateTimeOffset.UtcNow.ToUnixTimeSeconds()
+                || !CryptographicOperations.FixedTimeEquals(Encoding.ASCII.GetBytes(parts[2]), Encoding.ASCII.GetBytes(UploadSig(link, parts[0], until))))
+                return Gone("This upload has expired. Send the form again to attach files.", 410);
+            var recordId = parts[0];
+            var f = form.file;
+            if (f == null || f.Length == 0) return BadRequest(new { message = "Choose a file." });
+            if (f.Length > MaxUploadBytes) return BadRequest(new { message = "Files can be up to 10 MB." });
+            var ext = System.IO.Path.GetExtension(f.FileName ?? "");
+            if (!UploadTypes.Contains(ext)) return BadRequest(new { message = "Attach a PDF, Word, text or image file." });
+            using (var count = Db.Command("SELECT COUNT(*) FROM ai_files WHERE owner_name = @o AND table_name = @t AND record_id = @r", c))
+            {
+                count.Parameters.AddWithValue("@o", link.Owner);
+                count.Parameters.AddWithValue("@t", link.Table.ToLowerInvariant());
+                count.Parameters.AddWithValue("@r", recordId);
+                if (Convert.ToInt32(count.ExecuteScalar()) >= MaxUploadsPerResponse) return BadRequest(new { message = $"Up to {MaxUploadsPerResponse} files per response." });
+            }
+            var ai = HttpContext.RequestServices.GetService(typeof(nkv.MicroService.API.Ai.AiService)) as nkv.MicroService.API.Ai.AiService;
+            if (ai == null) return Gone("Files can't be added here.");
+            using (DataGuard.RunAs(caller))
+            using (var s = f.OpenReadStream())
+            {
+                try
+                {
+                    ai.Upload(new nkv.MicroService.API.Ai.AiUser(link.UserId, $"{link.CreatedBy} via share link", link.RoleId, link.Owner),
+                        link.Table.ToLowerInvariant(), recordId, f.FileName, f.ContentType, s);
+                }
+                catch (nkv.MicroService.API.Ai.AiException ex) { return BadRequest(new { message = ex.Message }); }
+            }
+            return Ok(new { message = "File attached." });
+        }
+
         // ------------------------------------------------------------------ the link itself (no sign-in for "anyone")
 
         /// <summary>Checks a link is usable now. Returns an error result, or null and the caller to act as.</summary>
-        ActionResult Usable(DbConnection c, string token, out Link link, out DataGuard.Caller caller)
+        ActionResult Usable(DbConnection c, string token, out Link link, out DataGuard.Caller caller, bool forUpload = false)
         {
             caller = null;
             link = Enabled ? FromToken(c, token) : null;
             if (link == null) return Gone("This link isn't available. Ask the person who sent it for a new one.");
             if (!link.IsOpen) return Gone("This form is closed.", 410);
             if (link.ExpiresAt is { } e && e <= DateTime.UtcNow) return Gone("This link has expired.", 410);
-            if (link.Kind == "form" && link.MaxResponses is { } m && link.Responses >= m) return Gone("This form isn't taking more responses.", 410);
+            if (!forUpload && link.Kind == "form" && link.MaxResponses is { } m && link.Responses >= m) return Gone("This form isn't taking more responses.", 410);
             string member = null;
             if (link.Access == "members")
             {
@@ -379,7 +476,79 @@ namespace nkv.MicroService.API.Controllers
                 values = new();
                 for (var i = 0; i < r.FieldCount; i++) values[r.GetName(i)] = r.IsDBNull(i) ? null : r.GetValue(i);
             }
-            return Ok(new { title = link.Title, table = link.Table, kind = link.Kind, fields = link.Fields, values, access = link.Access });
+            return Ok(new { title = link.Title, table = link.Table, kind = link.Kind, fields = link.Fields, values, access = link.Access,
+                context = Context(c, link, caller), allowFiles = link.AllowFiles });
+        }
+
+        /// <summary>The records a form link shows above the form: only the chosen fields, read as the creator, plus their files.</summary>
+        List<object> Context(DbConnection c, Link link, DataGuard.Caller caller)
+        {
+            var list = new List<object>();
+            if (link.Show == null || link.Fixed == null) return list;
+            using var _ = DataGuard.RunAs(caller);
+            foreach (var (col, node) in link.Show)
+            {
+                if (node is not JsonObject o || DataGuard.KnownTable(o["table"]?.ToString()) is not { } target || link.Fixed[col] is not { } idNode) continue;
+                var fields = (o["fields"] as JsonArray ?? new JsonArray()).Select(x => DataGuard.TryKnownColumn(target, x?.ToString())).Where(x => x != null && !DataGuard.IsHidden(target, x)).ToList();
+                if (fields.Count == 0 || !DataGuard.PrimaryKeys.TryGetValue(target, out var pk)) continue;
+                var id = Value(idNode);
+                using var q = Db.Command($"SELECT {string.Join(", ", fields.Select(Db.Q))} FROM {Db.Q(target)} WHERE {Db.Q(pk)} = @id", c);
+                q.Parameters.AddWithValue("@id", id);
+                var values = new Dictionary<string, object>();
+                using (var r = DataGuard.Apply(q).ExecuteReader())
+                {
+                    if (!r.Read()) continue;
+                    for (var i = 0; i < r.FieldCount; i++) values[r.GetName(i)] = r.IsDBNull(i) ? null : r.GetValue(i);
+                }
+                list.Add(new { table = target, fields, values, files = ContextFiles(c, link, target, Convert.ToString(id)) });
+            }
+            return list;
+        }
+
+        static List<object> ContextFiles(DbConnection c, Link link, string table, string recordId)
+        {
+            var files = new List<object>();
+            try
+            {
+                using var q = Db.Command("SELECT file_id, file_name, size_bytes FROM ai_files WHERE owner_name = @o AND table_name = @t AND record_id = @r ORDER BY file_id", c);
+                q.Parameters.AddWithValue("@o", link.Owner);
+                q.Parameters.AddWithValue("@t", table.ToLowerInvariant());
+                q.Parameters.AddWithValue("@r", recordId);
+                using var r = q.ExecuteReader();
+                while (r.Read()) files.Add(new { id = Convert.ToInt64(r.GetValue(0)), name = r.GetString(1), size = r.IsDBNull(2) ? 0 : Convert.ToInt64(r.GetValue(2)) });
+            }
+            catch (DbException) { /* no files module */ }
+            return files;
+        }
+
+        /// <summary>Downloads a file of a record the link shows (e.g. the job description), through a 5-minute signed link.</summary>
+        [AllowAnonymous, EnableRateLimiting("public"), HttpGet, Route(PublicRoute + "/{token}/file/{fileId:long}")]
+        public ActionResult ContextFile(string token, long fileId)
+        {
+            using var c = Open();
+            var problem = Usable(c, token, out var link, out var caller);
+            if (problem != null) return problem;
+            if (link.Show == null || link.Fixed == null) return Gone("File not found.");
+            foreach (var (col, node) in link.Show)
+            {
+                if (node is not JsonObject o || DataGuard.KnownTable(o["table"]?.ToString()) is not { } target || link.Fixed[col] is not { } idNode) continue;
+                var recordId = Convert.ToString(Value(idNode));
+                using (DataGuard.RunAs(caller))
+                {
+                    using var vis = Db.Command($"SELECT COUNT(*) FROM {Db.Q(target)} WHERE {Db.Q(DataGuard.PrimaryKeys[target])} = @id", c);
+                    vis.Parameters.AddWithValue("@id", recordId);
+                    if (Convert.ToInt32(DataGuard.Apply(vis).ExecuteScalar()) == 0) continue;
+                }
+                using var q = Db.Command("SELECT COUNT(*) FROM ai_files WHERE file_id = @f AND owner_name = @o AND table_name = @t AND record_id = @r", c);
+                q.Parameters.AddWithValue("@f", fileId);
+                q.Parameters.AddWithValue("@o", link.Owner);
+                q.Parameters.AddWithValue("@t", target.ToLowerInvariant());
+                q.Parameters.AddWithValue("@r", recordId);
+                if (Convert.ToInt32(q.ExecuteScalar()) == 0) continue;
+                var exp = DateTimeOffset.UtcNow.AddMinutes(5).ToUnixTimeSeconds();
+                return Redirect($"/{APIEndpoint.Version}/{APIEndpoint.APIRoute}/Ai/files/{fileId}/signed?exp={exp}&sig={DataGuard.Sign("ai_file:" + fileId, exp)}");
+            }
+            return Gone("File not found.");
         }
 
         [AllowAnonymous, EnableRateLimiting("public"), HttpPost, Route(PublicRoute + "/{token}")]
@@ -437,7 +606,10 @@ namespace nkv.MicroService.API.Controllers
                     if (ex is DataGuardException) throw; // validation messages per field, shown on the form
                     return BadRequest(new { message = "Couldn't send. Please fill in every required field and check the values." });
                 }
-                return Ok(new { message = "Thank you, your response was sent." });
+                if (!link.AllowFiles) return Ok(new { message = "Thank you, your response was sent." });
+                var newId = Convert.ToString(Db.LastInsertedId(cmd));
+                var until = DateTimeOffset.UtcNow.AddMinutes(30).ToUnixTimeSeconds();
+                return Ok(new { message = "Thank you, your response was sent.", uploadKey = $"{newId}.{until}.{UploadSig(link, newId, until)}" });
             }
             else
             {

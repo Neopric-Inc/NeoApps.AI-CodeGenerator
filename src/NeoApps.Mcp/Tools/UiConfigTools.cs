@@ -93,6 +93,9 @@ internal static class UiConfigTools
                                                       // new link) and with "update" a record "Share" (chosen fields of that one
                                                       // record). A simple contact/request form needs no Public role or custom page:
                                                       // tell the user to use Share form. false turns sharing off.
+                                                      // A form can show the linked record (a job and its files) above it
+                                                      // and accept files (a resume). Job posting + apply = applications
+                                                      // table with job_id; list applications in ai.documentTables.
           "tables": {
             "studies": {
               "label": "Studies", "singular": "Study", "icon": "science",

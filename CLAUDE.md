@@ -62,6 +62,10 @@ Work in the app's planning folder `workspace/<App>/` (git-ignored): `requirement
    **Share** on a record (chosen fields of that record only). A plain contact or request form needs no Public role or custom
    page. Links act as their creator (stop when the creator loses the right or the account), are HMAC-signed with the app's
    secret, and every write runs through `DataGuard.NonQuery` ("<creator> via share link"). `"sharing": false` turns it off.
+   Form links can also show the record a fixed reference points at (`showFields`, e.g. the job's title and description, with
+   its files as downloads) and accept files (`allowFiles`: PDF/Word/text/images, 10 MB, 3 per response, attached to the new
+   record and indexed for AI; add the table to `ai.documentTables` to see them on the record page). Job posting + apply with a
+   resume = an `applications` table with `job_id`, Share form with job_id fixed, showFields and allowFiles; notify on create.
    API: `GET/POST /v1/api/Shares`, `PUT/DELETE /Shares/{id}`, `POST /Shares/{id}/regenerate`; page `/f/<token>`.
    **Invite links** (built in): administrators click **Invite link** in Members, pick a role (and tenant), and share the link; people
    choose their own username and password and join with that role. Single-use or up to N people, expiry (a week by default), on/off,

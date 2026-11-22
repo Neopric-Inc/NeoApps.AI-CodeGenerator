@@ -10,11 +10,12 @@ import { api } from "./api";
 import { AUDIT_FIELDS } from "./config";
 import { ResolvedTable } from "./types";
 import { useReferences } from "./useReferences";
+import { useApp } from "./AppContext";
 
 export interface ShareLink {
   id: number; table: string; kind: "form" | "record"; recordId?: string; fields: string[]; fixedValues?: Record<string, any>;
   access: "anyone" | "members"; title?: string; expiresAt?: string; maxResponses?: number; responses: number; isOpen: boolean;
-  createdBy: string; url: string;
+  createdBy: string; url: string; showFields?: Record<string, { table: string; fields: string[] }>; allowFiles?: boolean;
 }
 
 const fullUrl = (u: string) => window.location.origin + u;
@@ -24,6 +25,7 @@ const fullUrl = (u: string) => window.location.origin + u;
  * anyone with the link or only signed-in members, optional expiry and response limit, close/reopen, new link.
  */
 export const ShareDialog: React.FC<{ table: ResolvedTable; recordId?: any; open: boolean; onClose: () => void }> = ({ table, recordId, open, onClose }) => {
+  const { tables } = useApp();
   const isRecord = recordId !== undefined && recordId !== null;
   const { refs } = useReferences(table);
   const candidates = useMemo(() => table.formFields.map((n) => table.fields[n])
@@ -42,6 +44,12 @@ export const ShareDialog: React.FC<{ table: ResolvedTable; recordId?: any; open:
   const [expires, setExpires] = useState("");
   const [max, setMax] = useState("");
   const [copied, setCopied] = useState<number>();
+  const [show, setShow] = useState<Record<string, string[]>>({}); // reference column -> fields of the linked record shown above the form
+  const [allowFiles, setAllowFiles] = useState(false);
+  const showable = (refCol: string) => {
+    const target = tables[table.fields[refCol]?.column.references?.table || ""];
+    return target ? target.formFields.map((n) => target.fields[n]).filter((f) => f && !f.column.references && !AUDIT_FIELDS.includes(f.name)) : [];
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -59,7 +67,7 @@ export const ShareDialog: React.FC<{ table: ResolvedTable; recordId?: any; open:
     setFields(shareable.map((f) => f.name));
     setFixed({});
     setTitle(isRecord ? `Update your ${table.singular.toLowerCase()} details` : table.singular);
-    setExpires(""); setMax(""); setAccess("anyone");
+    setExpires(""); setMax(""); setAccess("anyone"); setShow({}); setAllowFiles(false);
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, load]);
@@ -77,6 +85,9 @@ export const ShareDialog: React.FC<{ table: ResolvedTable; recordId?: any; open:
       if (Object.keys(fx).length) body.fixedValues = fx;
       if (expires) body.expiresAt = new Date(expires + "T23:59:59").toISOString();
       if (max) body.maxResponses = Number(max);
+      const sh = Object.fromEntries(Object.entries(show).filter(([k, v]) => v.length && fx[k] !== undefined));
+      if (Object.keys(sh).length) body.showFields = sh;
+      if (!isRecord && allowFiles) body.allowFiles = true;
       const link = await api<ShareLink>("POST", "Shares", body);
       setLinks((l) => [link, ...l]);
       copy(link);
@@ -128,6 +139,22 @@ export const ShareDialog: React.FC<{ table: ResolvedTable; recordId?: any; open:
                 renderInput={(p) => <TextField {...p} label={`${f.label} for every response${f.required ? " *" : ""}`} />} />
             );
           })}
+          {references.filter((f) => fixed[f.name] !== undefined && fixed[f.name] !== "").map((f) => (
+            <Box key={`show-${f.name}`}>
+              <Typography variant="subtitle2" sx={{ mb: 0.5 }}>Show the chosen {f.label.toLowerCase()} above the form (with its files)</Typography>
+              <Box sx={{ display: "flex", flexWrap: "wrap" }}>
+                {showable(f.name).map((sf) => (
+                  <FormControlLabel key={sf.name} sx={{ mr: 2 }} label={sf.label} control={
+                    <Checkbox size="small" checked={(show[f.name] || []).includes(sf.name)}
+                      onChange={(e) => setShow((s) => ({ ...s, [f.name]: e.target.checked ? [...(s[f.name] || []), sf.name] : (s[f.name] || []).filter((x) => x !== sf.name) }))} />} />
+                ))}
+              </Box>
+            </Box>
+          ))}
+          {!isRecord && (
+            <FormControlLabel label="Let people attach files (e.g. a resume): PDF, Word, text or images, up to 10 MB" control={
+              <Switch checked={allowFiles} onChange={(e) => setAllowFiles(e.target.checked)} />} />
+          )}
           <TextField size="small" select label="Who can open it" value={access} onChange={(e) => setAccess(e.target.value as any)}>
             <MenuItem value="anyone">Anyone with the link</MenuItem>
             <MenuItem value="members">Only people signed in to this app</MenuItem>
