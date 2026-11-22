@@ -155,6 +155,8 @@ INCLUDES = [
     ("Dashboard", "The numbers you run the business on."),
     ("AI that drafts", "It reads documents and proposes. People approve."),
     ("Changes keep your data", "Add a field or a step. Nothing is lost."),
+    ("Share a form", "Like Google Forms: applications with a resume, requests, sign-ups. Anyone with the link, or members only."),
+    ("Invite by email", "People join from the email with no password, and sign in later with a code."),
 ]
 
 INDUSTRIES = [
@@ -173,6 +175,7 @@ INDUSTRIES = [
         ("Requests and approvals", "Purchases, time off, IT and expenses. Submit, approve, lock, report."),
         ("R&D tax credit claims (SR&ED)", "Collect project evidence, timesheets and expenses; prepare claims for review."),
         ("Grant applications", "Applications, reviewers, scoring and decisions."),
+        ("Hiring and internships", "Post a job, share an apply link with resume upload, get an email for every application, let AI score candidates."),
         ("Personal finance", "Client financial health for advisors and credit unions."),
     ]),
     ("field", "Field operations and compliance", [
@@ -186,6 +189,7 @@ INDUSTRIES = [
         ("Student intake and support", "Admissions, wellbeing, accessibility and support cases."),
         ("Course and instructor scheduling", "Courses, sections, rooms and instructors."),
         ("Scholarship and bursary applications", "Apply, review, score and award."),
+        ("Workshop and class bookings", "A public page of upcoming sessions, paid bookings by card, and instructor applications."),
     ]),
     ("insurance", "Insurance", [
         ("Claims intake", "Customer portal, documents, adjuster review and payout approval. Demo available on request."),
@@ -349,6 +353,7 @@ home = """    <section class="hero">
         <div id="rules" class="includes">
           <article class="include"><h3>Control access by role</h3><p>Let clients see their own documents and give staff the access they need to review submissions.</p></article>
           <article class="include"><h3>Keep a record of decisions</h3><p>For workflows configured with approvals and audit history, see who made the decision and when.</p></article>
+          <article class="include"><h3>Share forms and invite people</h3><p>Share a form anyone can fill in, like a job application with a resume. Invite your team by email: they join with no password.</p></article>
           <article class="include"><h3>Build from an open-source plan</h3><p>Use the open-source generator to build the app from its schema and configuration.</p></article>
         </div>
         <p><a class="text-link" href="security.html">Review security controls →</a></p>
@@ -477,10 +482,11 @@ gs = section("connect", "", "Plan your first app with NeoApps", "Connect the ass
     '        <p><a class="text-link" href="docs.html#first-app">Read the first-app guide →</a></p>') \
 + section("after", "After it's live", "Invite people. Add AI. Keep improving.", None,
     '        <div class="steps">'
-    '<article class="step"><div class="step-num">01</div><h3>Invite people</h3><p>Add your team and customers in Members, with the role they need.</p></article>'
+    '<article class="step"><div class="step-num">01</div><h3>Invite people</h3><p>Members → Invite link: type their emails and pick a role. Each person gets a link, joins with no password, and later signs in with a code sent to their email.</p></article>'
     '<article class="step"><div class="step-num">02</div><h3>Turn on AI</h3><p>Ask your assistant for the AI settings link. Paste your own key there, never in a chat.</p></article>'
-    '<article class="step"><div class="step-num">03</div><h3>Change it</h3><p>Tell your assistant what to change. Review, publish. Your data stays.</p></article>'
-    '<article class="step"><div class="step-num">04</div><h3>Forgot your login?</h3><p>Go to <a class="text-link" href="https://cloud.neoapps.ai/recover">cloud.neoapps.ai/recover</a>.</p></article></div>', white=True) \
+    '<article class="step"><div class="step-num">03</div><h3>Share a form</h3><p>On any list, Share form gives you a link people outside the app can fill in, with file uploads like a resume. Close it or replace the link any time.</p></article>'
+    '<article class="step"><div class="step-num">04</div><h3>Change it</h3><p>Tell your assistant what to change. Review, publish. Your data stays.</p></article>'
+    '<article class="step"><div class="step-num">05</div><h3>Forgot your login?</h3><p>Go to <a class="text-link" href="https://cloud.neoapps.ai/recover">cloud.neoapps.ai/recover</a>.</p></article></div>', white=True) \
 + section(None, "Prefer to run it yourself?", "Free and open source.", None,
     '        <p><a class="button secondary" href="developers.html">Developer setup →</a></p>')
 page("get-started.html", "Get started · NeoApps.AI", "Connect NeoApps to Claude, ChatGPT, Codex or Gemini and build your first business app.", gs)
@@ -643,6 +649,8 @@ SEC_ROWS = [
      "Sign-in is rate-limited per address, with lockout and password rules. Field rules (formats, ranges, totals) are checked on the server, not only in the form."),
     ("SQL injection and cross-site scripting",
      "Values are always parameters; column names must be plain names or the request is refused. The API only answers in JSON and React escapes what it shows."),
+    ("Shared links and invites that anyone can guess or reuse",
+     "Form, record and invite links are signed with the app's own secret and can be closed, limited, given an end date or replaced. Email invites work once, and sign-in codes expire in 10 minutes after 5 tries."),
     ("Code that calls packages that don't exist",
      "The AI writes a plan, not code. Custom screens can only import a short list of pinned, vetted packages."),
 ]
