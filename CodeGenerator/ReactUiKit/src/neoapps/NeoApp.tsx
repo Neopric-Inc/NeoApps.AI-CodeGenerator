@@ -16,6 +16,7 @@ import { RecordPage } from "./RecordPage";
 import { ResourcePage } from "./ResourcePage";
 import { Shell } from "./Shell";
 import { SharedLinkPage } from "./SharedLinkPage";
+import { JoinPage } from "./JoinPage";
 import { extensions } from "./customExtensions";
 
 registerServiceWorker();
@@ -47,6 +48,9 @@ const Routed: React.FC = () => {
   // share links (like Google Forms): open without the app shell; "members only" links ask for sign-in on the page
   if (matchPath({ path: "/f/:token", end: true }, location.pathname))
     return <Routes><Route path="/f/:token" element={<SharedLinkPage />} /></Routes>;
+  // invite links: choose a username and password, join with the invite's role
+  if (matchPath({ path: "/join/:token", end: true }, location.pathname))
+    return <Routes><Route path="/join/:token" element={<JoinPage />} /></Routes>;
   const publicRoutes = extensions.publicRoutes || [];
   if (publicRoutes.some((r) => matchPath({ path: r.path, end: true }, location.pathname)))
     return <Routes>{publicRoutes.map((r) => <Route key={r.path} path={r.path} element={r.element} />)}</Routes>;

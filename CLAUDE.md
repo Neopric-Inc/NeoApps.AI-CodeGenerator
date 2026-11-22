@@ -24,7 +24,7 @@ Work in the app's planning folder `workspace/<App>/` (git-ignored): `requirement
    - **never** reuse a built-in table name: `roles`, `users`, `entities`, `permissionmatrix`, `messagequeue`,
      `s3bucket`, `s3bucket_folders`, `dnd_ui_versions`, `project_dnd_ui_versions`, `workflow`, `workflows`,
      `workflows_projects`, `workflow_builds`, `workflow_runs`, `workflow_deployments`, `workflow_triggers`,
-     `workflow_trigger_conditions`, `ai_files`, `ai_chunks`, `ai_conversations`, `ai_messages`, `ai_runs`, `versioninfo`, `user_tenants`, `login_attempts`, `user_security`, `number_sequences`, `background_jobs`, `background_job_events`, `user_notifications`, `user_notification_settings`, `share_links` (use e.g. `members`, `automation_runs`)
+     `workflow_trigger_conditions`, `ai_files`, `ai_chunks`, `ai_conversations`, `ai_messages`, `ai_runs`, `versioninfo`, `user_tenants`, `login_attempts`, `user_security`, `number_sequences`, `background_jobs`, `background_job_events`, `user_notifications`, `user_notification_settings`, `share_links`, `member_invites` (use e.g. `members`, `automation_runs`)
    - plain `CREATE TABLE` / `INSERT` only: no `CREATE DATABASE`, `USE`, `DELIMITER`, procedures
    Save it as `workspace/<App>/schema.sql` (copy it to `samples/` if it should be committed).
    **Existing database** (MySQL, PostgreSQL, SQL Server, SQLite): don't write the schema by hand. Have the user
@@ -63,6 +63,10 @@ Work in the app's planning folder `workspace/<App>/` (git-ignored): `requirement
    page. Links act as their creator (stop when the creator loses the right or the account), are HMAC-signed with the app's
    secret, and every write runs through `DataGuard.NonQuery` ("<creator> via share link"). `"sharing": false` turns it off.
    API: `GET/POST /v1/api/Shares`, `PUT/DELETE /Shares/{id}`, `POST /Shares/{id}/regenerate`; page `/f/<token>`.
+   **Invite links** (built in): administrators click **Invite link** in Members, pick a role (and tenant), and share the link; people
+   choose their own username and password and join with that role. Single-use or up to N people, expiry (a week by default), on/off,
+   new link. Administrator and Public roles can't be given by link. API: `GET/POST /v1/api/Access/invites`,
+   `PUT /Access/invites/{id}` (`is_open`, `regenerate`), `DELETE`; page `/join/<token>`.
    **AI:** if the app needs document Q&A, "ask your data", or AI-driven record creation, add an `ai` section to the
    ui.json (assistant instructions, `documentTables`, `tools`, `workflows`; see the guide) instead of modelling chat
    tables. It runs on the Claude API when the API process has `ANTHROPIC_API_KEY` set (never put the key in files).

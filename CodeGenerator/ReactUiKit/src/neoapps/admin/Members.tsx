@@ -7,6 +7,8 @@ import PersonAddOutlined from "@mui/icons-material/PersonAddOutlined";
 import { api, listRecords } from "../api";
 import { useApp } from "../AppContext";
 import { parseApiDate } from "../format";
+import { InviteLinks } from "./InviteLinks";
+import LinkIcon from "@mui/icons-material/Link";
 
 interface Member { user_id: number; username: string; role_id: number; role_name: string; isActive: number; createdAt?: string; is_you: boolean; tenant_id?: number | null; tenant_assigned?: boolean }
 interface Role { role_id: number; role_name: string; is_admin: boolean }
@@ -16,6 +18,7 @@ export const Members: React.FC = () => {
   const [roles, setRoles] = useState<Role[]>([]);
   const [error, setError] = useState<string>();
   const [inviting, setInviting] = useState(false);
+  const [links, setLinks] = useState(false);
   const [form, setForm] = useState({ username: "", password: "", role_id: 0, tenant_id: 0 });
   const { me } = useApp();
   // platform administrators place members in a tenant (0 = platform user); tenant administrators' members join their own tenant
@@ -89,6 +92,7 @@ export const Members: React.FC = () => {
             color: "text.secondary"
           }}>People in your workspace and the role that controls what they can see and change.</Typography>
         </Box>
+        <Button variant="outlined" startIcon={<LinkIcon />} sx={{ mr: 1 }} onClick={() => setLinks(true)}>Invite link</Button>
         <Button variant="contained" startIcon={<PersonAddOutlined />} onClick={() => { setForm({ username: "", password: "", role_id: roles.find((r) => !r.is_admin)?.role_id || 1, tenant_id: tenants[0]?.id || 0 }); setInviting(true); }}>Add member</Button>
       </Box>
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(undefined)}>{error}</Alert>}
@@ -162,6 +166,7 @@ export const Members: React.FC = () => {
           <Button variant="contained" onClick={invite} disabled={busy || !form.username || form.password.length < 10}>Add member</Button>
         </DialogActions>
       </Dialog>
+      <InviteLinks open={links} onClose={() => { setLinks(false); load(); }} roles={roles} pickTenant={pickTenant} tenants={tenants} />
     </Box>
   );
 };

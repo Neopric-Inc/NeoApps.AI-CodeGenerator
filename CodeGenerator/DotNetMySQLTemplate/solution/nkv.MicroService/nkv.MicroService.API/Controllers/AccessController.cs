@@ -23,7 +23,7 @@ namespace nkv.MicroService.API.Controllers
     /// </summary>
     [Authorize]
     [ApiController]
-    public class AccessController : ControllerBase
+    public partial class AccessController : ControllerBase
     {
         private const string Route = APIEndpoint.Version + "/" + APIEndpoint.APIRoute + "/Access";
         private const int AdminRoleId = 1;
@@ -35,12 +35,14 @@ namespace nkv.MicroService.API.Controllers
         {
             _connectionString = configuration.GetConnectionString("MySQLDatabase");
             _redis = redis;
+            var secret = configuration["AppSettings:Secret"];
+            _secret = string.IsNullOrEmpty(secret) ? null : System.Text.Encoding.UTF8.GetBytes(secret);
         }
 
-        private string Username => User.FindFirst(ClaimTypes.Name)?.Value;
+        private string Username => _actingUser ?? User.FindFirst(ClaimTypes.Name)?.Value;
         private int UserId => int.TryParse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var v) ? v : 0;
         private int RoleId => int.TryParse(User.FindFirst(ClaimTypes.Role)?.Value, out var v) ? v : 0;
-        private string Tenant => User.FindFirst(ClaimTypes.Actor)?.Value ?? Username;
+        private string Tenant => _actingOwner ?? User.FindFirst(ClaimTypes.Actor)?.Value ?? Username;
         private bool IsAdmin => RoleId == AdminRoleId;
         /// <summary>Data tenant of the caller from the signed token (DataGuard tenancy); null = platform user.</summary>
         private int? DataTenant => DataGuard.Current?.Tenant;
