@@ -25,7 +25,7 @@ namespace nkv.MicroService.API.Controllers
     public sealed class PublicController : ControllerBase
     {
         static readonly HashSet<string> NeverShown = new(StringComparer.OrdinalIgnoreCase)
-            { "createdby", "modifiedby", "created_by_user", "modified_by_user", "isactive" };
+            { "createdby", "modifiedby", "created_by_user", "modified_by_user", "isactive", "createdat", "modifiedat" };
         readonly string _connectionString;
         public PublicController(IConfiguration config) => _connectionString = config.GetConnectionString("MySQLDatabase");
 

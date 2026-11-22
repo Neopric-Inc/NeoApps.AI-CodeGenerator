@@ -541,12 +541,12 @@ public static class AppPreview
                     d.Lines.Add($"Changed {t.Name}.{c.Name}: {Describe(oc)} → {Describe(c)}");
                 }
             }
-            foreach (var oc in old.Columns.Where(oc => !t.Columns.Any(c => c.Name == oc.Name))) d.Lines.Add($"Removed {t.Name}.{oc.Name}");
+            foreach (var oc in old.Columns.Where(oc => !t.Columns.Any(c => c.Name == oc.Name))) d.Lines.Add($"Removed {t.Name}.{oc.Name}: the data in this field will be deleted");
             foreach (var fk in t.ForeignKeys.Where(f => !old.ForeignKeys.Contains(f))) d.Lines.Add($"New relation: {t.Name}.{fk.Column} → {fk.RefTable}");
             foreach (var fk in old.ForeignKeys.Where(f => !t.ForeignKeys.Contains(f))) d.Lines.Add($"Removed relation: {t.Name}.{fk.Column} → {fk.RefTable}");
             if (d.Lines.Any(l => l.Contains($" {t.Name}.")) && !d.Tables.ContainsKey(t.Name)) d.Tables[t.Name] = Mark.Changed;
         }
-        foreach (var old in before.Where(o => !now.Any(t => t.Name == o.Name))) d.Lines.Add($"Removed table {old.Name}");
+        foreach (var old in before.Where(o => !now.Any(t => t.Name == o.Name))) d.Lines.Add($"Removed table {old.Name}: all its records will be deleted");
 
         if (uiBefore != null && ui != null)
         {
