@@ -22,6 +22,8 @@ interface Props {
   inline?: boolean;
   title?: string;
   submitLabel?: string;
+  /** Extra content under the fields (e.g. file pickers on a shared form). */
+  extra?: React.ReactNode;
 }
 
 /** MySQL column default as a form value ('pharma' -> pharma); expressions like CURRENT_TIMESTAMP are left to the server. */
@@ -82,7 +84,7 @@ function ruleError(rule: FieldRule, name: string, row: Record<string, any>): str
   return undefined;
 }
 
-export const RecordForm: React.FC<Props> = ({ table, record, defaults, open, onClose, onSaved, fieldNames, onSubmit, inline, title, submitLabel }) => {
+export const RecordForm: React.FC<Props> = ({ table, record, defaults, open, onClose, onSaved, fieldNames, onSubmit, inline, title, submitLabel, extra }) => {
   const { config } = useApp();
   const rules = config?.validations?.[table.name] || {};
   const { refs } = useReferences(table);
@@ -265,7 +267,7 @@ export const RecordForm: React.FC<Props> = ({ table, record, defaults, open, onC
       {busy ? <CircularProgress size={20} color="inherit" /> : submitLabel || (editing ? "Save changes" : `Create ${table.singular}`)}
     </Button>
   );
-  if (inline) return <Box>{grid}<Box sx={{ mt: 3, display: "flex", justifyContent: "flex-end" }}>{saveButton}</Box></Box>;
+  if (inline) return <Box>{grid}{extra}<Box sx={{ mt: 3, display: "flex", justifyContent: "flex-end" }}>{saveButton}</Box></Box>;
 
   return (
     <Dialog open={open} onClose={busy ? undefined : onClose} fullWidth maxWidth="sm">

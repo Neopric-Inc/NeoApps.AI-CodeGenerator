@@ -84,7 +84,9 @@ namespace nkv.MicroService.Utility
                 if (!hit) continue;
                 var users = new HashSet<int>();
                 foreach (var who in r.Notify) foreach (var u in Recipients(c, caller, table, who, row)) users.Add(u);
-                users.Remove(caller?.UserId ?? 0);
+                // the person who made the change isn't told about it; a share link acts as its creator, but the change
+                // came from someone else (a visitor), so the creator is told
+                if (caller?.Via == null || !caller.Via.StartsWith("share link", StringComparison.Ordinal)) users.Remove(caller?.UserId ?? 0);
                 if (users.Count == 0) continue;
                 var title = Render(r.Title ?? (r.To != null ? $"{table} #{{id}} is now {{{r.Column}}}" : $"New {table} #{{id}}"), row, id);
                 foreach (var u in users)
