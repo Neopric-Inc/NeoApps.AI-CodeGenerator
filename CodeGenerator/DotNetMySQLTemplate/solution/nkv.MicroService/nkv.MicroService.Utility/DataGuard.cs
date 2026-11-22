@@ -105,6 +105,12 @@ namespace nkv.MicroService.Utility
                 foreach (var (table, letters) in pub)
                     if (table != "*" && letters is JsonValue v && v.TryGetValue<string>(out var l)) PublicGrants[table.ToLowerInvariant()] = l.ToLowerInvariant();
 
+            // "publicApi": {"products": "r", "contact_messages": "c"}: tables the generic v1/api/public/{table} API exposes
+            // (also limited by the Public role). Absent = no generic API; custom public endpoints still work.
+            if (Config["publicApi"] is JsonObject pa)
+                foreach (var (table, letters) in pa)
+                    if (table != "*" && letters is JsonValue v && v.TryGetValue<string>(out var l)) PublicApiGrants[table.ToLowerInvariant()] = l.ToLowerInvariant();
+
             if (Config["tenancy"] is JsonObject t)
             {
                 TenancyEnabled = t["enabled"]?.GetValue<bool>() ?? true;
@@ -391,6 +397,10 @@ namespace nkv.MicroService.Utility
         /// <summary>Public role grants (table -> letters c/r/u/d). "*" is never honoured for visitors.</summary>
         public static readonly Dictionary<string, string> PublicGrants = new(StringComparer.OrdinalIgnoreCase);
         public const int PublicRoleId = -100;
+        public static readonly Dictionary<string, string> PublicApiGrants = new(StringComparer.OrdinalIgnoreCase);
+        /// <summary>The generic public API: needs both the Public role grant and a publicApi entry for the table.</summary>
+        public static bool PublicApiCan(string table, char letter) =>
+            PublicCan(table, letter) && table != null && PublicApiGrants.TryGetValue(table, out var l) && l.Contains(letter);
         public static bool PublicEnabled => PublicGrants.Count > 0 && !TenancyEnabled;
         public static bool PublicCan(string table, char letter) =>
             PublicEnabled && table != null && !BuiltIn.Contains(table) && PublicGrants.TryGetValue(table, out var l) && l.Contains(letter);

@@ -83,8 +83,11 @@ internal static class UiConfigTools
                                                       // "Public": visitors without sign-in (a shop, a public form), e.g.
                                                       //   "Public": { "products": "r", "orders": "c", "order_lines": "c" }
                                                       // only the tables listed ("*" is ignored); none = nothing public; not with tenancy.
-                                                      // Generic API: GET/POST v1/api/public/{table}; hiddenFields/readFilters for
-                                                      // "Public" apply. Pages: extensions.publicRoutes + publicApi() (Custom screens).
+                                                      // Generic API GET/POST v1/api/public/{table} only for tables also in
+                                                      //   "publicApi": { "products": "r", "contact_messages": "c" }
+                                                      // Never list tables that custom checkout writes (orders): visitors could
+                                                      // write them directly. hiddenFields/readFilters for "Public" apply.
+                                                      // Pages: extensions.publicRoutes + publicApi() (Custom screens).
           "tables": {
             "studies": {
               "label": "Studies", "singular": "Study", "icon": "science",

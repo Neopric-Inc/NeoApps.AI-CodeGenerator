@@ -51,7 +51,9 @@ Work in the app's planning folder `workspace/<App>/` (git-ignored): `requirement
    `dashboardTop`, `recordActions`; example `samples/splitshare/custom`). It is copied into the app on every generate.
    **Public pages** (a shop, a booking or contact form for people without a login): add a `Public` role in ui.config.json
    `roles` granting only what visitors need (e.g. `{"products": "r", "orders": "c"}`; never `*`), and pages in
-   `custom/index.tsx` `publicRoutes` that call `publicApi(...)`. Visitors run as that role through DataGuard (hidden fields,
+   `custom/index.tsx` `publicRoutes` that call `publicApi(...)`. The generic `v1/api/public/{table}` API exposes only tables
+   also listed in `publicApi` (e.g. `{"products": "r", "contact_messages": "c"}`); tables a custom checkout writes (orders)
+   stay out of it so visitors can't write them directly. Visitors run as that role through DataGuard (hidden fields,
    read filters, validations apply; rate-limited per IP, `Api:PublicRequestsPerMinute`). Custom public endpoints: route
    `v1/api/public/...`, `[AllowAnonymous]`, `[EnableRateLimiting("public")]`, queries inside
    `using (DataGuard.RunAs(DataGuard.PublicCaller(HttpContext)))`; prices and totals always from the database.

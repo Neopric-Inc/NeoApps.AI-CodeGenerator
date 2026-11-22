@@ -12,8 +12,9 @@ using nkv.MicroService.Utility;
 namespace nkv.MicroService.API.Controllers
 {
     /// <summary>
-    /// For visitors without sign-in (a shop, a public form): only the tables and actions the "Public" role in
-    /// ui.config.json grants (e.g. "roles": {"Public": {"products": "r", "orders": "c"}}). Every query runs through
+    /// For visitors without sign-in (a shop, a public form): only tables listed in ui.config.json "publicApi"
+    /// (e.g. {"products": "r", "contact_messages": "c"}) and granted to the "Public" role. Tables a custom public
+    /// endpoint writes (orders paid through checkout) stay out of publicApi, so visitors can't write them directly. Every query runs through
     /// DataGuard as the Public role: its hidden fields, read filters, validations and numbering apply. Rate-limited per
     /// visitor. Nothing is public unless that role exists; apps with tenancy have no public access.
     /// Custom public endpoints follow the same pattern: route under v1/api/public/..., [AllowAnonymous],
@@ -35,7 +36,7 @@ namespace nkv.MicroService.API.Controllers
         public ActionResult List(string table, int page = 1, int pageSize = 50)
         {
             table = (table ?? "").ToLowerInvariant();
-            if (!DataGuard.PublicCan(table, 'r') || !DataGuard.PrimaryKeys.TryGetValue(table, out var pk)) return NotAvailable();
+            if (!DataGuard.PublicApiCan(table, 'r') || !DataGuard.PrimaryKeys.TryGetValue(table, out var pk)) return NotAvailable();
             pageSize = Math.Clamp(pageSize, 1, 200); page = Math.Max(1, page);
             using var _ = DataGuard.RunAs(DataGuard.PublicCaller(HttpContext));
             using var c = Db.Open(_connectionString);
@@ -49,7 +50,7 @@ namespace nkv.MicroService.API.Controllers
         public ActionResult One(string table, int id)
         {
             table = (table ?? "").ToLowerInvariant();
-            if (!DataGuard.PublicCan(table, 'r') || !DataGuard.PrimaryKeys.TryGetValue(table, out var pk)) return NotAvailable();
+            if (!DataGuard.PublicApiCan(table, 'r') || !DataGuard.PrimaryKeys.TryGetValue(table, out var pk)) return NotAvailable();
             using var _ = DataGuard.RunAs(DataGuard.PublicCaller(HttpContext));
             using var c = Db.Open(_connectionString);
             using var cmd = c.CreateCommand();
@@ -64,7 +65,7 @@ namespace nkv.MicroService.API.Controllers
         public ActionResult Create(string table, [FromBody] JsonObject body)
         {
             table = (table ?? "").ToLowerInvariant();
-            if (!DataGuard.PublicCan(table, 'c') || !DataGuard.PrimaryKeys.TryGetValue(table, out var pk)) return NotAvailable();
+            if (!DataGuard.PublicApiCan(table, 'c') || !DataGuard.PrimaryKeys.TryGetValue(table, out var pk)) return NotAvailable();
             if (body == null || body.Count == 0 || body.Count > 100) return BadRequest(new { message = "Nothing to save." });
             using var _ = DataGuard.RunAs(DataGuard.PublicCaller(HttpContext));
             var cols = new List<string>(); var values = new List<object>();
