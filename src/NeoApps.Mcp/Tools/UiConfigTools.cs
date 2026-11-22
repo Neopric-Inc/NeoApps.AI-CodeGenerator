@@ -88,6 +88,11 @@ internal static class UiConfigTools
                                                       // Never list tables that custom checkout writes (orders): visitors could
                                                       // write them directly. hiddenFields/readFilters for "Public" apply.
                                                       // Pages: extensions.publicRoutes + publicApi() (Custom screens).
+          "live": { "rooms": { "arena": "public" },   // live rooms (WebSocket relay) for multiplayer games, presence,
+                    "maxPeers": 16 },                 // chat: "public" = no sign-in, "members" = signed in. Custom
+                                                      // screens use joinRoom() from src/neoapps/live.ts; "arena-x1"
+                                                      // = a separate match. Apps with live rooms run as one copy.
+                                                      // Custom screens may import "three" for 3D.
           "sharing": true,                            // share links, on by default: members with "create" on a table get "Share form"
                                                       // (a link anyone can fill in, or members only; expiry, max responses, close,
                                                       // new link) and with "update" a record "Share" (chosen fields of that one

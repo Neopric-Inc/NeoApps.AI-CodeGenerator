@@ -237,6 +237,8 @@ namespace {projectName}.API
                     RequestPath = "/app-files",
                     OnPrepareResponse = c => c.Context.Response.Headers["Cache-Control"] = "no-cache",
                 });
+            // live rooms (LiveController): WebSocket upgrades
+            app.UseWebSockets();
             app.UseRouting();
             app.UseRateLimiter();
             app.UseCors("AllowAllHeaders");
