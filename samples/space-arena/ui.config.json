@@ -1,0 +1,19 @@
+{
+  "appName": "SpaceArena",
+  "live": {
+    "rooms": {
+      "arena": "public"
+    },
+    "maxPeers": 8
+  },
+  "menu": [
+    {
+      "label": "Game",
+      "items": [
+        "pilots",
+        "matches",
+        "scores"
+      ]
+    }
+  ]
+}

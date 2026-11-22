@@ -65,7 +65,7 @@ Work in the app's planning folder `workspace/<App>/` (git-ignored): `requirement
    team in" needs no Public role, custom page or code. Details, security model and APIs: `docs/SHARING.md`.
    **Live rooms and 3D** (multiplayer games, presence, live cursors, chat, instant refresh): declare rooms in ui.config.json
    `"live": {"rooms": {"arena": "public", "team": "members"}, "maxPeers": 16}` and use `joinRoom()` from `src/neoapps/live.ts`
-   in custom screens (a WebSocket at `/v1/api/live/{room}` relaying JSON up to 4 KB, 60 a second per player; `arena-<code>`
+   in custom screens (example `samples/space-arena`: Three.js multiplayer dogfight with Web Audio; a WebSocket at `/v1/api/live/{room}` relaying JSON up to 4 KB, 60 a second per player; `arena-<code>`
    = separate matches; nothing stored). Rooms live in the API process, so apps with live rooms run as one copy. Custom
    screens can import `three` (Three.js) for 3D; Web Audio needs no package.
    **AI:** if the app needs document Q&A, "ask your data", or AI-driven record creation, add an `ai` section to the
