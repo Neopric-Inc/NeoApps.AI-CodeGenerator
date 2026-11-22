@@ -88,6 +88,11 @@ internal static class UiConfigTools
                                                       // Never list tables that custom checkout writes (orders): visitors could
                                                       // write them directly. hiddenFields/readFilters for "Public" apply.
                                                       // Pages: extensions.publicRoutes + publicApi() (Custom screens).
+          "sharing": true,                            // share links, on by default: members with "create" on a table get "Share form"
+                                                      // (a link anyone can fill in, or members only; expiry, max responses, close,
+                                                      // new link) and with "update" a record "Share" (chosen fields of that one
+                                                      // record). A simple contact/request form needs no Public role or custom page:
+                                                      // tell the user to use Share form. false turns sharing off.
           "tables": {
             "studies": {
               "label": "Studies", "singular": "Study", "icon": "science",

@@ -24,7 +24,7 @@ Work in the app's planning folder `workspace/<App>/` (git-ignored): `requirement
    - **never** reuse a built-in table name: `roles`, `users`, `entities`, `permissionmatrix`, `messagequeue`,
      `s3bucket`, `s3bucket_folders`, `dnd_ui_versions`, `project_dnd_ui_versions`, `workflow`, `workflows`,
      `workflows_projects`, `workflow_builds`, `workflow_runs`, `workflow_deployments`, `workflow_triggers`,
-     `workflow_trigger_conditions`, `ai_files`, `ai_chunks`, `ai_conversations`, `ai_messages`, `ai_runs`, `versioninfo`, `user_tenants`, `login_attempts`, `user_security`, `number_sequences`, `background_jobs`, `background_job_events`, `user_notifications`, `user_notification_settings` (use e.g. `members`, `automation_runs`)
+     `workflow_trigger_conditions`, `ai_files`, `ai_chunks`, `ai_conversations`, `ai_messages`, `ai_runs`, `versioninfo`, `user_tenants`, `login_attempts`, `user_security`, `number_sequences`, `background_jobs`, `background_job_events`, `user_notifications`, `user_notification_settings`, `share_links` (use e.g. `members`, `automation_runs`)
    - plain `CREATE TABLE` / `INSERT` only: no `CREATE DATABASE`, `USE`, `DELIMITER`, procedures
    Save it as `workspace/<App>/schema.sql` (copy it to `samples/` if it should be committed).
    **Existing database** (MySQL, PostgreSQL, SQL Server, SQLite): don't write the schema by hand. Have the user
@@ -57,6 +57,12 @@ Work in the app's planning folder `workspace/<App>/` (git-ignored): `requirement
    read filters, validations apply; rate-limited per IP, `Api:PublicRequestsPerMinute`). Custom public endpoints: route
    `v1/api/public/...`, `[AllowAnonymous]`, `[EnableRateLimiting("public")]`, queries inside
    `using (DataGuard.RunAs(DataGuard.PublicCaller(HttpContext)))`; prices and totals always from the database.
+   **Share links** (built in, like Google Forms): members with create rights get **Share form** on a list page (anyone with the
+   link or members only, expiry, max responses, close, new link; fixed values for reference fields) and with update rights
+   **Share** on a record (chosen fields of that record only). A plain contact or request form needs no Public role or custom
+   page. Links act as their creator (stop when the creator loses the right or the account), are HMAC-signed with the app's
+   secret, and every write runs through `DataGuard.NonQuery` ("<creator> via share link"). `"sharing": false` turns it off.
+   API: `GET/POST /v1/api/Shares`, `PUT/DELETE /Shares/{id}`, `POST /Shares/{id}/regenerate`; page `/f/<token>`.
    **AI:** if the app needs document Q&A, "ask your data", or AI-driven record creation, add an `ai` section to the
    ui.json (assistant instructions, `documentTables`, `tools`, `workflows`; see the guide) instead of modelling chat
    tables. It runs on the Claude API when the API process has `ANTHROPIC_API_KEY` set (never put the key in files).

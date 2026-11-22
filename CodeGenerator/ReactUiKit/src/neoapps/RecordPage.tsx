@@ -17,6 +17,8 @@ import AutoAwesome from "@mui/icons-material/AutoAwesome";
 import { FilesPanel } from "./ai/FilesPanel";
 import { WorkflowButtons } from "./ai/Workflows";
 import { extensions } from "./customExtensions";
+import { ShareDialog } from "./ShareDialog";
+import ShareOutlined from "@mui/icons-material/ShareOutlined";
 
 /** Related records of one child table, filtered client-side by the FK pointing at the parent. */
 const ChildList: React.FC<{ child: ResolvedTable; fk: string; parentId: any }> = ({ child, fk, parentId }) => {
@@ -56,13 +58,14 @@ const ChildList: React.FC<{ child: ResolvedTable; fk: string; parentId: any }> =
 
 export const RecordPage: React.FC = () => {
   const { table: name = "", id = "" } = useParams();
-  const { tables, can, canOpen, canChangeRecord, ai } = useApp();
+  const { tables, can, canOpen, canChangeRecord, ai, config } = useApp();
   const navigate = useNavigate();
   const table = tables[name];
   const [record, setRecord] = useState<Record<string, any> | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>();
   const [editing, setEditing] = useState(false);
+  const [sharing, setSharing] = useState(false);
   const [tab, setTab] = useState(0);
   const [bump, setBump] = useState(0);
   const { labelFor } = useReferences(table);
@@ -107,6 +110,7 @@ export const RecordPage: React.FC = () => {
         {ai?.enabled && <WorkflowButtons workflows={ai.workflows.filter((w) => w.table === name)} recordId={id} record={record} onApplied={() => setBump((b) => b + 1)} />}
         {ai?.enabled && <Button variant="outlined" startIcon={<AutoAwesome />} onClick={() => navigate(`/assistant?table=${name}&id=${encodeURIComponent(id)}`)}>Ask AI</Button>}
         {extensions.recordActions && record && React.createElement(extensions.recordActions, { table: name, record, onChanged: () => setBump((b) => b + 1) })}
+        {canChangeRecord(name, record, "update") && (config as any).sharing !== false && <Button variant="outlined" startIcon={<ShareOutlined />} onClick={() => setSharing(true)}>Share</Button>}
         {canChangeRecord(name, record, "update") && <Button variant="outlined" startIcon={<EditOutlined />} onClick={() => setEditing(true)}>Edit</Button>}
         {canChangeRecord(name, record, "delete") && <Button color="error" startIcon={<DeleteOutline />} onClick={() => del.ask(record)}>Delete</Button>}
       </Box>
@@ -150,6 +154,7 @@ export const RecordPage: React.FC = () => {
           )}
         </Paper>
       )}
+      <ShareDialog table={table} recordId={id} open={sharing} onClose={() => setSharing(false)} />
       <RecordForm table={table} record={record} open={editing} onClose={() => setEditing(false)} onSaved={() => { setEditing(false); load(); }} />
       {del.dialog}
     </Box>
