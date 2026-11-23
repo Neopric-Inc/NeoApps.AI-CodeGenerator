@@ -38,7 +38,7 @@ NAV = [
         ("use-cases.html#property", "Property and real estate"),
         ("use-cases.html#public", "Nonprofit and government"),
         ("use-cases.html#manufacturing", "Manufacturing and quality"),
-        ("use-cases.html#live", "Live, multiplayer and 3D"),
+        ("use-cases.html#live", "Live, 3D, maps and charts"),
         ("use-cases.html#prompt-library", "Prompt library"),
     ]),
     ("pricing.html", "Pricing", None),
@@ -292,6 +292,22 @@ TRAILER = ('<div class="video-frame"><video controls muted playsinline preload="
 LIVE_IDEA = ("Help me plan a multiplayer space game for my team. Players sign in, pick a ship and colour, and join a match with a "
              "code. Everyone in the match sees each other fly and fire in real time, with sound and a scoreboard.")
 
+
+LIVE_IDEAS = [
+    ("Live dispatch map", "Jobs and technicians on a map; pins move as people update their status.",
+     "Build a field service dispatch app with a live map: jobs and technicians as coloured markers on the built-in map, status changes and technician moves shown to every dispatcher instantly, technicians update from their phone."),
+    ("Warehouse 3D view", "Racks and machines in 3D, red, amber or green from their records.",
+     "Build a warehouse and equipment tracker with a 3D view: racks drawn in 3D, coloured by the worst status of their equipment, orbit and zoom, click a rack to open its records."),
+    ("Classroom quiz", "Students answer from their phones and see a live leaderboard.",
+     "Build a classroom quiz game: teachers run a quiz with a join code, students answer from their phones with just a nickname, everyone sees a live leaderboard, final scores are saved."),
+    ("Team whiteboard", "Sticky notes and arrows with everyone's cursor, saved automatically.",
+     "Build a shared whiteboard: sticky notes, text and arrows, every member sees the others' cursors and changes live, boards save automatically."),
+    ("Quote builder with PDF", "Totals update as you go; download a branded quote PDF.",
+     "Build a quoting app: customers, products and numbered quotes with line items, totals calculated from saved prices, and a download button for a branded PDF quote."),
+    ("Live operations dashboard", "Charts that update the moment an order or ticket changes.",
+     "Build an operations dashboard for orders and support tickets with charts (orders per day, revenue this week, open tickets by priority) that refresh for everyone within a second when anything changes."),
+]
+
 # ---------------------------------------------------------------- Home
 FEATURED = [
     ("client-portal", MOCK_PORTAL, "Client portal",
@@ -440,7 +456,11 @@ uc += section("live", "Live, multiplayer and 3D", "Apps where everyone sees chan
     '<li>Ran at 60 frames a second on a MacBook Air, with updates every 50 ms.</li>'
     '<li>The same live building block suits chat, who’s online, live dashboards and classroom quizzes.</li></ul>'
     '<details><summary>Starter prompt</summary>' + prompt_box(escape("Use the NeoApps connector. " + LIVE_IDEA + " Show me the screens and access rules before building."), "Copy game prompt") + '</details>'
-    '<p><a class="text-link" href="#prompt-library">More live app prompts →</a></p></div></div>')
+    '<p><a class="text-link" href="#prompt-library">More live app prompts →</a></p></div></div>'
+    '        <h3 style="margin-top:36px">Ideas you can build today</h3><div class="tiles">' + "".join(
+        '<article class="tile"><h3>' + escape(t) + '</h3><p>' + escape(d) + '</p><details><summary>Starter prompt</summary>'
+        + prompt_box(escape("Use the NeoApps connector. " + q + " Show me the screens and access rules before building."), "Copy prompt") + '</details></article>'
+        for t, d, q in LIVE_IDEAS) + '</div>')
 uc += """    <section class="section white" id="prompt-library">
       <div class="wrap">
         <div class="section-heading">
@@ -459,7 +479,7 @@ uc += """    <section class="section white" id="prompt-library">
             <option value="platform">Platform and SaaS ideas</option>
             <option value="studio">Agent Studio and R&amp;D</option>
             <option value="samples">Repository sample apps</option>
-            <option value="live">Live, multiplayer and 3D</option>
+            <option value="live">Live, 3D, maps and charts</option>
           </select>
         </div>
         <div class="library-meta"><span id="prompt-count" aria-live="polite"></span><span>Copy any prompt; build instructions are included.</span></div>
