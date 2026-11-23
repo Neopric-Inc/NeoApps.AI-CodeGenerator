@@ -14,10 +14,14 @@ export class GameAudio {
   stats = { lasers: 0, explosions: 0, hits: 0 };
 
   /** Must be called from a user gesture (browsers block audio until then). */
-  start() {
-    if (this.ctx) { this.ctx.resume(); return; }
+  /** Film soundtrack: when set, sounds are scheduled at this time instead of "now". */
+  atTime: number | null = null;
+  private t() { return this.atTime ?? this.ctx!.currentTime; }
+
+  start(offline?: BaseAudioContext) {
+    if (this.ctx) { (this.ctx as AudioContext).resume?.(); return; }
     const C = (window.AudioContext || (window as any).webkitAudioContext) as typeof AudioContext;
-    const ctx = new C(); this.ctx = ctx;
+    const ctx = (offline ?? new C()) as AudioContext; this.ctx = ctx;
     this.master = ctx.createGain(); this.master.gain.value = this.muted ? 0 : 0.8;
     const comp = ctx.createDynamicsCompressor(); comp.threshold.value = -14; comp.ratio.value = 4;
     this.master.connect(comp).connect(ctx.destination);
@@ -41,7 +45,7 @@ export class GameAudio {
     this.drumBus = layer(i => (i > 0.45 ? Math.min(1, (i - 0.45) * 3) : 0));
     this.leadBus = layer(i => (i > 0.7 ? Math.min(1, (i - 0.7) * 4) : 0));
     this.nextBeat = ctx.currentTime + 0.1;
-    this.timer = window.setInterval(() => this.schedule(), 50);
+    if (!offline) this.timer = window.setInterval(() => this.schedule(), 50);
   }
   private padBus!: GainNode; private bassBus!: GainNode; private drumBus!: GainNode; private leadBus!: GainNode;
 
@@ -51,7 +55,16 @@ export class GameAudio {
   }
   /** Current output level of the master bus (0 when muted). */
   get masterLevel() { return this.ctx ? this.master.gain.value : 0; }
-  stop() { clearInterval(this.timer); this.ctx?.close(); this.ctx = null; }
+  stop() { clearInterval(this.timer); (this.ctx as AudioContext)?.close?.(); this.ctx = null; }
+
+  /** Film soundtrack: schedule the music for `seconds`, with combat intensity given per second. */
+  scoreOffline(seconds: number, intensityAt: (t: number) => number) {
+    const c = this.ctx!; let t = 0.05, i = 0;
+    for (let s = 0; s < seconds; s += 0.25) for (const l of this.layers) l.gain.gain.setTargetAtTime(l.level(intensityAt(s)), s, 0.4);
+    while (t < seconds) { const bpm = 96 + intensityAt(t) * 44, step = 60 / bpm / 2; this.playStep(i, t, step); i = (i + 1) % 32; t += step; }
+    this.thrGain.gain.setValueAtTime(0.12, 0); this.thrFilter.frequency.setValueAtTime(700, 0);
+    void c;
+  }
 
   thruster(throttle: number, boost: boolean) {
     if (!this.ctx) return; const t = this.ctx.currentTime; const a = Math.max(0, throttle);
@@ -60,7 +73,7 @@ export class GameAudio {
   }
 
   laser(pan = 0) {
-    if (!this.ctx) return; const c = this.ctx, t = c.currentTime; this.stats.lasers++; this.bump(0.05);
+    if (!this.ctx) return; const c = this.ctx, t = this.t(); this.stats.lasers++; this.bump(0.05);
     const o = c.createOscillator(); o.type = "square";
     o.frequency.setValueAtTime(1500 + Math.random() * 200, t); o.frequency.exponentialRampToValueAtTime(180, t + 0.16);
     const g = c.createGain(); g.gain.setValueAtTime(0.18, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
@@ -70,7 +83,7 @@ export class GameAudio {
   }
 
   hit() {
-    if (!this.ctx) return; const c = this.ctx, t = c.currentTime; this.stats.hits++; this.bump(0.12);
+    if (!this.ctx) return; const c = this.ctx, t = this.t(); this.stats.hits++; this.bump(0.12);
     const s = c.createBufferSource(); s.buffer = this.noise;
     const f = c.createBiquadFilter(); f.type = "highpass"; f.frequency.value = 1800;
     const g = c.createGain(); g.gain.setValueAtTime(0.35, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
@@ -81,7 +94,7 @@ export class GameAudio {
   }
 
   explosion(near: boolean) {
-    if (!this.ctx) return; const c = this.ctx, t = c.currentTime; this.stats.explosions++; this.bump(0.35);
+    if (!this.ctx) return; const c = this.ctx, t = this.t(); this.stats.explosions++; this.bump(0.35);
     const vol = near ? 0.9 : 0.35;
     const s = c.createBufferSource(); s.buffer = this.noise;
     const f = c.createBiquadFilter(); f.type = "lowpass"; f.frequency.setValueAtTime(3000, t); f.frequency.exponentialRampToValueAtTime(80, t + 1.4);

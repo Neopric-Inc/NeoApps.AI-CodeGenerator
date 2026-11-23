@@ -65,6 +65,14 @@ function buildShipMesh(look: ShipLook): THREE.Group {
   return g;
 }
 
+let dotTexture: THREE.Texture | null = null;
+function dot(): THREE.Texture {
+  if (dotTexture) return dotTexture;
+  const c = document.createElement("canvas"); c.width = c.height = 64; const x = c.getContext("2d")!;
+  const g = x.createRadialGradient(32, 32, 0, 32, 32, 32); g.addColorStop(0, "rgba(255,255,255,1)"); g.addColorStop(0.35, "rgba(255,255,255,0.75)"); g.addColorStop(1, "rgba(255,255,255,0)");
+  x.fillStyle = g; x.fillRect(0, 0, 64, 64); dotTexture = new THREE.CanvasTexture(c); return dotTexture;
+}
+
 function nameSprite(text: string, color: string): THREE.Sprite {
   const c = document.createElement("canvas"); c.width = 256; c.height = 64;
   const x = c.getContext("2d")!;
@@ -101,7 +109,7 @@ class Ship {
 }
 
 interface Laser { mesh: THREE.Mesh; vel: THREE.Vector3; life: number; owner: string; id: string }
-interface Burst { points: THREE.Points; vels: Float32Array; life: number; max: number }
+interface Burst { points: THREE.Points; vels: Float32Array; life: number; max: number; light?: THREE.PointLight }
 
 export interface EngineEvents {
   onFire?: (p: number[], d: number[], id: string) => void;   // you fired
@@ -121,11 +129,17 @@ export class Engine {
   events: EngineEvents = {};
   myId = "me"; deadUntil = 0; shake = 0; flash = 0;
   /** Render resolution scale: drops on slow devices to hold ~60 FPS, recovers when there is headroom. */
-  quality = 1; remoteShots = 0; renderEnabled = true; private basePR = 1;
+  quality = 1; remoteShots = 0; renderEnabled = true; thrOverride: number | null = null;
+  /** Film mode: time advances only through advance(dt), so footage is smooth on any machine. */
+  simTime: number | null = null;
+  /** Optional camera override (return true to skip the chase camera). */
+  cinema?: (cam: THREE.PerspectiveCamera, t: number) => boolean;
+  now() { return this.simTime ?? performance.now(); }
+  advance(dt: number) { if (this.simTime === null) this.simTime = performance.now(); this.simTime += dt * 1000; this.frame(dt); } private basePR = 1;
   // stats
-  fps = 0; private frames = 0; private fpsAt = performance.now(); frameTimes: number[] = [];
-  private last = performance.now(); private raf = 0; private laserSeq = 0;
-  private laserGeo = new THREE.CylinderGeometry(0.18, 0.18, 6, 6).rotateX(Math.PI / 2);
+  fps = 0; private frames = 0; private fpsAt = this.now(); frameTimes: number[] = [];
+  private last = this.now(); private raf = 0; private laserSeq = 0;
+  private laserGeo = new THREE.CylinderGeometry(0.32, 0.32, 7, 6).rotateX(Math.PI / 2);
   private tmp = new THREE.Vector3(); private tmpQ = new THREE.Quaternion();
 
   constructor(private canvas: HTMLCanvasElement, look: ShipLook, matchSeed: string) {
@@ -197,8 +211,9 @@ export class Engine {
     this.renderer.setSize(w, h, false); this.camera.aspect = w / h; this.camera.updateProjectionMatrix();
   }
 
-  start() { this.last = performance.now(); const loop = () => { this.frame(); this.raf = requestAnimationFrame(loop); }; this.raf = requestAnimationFrame(loop); }
+  start() { this.last = this.now(); const loop = () => { this.frame(); this.raf = requestAnimationFrame(loop); }; this.raf = requestAnimationFrame(loop); }
   stop() { cancelAnimationFrame(this.raf); this.renderer.dispose(); }
+  pause() { cancelAnimationFrame(this.raf); }
 
   myState(): ShipState {
     const m = this.me;
@@ -211,7 +226,7 @@ export class Engine {
     let ship = this.others.get(id);
     if (!ship) { ship = new Ship(look, this.scene, true); ship.pos.fromArray(s.p); ship.quat.fromArray(s.q); this.others.set(id, ship); }
     else ship.setLook(look, this.scene);
-    ship.target = { p: new THREE.Vector3().fromArray(s.p), q: new THREE.Quaternion().fromArray(s.q), v: new THREE.Vector3().fromArray(s.v), at: performance.now() };
+    ship.target = { p: new THREE.Vector3().fromArray(s.p), q: new THREE.Quaternion().fromArray(s.q), v: new THREE.Vector3().fromArray(s.v), at: this.now() };
     ship.hp = s.hp; ship.thr = s.thr;
     if (ship.alive && !s.alive) this.explode(ship.pos, ship.look.color);
     ship.alive = s.alive;
@@ -236,9 +251,11 @@ export class Engine {
     this.lasers.push({ mesh, vel: dir.clone().multiplyScalar(LASER_SPEED), life: LASER_LIFE, owner, id });
   }
 
-  private sparks(at: THREE.Vector3, color: string, count: number) { this.burst(at, color, count, 30, 0.45, 1.6); }
-  private explode(at: THREE.Vector3, color: string) {
-    this.burst(at, color, 160, 70, 1.4, 2.8); this.burst(at, "#ffd27a", 90, 45, 1.0, 2.2);
+  sparks(at: THREE.Vector3, color: string, count: number) { this.burst(at, color, count, 30, 0.45, 1.6); }
+  explode(at: THREE.Vector3, color: string) {
+    this.burst(at, color, 220, 70, 1.6, 3.2); this.burst(at, "#ffd27a", 120, 45, 1.1, 2.6);
+    const light = new THREE.PointLight(0xffb060, 60, 160, 1.6); light.position.copy(at); this.scene.add(light);
+    this.bursts[this.bursts.length - 1].light = light;
     const near = at.distanceTo(this.me.pos) < 160; if (near) this.shake = 1;
     this.events.onExplosion?.(near);
   }
@@ -250,31 +267,31 @@ export class Engine {
       vels.set([v.x, v.y, v.z], i * 3);
     }
     const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
-    const pts = new THREE.Points(g, new THREE.PointsMaterial({ color, size, transparent: true, opacity: 1, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }));
+    const pts = new THREE.Points(g, new THREE.PointsMaterial({ color, size: size * 1.6, map: dot(), transparent: true, opacity: 1, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }));
     this.scene.add(pts); this.bursts.push({ points: pts, vels, life, max: life });
   }
 
-  private damageMe(amount: number, by: string | null) {
+  damageMe(amount: number, by: string | null) {
     const m = this.me;
     if (!m.alive || m.shield > 0) return;
     m.hp = Math.max(0, m.hp - amount); this.flash = 1; this.shake = Math.max(this.shake, 0.5);
     if (by) this.events.onHitBy?.(by, m.hp);
     if (m.hp <= 0) {
-      m.alive = false; this.explode(m.pos, m.look.color); this.deadUntil = performance.now() + 3000;
+      m.alive = false; this.explode(m.pos, m.look.color); this.deadUntil = this.now() + 3000;
       this.events.onDied?.(by);
     }
   }
 
   private step(dt: number) {
     const m = this.me, c = this.controls;
-    if (!m.alive && performance.now() > this.deadUntil) this.respawn();
+    if (!m.alive && this.now() > this.deadUntil) this.respawn();
     if (!m.alive) { /* wait for respawn */ }
     if (m.alive) {
       // orientation: yaw (Y), pitch (X), roll (Z) in the ship's own frame
       this.tmpQ.setFromEuler(new THREE.Euler(c.pitch * TURN.pitch * dt, -c.yaw * TURN.yaw * dt, -c.roll * TURN.roll * dt, "YXZ"));
       m.quat.multiply(this.tmpQ).normalize();
       const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(m.quat);
-      m.thr = c.throttle;
+      m.thr = this.thrOverride ?? c.throttle;
       const max = c.boost && c.throttle > 0 ? BOOST_SPEED : MAX_SPEED;
       m.vel.addScaledVector(forward, c.throttle * ACCEL * (c.boost ? 1.8 : 1) * dt);
       m.vel.multiplyScalar(Math.exp(-DAMPING * dt * (c.throttle === 0 ? 1.4 : 0.6)));
@@ -322,7 +339,7 @@ export class Engine {
     // remote ships: dead reckoning toward the latest state, smoothed
     for (const o of this.others.values()) {
       if (!o.target) continue;
-      const age = (performance.now() - o.target.at) / 1000;
+      const age = (this.now() - o.target.at) / 1000;
       const predicted = o.target.p.clone().addScaledVector(o.target.v, Math.min(age, 0.25));
       o.pos.lerp(predicted, 1 - Math.exp(-14 * dt));
       o.quat.slerp(o.target.q, 1 - Math.exp(-14 * dt));
@@ -350,20 +367,22 @@ export class Engine {
       const pos = b.points.geometry.attributes.position as THREE.BufferAttribute;
       for (let k = 0; k < pos.count; k++) pos.setXYZ(k, pos.getX(k) + b.vels[k * 3] * dt, pos.getY(k) + b.vels[k * 3 + 1] * dt, pos.getZ(k) + b.vels[k * 3 + 2] * dt);
       pos.needsUpdate = true; (b.points.material as THREE.PointsMaterial).opacity = Math.max(0, b.life / b.max);
-      if (b.life <= 0) { this.scene.remove(b.points); b.points.geometry.dispose(); (b.points.material as THREE.Material).dispose(); this.bursts.splice(i, 1); }
+      if (b.light) b.light.intensity = 60 * Math.pow(Math.max(0, b.life / b.max), 3);
+      if (b.life <= 0) { if (b.light) this.scene.remove(b.light); this.scene.remove(b.points); b.points.geometry.dispose(); (b.points.material as THREE.Material).dispose(); this.bursts.splice(i, 1); }
     }
     for (const a of this.asteroids) { a.mesh.rotation.x += a.spin.x * dt; a.mesh.rotation.y += a.spin.y * dt; }
   }
 
-  private frame() {
-    const now = performance.now(); const dt = Math.min(0.05, (now - this.last) / 1000); this.last = now;
+  private frame(fixed?: number) {
+    const now = this.now(); const dt = fixed ?? Math.min(0.05, (now - this.last) / 1000); this.last = now;
     this.frameTimes.push(now); while (this.frameTimes.length && now - this.frameTimes[0] > 1000) this.frameTimes.shift();
-    this.frames++; if (now - this.fpsAt >= 500) { this.fps = Math.round((this.frames * 1000) / (now - this.fpsAt)); this.frames = 0; this.fpsAt = now; this.adapt(); }
+    this.frames++; if (now - this.fpsAt >= 500) { this.fps = Math.round((this.frames * 1000) / (now - this.fpsAt)); this.frames = 0; this.fpsAt = now; if (this.simTime === null) this.adapt(); }
     this.step(dt);
     this.me.sync(); for (const o of this.others.values()) o.sync();
     this.me.group.visible = this.me.alive && !(this.me.shield > 0 && Math.floor(now / 90) % 2 === 0);
-    // chase camera
     const m = this.me;
+    if (this.cinema && this.cinema(this.camera, now / 1000)) { this.flash = Math.max(0, this.flash - dt * 3); if (this.renderEnabled) this.renderer.render(this.scene, this.camera); return; }
+    // chase camera
     const back = new THREE.Vector3(0, 4.5, 16).applyQuaternion(m.quat);
     const want = m.pos.clone().add(back);
     this.camera.position.lerp(want, 1 - Math.exp(-10 * dt));
