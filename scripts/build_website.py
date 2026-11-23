@@ -22,6 +22,8 @@ EXTRA_CSS = """
     .faq details { border-bottom: 1px solid var(--line); padding: 18px 0; }
     .faq summary { cursor: pointer; font-weight: 500; font-size: 1.04rem; }
     .faq p { color: var(--muted); margin: 10px 0 0; }
+    .video-frame video { width: 100%; height: 100%; display: block; object-fit: cover; background: #000; }
+    .video-copy ul { color: var(--muted); margin: 12px 0 16px; padding-left: 18px; }
 """
 
 NAV = [
@@ -36,6 +38,7 @@ NAV = [
         ("use-cases.html#property", "Property and real estate"),
         ("use-cases.html#public", "Nonprofit and government"),
         ("use-cases.html#manufacturing", "Manufacturing and quality"),
+        ("use-cases.html#live", "Live, multiplayer and 3D"),
         ("use-cases.html#prompt-library", "Prompt library"),
     ]),
     ("pricing.html", "Pricing", None),
@@ -280,6 +283,15 @@ COMPARE_TABLE = '''        <div class="compare-wrap" role="region" aria-label="H
           </tbody>
         </table></div>'''
 
+# ---------------------------------------------------------------- Live apps (Starfall Arena trailer)
+TRAILER = ('<div class="video-frame"><video controls muted playsinline preload="none" poster="assets/img/starfall-poster.jpg" '
+           'aria-label="Starfall Arena trailer: ships fly and fight in a 3D asteroid field">'
+           '<source src="assets/video/starfall-trailer.mp4" type="video/mp4">'
+           '<a href="assets/video/starfall-trailer.mp4">Download the Starfall Arena trailer (MP4)</a></video></div>')
+
+LIVE_IDEA = ("Help me plan a multiplayer space game for my team. Players sign in, pick a ship and colour, and join a match with a "
+             "code. Everyone in the match sees each other fly and fire in real time, with sound and a scoreboard.")
+
 # ---------------------------------------------------------------- Home
 FEATURED = [
     ("client-portal", MOCK_PORTAL, "Client portal",
@@ -364,6 +376,11 @@ home = """    <section class="hero">
 + section("proof", "Customer portal example", "ClaimKit for R&amp;D tax-credit consultants", None,
     '        <div class="video-grid"><div class="video-frame"><iframe src="https://www.youtube-nocookie.com/embed/MD_jAxglA_Y?rel=0" title="ClaimKit walkthrough" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div>'
     '<div class="video-copy"><p>Our team built ClaimKit with a coding agent and NeoApps. The portal collects documents and tracks evidence so consultants can review client submissions.</p></div></div>') \
++ section("live-demo", "New: live and 3D apps", "Starfall Arena, a multiplayer game built on NeoApps", None,
+    '        <div class="video-grid">' + TRAILER +
+    '<div class="video-copy"><p>Players sign in, pick a ship and fly together in the browser. Everyone sees each other move and fire as it happens.</p>'
+    '<p>The same live connection works for team chat, who’s-online lists and screens that update on their own.</p>'
+    '<p><a class="text-link" href="use-cases.html#live">See live app ideas and prompts →</a></p></div></div>') \
 + section("plans", "", "Free plan and pricing", "Start free with up to 2 apps. See pricing for plans and app limits.",
     '        <p><a class="text-link" href="pricing.html">See NeoApps pricing →</a></p>') \
 + section("faq", "FAQ", "Before you build your first app", None,
@@ -408,11 +425,22 @@ uc = section("app-types", "Use cases", "Start with the kind of app you need.", "
     '''        <div class="tiles">
           <article class="tile"><h3>Customer portals</h3><p>Clients submit documents and check progress. Give each client access to their own records.</p><a class="text-link" href="index.html#proof">See the ClaimKit walkthrough →</a> <a class="text-link" href="get-started.html#portal-prompt">Get the portal prompt →</a></article>
           <article class="tile"><h3>Internal workflows</h3><p>Employees submit requests, managers approve them, and each decision is recorded.</p><a class="text-link" href="index.html#how-it-works">See the Requests walkthrough →</a></article>
+          <article class="tile"><h3>Live and multiplayer apps</h3><p>Games, team chat and screens that update on their own, for people signed in or anyone with the link.</p><a class="text-link" href="#live">Watch the Starfall Arena trailer →</a></article>
         </div>''', first=True) + section("featured", "Examples", "Three workflows to start with.", "These sample screens show how a NeoApps app can work. Choose an example and copy its prompt to plan your own app.",
     '        <div class="featured-grid">\n' + "\n".join(starter_card(*example) for example in FEATURED)
     + '\n        </div>\n        <p style="margin:20px 0 0"><a class="button" href="get-started.html">Connect your assistant</a> <a class="text-link" href="#prompt-library">Browse more starter prompts →</a></p>')
 for i, (anchor, name, items) in enumerate(INDUSTRIES):
     uc += section(anchor, "Industry", name, None, cards(items), white=bool(i % 2))
+uc += section("live", "Live, multiplayer and 3D", "Apps where everyone sees changes as they happen.",
+    "Starfall Arena is a 3D space dogfight made with NeoApps. Up to eight signed-in players fly in the same match. Every sound in it is made in code.",
+    '        <div class="video-grid">' + TRAILER +
+    '<div class="video-copy"><ul>'
+    '<li>Pick a ship and colour, share a match code and fly together.</li>'
+    '<li>Lasers, hits, explosions, a scoreboard and music that speeds up with the fight.</li>'
+    '<li>Ran at 60 frames a second on a MacBook Air, with updates every 50 ms.</li>'
+    '<li>The same live building block suits chat, who’s online, live dashboards and classroom quizzes.</li></ul>'
+    '<details><summary>Starter prompt</summary>' + prompt_box(escape("Use the NeoApps connector. " + LIVE_IDEA + " Show me the screens and access rules before building."), "Copy game prompt") + '</details>'
+    '<p><a class="text-link" href="#prompt-library">More live app prompts →</a></p></div></div>')
 uc += """    <section class="section white" id="prompt-library">
       <div class="wrap">
         <div class="section-heading">
@@ -431,6 +459,7 @@ uc += """    <section class="section white" id="prompt-library">
             <option value="platform">Platform and SaaS ideas</option>
             <option value="studio">Agent Studio and R&amp;D</option>
             <option value="samples">Repository sample apps</option>
+            <option value="live">Live, multiplayer and 3D</option>
           </select>
         </div>
         <div class="library-meta"><span id="prompt-count" aria-live="polite"></span><span>Copy any prompt; build instructions are included.</span></div>

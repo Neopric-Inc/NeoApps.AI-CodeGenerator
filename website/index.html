@@ -25,13 +25,15 @@
     .faq details { border-bottom: 1px solid var(--line); padding: 18px 0; }
     .faq summary { cursor: pointer; font-weight: 500; font-size: 1.04rem; }
     .faq p { color: var(--muted); margin: 10px 0 0; }
+    .video-frame video { width: 100%; height: 100%; display: block; object-fit: cover; background: #000; }
+    .video-copy ul { color: var(--muted); margin: 12px 0 16px; padding-left: 18px; }
   </style>
 </head>
 <body>
   <header class="topbar">
     <nav class="nav wrap" aria-label="Main navigation">
       <a class="brand" href="index.html" aria-label="NeoApps.AI home"><span class="brand-mark">N</span>NeoApps.AI</a>
-      <div class="nav-links"><a href="index.html" aria-current="page">Home</a><div class="dropdown"><button type="button" onclick="location.href='use-cases.html'">Use cases ▾</button><div class="dropdown-menu"><a href="use-cases.html#healthcare">Healthcare and research</a><a href="use-cases.html#legal">Legal</a><a href="use-cases.html#professional">Accounting and professional services</a><a href="use-cases.html#field">Field operations and compliance</a><a href="use-cases.html#education">Education</a><a href="use-cases.html#insurance">Insurance</a><a href="use-cases.html#property">Property and real estate</a><a href="use-cases.html#public">Nonprofit and government</a><a href="use-cases.html#manufacturing">Manufacturing and quality</a><a href="use-cases.html#prompt-library">Prompt library</a></div></div><a href="pricing.html">Pricing</a><a href="docs.html">Docs</a><div class="dropdown"><button type="button" onclick="location.href='developers.html'">Developers ▾</button><div class="dropdown-menu"><a href="developers.html#open-source">Open source</a><a href="developers.html#local">Run it locally</a><a href="developers.html#rules">Data rules</a><a href="developers.html#extend">Extend it</a><a href="security.html">Security</a><a href="https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator">GitHub ↗</a></div></div><a class="button small" href="get-started.html">Connect assistant</a></div>
+      <div class="nav-links"><a href="index.html" aria-current="page">Home</a><div class="dropdown"><button type="button" onclick="location.href='use-cases.html'">Use cases ▾</button><div class="dropdown-menu"><a href="use-cases.html#healthcare">Healthcare and research</a><a href="use-cases.html#legal">Legal</a><a href="use-cases.html#professional">Accounting and professional services</a><a href="use-cases.html#field">Field operations and compliance</a><a href="use-cases.html#education">Education</a><a href="use-cases.html#insurance">Insurance</a><a href="use-cases.html#property">Property and real estate</a><a href="use-cases.html#public">Nonprofit and government</a><a href="use-cases.html#manufacturing">Manufacturing and quality</a><a href="use-cases.html#live">Live, multiplayer and 3D</a><a href="use-cases.html#prompt-library">Prompt library</a></div></div><a href="pricing.html">Pricing</a><a href="docs.html">Docs</a><div class="dropdown"><button type="button" onclick="location.href='developers.html'">Developers ▾</button><div class="dropdown-menu"><a href="developers.html#open-source">Open source</a><a href="developers.html#local">Run it locally</a><a href="developers.html#rules">Data rules</a><a href="developers.html#extend">Extend it</a><a href="security.html">Security</a><a href="https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator">GitHub ↗</a></div></div><a class="button small" href="get-started.html">Connect assistant</a></div>
       <details class="mobile-nav">
         <summary>Menu</summary>
         <div class="mobile-nav-links"><a href="index.html" aria-current="page">Home</a><a href="use-cases.html">Use cases</a><a href="pricing.html">Pricing</a><a href="docs.html">Docs</a><a href="developers.html">Developers</a><a href="security.html">Security</a><a href="get-started.html">Connect assistant</a></div>
@@ -158,6 +160,15 @@
           <h2>ClaimKit for R&amp;D tax-credit consultants</h2>
         </div>
         <div class="video-grid"><div class="video-frame"><iframe src="https://www.youtube-nocookie.com/embed/MD_jAxglA_Y?rel=0" title="ClaimKit walkthrough" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div><div class="video-copy"><p>Our team built ClaimKit with a coding agent and NeoApps. The portal collects documents and tracks evidence so consultants can review client submissions.</p></div></div>
+      </div>
+    </section>
+    <section class="section" id="live-demo">
+      <div class="wrap">
+        <div class="section-heading">
+          <div class="kicker">New: live and 3D apps</div>
+          <h2>Starfall Arena, a multiplayer game built on NeoApps</h2>
+        </div>
+        <div class="video-grid"><div class="video-frame"><video controls muted playsinline preload="none" poster="assets/img/starfall-poster.jpg" aria-label="Starfall Arena trailer: ships fly and fight in a 3D asteroid field"><source src="assets/video/starfall-trailer.mp4" type="video/mp4"><a href="assets/video/starfall-trailer.mp4">Download the Starfall Arena trailer (MP4)</a></video></div><div class="video-copy"><p>Players sign in, pick a ship and fly together in the browser. Everyone sees each other move and fire as it happens.</p><p>The same live connection works for team chat, who’s-online lists and screens that update on their own.</p><p><a class="text-link" href="use-cases.html#live">See live app ideas and prompts →</a></p></div></div>
       </div>
     </section>
     <section class="section" id="plans">
