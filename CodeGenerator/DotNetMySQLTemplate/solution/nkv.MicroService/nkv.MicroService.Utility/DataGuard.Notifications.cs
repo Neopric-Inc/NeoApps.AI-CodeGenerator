@@ -45,6 +45,9 @@ namespace nkv.MicroService.Utility
             using (var t = Db.Command(Db.CreateTableIfMissing("user_notification_settings", @"user_id INT NOT NULL PRIMARY KEY,
                     email VARCHAR(255) NULL, email_on TINYINT(1) NOT NULL DEFAULT 1,
                     modifiedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"), c)) t.ExecuteNonQuery();
+            // sign-in emails (also created by the email sign-in controller): notification emails fall back to them
+            using (var t = Db.Command(Db.CreateTableIfMissing("user_emails", @"user_id INT NOT NULL PRIMARY KEY, email VARCHAR(254) NOT NULL,
+                    verified_at DATETIME NULL, createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP"), c)) t.ExecuteNonQuery();
             if (Config["notifications"] is not JsonArray rules) return;
             foreach (var n in rules.OfType<JsonObject>())
             {
@@ -168,9 +171,17 @@ namespace nkv.MicroService.Utility
 
         static string EmailFor(DbCommand c, int userId)
         {
-            using var q = Db.Command("SELECT email FROM user_notification_settings WHERE user_id = @u AND email_on = 1 AND email IS NOT NULL AND email <> ''", c.Connection, c.Transaction);
+            // the address set under the bell; otherwise the email the member signs in with (from their invite or email
+            // sign-in), so invited people get emails without setting anything up. Email turned off under the bell wins.
+            using var q = Db.Command(@"SELECT s.email, s.email_on FROM user_notification_settings s WHERE s.user_id = @u", c.Connection, c.Transaction);
             q.Parameters.AddWithValue("@u", userId);
-            return q.ExecuteScalar() as string;
+            string set = null;
+            using (var r = q.ExecuteReader())
+                if (r.Read()) { if (Convert.ToInt32(r.GetValue(1)) != 1) return null; set = r.IsDBNull(0) ? null : r.GetString(0); }
+            if (!string.IsNullOrWhiteSpace(set)) return set;
+            using var e = Db.Command("SELECT email FROM user_emails WHERE user_id = @u", c.Connection, c.Transaction);
+            e.Parameters.AddWithValue("@u", userId);
+            return e.ExecuteScalar() is string signIn && signIn.Contains('@') ? signIn : null;
         }
 
         /// <summary>Active users behind one "notify" entry. Within a tenant, only users of the same tenant.</summary>
