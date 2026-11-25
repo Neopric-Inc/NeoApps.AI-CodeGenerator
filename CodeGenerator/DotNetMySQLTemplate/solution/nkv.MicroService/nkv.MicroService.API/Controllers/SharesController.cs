@@ -356,7 +356,8 @@ namespace nkv.MicroService.API.Controllers
             if (!Enabled) return Gone("Sharing is turned off for this app.");
             using var c = Open();
             if (Mine(c, id) == null) return Gone("Link not found.");
-            using var q = Db.Command("UPDATE share_links SET nonce = @n WHERE share_id = @id", c);
+            // a used-up link (response limit reached) starts over with the new link; otherwise it would only say "closed"
+            using var q = Db.Command("UPDATE share_links SET nonce = @n, responses = CASE WHEN max_responses IS NOT NULL AND responses >= max_responses THEN 0 ELSE responses END WHERE share_id = @id", c);
             q.Parameters.AddWithValue("@n", NewNonce());
             q.Parameters.AddWithValue("@id", id);
             q.ExecuteNonQuery();
