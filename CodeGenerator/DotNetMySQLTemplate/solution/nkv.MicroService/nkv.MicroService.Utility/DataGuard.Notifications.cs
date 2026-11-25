@@ -200,7 +200,15 @@ namespace nkv.MicroService.Utility
                 else if (s.StartsWith("role:", StringComparison.OrdinalIgnoreCase))
                 { sql = "SELECT u.user_id FROM users u JOIN roles r ON r.role_id = u.role_id WHERE r.role_name = @p AND u.isActive = 1"; p = s[5..]; }
                 else if (row.GetValueOrDefault(s) is { } val && Str(val) is { } sv)
-                { sql = $"SELECT user_id FROM users WHERE ({UserIdText("user_id")} = @p OR username = @p) AND isActive = 1"; p = sv; }
+                {
+                    // one person, or a list (mentions: "@ana, bob@x.com 12"): user ids, usernames or sign-in emails
+                    var names = Regex.Split(sv, @"[,;\s]+").Select(x => x.Trim().TrimStart('@')).Where(x => x.Length > 0).Distinct().Take(50).ToList();
+                    if (names.Count == 0) return ids;
+                    var ps = string.Join(", ", names.Select((_, i) => "@p" + i));
+                    sql = $@"SELECT user_id FROM users WHERE isActive = 1 AND ({UserIdText("user_id")} IN ({ps}) OR username IN ({ps})
+                             OR user_id IN (SELECT user_id FROM user_emails WHERE email IN ({ps})))";
+                    p = names;
+                }
             }
             else if (who is JsonObject o && o["column"]?.GetValue<string>() is { } col && Str(row.GetValueOrDefault(col)) is { } fk)
             {
@@ -213,7 +221,8 @@ namespace nkv.MicroService.Utility
             if (TenancyEnabled && caller?.Tenant != null)
                 sql = $"SELECT q.user_id FROM ({sql}) q JOIN user_tenants ut ON ut.user_id = q.user_id WHERE ut.tenant_id = {caller.Tenant.Value}";
             using var cmd = Db.Command(sql, c.Connection, c.Transaction);
-            cmd.Parameters.AddWithValue("@p", p);
+            if (p is List<string> list) for (var i = 0; i < list.Count; i++) cmd.Parameters.AddWithValue("@p" + i, list[i]);
+            else cmd.Parameters.AddWithValue("@p", p);
             using var rd = cmd.ExecuteReader();
             while (rd.Read()) ids.Add(Convert.ToInt32(rd.GetValue(0)));
             return ids;

@@ -221,10 +221,11 @@ internal static class UiConfigTools
                                "title": "Your case {case_number} was {status}" },
                              { "table": "cases", "when": { "changed": "assignee_id" }, "notify": [{ "column": "assignee_id", "table": "members", "userColumn": "user_id" }] } ]
               The bell in the top bar. "when": { "on": "create" } (default), { "to": state(s) } (column: the lifecycle's, or
-              "column"), or { "changed": column }. "notify": "creator", "role:Name", a column holding a users id or login name, or
+              "column"), or { "changed": column }. "notify": "creator", "role:Name", a column holding a users id or login name (or a list of them, e.g. a
+              "mentions" column "@ana, bob@x.com": everyone listed), or
               { column, table, userColumn } for a column pointing at a row that holds the user. "title": text with {column} and
               {id} placeholders. The person who made the change is never notified. Rows are written in the same transaction as
-              the change. "email": each person adds their address under the bell; sent when the API has
+              the change. "email": to the address set under the bell, else the email the member signs in with; sent when the API has
               Notifications__Email__From plus Notifications__Email__AcsConnectionString or SmtpHost/SmtpUser/SmtpPassword
               (environment only), with Notifications__AppUrl for the link, or a relay that sends for the app
               (Notifications__Relay__Url + Notifications__Relay__Token; NeoApps Cloud sets these, so apps hold no email key).
