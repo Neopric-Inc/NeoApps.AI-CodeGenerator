@@ -186,8 +186,11 @@ namespace nkv.MicroService.API.Controllers
             using var c = OpenInvites();
             var i = MyInvite(c, id);
             if (i == null || u == null) return NotFound(new APIResponse(ResponseCode.ERROR, "Invite not found"));
-            Exec(c, "UPDATE member_invites SET is_open = @o, nonce = @n WHERE invite_id = @id",
-                ("@o", (u.is_open ?? i.IsOpen) ? 1 : 0), ("@n", u.regenerate ? Convert.ToHexString(RandomNumberGenerator.GetBytes(24)) : i.Nonce), ("@id", id));
+            // a new link for a used-up invite starts over (fresh uses, open again); otherwise the new link would only say "already used"
+            var restart = u.regenerate && i.Uses >= i.MaxUses;
+            Exec(c, "UPDATE member_invites SET is_open = @o, nonce = @n, uses = @u WHERE invite_id = @id",
+                ("@o", (u.is_open ?? (restart || i.IsOpen)) ? 1 : 0), ("@n", u.regenerate ? Convert.ToHexString(RandomNumberGenerator.GetBytes(24)) : i.Nonce),
+                ("@u", restart ? 0 : i.Uses), ("@id", id));
             return Ok(new APIResponse(ResponseCode.SUCCESS, "Saved", DescribeInvite(LoadInvite(c, id))));
         }
 
