@@ -25,7 +25,8 @@ namespace nkv.MicroService.Utility
 
         static partial void StartImpl(IServiceProvider services)
         {
-            if (DataGuard.Config["jobs"] is not JsonObject jobs) return;
+            // deadline checks only; "schedules" are run by the API's JobScheduler (it also works when the app scales to zero)
+            if (DataGuard.Config["jobs"] is not JsonObject jobs || jobs["deadlines"] is not JsonArray { Count: > 0 }) return;
             var every = jobs["everySeconds"]?.GetValue<int>() ?? 60;
             _jobsTimer = new Timer(_ => RunScheduledNow(), null, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(every));
             if (Db.PauseFriendly)

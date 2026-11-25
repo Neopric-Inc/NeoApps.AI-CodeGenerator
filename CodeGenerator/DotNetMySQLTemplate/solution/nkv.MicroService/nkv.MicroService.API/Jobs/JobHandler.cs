@@ -111,7 +111,19 @@ namespace nkv.MicroService.API.Jobs
         {
             Store.SaveState(JobId, State);
             if (Store.Transition(JobId, "running", "awaiting_approval", result: proposal))
+            {
                 Store.AddEvent(JobId, "approval", message ?? "Waiting for approval.", null, null);
+                // a scheduled run has nobody watching its feed: tell the people who approve it (bell + email)
+                if (Input["schedule"] is JsonObject sch)
+                    try
+                    {
+                        var who = new System.Collections.Generic.HashSet<int> { User.UserId };
+                        foreach (var n in sch["notify"] as JsonArray ?? new JsonArray())
+                            if (n?.ToString() is { } w) who.UnionWith(nkv.MicroService.Utility.DataGuard.UsersFor(w));
+                        nkv.MicroService.Utility.DataGuard.NotifyUsers(who, $"Ready for approval: {sch["title"] ?? Kind}. Open Background jobs to review it.", actor: "schedule");
+                    }
+                    catch (Exception) { /* the job itself is fine; the feed still shows it */ }
+            }
             Paused = true;
         }
 

@@ -5,7 +5,7 @@ import {
 } from "@mui/material";
 import { useApp } from "../AppContext";
 import { WorkflowDialog } from "../ai/Workflows";
-import { approveJob, cancelJob, Job, listJobs, rejectJob, useJobFeed } from "./jobsApi";
+import { approveJob, cancelJob, Job, JobSchedule, listJobs, listSchedules, rejectJob, runSchedules, useJobFeed } from "./jobsApi";
 import { JobFeed, JobStatusChip } from "./JobFeed";
 import { JobFiles } from "./JobFile";
 
@@ -66,12 +66,21 @@ const JobDialog: React.FC<{ jobId: string; onClose: () => void }> = ({ jobId, on
 
 /** Background jobs the user started (administrators: everyone's), refreshed every few seconds. */
 export const JobsPage: React.FC = () => {
-  const { ai } = useApp();
+  const { ai, me } = useApp();
   const [jobs, setJobs] = useState<Job[]>([]);
+  const [schedules, setSchedules] = useState<JobSchedule[]>([]);
+  const [running, setRunning] = useState(false);
   const [error, setError] = useState<string>();
   const [open, setOpen] = useState<Job | null>(null);
 
-  const load = useCallback(() => listJobs().then((j) => { setJobs(j); setError(undefined); }).catch((e) => setError(e.message)), []);
+  const load = useCallback(() => {
+    listJobs().then((j) => { setJobs(j); setError(undefined); }).catch((e) => setError(e.message));
+    if (me?.is_admin) listSchedules().then((s) => setSchedules(s.filter((x) => !x.id?.startsWith("__")))).catch(() => setSchedules([]));
+  }, [me?.is_admin]);
+  const runNow = () => {
+    setRunning(true);
+    runSchedules().then((s) => setSchedules(s.filter((x) => !x.id?.startsWith("__")))).catch((e) => setError(e.message)).finally(() => { setRunning(false); load(); });
+  };
   useEffect(() => {
     load();
     const t = setInterval(load, 5000);
@@ -126,6 +135,38 @@ export const JobsPage: React.FC = () => {
           </TableBody>
         </Table>
       </Paper>
+      {schedules.length > 0 && (
+        <Paper variant="outlined" sx={{ mt: 3 }}>
+          <Box sx={{ display: "flex", alignItems: "center", px: 2, pt: 1.5 }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>Schedules</Typography>
+            <Button size="small" sx={{ ml: "auto" }} disabled={running} onClick={runNow}>Run what's due now</Button>
+          </Box>
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell sx={{ fontWeight: 600 }}>Schedule</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Next run</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Last run</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Last result</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {schedules.map((s) => (
+                <TableRow key={s.id}>
+                  <TableCell>{s.id}</TableCell>
+                  <TableCell sx={{ whiteSpace: "nowrap" }}>{s.nextRun ? when(s.nextRun) : "-"}</TableCell>
+                  <TableCell sx={{ whiteSpace: "nowrap" }}>{s.lastRun ? when(s.lastRun) : "-"}</TableCell>
+                  <TableCell>
+                    <Typography variant="body2" color={s.error || s.status === "failed" || s.status === "invalid" ? "error" : "text.secondary"}>
+                      {s.error || s.lastMessage || s.status || "-"}
+                    </Typography>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Paper>
+      )}
       {open && wfOf(open) && (
         <WorkflowDialog wf={wfOf(open)!} jobId={open.job_id} recordId={open.input?.recordId} onClose={() => { setOpen(null); load(); }} />
       )}

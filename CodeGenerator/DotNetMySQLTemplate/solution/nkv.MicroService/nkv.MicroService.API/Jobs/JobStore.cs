@@ -12,7 +12,7 @@ using MySqlConnector;
 namespace nkv.MicroService.API.Jobs
 {
     /// <summary>
-    /// Jobs and their event feed in MySQL (background_jobs, background_job_events: created on first use, not app tables).
+    /// Jobs and their event feed in MySQL (background_jobs, background_job_events, job_schedules: created on first use, not app tables).
     /// MySQL is the record; every change also pings Redis so open feeds update at once (<see cref="JobSignals"/>).
     /// Status flow: queued → running → (awaiting_approval → approved → running)* → completed | failed | cancelled | rejected.
     /// </summary>
@@ -82,6 +82,9 @@ namespace nkv.MicroService.API.Jobs
                         Exec(c, Db.CreateTableIfMissing("background_job_events", @"event_id BIGINT AUTO_INCREMENT PRIMARY KEY, job_id CHAR(32) NOT NULL,
                             level VARCHAR(10) NOT NULL, message VARCHAR(1000) NOT NULL, progress INT NULL, data JSON NULL,
                             createdAt DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3), KEY ix_job_events (job_id, event_id)"));
+                        Exec(c, Db.CreateTableIfMissing("job_schedules", @"schedule_id VARCHAR(100) NOT NULL PRIMARY KEY, spec VARCHAR(2000) NULL,
+                            next_run_at DATETIME NULL, last_run_at DATETIME NULL, last_status VARCHAR(30) NULL, last_message VARCHAR(1000) NULL,
+                            runs INT NOT NULL DEFAULT 0, tick_seq BIGINT NULL, modifiedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP"));
                         _schemaReady = true;
                     }
             return c;
