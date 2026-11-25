@@ -7,15 +7,16 @@ import FileDownloadOutlined from "@mui/icons-material/FileDownloadOutlined";
 import { useApp } from "../AppContext";
 import { AiFile, deleteFile, downloadFile, listFiles, openFile, uploadFile } from "./aiApi";
 
+import { t, language, tx } from "../i18n";
 const size = (n: number) => (n > 1_000_000 ? `${(n / 1_000_000).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1000))} KB`);
 const STATUS: Record<string, { label: string; color: "success" | "warning" | "error" | "default" }> = {
-  indexed: { label: "Searchable", color: "success" },
-  indexing: { label: "Indexing", color: "default" },
-  needs_ocr: { label: "Reading scan…", color: "default" },
-  reading: { label: "Reading scan…", color: "default" },
-  stored: { label: "Stored", color: "default" },
-  no_text: { label: "No text", color: "warning" },
-  failed: { label: "Couldn't read", color: "error" },
+  indexed: { label: t("Searchable"), color: "success" },
+  indexing: { label: t("Indexing"), color: "default" },
+  needs_ocr: { label: t("Reading scan…"), color: "default" },
+  reading: { label: t("Reading scan…"), color: "default" },
+  stored: { label: t("Stored"), color: "default" },
+  no_text: { label: t("No text"), color: "warning" },
+  failed: { label: t("Couldn't read"), color: "error" },
 };
 
 /** Files attached to a record. Uploaded text is indexed so the assistant can search and cite it. */
@@ -48,7 +49,7 @@ export const FilesPanel: React.FC<{ table: string; recordId: string; onChange?: 
     try {
       for (const f of Array.from(list)) {
         const res = await uploadFile(table, recordId, f);
-        if (res.status === "failed") setError(`${res.file_name}: ${res.error || "couldn't read this file"}`);
+        if (res.status === "failed") setError(`${res.file_name}: ${tx(res.error) || t("couldn't read this file")}`);
       }
       load();
       onChange?.();
@@ -69,12 +70,12 @@ export const FilesPanel: React.FC<{ table: string; recordId: string; onChange?: 
           sx={{
             fontWeight: 600,
             flex: 1
-          }}>Files</Typography>
+          }}>{t("Files")}</Typography>
         {canEdit && (
           <>
             <input ref={input} type="file" hidden multiple onChange={(e) => upload(e.target.files)} />
             <Button size="small" variant="outlined" startIcon={uploading ? <CircularProgress size={14} /> : <UploadFile />} disabled={uploading} onClick={() => input.current?.click()}>
-              {uploading ? "Uploading…" : "Upload"}
+              {uploading ? t("Uploading…") : t("Upload")}
             </Button>
           </>
         )}
@@ -84,23 +85,23 @@ export const FilesPanel: React.FC<{ table: string; recordId: string; onChange?: 
         <Typography variant="body2" sx={{
           color: "text.secondary"
         }}>
-          {canEdit ? "Drop any files here: PDFs, scans, photos, Word, Excel, PowerPoint, e-mails or ZIPs. Their text is read so the assistant can search and cite them." : "No files attached."}
+          {canEdit ? t("Drop any files here: PDFs, scans, photos, Word, Excel, PowerPoint, e-mails or ZIPs. Their text is read so the assistant can search and cite them.") : t("No files attached.")}
         </Typography>
       ) : (
         <List dense disablePadding>
           {files.map((f) => (
             <ListItem key={f.file_id} disableGutters
               secondaryAction={<>
-                <Tooltip title="Download"><IconButton size="small" aria-label={`Download ${f.file_name}`} onClick={() => downloadFile(f.file_id, f.file_name).catch((e) => setError(e.message))}>
+                <Tooltip title={t("Download")}><IconButton size="small" aria-label={`Download ${f.file_name}`} onClick={() => downloadFile(f.file_id, f.file_name).catch((e) => setError(e.message))}>
                   <FileDownloadOutlined fontSize="small" /></IconButton></Tooltip>
                 {(can(table, "update") || can(table, "delete")) && (
-                <Tooltip title="Remove file"><IconButton edge="end" size="small" aria-label={`Remove ${f.file_name}`} onClick={async () => { await deleteFile(f.file_id).catch((e) => setError(e.message)); load(); onChange?.(); }}>
+                <Tooltip title={t("Remove file")}><IconButton edge="end" size="small" aria-label={`Remove ${f.file_name}`} onClick={async () => { await deleteFile(f.file_id).catch((e) => setError(e.message)); load(); onChange?.(); }}>
                   <DeleteOutline fontSize="small" /></IconButton></Tooltip>)}
               </>}>
               <ListItemIcon sx={{ minWidth: 34 }}><DescriptionOutlined fontSize="small" /></ListItemIcon>
               <ListItemText
-                primary={<Box component="span" sx={{ cursor: "pointer", color: "primary.main", "&:hover": { textDecoration: "underline" } }} title="Open" onClick={() => openFile(f.file_id, f.file_name).catch((e) => setError(e.message))}>{f.file_name}</Box>}
-                secondary={`${size(f.size_bytes)}${f.pages ? ` · ${f.pages} page${f.pages === 1 ? "" : "s"}` : ""} · ${f.createdBy} · ${new Date(f.createdAt).toLocaleDateString()}`} />
+                primary={<Box component="span" sx={{ cursor: "pointer", color: "primary.main", "&:hover": { textDecoration: "underline" } }} title={t("Open")} onClick={() => openFile(f.file_id, f.file_name).catch((e) => setError(e.message))}>{f.file_name}</Box>}
+                secondary={`${size(f.size_bytes)}${f.pages ? " · " + t("{count} pages", { count: f.pages }) : ""} · ${f.createdBy} · ${new Date(f.createdAt).toLocaleDateString(language())}`} />
               <Tooltip title={f.error || ""}><Chip size="small" label={STATUS[f.status]?.label || f.status} color={STATUS[f.status]?.color || "default"} variant="outlined" sx={{ mr: 9 }} /></Tooltip>
             </ListItem>
           ))}

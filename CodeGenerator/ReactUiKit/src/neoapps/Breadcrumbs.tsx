@@ -6,6 +6,7 @@ import { useApp } from "./AppContext";
 import { getRecord } from "./api";
 import { extensions } from "./customExtensions";
 
+import { t, tx } from "./i18n";
 /**
  * Breadcrumbs that follow how the user actually got here: a sidebar click starts a new trail, following links
  * (a list row, a child record, a related record) extends it, and going back to a page already in the trail
@@ -24,7 +25,7 @@ const RECORD = /^\/r\/([^/]+)\/([^/]+)$/;
 const LIST = /^\/r\/([^/]+)$/;
 const FIXED: Record<string, string> = {
   "/assistant": "Assistant", "/jobs": "Background jobs", "/admin/members": "Members",
-  "/admin/roles": "Roles & permissions", "/admin/customize": "Customize UI",
+  "/admin/roles": "Roles & permissions", "/admin/customize": "Customize UI", // translated where shown
 };
 const recordLabels: Record<string, string> = {};
 
@@ -78,8 +79,8 @@ export const Breadcrumbs: React.FC = () => {
       return prev && pathOf(prev) === `/r/${m[1]}` ? name : `${meta?.singular || m[1]}: ${name}`;
     }
     const nav = (extensions.nav || []).find((n) => n.to === path);
-    if (nav) return nav.label;
-    return FIXED[path] || path.split("/").filter(Boolean).pop()?.replace(/[-_]/g, " ") || "Page";
+    if (nav) return tx(nav.label);
+    return FIXED[path] ? t(FIXED[path]) : path.split("/").filter(Boolean).pop()?.replace(/[-_]/g, " ") || t("Page");
   };
 
   // the sidebar group of the first page, shown as plain text for orientation
@@ -89,7 +90,7 @@ export const Breadcrumbs: React.FC = () => {
 
   return (
     <MuiBreadcrumbs separator={<NavigateNextIcon fontSize="small" />} sx={{ mb: 2, "& .MuiBreadcrumbs-ol": { flexWrap: "wrap" } }}>
-      <Link component={RouterLink} to="/" underline="hover" color="inherit" onClick={markMenuNavigation}>Dashboard</Link>
+      <Link component={RouterLink} to="/" underline="hover" color="inherit" onClick={markMenuNavigation}>{t("Dashboard")}</Link>
       {group && <Typography
         sx={{
           color: "text.secondary",

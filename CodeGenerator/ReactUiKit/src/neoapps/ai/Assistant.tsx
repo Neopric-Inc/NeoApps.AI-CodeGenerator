@@ -12,6 +12,7 @@ import { AiMessage, ask, conversationMessages, conversations, deleteConversation
 import { Answer } from "./Answer";
 import { WorkflowButtons } from "./Workflows";
 
+import { t, language } from "../i18n";
 const TOOL_LABELS: Record<string, string> = {
   search_documents: "Searched documents",
   query_records: "Read records",
@@ -65,7 +66,7 @@ export const Assistant: React.FC = () => {
   if (!ai.enabled)
     return (
       <Alert severity="info">
-        The assistant isn't set up yet. {ai.configured ? "It's turned off in the app's AI settings." : "The app's owner can turn it on in the app's AI settings."}
+        {t("The assistant isn't set up yet.")}{" "}{ai.configured ? t("It's turned off in the app's AI settings.") : t("The app's owner can turn it on in the app's AI settings.")}
       </Alert>
     );
 
@@ -76,7 +77,7 @@ export const Assistant: React.FC = () => {
     <Box sx={{ display: "flex", gap: 2, height: { md: "calc(100vh - 112px)" }, flexDirection: { xs: "column", md: "row" } }}>
       <Paper variant="outlined" sx={{ width: { md: 260 }, flexShrink: 0, borderRadius: 2, display: "flex", flexDirection: "column", overflow: "hidden" }}>
         <Box sx={{ p: 1.5 }}>
-          <Button fullWidth variant="contained" startIcon={<AddIcon />} onClick={() => { open(undefined); setParams({}); }}>New conversation</Button>
+          <Button fullWidth variant="contained" startIcon={<AddIcon />} onClick={() => { open(undefined); setParams({}); }}>{t("New conversation")}</Button>
         </Box>
         <Divider />
         <List dense sx={{ flex: 1, overflowY: "auto", maxHeight: { xs: 200, md: "none" } }}>
@@ -85,11 +86,11 @@ export const Assistant: React.FC = () => {
             sx={{
               color: "text.secondary",
               p: 2
-            }}>No conversations yet.</Typography>}
+            }}>{t("No conversations yet.")}</Typography>}
           {convs.map((c) => (
             <ListItemButton key={c.conversation_id} selected={c.conversation_id === current} onClick={() => open(c.conversation_id)}
               sx={{ "& .del": { visibility: "hidden" }, "&:hover .del": { visibility: "visible" } }}>
-              <ListItemText primary={c.title} secondary={new Date(c.modifiedAt).toLocaleDateString()}
+              <ListItemText primary={c.title} secondary={new Date(c.modifiedAt).toLocaleDateString(language())}
                 slotProps={{
                   primary: { noWrap: true, sx: { fontSize: 14 } }
                 }} />
@@ -112,7 +113,7 @@ export const Assistant: React.FC = () => {
                   color: "text.secondary",
                   textTransform: "uppercase",
                   letterSpacing: 0.5
-                }}>Workflows</Typography>
+                }}>{t("Workflows")}</Typography>
               <WorkflowButtons workflows={globalWorkflows} vertical />
             </Box>
           </>
@@ -136,7 +137,7 @@ export const Assistant: React.FC = () => {
                   mt: 0.5,
                   mb: 3
                 }}>
-                Ask about your documents and records. Answers cite the source passages{ctxLabel ? `; this conversation starts from ${ctxLabel}` : ""}.
+                {ctxLabel ? t("Ask about your documents and records. Answers cite the source passages; this conversation starts from {item}.", { item: ctxLabel }) : t("Ask about your documents and records. Answers cite the source passages.")}
               </Typography>
               <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, justifyContent: "center" }}>
                 {ai.suggestions.map((s) => <Chip key={s} label={s} variant="outlined" onClick={() => send(s)} sx={{ height: "auto", py: 0.75, "& .MuiChip-label": { whiteSpace: "normal" } }} />)}
@@ -153,15 +154,15 @@ export const Assistant: React.FC = () => {
                 <Box sx={{ maxWidth: "85%", bgcolor: m.error ? "#fff5f5" : "grey.50", border: 1, borderColor: m.error ? "error.light" : "divider", px: 2, py: 1.25, borderRadius: 2 }}>
                   {m.pending ? (
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1, color: "text.secondary" }}>
-                      <CircularProgress size={16} /> <Typography variant="body2">Searching documents and records…</Typography>
+                      <CircularProgress size={16} /> <Typography variant="body2">{t("Searching documents and records…")}</Typography>
                     </Box>
                   ) : m.error ? <Typography variant="body2" color="error">{m.content}</Typography> : (
                     <>
                       <Answer text={m.content} citations={m.citations} />
                       {(m.tools?.length || 0) > 0 && (
                         <Box sx={{ display: "flex", gap: 0.5, flexWrap: "wrap", mt: 1 }}>
-                          {m.tools!.map((t) => <Chip key={t} size="small" label={TOOL_LABELS[t] || t} sx={{ height: 20, fontSize: 11 }} />)}
-                          {(m.citations?.length || 0) > 0 && <Chip size="small" color="primary" variant="outlined" label={`${m.citations!.length} source${m.citations!.length > 1 ? "s" : ""}`} sx={{ height: 20, fontSize: 11 }} />}
+                          {m.tools!.map((tool) => <Chip key={tool} size="small" label={t(TOOL_LABELS[tool] || tool)} sx={{ height: 20, fontSize: 11 }} />)}
+                          {(m.citations?.length || 0) > 0 && <Chip size="small" color="primary" variant="outlined" label={t("{count} sources", { count: m.citations!.length })} sx={{ height: 20, fontSize: 11 }} />}
                         </Box>
                       )}
                     </>
@@ -174,8 +175,8 @@ export const Assistant: React.FC = () => {
         </Box>
         <Divider />
         <Box component="form" onSubmit={(e) => { e.preventDefault(); send(input); }} sx={{ p: 1.5, display: "flex", gap: 1, alignItems: "flex-end" }}>
-          {ctxLabel && !current && <Tooltip title="The assistant will focus on this record and its documents"><Chip size="small" label={ctxLabel} onDelete={() => setParams({})} sx={{ mb: 1 }} /></Tooltip>}
-          <TextField fullWidth multiline maxRows={6} size="small" placeholder="Ask a question…" value={input} onChange={(e) => setInput(e.target.value)}
+          {ctxLabel && !current && <Tooltip title={t("The assistant will focus on this record and its documents")}><Chip size="small" label={ctxLabel} onDelete={() => setParams({})} sx={{ mb: 1 }} /></Tooltip>}
+          <TextField fullWidth multiline maxRows={6} size="small" placeholder={t("Ask a question…")} value={input} onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(input); } }} disabled={busy} />
           <Button type="submit" variant="contained" disabled={busy || !input.trim()} sx={{ minWidth: 0, px: 1.5, py: 1 }}><SendIcon fontSize="small" /></Button>
         </Box>

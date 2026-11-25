@@ -8,6 +8,7 @@ import { resolveTable } from "../config";
 import { ICONS, Icon } from "../icons";
 import { FieldConfig, TableConfig, UiConfig, Widget } from "../types";
 
+import { t } from "../i18n";
 const WIDGETS: Widget[] = ["text", "textarea", "number", "currency", "percent", "date", "datetime", "checkbox", "select", "reference", "email", "url", "color"];
 const clone = <T,>(o: T): T => JSON.parse(JSON.stringify(o || {}));
 
@@ -83,7 +84,7 @@ export const Customize: React.FC = () => {
       setDraft(JSON.parse(importText));
       setImporting(false);
     } catch (e: any) {
-      setError("Invalid JSON: " + e.message);
+      setError(t("Invalid JSON: {error}", { error: e.message }));
     }
   };
 
@@ -94,40 +95,40 @@ export const Customize: React.FC = () => {
         <Box sx={{ flex: 1, minWidth: 260 }}>
           <Typography variant="h5" sx={{
             fontWeight: 700
-          }}>Customize UI</Typography>
+          }}>{t("Customize UI")}</Typography>
           <Typography variant="body2" sx={{
             color: "text.secondary"
-          }}>Changes preview live. Save to apply them for everyone in this workspace.</Typography>
+          }}>{t("Changes preview live. Save to apply them for everyone in this workspace.")}</Typography>
         </Box>
-        <Button onClick={() => setImporting(true)}>Import JSON</Button>
-        <Button onClick={exportJson}>Export JSON</Button>
-        <Button onClick={() => setDraft(clone(baseConfig))}>Discard changes</Button>
-        <Button variant="contained" onClick={save}>Save</Button>
+        <Button onClick={() => setImporting(true)}>{t("Import JSON")}</Button>
+        <Button onClick={exportJson}>{t("Export JSON")}</Button>
+        <Button onClick={() => setDraft(clone(baseConfig))}>{t("Discard changes")}</Button>
+        <Button variant="contained" onClick={save}>{t("Save")}</Button>
       </Box>
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(undefined)}>{error}</Alert>}
       <Paper variant="outlined" sx={{ borderRadius: 2, overflow: "hidden" }}>
         <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ borderBottom: 1, borderColor: "divider", px: 1 }}>
-          <Tab label="App" /><Tab label="Menu" /><Tab label="Tables & fields" />
+          <Tab label={t("App")} /><Tab label={t("Menu")} /><Tab label={t("Tables & fields")} />
         </Tabs>
 
         {tab === 0 && (
           <Box sx={{ p: 3, display: "grid", gap: 2, maxWidth: 560 }}>
-            <TextField label="App name" value={draft.appName || ""} onChange={(e) => update((d) => { d.appName = e.target.value; })} />
-            <TextField label="Tagline" value={draft.tagline || ""} onChange={(e) => update((d) => { d.tagline = e.target.value; })} />
+            <TextField label={t("App name")} value={draft.appName || ""} onChange={(e) => update((d) => { d.appName = e.target.value; })} />
+            <TextField label={t("Tagline")} value={draft.tagline || ""} onChange={(e) => update((d) => { d.tagline = e.target.value; })} />
             <Box sx={{ display: "flex", gap: 2 }}>
-              <TextField label="Primary color" type="color" sx={{ width: 160 }} value={draft.theme?.primary || "#3b5bdb"} onChange={(e) => update((d) => { d.theme = { ...(d.theme || {}), primary: e.target.value }; })} />
-              <TextField label="Secondary color" type="color" sx={{ width: 160 }} value={draft.theme?.secondary || "#0ca678"} onChange={(e) => update((d) => { d.theme = { ...(d.theme || {}), secondary: e.target.value }; })} />
+              <TextField label={t("Primary color")} type="color" sx={{ width: 160 }} value={draft.theme?.primary || "#3b5bdb"} onChange={(e) => update((d) => { d.theme = { ...(d.theme || {}), primary: e.target.value }; })} />
+              <TextField label={t("Secondary color")} type="color" sx={{ width: 160 }} value={draft.theme?.secondary || "#0ca678"} onChange={(e) => update((d) => { d.theme = { ...(d.theme || {}), secondary: e.target.value }; })} />
             </Box>
-            <TextField select label="Dashboard cards" value={Array.from(new Set((draft.dashboard?.cards || []).map((c) => c.table)))} helperText="Leave empty to show the first eight menu items."
+            <TextField select label={t("Dashboard cards")} value={Array.from(new Set((draft.dashboard?.cards || []).map((c) => c.table)))} helperText={t("Leave empty to show the first eight menu items.")}
               onChange={(e) => update((d) => { d.dashboard = { ...(d.dashboard || {}), cards: (e.target.value as unknown as string[]).flatMap((table) => { const existing = d.dashboard?.cards?.filter((card) => card.table === table); return existing?.length ? existing : [{ table }]; }) }; })}
               slotProps={{
                 select: { multiple: true }
               }}>
               {appTables.map((t) => <MenuItem key={t} value={t}>{tables[t]?.label}</MenuItem>)}
             </TextField>
-            <TextField select label="Dashboard 'recently updated' list" value={draft.dashboard?.recentTable || ""}
+            <TextField select label={t("Dashboard 'recently updated' list")} value={draft.dashboard?.recentTable || ""}
               onChange={(e) => update((d) => { d.dashboard = { ...(d.dashboard || {}), recentTable: e.target.value || undefined }; })}>
-              <MenuItem value=""><em>First dashboard card</em></MenuItem>
+              <MenuItem value=""><em>{t("First dashboard card")}</em></MenuItem>
               {appTables.map((t) => <MenuItem key={t} value={t}>{tables[t]?.label}</MenuItem>)}
             </TextField>
           </Box>
@@ -137,7 +138,7 @@ export const Customize: React.FC = () => {
           <Table size="small">
             <TableHead>
               <TableRow sx={{ "& th": { bgcolor: "grey.50", fontWeight: 600 } }}>
-                <TableCell>Table</TableCell><TableCell>Menu group</TableCell><TableCell>Order</TableCell><TableCell>Show in menu</TableCell>
+                <TableCell>{t("Table")}</TableCell><TableCell>{t("Menu group")}</TableCell><TableCell>{t("Order")}</TableCell><TableCell>{t("Show in menu")}</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -145,7 +146,7 @@ export const Customize: React.FC = () => {
                 <TableRow key={r.table}>
                   <TableCell><Box sx={{ display: "flex", alignItems: "center", gap: 1 }}><Icon name={tables[r.table]?.icon} />{tables[r.table]?.label}</Box></TableCell>
                   <TableCell sx={{ width: 260 }}>
-                    <TextField size="small" fullWidth placeholder="e.g. Studies" value={r.group}
+                    <TextField size="small" fullWidth placeholder={t("e.g. Studies")} value={r.group}
                       onChange={(e) => setMenuGroup(r.table, e.target.value)} slotProps={{
                       htmlInput: { list: "neoapps-menu-groups" }
                     }} />
@@ -164,33 +165,33 @@ export const Customize: React.FC = () => {
 
         {tab === 2 && resolved && (
           <Box sx={{ p: 2.5 }}>
-            <TextField select size="small" label="Table" value={tableName} onChange={(e) => setTableName(e.target.value)} sx={{ minWidth: 280, mb: 2.5 }}>
+            <TextField select size="small" label={t("Table")} value={tableName} onChange={(e) => setTableName(e.target.value)} sx={{ minWidth: 280, mb: 2.5 }}>
               {appTables.map((t) => <MenuItem key={t} value={t}>{tables[t]?.label} ({t})</MenuItem>)}
             </TextField>
             <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "repeat(3, 1fr)" }, gap: 2, mb: 2.5 }}>
-              <TextField size="small" label="Label (plural)" value={resolved.label} onChange={(e) => update((d) => { tcfg(d, tableName).label = e.target.value; })} />
-              <TextField size="small" label="Singular" value={resolved.singular} onChange={(e) => update((d) => { tcfg(d, tableName).singular = e.target.value; })} />
-              <TextField size="small" select label="Icon" value={resolved.icon} onChange={(e) => update((d) => { tcfg(d, tableName).icon = e.target.value; })}>
+              <TextField size="small" label={t("Label (plural)")} value={resolved.label} onChange={(e) => update((d) => { tcfg(d, tableName).label = e.target.value; })} />
+              <TextField size="small" label={t("Singular")} value={resolved.singular} onChange={(e) => update((d) => { tcfg(d, tableName).singular = e.target.value; })} />
+              <TextField size="small" select label={t("Icon")} value={resolved.icon} onChange={(e) => update((d) => { tcfg(d, tableName).icon = e.target.value; })}>
                 {Object.keys(ICONS).map((i) => <MenuItem key={i} value={i}><Box sx={{ display: "flex", gap: 1, alignItems: "center" }}><Icon name={i} />{i}</Box></MenuItem>)}
               </TextField>
-              <TextField size="small" select label="Display field" helperText="Shown when other records link here" value={resolved.displayField}
+              <TextField size="small" select label={t("Display field")} helperText={t("Shown when other records link here")} value={resolved.displayField}
                 onChange={(e) => update((d) => { tcfg(d, tableName).displayField = e.target.value; })}>
                 {resolved.schema.columns.map((c) => <MenuItem key={c.name} value={c.name}>{resolved.fields[c.name].label}</MenuItem>)}
               </TextField>
-              <TextField size="small" select label="Default sort" value={resolved.defaultSort || ""} onChange={(e) => update((d) => { tcfg(d, tableName).defaultSort = e.target.value || undefined; })}>
-                <MenuItem value=""><em>Default</em></MenuItem>
+              <TextField size="small" select label={t("Default sort")} value={resolved.defaultSort || ""} onChange={(e) => update((d) => { tcfg(d, tableName).defaultSort = e.target.value || undefined; })}>
+                <MenuItem value=""><em>{t("Default")}</em></MenuItem>
                 {resolved.schema.columns.flatMap((c) => [`${c.name}|ASC`, `${c.name}|DESC`]).map((s) => (
                   <MenuItem key={s} value={s}>{resolved.fields[s.split("|")[0]].label} {s.endsWith("ASC") ? "↑" : "↓"}</MenuItem>
                 ))}
               </TextField>
-              <TextField size="small" label="Description" value={resolved.description || ""} onChange={(e) => update((d) => { tcfg(d, tableName).description = e.target.value || undefined; })} />
+              <TextField size="small" label={t("Description")} value={resolved.description || ""} onChange={(e) => update((d) => { tcfg(d, tableName).description = e.target.value || undefined; })} />
             </Box>
             <Divider sx={{ mb: 1 }} />
             <Table size="small">
               <TableHead>
                 <TableRow sx={{ "& th": { fontWeight: 600 } }}>
-                  <TableCell>Column</TableCell><TableCell>Label</TableCell><TableCell>Input type</TableCell><TableCell>Choices (comma-separated)</TableCell>
-                  <TableCell align="center">In list</TableCell><TableCell align="center">In form</TableCell><TableCell align="center">Required</TableCell><TableCell>Help text</TableCell>
+                  <TableCell>{t("Column")}</TableCell><TableCell>{t("Label")}</TableCell><TableCell>{t("Input type")}</TableCell><TableCell>{t("Choices (comma-separated)")}</TableCell>
+                  <TableCell align="center">{t("In list")}</TableCell><TableCell align="center">{t("In form")}</TableCell><TableCell align="center">{t("Required")}</TableCell><TableCell>{t("Help text")}</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -209,7 +210,7 @@ export const Customize: React.FC = () => {
                       </TableCell>
                       <TableCell>
                         {f.widget === "select" && (
-                          <TextField size="small" placeholder="startup, enrolling, closed" value={(f.options || []).join(", ")}
+                          <TextField size="small" placeholder={"startup, enrolling, closed"} value={(f.options || []).join(", ")}
                             onChange={(e) => update((d) => { fcfg(d, tableName, c.name).options = e.target.value.split(",").map((s) => s.trim()).filter(Boolean); })} />
                         )}
                       </TableCell>
@@ -235,17 +236,17 @@ export const Customize: React.FC = () => {
         )}
       </Paper>
       <Dialog open={importing} onClose={() => setImporting(false)} fullWidth maxWidth="md">
-        <DialogTitle>Import ui.config.json</DialogTitle>
+        <DialogTitle>{t("Import ui.config.json")}</DialogTitle>
         <DialogContent dividers>
-          <TextField multiline minRows={14} fullWidth value={importText} onChange={(e) => setImportText(e.target.value)} placeholder='{ "appName": "...", "tables": { ... } }' sx={{ fontFamily: "monospace" }} />
+          <TextField multiline minRows={14} fullWidth value={importText} onChange={(e) => setImportText(e.target.value)} placeholder={'{ "appName": "...", "tables": { ... } }'} sx={{ fontFamily: "monospace" }} />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setImporting(false)}>Cancel</Button>
-          <Button variant="contained" onClick={doImport}>Load into editor</Button>
+          <Button onClick={() => setImporting(false)}>{t("Cancel")}</Button>
+          <Button variant="contained" onClick={doImport}>{t("Load into editor")}</Button>
         </DialogActions>
       </Dialog>
       <Snackbar open={saved} autoHideDuration={3000} onClose={() => setSaved(false)}>
-        <Alert severity="success" onClose={() => setSaved(false)}>UI saved for everyone in this workspace</Alert>
+        <Alert severity="success" onClose={() => setSaved(false)}>{t("UI saved for everyone in this workspace")}</Alert>
       </Snackbar>
     </Box>
   );

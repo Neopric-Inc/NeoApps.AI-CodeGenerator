@@ -9,7 +9,8 @@ import { approveJob, cancelJob, Job, JobSchedule, listJobs, listSchedules, rejec
 import { JobFeed, JobStatusChip } from "./JobFeed";
 import { JobFiles } from "./JobFile";
 
-const when = (iso: string) => new Date(iso).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+import { t, language, tx } from "../i18n";
+const when = (iso: string) => new Date(iso).toLocaleString(language(), { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
 
 /** Any job kind: live feed, its result, and approve / reject / cancel. Approving sends the proposal back as the decision. */
 const JobDialog: React.FC<{ jobId: string; onClose: () => void }> = ({ jobId, onClose }) => {
@@ -32,17 +33,17 @@ const JobDialog: React.FC<{ jobId: string; onClose: () => void }> = ({ jobId, on
   return (
     <Dialog open onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-        {job?.title || "Job"}{status && <Box sx={{ ml: "auto" }}><JobStatusChip status={status} /></Box>}
+        {tx(job?.title) || t("Job")}{status && <Box sx={{ ml: "auto" }}><JobStatusChip status={status} /></Box>}
       </DialogTitle>
       <DialogContent dividers>
         {actionError && <Alert severity="error" sx={{ mb: 2 }}>{actionError}</Alert>}
         {events.some((e) => e.level === "file") && (
           <Box sx={{ mb: 2 }}>
-            <Typography variant="subtitle2" sx={{ mb: 1 }}>Evidence</Typography>
+            <Typography variant="subtitle2" sx={{ mb: 1 }}>{t("Evidence")}</Typography>
             <JobFiles jobId={jobId} events={events} height={220} />
           </Box>
         )}
-        <Typography variant="subtitle2" sx={{ mb: 1 }}>Steps</Typography>
+        <Typography variant="subtitle2" sx={{ mb: 1 }}>{t("Steps")}</Typography>
         <JobFeed job={job} events={events} error={error} />
         {job?.result != null && (
           <Box component="pre" sx={{ mt: 2, p: 1.5, bgcolor: "action.hover", borderRadius: 1, fontSize: 12, overflow: "auto", maxHeight: 260 }}>
@@ -51,12 +52,12 @@ const JobDialog: React.FC<{ jobId: string; onClose: () => void }> = ({ jobId, on
         )}
       </DialogContent>
       <DialogActions>
-        {working && <Button color="inherit" disabled={busy} onClick={() => act(() => cancelJob(jobId))}>Cancel job</Button>}
-        <Button onClick={onClose}>Close</Button>
+        {working && <Button color="inherit" disabled={busy} onClick={() => act(() => cancelJob(jobId))}>{t("Cancel job")}</Button>}
+        <Button onClick={onClose}>{t("Close")}</Button>
         {status === "awaiting_approval" && (
           <>
-            <Button color="inherit" disabled={busy} onClick={() => act(() => rejectJob(jobId))}>Reject</Button>
-            <Button variant="contained" disabled={busy} onClick={() => act(() => approveJob(jobId, job?.result || {}))}>Approve</Button>
+            <Button color="inherit" disabled={busy} onClick={() => act(() => rejectJob(jobId))}>{t("Reject")}</Button>
+            <Button variant="contained" disabled={busy} onClick={() => act(() => approveJob(jobId, job?.result || {}))}>{t("Approve")}</Button>
           </>
         )}
       </DialogActions>
@@ -94,24 +95,23 @@ export const JobsPage: React.FC = () => {
     <Box>
       <Typography variant="h5" sx={{
         fontWeight: 700
-      }}>Background jobs</Typography>
+      }}>{t("Background jobs")}</Typography>
       <Typography
         sx={{
           color: "text.secondary",
           mb: 2
         }}>
-        Work that runs on the server, such as AI workflows. Close the window while a job runs and come back here to review it.
-        {waiting > 0 && <> <b>{waiting} waiting for your approval.</b></>}
+        {t("Work that runs on the server, such as AI workflows. Close the window while a job runs and come back here to review it.")}{waiting > 0 && <> <b>{t("{count} waiting for your approval.", { count: waiting })}</b></>}
       </Typography>
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
       <Paper variant="outlined">
         <Table size="small">
           <TableHead>
             <TableRow>
-              <TableCell sx={{ fontWeight: 600 }}>Job</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>Started by</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>Started</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>{t("Job")}</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>{t("Status")}</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>{t("Started by")}</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>{t("Started")}</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -120,7 +120,7 @@ export const JobsPage: React.FC = () => {
                 sx={{
                   color: "text.secondary",
                   py: 2
-                }}>No jobs yet.</Typography></TableCell></TableRow>
+                }}>{t("No jobs yet.")}</Typography></TableCell></TableRow>
             )}
             {jobs.map((j) => (
               <TableRow key={j.job_id} hover sx={{ cursor: "pointer" }} onClick={() => setOpen(j)}>
@@ -138,16 +138,16 @@ export const JobsPage: React.FC = () => {
       {schedules.length > 0 && (
         <Paper variant="outlined" sx={{ mt: 3 }}>
           <Box sx={{ display: "flex", alignItems: "center", px: 2, pt: 1.5 }}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>Schedules</Typography>
-            <Button size="small" sx={{ ml: "auto" }} disabled={running} onClick={runNow}>Run what's due now</Button>
+            <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>{t("Schedules")}</Typography>
+            <Button size="small" sx={{ ml: "auto" }} disabled={running} onClick={runNow}>{t("Run what's due now")}</Button>
           </Box>
           <Table size="small">
             <TableHead>
               <TableRow>
-                <TableCell sx={{ fontWeight: 600 }}>Schedule</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Next run</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Last run</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Last result</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>{t("Schedule")}</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>{t("Next run")}</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>{t("Last run")}</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>{t("Last result")}</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>

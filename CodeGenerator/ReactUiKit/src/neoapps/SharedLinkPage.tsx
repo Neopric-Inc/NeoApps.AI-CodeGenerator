@@ -8,6 +8,8 @@ import { useApp } from "./AppContext";
 import { RecordForm } from "./RecordForm";
 import { Login } from "./Login";
 
+import { t, tx } from "./i18n";
+import { LanguagePicker } from "./i18n/LanguagePicker";
 interface Shared {
   title?: string; table: string; kind: "form" | "record"; fields: string[]; values?: Record<string, any>; access: string; allowFiles?: boolean;
   context?: { table: string; fields: string[]; values: Record<string, any>; files: { id: number; name: string; size: number }[] }[];
@@ -20,7 +22,7 @@ async function call(method: string, token: string, body?: any) {
   });
   let data: any = null;
   try { data = await res.json(); } catch { /* no body */ }
-  if (!res.ok) throw Object.assign(new Error(data?.message || (res.status === 429 ? "Too many tries. Please wait a minute." : "Something went wrong. Please try again.")), { status: res.status });
+  if (!res.ok) throw Object.assign(new Error(data?.message || (res.status === 429 ? t("Too many tries. Please wait a minute.") : t("Something went wrong. Please try again."))), { status: res.status });
   return data;
 }
 
@@ -40,7 +42,7 @@ export const SharedLinkPage: React.FC = () => {
     setFileError(undefined);
     const chosen = Array.from(list || []);
     const bad = chosen.find((f) => !okTypes.test(f.name) || f.size > 10 * 1024 * 1024);
-    if (bad) { setFileError(`${bad.name}: attach a PDF, Word, text or image file up to 10 MB.`); return; }
+    if (bad) { setFileError(t("{file}: attach a PDF, Word, text or image file up to 10 MB.", { file: bad.name })); return; }
     setFiles((cur) => [...cur, ...chosen].slice(0, 3));
   };
 
@@ -63,7 +65,7 @@ export const SharedLinkPage: React.FC = () => {
     <Box sx={{ textAlign: "center", py: 3 }}>
       <CheckCircleOutline color="success" sx={{ fontSize: 48 }} />
       <Typography sx={{ mt: 1, mb: 2 }}>{done}</Typography>
-      {shared?.kind === "form" && <Button onClick={() => { setDone(undefined); setRound((r) => r + 1); }}>Send another response</Button>}
+      {shared?.kind === "form" && <Button onClick={() => { setDone(undefined); setRound((r) => r + 1); }}>{t("Send another response")}</Button>}
     </Box>
   );
   else if (!shared || !table) body = <Box sx={{ display: "grid", placeItems: "center", py: 4 }}><CircularProgress /></Box>;
@@ -102,19 +104,18 @@ export const SharedLinkPage: React.FC = () => {
         style={{ position: "absolute", left: "-10000px", width: 1, height: 1, opacity: 0 }} aria-hidden="true" />
       <RecordForm
         key={round} inline open table={table} record={shared.kind === "record" ? shared.values || {} : null} fieldNames={shared.fields}
-        submitLabel={shared.kind === "record" ? "Save" : "Send"} onClose={() => {}} onSaved={() => {}}
+        submitLabel={shared.kind === "record" ? t("Save") : t("Send")} onClose={() => {}} onSaved={() => {}}
         extra={shared.allowFiles ? (
           <Box sx={{ mt: 2.5 }}>
-            <Typography variant="subtitle2" sx={{ mb: 0.5 }}>Files</Typography>
+            <Typography variant="subtitle2" sx={{ mb: 0.5 }}>{t("Files")}</Typography>
             <Button variant="outlined" component="label" size="small" disabled={files.length >= 3}>
-              Attach a file
-              <input hidden type="file" multiple accept=".pdf,.doc,.docx,.txt,.rtf,.odt,.png,.jpg,.jpeg" onChange={(e) => { pickFiles(e.target.files); e.target.value = ""; }} />
+              {t("Attach a file")}<input hidden type="file" multiple accept=".pdf,.doc,.docx,.txt,.rtf,.odt,.png,.jpg,.jpeg" onChange={(e) => { pickFiles(e.target.files); e.target.value = ""; }} />
             </Button>
-            <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>PDF, Word, text or images, up to 10 MB, 3 files</Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>{t("PDF, Word, text or images, up to 10 MB, 3 files")}</Typography>
             {files.map((f, i) => (
               <Box key={i} sx={{ display: "flex", alignItems: "center", gap: 1, mt: 0.5 }}>
                 <Typography variant="body2" sx={{ flex: 1 }}>{f.name}</Typography>
-                <Button size="small" onClick={() => setFiles((cur) => cur.filter((_, j) => j !== i))}>Remove</Button>
+                <Button size="small" onClick={() => setFiles((cur) => cur.filter((_, j) => j !== i))}>{t("Remove")}</Button>
               </Box>
             ))}
             {fileError && <Alert severity="warning" sx={{ mt: 1 }}>{fileError}</Alert>}
@@ -132,17 +133,18 @@ export const SharedLinkPage: React.FC = () => {
             if (!up || !up.ok) failed.push(f.name);
           }
           setFiles([]);
-          setDone((res?.message || "Thank you.") + (failed.length ? ` But ${failed.join(", ")} couldn't be attached; please send it to the person who shared this form.` : ""));
+          setDone((tx(res?.message) || t("Thank you.")) + (failed.length ? " " + t("But {files} couldn't be attached; please send it to the person who shared this form.", { files: failed.join(", ") }) : ""));
         }}
       />
     </>
   );
 
   return (
-    <Box sx={{ minHeight: "100vh", bgcolor: "background.default", py: { xs: 2, sm: 6 }, px: 2 }}>
+    <Box sx={{ minHeight: "100vh", bgcolor: "background.default", py: { xs: 2, sm: 6 }, px: 2, position: "relative" }}>
+      <Box sx={{ position: "absolute", top: 8, right: 8 }}><LanguagePicker compact /></Box>
       <Paper variant="outlined" sx={{ maxWidth: 640, mx: "auto", p: { xs: 2.5, sm: 4 }, borderRadius: 3 }}>
         {name && <Typography variant="overline" color="text.secondary">{name}</Typography>}
-        <Typography variant="h5" sx={{ fontWeight: 700, mb: 3 }}>{shared?.title || table?.singular || "Form"}</Typography>
+        <Typography variant="h5" sx={{ fontWeight: 700, mb: 3 }}>{shared?.title || table?.singular || t("Form")}</Typography>
         {body}
       </Paper>
     </Box>

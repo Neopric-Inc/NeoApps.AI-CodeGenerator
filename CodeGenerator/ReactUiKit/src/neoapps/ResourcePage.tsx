@@ -19,6 +19,7 @@ import { Icon } from "./icons";
 import { RecordForm } from "./RecordForm";
 import { invalidateReferences, useReferences } from "./useReferences";
 
+import { t as tr, lower } from "./i18n";
 /** Confirm + delete, shared by the list and record pages. */
 export function useDelete(tableName: string, onDone: () => void) {
   const { tables } = useApp();
@@ -34,7 +35,7 @@ export function useDelete(tableName: string, onDone: () => void) {
       .filter((col) => col.references && col.references.table === tableName)
       .map((col) => ({ child: c, column: col.name })));
     const counts = await Promise.all(refs.map(async (r) => ({ ...r, n: await countWhere(r.child.name, r.column, id) })));
-    const used = counts.filter((c) => c.n > 0).map((c) => `${c.n} ${c.n === 1 ? c.child.singular.toLowerCase() : c.child.label.toLowerCase()}`);
+    const used = counts.filter((c) => c.n > 0).map((c) => tr("{items}: {count}", { items: c.n === 1 ? c.child.singular : c.child.label, count: c.n }));
     if (used.length) setBlockers(used);
     else setTarget(row);
   };
@@ -47,24 +48,24 @@ export function useDelete(tableName: string, onDone: () => void) {
       setTarget(null);
       onDone();
     } catch (e: any) {
-      setError(/foreign key|constraint/i.test(e.message) ? `This ${t.singular.toLowerCase()} is still used by other records.` : e.message);
+      setError(/foreign key|constraint/i.test(e.message) ? tr("This {item} is still used by other records.", { item: lower(t.singular) }) : e.message);
       setTarget(null);
     }
   };
   const dialog = (
     <>
       <Dialog open={!!target} onClose={() => setTarget(null)}>
-        <DialogTitle>Delete {t?.singular.toLowerCase()}?</DialogTitle>
-        <DialogContent><DialogContentText>"{target ? String(target[t.displayField] ?? target[t.primaryKey]) : ""}" will be removed. This can't be undone.</DialogContentText></DialogContent>
+        <DialogTitle>{tr("Delete {item}?", { item: lower(t?.singular) })}</DialogTitle>
+        <DialogContent><DialogContentText>{tr("\"{name}\" will be removed. This can't be undone.", { name: target ? String(target[t.displayField] ?? target[t.primaryKey]) : "" })}</DialogContentText></DialogContent>
         <DialogActions>
-          <Button onClick={() => setTarget(null)}>Cancel</Button>
-          <Button color="error" variant="contained" onClick={confirm}>Delete</Button>
+          <Button onClick={() => setTarget(null)}>{tr("Cancel")}</Button>
+          <Button color="error" variant="contained" onClick={confirm}>{tr("Delete")}</Button>
         </DialogActions>
       </Dialog>
       <Dialog open={!!blockers} onClose={() => setBlockers(null)}>
-        <DialogTitle>Can't delete this {t?.singular.toLowerCase()} yet</DialogTitle>
-        <DialogContent><DialogContentText>It is still used by {blockers?.join(", ")}. Delete or reassign those first.</DialogContentText></DialogContent>
-        <DialogActions><Button variant="contained" onClick={() => setBlockers(null)}>OK</Button></DialogActions>
+        <DialogTitle>{tr("Can't delete this {item} yet", { item: lower(t?.singular) })}</DialogTitle>
+        <DialogContent><DialogContentText>{tr("It is still used by {items}. Delete or reassign those first.", { items: blockers?.join(", ") })}</DialogContentText></DialogContent>
+        <DialogActions><Button variant="contained" onClick={() => setBlockers(null)}>{tr("OK")}</Button></DialogActions>
       </Dialog>
       <Snackbar open={!!error} autoHideDuration={6000} onClose={() => setError(undefined)}>
         <Alert severity="error" onClose={() => setError(undefined)}>{error}</Alert>
@@ -176,9 +177,9 @@ const TablePage: React.FC = () => {
 
   const del = useDelete(name, () => setReload((r) => r + 1));
 
-  if (!table) return <Alert severity="warning">Unknown table "{name}".</Alert>;
-  if (!canOpen(name)) return <Alert severity="info">This page isn't available for your role.</Alert>;
-  if (!can(name, "read")) return <Alert severity="info">You don't have access to {table.label}. Ask an administrator.</Alert>;
+  if (!table) return <Alert severity="warning">{tr("Unknown table \"{name}\".", { name })}</Alert>;
+  if (!canOpen(name)) return <Alert severity="info">{tr("This page isn't available for your role.")}</Alert>;
+  if (!can(name, "read")) return <Alert severity="info">{tr("You don't have access to {items}. Ask an administrator.", { items: table.label })}</Alert>;
 
   return (
     <Box>
@@ -193,7 +194,7 @@ const TablePage: React.FC = () => {
             }}>{table.label}</Typography>
             <Typography variant="body2" sx={{
               color: "text.secondary"
-            }}>{table.description || `${total} ${total === 1 ? table.singular.toLowerCase() : table.label.toLowerCase()}`}</Typography>
+            }}>{table.description || tr("{items}: {count}", { items: total === 1 ? table.singular : table.label, count: total })}</Typography>
           </Box>
         </Box>
         <form onSubmit={(e) => { e.preventDefault(); setPage(0); setQuery(search); }}>
@@ -205,10 +206,10 @@ const TablePage: React.FC = () => {
               onChange={(_, v) => setScopeId(v ? String(v[scopeTable.primaryKey]) : "")}
               getOptionLabel={scopeLabel}
               isOptionEqualToValue={(a, b) => String(a[scopeTable.primaryKey]) === String(b[scopeTable.primaryKey])}
-              renderInput={(p) => <TextField {...p} label={scopeTable.singular} placeholder={`All ${scopeTable.label.toLowerCase()}`} />}
+              renderInput={(p) => <TextField {...p} label={scopeTable.singular} placeholder={tr("All {items}", { items: lower(scopeTable.label) })} />}
             />
           )}
-          <TextField size="small" placeholder={`Search ${table.label.toLowerCase()}`} value={search} onChange={(e) => setSearch(e.target.value)}
+          <TextField size="small" placeholder={tr("Search {items}", { items: lower(table.label) })} value={search} onChange={(e) => setSearch(e.target.value)}
             sx={{ width: { xs: "100%", sm: 260 }, bgcolor: "background.paper" }} slotProps={{
             input: { startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }
           }} />
@@ -218,16 +219,16 @@ const TablePage: React.FC = () => {
           <Button variant="outlined" startIcon={<DownloadIcon />} disabled={exporting} onClick={async () => {
             setExporting(true);
             try { await exportCsv(table, sort ? `${sort.column}|${sort.dir}` : undefined, query, labelFor); }
-            catch (e: any) { setError(e.message || "Export failed"); }
+            catch (e: any) { setError(e.message || tr("Export failed")); }
             finally { setExporting(false); }
-          }}>{exporting ? "Exporting…" : "Export"}</Button>
+          }}>{exporting ? tr("Exporting…") : tr("Export")}</Button>
         )}
         {can(name, "create") && (config as any).sharing !== false && (
-          <Button variant="outlined" startIcon={<ShareOutlined />} onClick={() => setSharing(true)}>Share form</Button>
+          <Button variant="outlined" startIcon={<ShareOutlined />} onClick={() => setSharing(true)}>{tr("Share form")}</Button>
         )}
         {can(name, "create") && <ImportButton table={table} onDone={() => setReload((r) => r + 1)} />}
         {can(name, "create") && (
-          <Button variant="contained" startIcon={<AddIcon />} onClick={() => setEditing(null)}>New {table.singular.toLowerCase()}</Button>
+          <Button variant="contained" startIcon={<AddIcon />} onClick={() => setEditing(null)}>{tr("New {item}", { item: lower(table.singular) })}</Button>
         )}
       </Box>
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
@@ -242,7 +243,7 @@ const TablePage: React.FC = () => {
           onDelete={can(name, "delete") ? (r) => del.ask(r) : undefined}
           canEdit={(r) => canChangeRecord(name, r, "update")}
           canDelete={(r) => canChangeRecord(name, r, "delete")}
-          emptyText={query ? `No ${table.label.toLowerCase()} match "${query}".` : undefined}
+          emptyText={query ? tr("No {items} match \"{query}\".", { items: lower(table.label), query }) : undefined}
         />
       </Paper>
       <ShareDialog table={table} open={sharing} onClose={() => setSharing(false)} />

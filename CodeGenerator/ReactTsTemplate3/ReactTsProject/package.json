@@ -10,6 +10,7 @@
     "preview": "vite preview --port 3100"
   },
   "dependencies": {
+    "@emotion/cache": "^11.14.0",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@fullcalendar/react": "7.1.5",
@@ -23,6 +24,8 @@
     "react-dom": "^19.3.1",
     "react-leaflet": "5.0.0",
     "react-router-dom": "^7.18.5",
+    "stylis": "^4.4.0",
+    "stylis-plugin-rtl": "^2.1.1",
     "temporal-polyfill": "1.0.8",
     "three": "0.187.0"
   },

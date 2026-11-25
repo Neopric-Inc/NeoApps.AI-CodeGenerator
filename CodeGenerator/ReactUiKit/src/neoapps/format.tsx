@@ -4,6 +4,7 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import RadioButtonUncheckedIcon from "@mui/icons-material/RadioButtonUnchecked";
 import { ResolvedField } from "./types";
 
+import { language } from "./i18n";
 /** The API returns dates as "MM/dd/yyyy HH:mm:ss". Returns a Date or null. */
 /**
  * Reads a date from the API. The server stores times in UTC without a zone suffix, so pass utc=true for date-and-time
@@ -48,11 +49,11 @@ const STATUS_COLORS: Record<string, any> = {
 };
 
 export function formatMoney(value: any, code?: string): string {
-  try { return Number(value).toLocaleString(undefined, { style: "currency", currency: code || "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  try { return Number(value).toLocaleString(language(), { style: "currency", currency: code || "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
   catch { return `${code || ""} ${Number(value).toFixed(2)}`; }
 }
 export function currencySymbol(code?: string): string {
-  try { return (0).toLocaleString(undefined, { style: "currency", currency: code || "USD" }).replace(/[\d.,\s]/g, "") || "$"; } catch { return "$"; }
+  try { return (0).toLocaleString(language(), { style: "currency", currency: code || "USD" }).replace(/[\d.,\s]/g, "") || "$"; } catch { return "$"; }
 }
 
 export function renderValue(field: ResolvedField | undefined, value: any, refLabel?: string): React.ReactNode {
@@ -67,18 +68,18 @@ export function renderValue(field: ResolvedField | undefined, value: any, refLab
       return refLabel ?? `#${value}`;
     case "date": {
       const d = parseApiDate(value);
-      return d ? d.toLocaleDateString() : String(value);
+      return d ? d.toLocaleDateString(language()) : String(value);
     }
     case "datetime": {
       const d = parseApiDate(value, true);
-      return d ? d.toLocaleString([], { dateStyle: "medium", timeStyle: "short" } as any) : String(value);
+      return d ? d.toLocaleString(language(), { dateStyle: "medium", timeStyle: "short" } as any) : String(value);
     }
     case "currency":
       return formatMoney(value, field.currencyCode);
     case "percent":
       return `${value}%`;
     case "number":
-      return Number(value).toLocaleString();
+      return Number(value).toLocaleString(language());
     case "url":
       return <a href={String(value)} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>{String(value)}</a>;
     case "color":
@@ -86,7 +87,7 @@ export function renderValue(field: ResolvedField | undefined, value: any, refLab
     case "select": {
       const s = String(value);
       const color = (field.colors && field.colors[s]) || STATUS_COLORS[s.toLowerCase()] || "default";
-      return <Chip size="small" label={s} color={color} variant={color === "default" ? "outlined" : "filled"} />;
+      return <Chip size="small" label={field.optionLabel ? field.optionLabel(s) : s} color={color} variant={color === "default" ? "outlined" : "filled"} />;
     }
     default: {
       const s = String(value);

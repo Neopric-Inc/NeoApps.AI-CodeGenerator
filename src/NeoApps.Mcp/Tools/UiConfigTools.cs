@@ -113,7 +113,8 @@ internal static class UiConfigTools
               "hidden": false,                       // true hides the table from the menu
               "fields": {
                 "status": { "widget": "select", "options": ["startup", "enrolling", "closed"],
-                            "colors": { "enrolling": "success", "closed": "default" } },
+                            "colors": { "enrolling": "success", "closed": "default" },
+                            "optionLabels": { "startup": "Start-up" } },   // shown text; default "in_progress" -> "In progress"
                 "budget_amount": { "label": "Budget", "widget": "currency", "currencyCode": "USD" },
                 "nct_number": { "label": "NCT #", "help": "ClinicalTrials.gov identifier", "placeholder": "NCT01234567" },
                 "notes": { "hidden": true },          // hidden everywhere; "hideInForm": true hides only in the form
@@ -131,6 +132,29 @@ internal static class UiConfigTools
                cart, school, home.
         Audit columns (createdBy, modifiedBy, createdAt, modifiedAt, isActive) and primary keys stay out of forms automatically.
         Select fields render as coloured chips in lists, record pages and the dropdown itself.
+
+        Languages (multi-language apps, from the sign-in page to every screen):
+          "i18n": {
+            "default": "en",                          // language before anyone chooses (also: the browser's language if offered)
+            "languages": ["en", "fr", "hi", "ar"],    // the picker on sign-in and in the top bar offers these; omit = all built-in
+            "translations": {                         // the app's OWN words, keyed by the exact English text shown:
+              "fr": { "Studies": "Études", "Study": "Étude", "In progress": "En cours", "Enrollment": "Recrutement",
+                      "{full_name} submitted a timesheet": "{full_name} a soumis une feuille de temps" },
+              "ar": { "Studies": "الدراسات" }
+            }
+          }
+          Built-in screens (sign-in, lists, forms, dashboard, members, roles, sharing, jobs, AI, errors) are already translated
+          into: en fr es pt de it nl pl ro cs hu el sv da nb fi tr ru uk ar he fa ur hi gu mr bn pa ta te kn ml zh-CN
+          zh-TW ja ko vi th id ms fil sw. Right-to-left languages (ar, he, fa, ur) flip the whole layout. Browser page
+          translation (Google/Edge) is switched off because it breaks the app; each user picks a language and it is
+          saved for them. Translate every app word: table labels and singulars (derived ones too: "due_date" shows as
+          "Due Date"), field labels, option labels ("in_progress" shows as "In progress"), help texts, menu groups, dashboard
+          card labels, appName, tagline, role names, ai assistantName/suggestions/workflow labels and descriptions,
+          validation messages and notification titles (keep {placeholders} as they are). The preview lists the words
+          still missing per language: when the user asks for several languages, write the translations into the plan and
+          run the preview until none are missing. What people type into records is never translated.
+          Custom screens: import { t, tn, useT } from "../neoapps/i18n"; wrap English text as t("Hello {name}", { name })
+          and add the English text with its translations to i18n.translations (dates/numbers: formatDate, formatNumber).
 
         Custom screens (when config isn't enough): put React code in workspace/<App>/custom/index.tsx next to ui.config.json.
         It is copied to the frontend's src/custom/ on every generate and must export

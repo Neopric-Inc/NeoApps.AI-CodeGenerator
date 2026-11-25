@@ -7,6 +7,7 @@ import AddIcon from "@mui/icons-material/Add";
 import { api } from "../api";
 import { useApp } from "../AppContext";
 
+import { t, tx } from "../i18n";
 interface Role { role_id: number; role_name: string; members: number; is_admin: boolean }
 interface Perm { entity: string; read: boolean; create: boolean; update: boolean; delete: boolean }
 const ACTIONS: (keyof Omit<Perm, "entity">)[] = ["read", "create", "update", "delete"];
@@ -91,12 +92,12 @@ export const Roles: React.FC = () => {
         <Box sx={{ flex: 1 }}>
           <Typography variant="h5" sx={{
             fontWeight: 700
-          }}>Roles & permissions</Typography>
+          }}>{t("Roles & permissions")}</Typography>
           <Typography variant="body2" sx={{
             color: "text.secondary"
-          }}>Choose what each role can view, create, edit and delete. Changes apply to every member with that role.</Typography>
+          }}>{t("Choose what each role can view, create, edit and delete. Changes apply to every member with that role.")}</Typography>
         </Box>
-        <Button startIcon={<AddIcon />} variant="outlined" onClick={() => setCreating(true)}>New role</Button>
+        <Button startIcon={<AddIcon />} variant="outlined" onClick={() => setCreating(true)}>{t("New role")}</Button>
       </Box>
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(undefined)}>{error}</Alert>}
       <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "240px 1fr" }, gap: 2 }}>
@@ -104,21 +105,21 @@ export const Roles: React.FC = () => {
           <List dense>
             {roles.map((r) => (
               <ListItemButton key={r.role_id} selected={r.role_id === selected} onClick={() => setSelected(r.role_id)}>
-                <ListItemText primary={r.role_name} secondary={`${r.members} member${r.members === 1 ? "" : "s"}`} />
-                {r.is_admin && <Chip size="small" label="full access" />}
+                <ListItemText primary={tx(r.role_name)} secondary={t("{count} members", { count: r.members })} />
+                {r.is_admin && <Chip size="small" label={t("full access")} />}
               </ListItemButton>
             ))}
           </List>
         </Paper>
         <Paper variant="outlined" sx={{ borderRadius: 2, overflow: "hidden" }}>
-          {role?.is_admin && <Alert severity="info" sx={{ borderRadius: 0 }}>Administrators always have full access and can manage members, roles and the UI.</Alert>}
+          {role?.is_admin && <Alert severity="info" sx={{ borderRadius: 0 }}>{t("Administrators always have full access and can manage members, roles and the UI.")}</Alert>}
           <Table size="small">
             <TableHead>
               <TableRow sx={{ "& th": { bgcolor: "grey.50", fontWeight: 600 } }}>
-                <TableCell>Table</TableCell>
+                <TableCell>{t("Table")}</TableCell>
                 {ACTIONS.map((a) => (
                   <TableCell key={a} align="center">
-                    {ACTION_LABEL[a]}
+                    {t(ACTION_LABEL[a])}
                     {!role?.is_admin && <Checkbox size="small" checked={rows.length > 0 && rows.every((p) => p[a])} indeterminate={rows.some((p) => p[a]) && !rows.every((p) => p[a])}
                       onChange={(e) => toggleColumn(a, e.target.checked)} />}
                   </TableCell>
@@ -130,7 +131,7 @@ export const Roles: React.FC = () => {
                 <TableRow key={p.entity} hover>
                   <TableCell>{tables[p.entity]?.label || <Typography variant="body2" sx={{
                     color: "text.secondary"
-                  }}>{p.entity} (system)</Typography>}</TableCell>
+                  }}>{t("{name} (system)", { name: p.entity })}</Typography>}</TableCell>
                   {ACTIONS.map((a) => (
                     <TableCell key={a} align="center">
                       <Checkbox size="small" checked={p[a]} disabled={role?.is_admin} onChange={(e) => toggle(p.entity, a, e.target.checked)} slotProps={{
@@ -143,24 +144,24 @@ export const Roles: React.FC = () => {
             </TableBody>
           </Table>
           <Box sx={{ display: "flex", alignItems: "center", gap: 1, p: 1.5, borderTop: 1, borderColor: "divider" }}>
-            <Button size="small" onClick={() => setShowSystem((s) => !s)}>{showSystem ? "Hide" : "Show"} system tables</Button>
+            <Button size="small" onClick={() => setShowSystem((s) => !s)}>{showSystem ? t("Hide system tables") : t("Show system tables")}</Button>
             <Box sx={{ flex: 1 }} />
-            {!role?.is_admin && <Button variant="contained" disabled={!dirty} onClick={save}>Save permissions</Button>}
+            {!role?.is_admin && <Button variant="contained" disabled={!dirty} onClick={save}>{t("Save permissions")}</Button>}
           </Box>
         </Paper>
       </Box>
       <Dialog open={creating} onClose={() => setCreating(false)} fullWidth maxWidth="xs">
-        <DialogTitle>New role</DialogTitle>
+        <DialogTitle>{t("New role")}</DialogTitle>
         <DialogContent dividers>
-          <TextField autoFocus label="Role name" fullWidth value={newName} onChange={(e) => setNewName(e.target.value)} helperText="Starts with view-only access to every table." />
+          <TextField autoFocus label={t("Role name")} fullWidth value={newName} onChange={(e) => setNewName(e.target.value)} helperText={t("Starts with view-only access to every table.")} />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setCreating(false)}>Cancel</Button>
-          <Button variant="contained" disabled={!newName.trim()} onClick={create}>Create role</Button>
+          <Button onClick={() => setCreating(false)}>{t("Cancel")}</Button>
+          <Button variant="contained" disabled={!newName.trim()} onClick={create}>{t("Create role")}</Button>
         </DialogActions>
       </Dialog>
       <Snackbar open={saved} autoHideDuration={3000} onClose={() => setSaved(false)}>
-        <Alert severity="success" onClose={() => setSaved(false)}>Permissions saved</Alert>
+        <Alert severity="success" onClose={() => setSaved(false)}>{t("Permissions saved")}</Alert>
       </Snackbar>
     </Box>
   );

@@ -36,6 +36,8 @@ export interface FieldConfig {
   label?: string;
   widget?: Widget;
   options?: string[]; // for select
+  /** How stored option values are shown: {"in_progress": "In progress"} (default: "in_progress" -> "In progress"). Translated like other labels. */
+  optionLabels?: Record<string, string>;
   colors?: Record<string, "default" | "primary" | "secondary" | "success" | "warning" | "error" | "info">;
   hidden?: boolean; // hidden everywhere
   hideInForm?: boolean;
@@ -96,6 +98,9 @@ export interface UiConfig {
   validations?: Record<string, Record<string, FieldRule>>;
   /** Numbers assigned by the API on insert: {"customer_invoices": {"column": "invoice_number", "pattern": "INV-{yyyy}-{seq:5}"}}. */
   numbering?: Record<string, { column: string; pattern?: string; reset?: string } | { column: string; pattern?: string; reset?: string }[]>;
+  /** Languages: {"default": "en", "languages": ["en", "fr"], "translations": {"fr": {"Tasks": "Tâches", "In progress": "En cours"}}}.
+   *  Keys are the English text the app shows (labels, options, menu groups, cards, messages); built-in screens are already translated. */
+  i18n?: { default?: string; languages?: string[]; translations?: Record<string, Record<string, string | Record<string, string>>> };
 }
 
 export interface FieldRule {
@@ -117,6 +122,8 @@ export interface FieldRule {
 export interface ResolvedField extends FieldConfig {
   name: string;
   label: string;
+  /** How a stored option value is shown, in the current language (optionLabels, else "in_progress" -> "In progress"). */
+  optionLabel: (value: any) => string;
   widget: Widget;
   column: ColumnSchema;
   required: boolean;
@@ -160,6 +167,8 @@ export interface Me {
   tenant_table?: string | null;
   is_admin: boolean;
   permissions: Record<string, Permission>;
+  /** language the user chose (saved on the server), e.g. "fr"; null = not chosen yet */
+  language?: string | null;
   /** columns the API never sends to this role (ui.config "hiddenFields") */
   hidden_fields?: Record<string, string[]>;
 }

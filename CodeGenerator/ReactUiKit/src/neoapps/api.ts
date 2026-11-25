@@ -1,5 +1,6 @@
 // Thin client for the generated .NET API (responses are { code, message, document }).
 // The session is an HttpOnly cookie set by POST /Token: scripts never see the token, so nothing is kept in localStorage.
+import { t, tx } from "./i18n";
 const LEGACY_TOKEN_KEY = "neoapps.token";
 
 export const apiBase = (): string => {
@@ -51,7 +52,7 @@ export async function api<T = any>(method: string, path: string, body?: any, sig
     // a lifecycle step with "signature": ask for the password, then send the same request once more
     const msg = await res.clone().json().then((j) => j?.message as string).catch(() => "");
     const password = await signatureHandler(String(msg || "").replace(/^Signature required:\s*/, ""));
-    if (!password) throw new ApiError(428, "Not signed: nothing was changed.");
+    if (!password) throw new ApiError(428, t("Not signed: nothing was changed."));
     return api<T>(method, path, body, password);
   }
   const text = await res.text();
@@ -62,18 +63,18 @@ export async function api<T = any>(method: string, path: string, body?: any, sig
     json = null;
   }
   if (res.status === 401 && path !== "Token") {
-    throw new ApiError(401, "You don't have permission for this action.");
+    throw new ApiError(401, t("You don't have permission for this action."));
   }
   // data-rule violations (tenancy, lifecycle steps, read-only data, plan limits) come with a readable message
-  if (res.status === 403) throw new ApiError(403, (json && typeof json.message === "string" && json.message) || "Administrators only.");
+  if (res.status === 403) throw new ApiError(403, (json && typeof json.message === "string" && tx(json.message)) || t("Administrators only."));
   if (res.status === 400 && json && json.errors && typeof json.errors === "object") {
     // ASP.NET model validation: {"errors": {"field": ["The field is required."]}}
     const names = Object.keys(json.errors).join(", ");
-    throw new ApiError(400, `Please check: ${names}`, json.errors);
+    throw new ApiError(400, t("Please check: {fields}", { fields: names }), json.errors);
   }
   if (!res.ok) {
-    const msg = (json && (json.message === "Exception" ? json.document : json.message)) || res.statusText || "Request failed";
-    throw new ApiError(res.status, typeof msg === "string" ? msg : JSON.stringify(msg));
+    const msg = (json && (json.message === "Exception" ? json.document : json.message)) || res.statusText || t("Request failed");
+    throw new ApiError(res.status, typeof msg === "string" ? tx(msg) : JSON.stringify(msg)); // known API messages are translated
   }
   return json as T;
 }
@@ -135,7 +136,7 @@ export async function listWhere(table: string, column: string, value: any, max =
 
 export async function login(username: string, password: string): Promise<void> {
   const res = await api<any>("POST", "Token", { username, password });
-  if (res?.code !== 1) throw new ApiError(401, "Invalid username or password."); // the cookie is set by the response
+  if (res?.code !== 1) throw new ApiError(401, t("Invalid username or password.")); // the cookie is set by the response
 }
 
 /**
@@ -151,6 +152,6 @@ export async function publicApi<T = any>(method: string, path: string, body?: an
   });
   let data: any = null;
   try { data = await res.json(); } catch { /* no body */ }
-  if (!res.ok) throw new Error(data?.message || (res.status === 429 ? "Too many requests. Please wait a minute and try again." : "Something went wrong. Please try again."));
+  if (!res.ok) throw new Error(data?.message || (res.status === 429 ? t("Too many requests. Please wait a minute and try again.") : t("Something went wrong. Please try again.")));
   return data as T;
 }

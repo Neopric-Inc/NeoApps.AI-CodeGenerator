@@ -20,6 +20,7 @@ import { extensions } from "./customExtensions";
 import { ShareDialog } from "./ShareDialog";
 import ShareOutlined from "@mui/icons-material/ShareOutlined";
 
+import { t, lower, tn, tx } from "./i18n";
 /** Related records of one child table, filtered client-side by the FK pointing at the parent. */
 const ChildList: React.FC<{ child: ResolvedTable; fk: string; parentId: any }> = ({ child, fk, parentId }) => {
   const { can } = useApp();
@@ -45,7 +46,7 @@ const ChildList: React.FC<{ child: ResolvedTable; fk: string; parentId: any }> =
     <Box>
       {can(child.name, "create") && (
         <Box sx={{ p: 1.5, display: "flex", justifyContent: "flex-end" }}>
-          <Button size="small" startIcon={<AddIcon />} onClick={() => setAdding(null)}>Add {child.singular.toLowerCase()}</Button>
+          <Button size="small" startIcon={<AddIcon />} onClick={() => setAdding(null)}>{t("Add {item}", { item: lower(child.singular) })}</Button>
         </Box>
       )}
       <DataTable table={child} columns={columns.length ? columns : child.listColumns} rows={rows} total={rows.length} loading={loading}
@@ -85,10 +86,10 @@ export const RecordPage: React.FC = () => {
   useEffect(() => { load(); }, [load]);
   const del = useDelete(name, () => navigate(`/r/${name}`));
 
-  if (!table) return <Alert severity="warning">Unknown table "{name}".</Alert>;
-  if (!canOpen(name)) return <Alert severity="info">This page isn't available for your role.</Alert>;
+  if (!table) return <Alert severity="warning">{t("Unknown table \"{name}\".", { name })}</Alert>;
+  if (!canOpen(name)) return <Alert severity="info">{t("This page isn't available for your role.")}</Alert>;
   if (loading) return <Box sx={{ display: "grid", placeItems: "center", py: 10 }}><CircularProgress /></Box>;
-  if (error || !record) return <Alert severity="error">{error || `${table.singular} not found.`}</Alert>;
+  if (error || !record) return <Alert severity="error">{tx(error) || t("{item} not found.", { item: table.singular })}</Alert>;
 
   const children = table.children.filter((c) => tables[c] && can(c, "read")).map((c) => ({
     child: tables[c],
@@ -108,11 +109,11 @@ export const RecordPage: React.FC = () => {
             flex: 1
           }}>{String(record[table.displayField] ?? `${table.singular} #${id}`)}</Typography>
         {ai?.enabled && <WorkflowButtons workflows={ai.workflows.filter((w) => w.table === name)} recordId={id} record={record} onApplied={() => setBump((b) => b + 1)} />}
-        {ai?.enabled && <Button variant="outlined" startIcon={<AutoAwesome />} onClick={() => navigate(`/assistant?table=${name}&id=${encodeURIComponent(id)}`)}>Ask AI</Button>}
+        {ai?.enabled && <Button variant="outlined" startIcon={<AutoAwesome />} onClick={() => navigate(`/assistant?table=${name}&id=${encodeURIComponent(id)}`)}>{t("Ask AI")}</Button>}
         {extensions.recordActions && record && React.createElement(extensions.recordActions, { table: name, record, onChanged: () => setBump((b) => b + 1) })}
-        {canChangeRecord(name, record, "update") && (config as any).sharing !== false && <Button variant="outlined" startIcon={<ShareOutlined />} onClick={() => setSharing(true)}>Share</Button>}
-        {canChangeRecord(name, record, "update") && <Button variant="outlined" startIcon={<EditOutlined />} onClick={() => setEditing(true)}>Edit</Button>}
-        {canChangeRecord(name, record, "delete") && <Button color="error" startIcon={<DeleteOutline />} onClick={() => del.ask(record)}>Delete</Button>}
+        {canChangeRecord(name, record, "update") && (config as any).sharing !== false && <Button variant="outlined" startIcon={<ShareOutlined />} onClick={() => setSharing(true)}>{t("Share")}</Button>}
+        {canChangeRecord(name, record, "update") && <Button variant="outlined" startIcon={<EditOutlined />} onClick={() => setEditing(true)}>{t("Edit")}</Button>}
+        {canChangeRecord(name, record, "delete") && <Button color="error" startIcon={<DeleteOutline />} onClick={() => del.ask(record)}>{t("Delete")}</Button>}
       </Box>
       <Paper variant="outlined" sx={{ borderRadius: 2, p: 2.5, mb: 3 }}>
         <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr", lg: "1fr 1fr 1fr" }, gap: 2.5 }}>
@@ -140,7 +141,7 @@ export const RecordPage: React.FC = () => {
             display: "block",
             mt: 2.5
           }}>
-          Created {renderValue(table.fields.createdAt, record.createdAt)} by {record.created_by_user || record.createdBy || "—"} · Updated {renderValue(table.fields.modifiedAt, record.modifiedAt)}{record.modified_by_user ? ` by ${record.modified_by_user}` : ""}
+          {tn("Created {when} by {who}", { when: renderValue(table.fields.createdAt, record.createdAt), who: record.created_by_user || record.createdBy || "—" })}{" · "}{record.modified_by_user ? tn("Updated {when} by {who}", { when: renderValue(table.fields.modifiedAt, record.modifiedAt), who: record.modified_by_user }) : tn("Updated {when}", { when: renderValue(table.fields.modifiedAt, record.modifiedAt) })}
         </Typography>
       </Paper>
       {(ai?.enabled || ai?.files) && ai.documentTables.includes(name) && <FilesPanel table={name} recordId={id} />}

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Box, Button, Dialog, Link, Typography } from "@mui/material";
 import { jobFileUrl } from "./jobsApi";
 
+import { t } from "../i18n";
 export interface JobFileInfo {
   file: string;
   type?: string;
@@ -54,7 +55,7 @@ export const JobFile: React.FC<{ jobId: string; info: JobFileInfo; caption?: str
             <Typography variant="body2" sx={{
               color: "text.secondary"
             }}>{caption || info.file}</Typography>
-            <Button onClick={download}>Download</Button>
+            <Button onClick={download}>{t("Download")}</Button>
           </Box>
         </Dialog>
       )}

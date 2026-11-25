@@ -9,6 +9,7 @@ import { AiWorkflow, ProposedRow, WorkflowPreview } from "./aiApi";
 import { approveJob, cancelJob, FINISHED, rejectJob, startJob, useJobFeed } from "../jobs/jobsApi";
 import { JobFeed, JobStatusChip } from "../jobs/JobFeed";
 
+import { t as tr, tx } from "../i18n";
 /** Rows whose foreign keys point (directly or not) at an excluded row can't be created either. */
 function withDependents(rows: ProposedRow[], excluded: Set<string>): Set<string> {
   const out = new Set(excluded);
@@ -113,15 +114,14 @@ export const WorkflowDialog: React.FC<{ wf: AiWorkflow; recordId?: string; jobId
                 color: "text.secondary",
                 mb: 2
               }}>
-              {wf.description || "The assistant reads the source and proposes new records."} It runs in the background and nothing is saved until you review the proposal and approve it.
-            </Typography>
-            <TextField fullWidth multiline minRows={2} label="Anything to focus on? (optional)" value={note} onChange={(e) => setNote(e.target.value)} disabled={busy} />
+              {tx(wf.description) || tr("The assistant reads the source and proposes new records.")}{" "}{tr("It runs in the background and nothing is saved until you review the proposal and approve it.")}</Typography>
+            <TextField fullWidth multiline minRows={2} label={tr("Anything to focus on? (optional)")} value={note} onChange={(e) => setNote(e.target.value)} disabled={busy} />
           </>
         )}
         {jobId && !reviewing && (
           <>
-            {status === "completed" && <Alert severity="success" sx={{ mb: 2 }}>{job?.result?.summary || "Done."}</Alert>}
-            {(status === "cancelled" || status === "rejected") && <Alert severity="info" sx={{ mb: 2 }}>{status === "cancelled" ? "Cancelled." : "Rejected: nothing was created."}</Alert>}
+            {status === "completed" && <Alert severity="success" sx={{ mb: 2 }}>{job?.result?.summary || tr("Done.")}</Alert>}
+            {(status === "cancelled" || status === "rejected") && <Alert severity="info" sx={{ mb: 2 }}>{status === "cancelled" ? tr("Cancelled.") : tr("Rejected: nothing was created.")}</Alert>}
             <JobFeed job={job} events={events} error={feedError} />
             {working && <Typography
               variant="caption"
@@ -129,7 +129,7 @@ export const WorkflowDialog: React.FC<{ wf: AiWorkflow; recordId?: string; jobId
                 color: "text.secondary",
                 display: "block",
                 mt: 1
-              }}>You can close this window: the job keeps running, and you'll find it under Background jobs.</Typography>}
+              }}>{tr("You can close this window: the job keeps running, and you'll find it under Background jobs.")}</Typography>}
           </>
         )}
         {reviewing && preview && (
@@ -138,7 +138,7 @@ export const WorkflowDialog: React.FC<{ wf: AiWorkflow; recordId?: string; jobId
             {preview.warnings.map((w) => <Alert key={w} severity="warning" sx={{ mb: 1 }}>{w}</Alert>)}
             {preview.records.length === 0 && <Typography sx={{
               color: "text.secondary"
-            }}>Nothing to create.</Typography>}
+            }}>{tr("Nothing to create.")}</Typography>}
             {Object.entries(byTable).map(([table, rows]) => {
               const t = tables[table];
               const cols = Array.from(new Set(rows.flatMap((r) => Object.keys(r.values))));
@@ -146,7 +146,7 @@ export const WorkflowDialog: React.FC<{ wf: AiWorkflow; recordId?: string; jobId
                 <Box key={table} sx={{ mb: 3 }}>
                   <Typography variant="subtitle2" sx={{ mb: 0.5 }}>{t?.label || table} <Typography component="span" variant="caption" sx={{
                     color: "text.secondary"
-                  }}>({rows.filter((r) => !skipped.has(r.ref)).length} of {rows.length})</Typography></Typography>
+                  }}>({tr("{n} of {total}", { n: rows.filter((r) => !skipped.has(r.ref)).length, total: rows.length })})</Typography></Typography>
                   <Box sx={{ overflowX: "auto", border: 1, borderColor: "divider", borderRadius: 1 }}>
                     <Table size="small">
                       <TableHead>
@@ -182,22 +182,22 @@ export const WorkflowDialog: React.FC<{ wf: AiWorkflow; recordId?: string; jobId
               sx={{
                 color: "text.secondary",
                 mb: 0.5
-              }}>How it got here</Typography>
+              }}>{tr("How it got here")}</Typography>
             <JobFeed job={job} events={events} error={feedError} maxHeight={140} />
           </>
         )}
       </DialogContent>
       <DialogActions>
-        {working && <Button color="inherit" onClick={cancel} disabled={busy}>Cancel job</Button>}
-        <Button onClick={onClose}>{working ? "Run in background" : finished || reviewing ? "Close" : "Cancel"}</Button>
-        {!jobId && <Button variant="contained" onClick={run} disabled={busy} startIcon={<AutoAwesome />}>Generate proposal</Button>}
-        {finished && status !== "completed" && <Button variant="contained" onClick={run} disabled={busy} startIcon={<AutoAwesome />}>Try again</Button>}
+        {working && <Button color="inherit" onClick={cancel} disabled={busy}>{tr("Cancel job")}</Button>}
+        <Button onClick={onClose}>{working ? tr("Run in background") : finished || reviewing ? tr("Close") : tr("Cancel")}</Button>
+        {!jobId && <Button variant="contained" onClick={run} disabled={busy} startIcon={<AutoAwesome />}>{tr("Generate proposal")}</Button>}
+        {finished && status !== "completed" && <Button variant="contained" onClick={run} disabled={busy} startIcon={<AutoAwesome />}>{tr("Try again")}</Button>}
         {reviewing && (
           <>
-            <Button color="inherit" onClick={reject} disabled={busy}>Reject</Button>
-            <Button onClick={run} disabled={busy}>Regenerate</Button>
+            <Button color="inherit" onClick={reject} disabled={busy}>{tr("Reject")}</Button>
+            <Button onClick={run} disabled={busy}>{tr("Regenerate")}</Button>
             <Button variant="contained" onClick={apply} disabled={busy || count === 0}>
-              {busy ? <CircularProgress size={18} color="inherit" /> : `Create ${count} record${count === 1 ? "" : "s"}`}
+              {busy ? <CircularProgress size={18} color="inherit" /> : tr("Create {count} records", { count })}
             </Button>
           </>
         )}

@@ -1,0 +1,38 @@
+{
+"Check {count} rows": {
+"one": "Check {count} row",
+"other": "Check {count} rows"
+},
+"Create {count} records": {
+"one": "Create {count} record",
+"other": "Create {count} records"
+},
+"{count} members": {
+"one": "{count} member",
+"other": "{count} members"
+},
+"{count} members have no tenant and can't see any data until assigned.": {
+"one": "{count} member has no tenant and can't see any data until assigned.",
+"other": "{count} members have no tenant and can't see any data until assigned."
+},
+"{count} pages": {
+"one": "{count} page",
+"other": "{count} pages"
+},
+"{count} responses": {
+"one": "{count} response",
+"other": "{count} responses"
+},
+"{count} rows. Match each column to a field; leave a column unmatched to ignore it.": {
+"one": "{count} row. Match each column to a field; leave a column unmatched to ignore it.",
+"other": "{count} rows. Match each column to a field; leave a column unmatched to ignore it."
+},
+"{count} saves": {
+"one": "{count} save",
+"other": "{count} saves"
+},
+"{count} sources": {
+"one": "{count} source",
+"other": "{count} sources"
+}
+}
