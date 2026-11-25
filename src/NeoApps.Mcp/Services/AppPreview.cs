@@ -156,6 +156,7 @@ public static class AppPreview
             else if (!pk[0].AutoIncrement) w.Add($"{t.Name}.{pk[0].Name}: primary key should be AUTO_INCREMENT.");
             var missing = Audit.Where(a => !t.Columns.Any(c => c.Name == a)).ToList();
             if (missing.Count > 0) w.Add($"{t.Name}: missing audit columns {string.Join(", ", missing)}.");
+            CheckTypes(t, w);
             foreach (var c in t.Columns.Where(c => SqlWords.Contains(c.Name))) w.Add($"{t.Name}.{c.Name}: '{c.Name}' is an SQL keyword; rename it.");
             foreach (var c in t.Columns.Where(c => CSharpWords.Contains(c.Name))) w.Add($"{t.Name}.{c.Name}: '{c.Name}' is a C# keyword and breaks the generated API; rename it (e.g. {c.Name}_name).");
             foreach (var fk in t.ForeignKeys)
@@ -168,6 +169,14 @@ public static class AppPreview
                 if (tables.FindIndex(x => x.Name == fk.RefTable) > idx) w.Add($"{t.Name} references {fk.RefTable}, which is created later in the script; move {fk.RefTable} up.");
         }
         if (ui == null) return w;
+        CheckShape(ui, w);
+        foreach (var (role, tablesNode) in ui["editableFields"] as JsonObject ?? [])
+            foreach (var (table, cols) in tablesNode as JsonObject ?? [])
+            {
+                if (!names.Contains(table)) { w.Add($"editableFields.{role}: unknown table '{table}'."); continue; }
+                foreach (var c in cols as JsonArray ?? [])
+                    if (!HasCol(table, c!.GetValue<string>())) w.Add($"editableFields.{role}.{table}: unknown column '{c}'.");
+            }
 
         bool HasCol(string table, string col) => tables.FirstOrDefault(t => t.Name == table)?.Columns.Any(c => c.Name == col) == true;
         foreach (var g in ui["menu"] as JsonArray ?? [])
@@ -203,6 +212,54 @@ public static class AppPreview
         }
         CheckRules(tables, ui, w);
         return w;
+    }
+
+    private static readonly HashSet<string> UiKeys = new(StringComparer.Ordinal)
+    {
+        "appName", "tagline", "theme", "menu", "scopePicker", "dashboard", "roles", "sharing", "tables", "ai", "jobs", "live",
+        "publicApi", "tenancy", "rowScopes", "hiddenFields", "editableFields", "readFilters", "menuByRole", "openByRole", "lifecycles",
+        "notifications", "validations", "numbering", "immutable", "audit", "outbox", "limits", "$schema",
+    };
+
+    /// <summary>
+    /// Column types and names the generator can't handle (they pass MySQL, then break code generation or the
+    /// generated API): non-INT keys, BIGINT/UNSIGNED references, ENUM/SET, wrong audit column types, camelCase names.
+    /// </summary>
+    private static void CheckTypes(Table t, List<string> w)
+    {
+        static string Base(string type) => Regex.Match(type, @"^[A-Z]+").Value;
+        static string Show(string type) => type.Replace("UNSIGNED", " UNSIGNED");
+        var pk = t.Columns.FirstOrDefault(c => c.Pk);
+        if (pk != null)
+        {
+            if (Base(pk.Type) != "INT" || pk.Type.Contains("UNSIGNED"))
+                w.Add($"{t.Name}.{pk.Name}: primary key must be INT AUTO_INCREMENT (found {Show(pk.Type)}).");
+            if (!Regex.IsMatch(pk.Name, "^[a-z0-9]+(_[a-z0-9]+)*_id$"))
+                w.Add($"{t.Name}.{pk.Name}: name the primary key <singular>_id in snake_case (e.g. {Singular(t.Name)}_id).");
+        }
+        var types = new Dictionary<string, string> { ["createdBy"] = "VARCHAR", ["modifiedBy"] = "VARCHAR", ["createdAt"] = "DATETIME", ["modifiedAt"] = "DATETIME", ["isActive"] = "TINYINT" };
+        foreach (var (col, want) in types)
+            if (t.Columns.FirstOrDefault(c => c.Name == col) is { } c && (Base(c.Type) != want || !c.NotNull))
+                w.Add($"{t.Name}.{col}: write it exactly as in the rules ({(want == "VARCHAR" ? "VARCHAR(255) NOT NULL" : want == "DATETIME" ? "DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP" : "TINYINT(1) NOT NULL DEFAULT '1'")}); found {Show(c.Type)}{(c.NotNull ? "" : " NULL")}.");
+        foreach (var c in t.Columns)
+        {
+            var b = Base(c.Type);
+            if (b is "ENUM" or "SET") w.Add($"{t.Name}.{c.Name}: use VARCHAR(50) instead of {b} and list the options in the UI config.");
+            else if (!c.Pk && !types.ContainsKey(c.Name) && (b == "BIGINT" || c.Type.Contains("UNSIGNED")) && (t.ForeignKeys.Any(f => f.Column == c.Name) || Regex.IsMatch(c.Name, "(_id|Id)$"))) w.Add($"{t.Name}.{c.Name}: use INT (signed) instead of {Show(c.Type)}; references must match the INT primary keys.");
+            if (!types.ContainsKey(c.Name) && Regex.IsMatch(c.Name, "[A-Z]")) w.Add($"{t.Name}.{c.Name}: use lowercase snake_case column names (e.g. {Regex.Replace(c.Name, "(?<=[a-z0-9])([A-Z])", "_$1").ToLowerInvariant()}).");
+        }
+    }
+
+    /// <summary>Top-level ui.config keys that the app doesn't know, and keys with the wrong shape, would be ignored silently.</summary>
+    private static void CheckShape(JsonObject ui, List<string> w)
+    {
+        foreach (var (key, _) in ui)
+            if (!UiKeys.Contains(key)) w.Add($"ui config: '{key}' is not a setting NeoApps knows and would be ignored (see the UI config guide for roles, rowScopes, readFilters, lifecycles, notifications...).");
+        if (ui["roles"] is { } r && r is not JsonObject) w.Add("ui config: 'roles' must be an object like {\"Team Lead\": {\"*\": \"r\", \"tasks\": \"cru\"}}.");
+        if (ui["menu"] is { } m && m is not JsonArray) w.Add("ui config: 'menu' must be a list of groups like [{\"group\": \"Work\", \"items\": [\"tasks\"]}]; use menuByRole for per-role menus.");
+        if (ui["numbering"] is JsonObject num)
+            foreach (var (table, rule) in num)
+                if (rule is JsonValue) w.Add($"ui config: numbering.{table} must be {{\"column\": \"<column>\", \"pattern\": \"PRE-{{seq:4}}\"}}.");
     }
 
     /// <summary>

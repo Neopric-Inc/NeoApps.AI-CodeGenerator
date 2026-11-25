@@ -81,7 +81,7 @@ Work in the app's planning folder `workspace/<App>/` (git-ignored): `requirement
    NuGet packages and Playwright browsers: `custom-api/packages.json` (`{"packages": {...}, "browsers": ["chromium"]}`);
    browser example `samples/custom-api-browser/` (restrict hosts with `Browser:AllowedHosts`).
    **Data rules:** for multi-tenant apps, customer portals (customers see only their own rows), status workflows, approvals,
-   audit trails, domain events, SLAs, plan limits, field validation (formats, ranges, date order, totals) or automatic numbers (INV-2026-00001), add the `tenancy`, `rowScopes`, `hiddenFields`, `readFilters`, `lifecycles`, `validations`, `numbering`, `immutable`, `audit`, `outbox`, `jobs` and `limits` sections to ui.config.json (see the guide)
+   audit trails, domain events, SLAs, plan limits, field validation (formats, ranges, date order, totals) or automatic numbers (INV-2026-00001), add the `tenancy`, `rowScopes`, `hiddenFields`, `editableFields`, `readFilters`, `lifecycles`, `validations`, `numbering`, `immutable`, `audit`, `outbox`, `jobs` and `limits` sections to ui.config.json (see the guide)
    instead of hand-writing checks: the generated API enforces them on every query (`Utility/DataGuard*.cs`). After deploying,
    run `./neoapps test <App>` and report the result (tenant isolation per table, row scopes, append-only tables, lifecycle steps).
 4. **When requirements change** (they will): add a changelog line to `requirements.md`, update the schema and UI config,

@@ -174,6 +174,11 @@ internal static class UiConfigTools
               Columns a role never receives (API responses, Access/me, AI answers) and can't set (updates keep the stored
               value, inserts use the column default, so make them nullable or give them a default). Filtering or sorting
               by them is refused. "*" = every table. Lists, forms and record pages leave them out for that role.
+          "editableFields": { "Intern": { "tasks": ["status"], "interns": ["phone", "university", "emergency_contact"] } }
+              When the role changes an existing row of a listed table it may only change these columns: the API keeps the
+              stored value of every other column, and edit forms show them read-only for that role. Creating rows is not
+              affected. Use it for "can move the status / complete their part, but not rewrite the record" (interns on
+              tasks, clients on their own profile, reviewers on a report's comments).
           "readFilters": [ { "roles": ["Client"], "table": "intake_bundles", "column": "status", "in": ["sent", "approved"] } ]
               The role only sees and changes rows matching the filter ("in" or "notIn"); other rows behave as missing
               (404 on /{id}). Use it for drafts, internal notes, anything a role must not reach by typing a URL.
