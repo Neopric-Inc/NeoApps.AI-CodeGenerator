@@ -108,6 +108,55 @@ namespace nkv.MicroService.Utility
             }
         }
 
+        /// <summary>
+        /// A notification outside a write (scheduled jobs, reminders): one bell entry per active user, plus an email for those
+        /// who added one under the bell. Returns how many people were notified.
+        /// </summary>
+        public static int NotifyUsers(IEnumerable<int> userIds, string title, string table = null, string recordId = null, bool email = true, string actor = "system")
+        {
+            var ids = userIds.Distinct().ToList();
+            if (ids.Count == 0 || string.IsNullOrWhiteSpace(title)) return 0;
+            using var c = Db.Connection(ConnectionString);
+            c.Open();
+            using var probe = Db.Command("SELECT 1", c);
+            var mail = false;
+            foreach (var u in ids)
+            {
+                var addr = email ? EmailFor(probe, u) : null;
+                using var ins = Db.Command(@"INSERT INTO user_notifications (user_id, title, table_name, record_id, actor, email_status, createdAt)
+                    VALUES (@u, @t, @tb, @id, @a, @es, " + Db.UtcNow + ")", c);
+                ins.Parameters.AddWithValue("@u", u);
+                ins.Parameters.AddWithValue("@t", title.Length > 500 ? title[..500] : title);
+                ins.Parameters.AddWithValue("@tb", (object)table ?? DBNull.Value);
+                ins.Parameters.AddWithValue("@id", (object)recordId ?? DBNull.Value);
+                ins.Parameters.AddWithValue("@a", actor ?? "system");
+                ins.Parameters.AddWithValue("@es", addr != null ? "pending" : "none");
+                ins.ExecuteNonQuery();
+                mail |= addr != null;
+            }
+            if (mail) NotificationMailer.Wake(TimeSpan.FromSeconds(2));
+            return ids.Count;
+        }
+
+        /// <summary>Active users for a "notify" value outside a write: "role:Name", a user id, a username, or the email they
+        /// sign in with or get notifications at.</summary>
+        public static List<int> UsersFor(string who)
+        {
+            var ids = new List<int>();
+            if (string.IsNullOrWhiteSpace(who)) return ids;
+            using var c = Db.Connection(ConnectionString);
+            c.Open();
+            var role = who.StartsWith("role:", StringComparison.OrdinalIgnoreCase);
+            using var q = Db.Command(role
+                ? "SELECT u.user_id FROM users u JOIN roles r ON r.role_id = u.role_id WHERE r.role_name = @p AND u.isActive = 1"
+                : @"SELECT user_id FROM users WHERE isActive = 1 AND (username = @p OR CAST(user_id AS CHAR(20)) = @p
+                    OR user_id IN (SELECT user_id FROM user_notification_settings WHERE email = @p))".Replace("AS CHAR(20)", Db.IsSqlServer ? "AS VARCHAR(20)" : "AS CHAR(20)"), c);
+            q.Parameters.AddWithValue("@p", role ? who[5..] : who.Trim());
+            using var r = q.ExecuteReader();
+            while (r.Read()) ids.Add(Convert.ToInt32(r.GetValue(0)));
+            return ids;
+        }
+
         static string Render(string template, Dictionary<string, object> row, object id) =>
             Regex.Replace(template, @"\{(\w+)\}", m => m.Groups[1].Value.Equals("id", StringComparison.OrdinalIgnoreCase) ? id?.ToString() ?? ""
                 : Str(row.GetValueOrDefault(m.Groups[1].Value)) ?? "");

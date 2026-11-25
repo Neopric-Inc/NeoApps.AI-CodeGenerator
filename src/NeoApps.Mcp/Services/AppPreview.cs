@@ -25,7 +25,7 @@ public static class AppPreview
         "roles", "users", "entities", "permissionmatrix", "messagequeue", "s3bucket", "s3bucket_folders", "dnd_ui_versions",
         "project_dnd_ui_versions", "workflow", "workflows", "workflows_projects", "workflow_builds", "workflow_runs",
         "workflow_deployments", "workflow_triggers", "workflow_trigger_conditions",
-        "ai_files", "ai_chunks", "ai_conversations", "ai_messages", "ai_runs", "versioninfo", "user_tenants", "login_attempts", "user_security", "number_sequences", "background_jobs", "background_job_events", "user_notifications", "user_notification_settings", "share_links", "member_invites", "user_emails", "login_codes",
+        "ai_files", "ai_chunks", "ai_conversations", "ai_messages", "ai_runs", "versioninfo", "user_tenants", "login_attempts", "user_security", "number_sequences", "background_jobs", "background_job_events", "job_schedules", "user_notifications", "user_notification_settings", "share_links", "member_invites", "user_emails", "login_codes",
     };
     // Column names become C# property names in the generated API, unescaped.
     internal static readonly HashSet<string> CSharpWords = new(StringComparer.Ordinal)
@@ -477,6 +477,54 @@ public static class AppPreview
             if (dl["escalate"] is JsonObject esc && Table("jobs.deadlines.escalate", Str(esc["table"])))
                 foreach (var (c, _) in esc["values"] as JsonObject ?? []) Col("jobs.deadlines.escalate.values", Str(esc["table"])!, c);
         }
+        var workflowIds = (ui["ai"]?["workflows"] as JsonArray ?? []).Select(x => Str(x?["id"])).Where(x => x != null).ToHashSet();
+        var scheduleIds = new HashSet<string>();
+        foreach (var sc in (ui["jobs"]?["schedules"] as JsonArray ?? []).OfType<JsonObject>())
+        {
+            var id = Str(sc["id"]);
+            var where = $"jobs.schedules.{id ?? "?"}";
+            if (string.IsNullOrWhiteSpace(id)) w.Add("jobs.schedules: every schedule needs an \"id\".");
+            else if (!scheduleIds.Add(id)) w.Add($"{where}: duplicate id.");
+            var every = Str(sc["every"]) ?? "";
+            var m = System.Text.RegularExpressions.Regex.Match(every, @"^\s*(\d+)\s*(m|h|d|w)\s*$", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            if (!m.Success || int.Parse(m.Groups[1].Value) < 1) w.Add($"{where}: \"every\" must look like 30m, 6h, 1d, 14d or 1w.");
+            else if (m.Groups[2].Value.ToLowerInvariant() == "m" && int.Parse(m.Groups[1].Value) < 5) w.Add($"{where}: runs at most every 5 minutes.");
+            if (Str(sc["at"]) is { } at && !System.Text.RegularExpressions.Regex.IsMatch(at, @"^([01]\d|2[0-3]):[0-5]\d$")) w.Add($"{where}: \"at\" must be HH:mm, e.g. 08:00.");
+            if (Str(sc["timezone"]) is { } tz)
+                try { TimeZoneInfo.FindSystemTimeZoneById(tz); } catch (Exception) { w.Add($"{where}: unknown timezone '{tz}' (use an IANA name such as America/Toronto)."); }
+            foreach (var k in new[] { "from", "until" })
+                if (Str(sc[k]) is { } d && !DateTime.TryParse(d, out _))
+                {
+                    var parts = d.Split('.');
+                    if (parts.Length != 2) w.Add($"{where}.{k}: use a date (2026-12-07) or table.column (programs.start_date).");
+                    else if (Table($"{where}.{k}", parts[0])) Col($"{where}.{k}", parts[0], parts[1]);
+                }
+            var actions = new[] { sc["workflow"], sc["job"], sc["remind"] }.Count(x => x != null);
+            if (actions != 1) w.Add($"{where}: needs exactly one of \"workflow\" (an AI workflow), \"job\" (a custom job kind) or \"remind\".");
+            void SchedWhere(string at2, string? table, JsonNode? wh)
+            {
+                foreach (var (c, _) in wh as JsonObject ?? []) Col(at2, table!, c);
+            }
+            if (Str(sc["workflow"]) is { } wf)
+            {
+                if (!workflowIds.Contains(wf)) w.Add($"{where}: no AI workflow '{wf}' in ai.workflows.");
+                if (Table($"{where}.forEach", Str(sc["forEach"]?["table"]))) SchedWhere($"{where}.forEach.where", Str(sc["forEach"]?["table"]), sc["forEach"]?["where"]);
+                else if (sc["forEach"] == null) w.Add($"{where}: a workflow schedule needs \"forEach\": {{\"table\": ..., \"where\": {{...}}}} (one run per row).");
+            }
+            if (sc["remind"] is JsonObject rm && Table($"{where}.remind", Str(rm["table"])))
+            {
+                var t = Str(rm["table"])!;
+                SchedWhere($"{where}.remind.where", t, rm["where"]);
+                if (Str(rm["userColumn"]) is { } uc) Col($"{where}.remind.userColumn", t, uc);
+                else if (rm["summaryTo"] == null) w.Add($"{where}.remind: set \"userColumn\" (who gets the reminder) or \"summaryTo\".");
+                if (rm["unless"] is JsonObject un && Table($"{where}.remind.unless", Str(un["table"])))
+                {
+                    if (Str(un["column"]) is { } uc2) Col($"{where}.remind.unless.column", Str(un["table"])!, uc2);
+                    if (Str(un["date"]) is { } dc) Col($"{where}.remind.unless.date", Str(un["table"])!, dc);
+                    SchedWhere($"{where}.remind.unless.where", Str(un["table"]), un["where"]);
+                }
+            }
+        }
         foreach (var n in Objs(ui["notifications"]))
         {
             if (!Table("notifications", Str(n["table"]))) continue;
@@ -567,6 +615,14 @@ public static class AppPreview
         }
         foreach (var lim in Objs(ui["limits"])) data.Add($"{Label(ui, Str(lim["table"]) ?? "")}: limited by the {Str(lim["max"]?["column"]) ?? "plan"} of the {Singular(Label(ui, Str(lim["max"]?["from"]) ?? "plan")).ToLowerInvariant()}.");
         foreach (var dl in Objs(ui["jobs"]?["deadlines"])) data.Add($"{Label(ui, Str(dl["table"]) ?? "")}: overdue items are flagged automatically.");
+        foreach (var sc in (ui["jobs"]?["schedules"] as JsonArray ?? []).OfType<JsonObject>())
+        {
+            var what = Str(sc["workflow"]) is { } wf ? $"runs the AI workflow '{wf}' for each {Singular(Label(ui, Str(sc["forEach"]?["table"]) ?? "")).ToLowerInvariant()} (waits for approval)"
+                : sc["remind"] is JsonObject rm ? $"reminds {Label(ui, Str(rm["table"]) ?? "")}" + (rm["unless"] is JsonObject un ? $" without a {Singular(Label(ui, Str(un["table"]) ?? "")).ToLowerInvariant()} that day" : "")
+                : $"runs the job '{Str(sc["job"])}'";
+            var every = Str(sc["every"]) ?? "?";
+            data.Add($"Every {every}{(Str(sc["at"]) is { } at ? " at " + at : "")}{(sc["weekdays"]?.GetValueKind() == System.Text.Json.JsonValueKind.True ? " on weekdays" : "")}: {what}.");
+        }
         if (data.Count > 0) cards.Add(("Data checks", data));
         return cards;
     }

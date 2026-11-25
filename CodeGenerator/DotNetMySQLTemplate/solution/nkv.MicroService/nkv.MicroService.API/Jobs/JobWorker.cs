@@ -57,6 +57,7 @@ namespace nkv.MicroService.API.Jobs
             consumer.Received += (_, ea) =>
             {
                 var jobId = Encoding.UTF8.GetString(ea.Body.ToArray());
+                if (jobId == JobQueue.TickBody) { try { lock (channel) channel.BasicAck(ea.DeliveryTag, false); } catch { } return; }
                 var tag = ea.DeliveryTag;
                 var redelivered = ea.Redelivered;
                 _ = Task.Run(async () =>
@@ -90,6 +91,14 @@ namespace nkv.MicroService.API.Jobs
             processor.ProcessMessageAsync += async args =>
             {
                 var jobId = args.Message.Body.ToString();
+                if (jobId == JobQueue.TickBody)
+                {
+                    // a scheduler wake-up: run what's due, book the next one, then take the message off the queue
+                    try { await _services.GetRequiredService<JobScheduler>().OnTick(stop); }
+                    catch (Exception ex) { _log.LogError(ex, "Scheduler wake-up failed"); }
+                    await args.CompleteMessageAsync(args.Message, CancellationToken.None);
+                    return;
+                }
                 var ack = true;
                 try { ack = await Process(jobId, args.Message.DeliveryCount > 1, stop); }
                 catch (Exception ex) { _log.LogError(ex, "Job {JobId} crashed the worker loop", jobId); }

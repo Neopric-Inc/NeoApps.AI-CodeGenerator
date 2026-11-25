@@ -179,6 +179,9 @@ namespace {projectName}.API
                 if (!handler.IsAbstract && typeof({projectName}.API.Jobs.JobHandler).IsAssignableFrom(handler))
                     services.AddScoped(typeof({projectName}.API.Jobs.JobHandler), handler);
             services.AddHostedService<{projectName}.API.Jobs.JobWorker>();
+            // Schedules from ui.config.json "jobs.schedules": Service Bus scheduled wake-ups (serverless) or a timer (RabbitMQ).
+            services.AddSingleton<{projectName}.API.Jobs.JobScheduler>();
+            services.AddHostedService(sp => sp.GetRequiredService<{projectName}.API.Jobs.JobScheduler>());
             // Reads scanned PDFs and images (OCR with Claude) after upload.
             services.AddHostedService<{projectName}.API.Ai.AiFileWorker>();
             // App-specific background services: every BackgroundService in the Custom/ folder (workspace/<App>/custom-api).

@@ -56,6 +56,28 @@ namespace nkv.MicroService.API.Jobs
         public static void Declare(IModel channel, string name) =>
             channel.QueueDeclare(queue: name, durable: true, exclusive: false, autoDelete: false, arguments: null);
 
+        /// <summary>Message body of a scheduler wake-up (see <see cref="JobScheduler"/>); never a job id.</summary>
+        public const string TickBody = "neoapps:schedule-tick";
+
+        /// <summary>
+        /// Service Bus only: books a scheduler wake-up for <paramref name="atUtc"/>. The message stays invisible until then,
+        /// so the app can scale to zero and the queue trigger wakes it on time. Returns the sequence number (to cancel it).
+        /// </summary>
+        public long ScheduleTick(DateTime atUtc)
+        {
+            if (_sender == null) throw new InvalidOperationException("Scheduled wake-ups need Azure Service Bus.");
+            return _sender.ScheduleMessageAsync(new ServiceBusMessage(TickBody) { MessageId = "tick:" + atUtc.ToString("yyyyMMddHHmmss") + ":" + Guid.NewGuid().ToString("N") },
+                new DateTimeOffset(DateTime.SpecifyKind(atUtc, DateTimeKind.Utc))).GetAwaiter().GetResult();
+        }
+
+        /// <summary>Cancels a booked wake-up; false when it already fired or doesn't exist.</summary>
+        public bool CancelTick(long sequence)
+        {
+            if (_sender == null) return false;
+            try { _sender.CancelScheduledMessageAsync(sequence).GetAwaiter().GetResult(); return true; }
+            catch (Exception) { return false; }
+        }
+
         public void Enqueue(string jobId)
         {
             if (_sender != null)
