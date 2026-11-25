@@ -140,6 +140,33 @@ namespace nkv.MicroService.Utility
             return s;
         }
 
+        /// <summary>
+        /// One column type written in MySQL syntax (as in schema.sql), for the current database. Used by migrations, so a
+        /// schema change made on MySQL also applies on SQL Server (TINYINT(1) -> BIT, TEXT -> NVARCHAR(MAX), ...).
+        /// </summary>
+        public static string ColumnType(string mysqlType)
+        {
+            if (!IsSqlServer) return mysqlType;
+            var R = (Func<string, string, string, string>)((s, p, r) => System.Text.RegularExpressions.Regex.Replace(s, p, r, System.Text.RegularExpressions.RegexOptions.IgnoreCase));
+            var t = R(mysqlType.Trim(), @"\s+", " ");
+            var unsigned = R(t, @"\bUNSIGNED\b", "") != t;
+            t = R(R(t, @"\b(UNSIGNED|ZEROFILL)\b", ""), @"\s+", " ").Trim();
+            if (R(t, @"^(BOOL|BOOLEAN|TINYINT\s*\(\s*1\s*\)|BIT(\s*\(\s*1\s*\))?)$", "") == "") return "BIT";
+            t = R(t, @"^(TINYINT|SMALLINT|MEDIUMINT|INT|INTEGER|BIGINT)\s*\(\s*\d+\s*\)", "$1");   // display widths
+            switch (t.ToUpperInvariant())
+            {
+                case "TINYINT": return unsigned ? "TINYINT" : "SMALLINT";
+                case "SMALLINT": return unsigned ? "INT" : "SMALLINT";
+                case "MEDIUMINT": case "INT": case "INTEGER": return unsigned ? "BIGINT" : "INT";
+                case "BIGINT": return unsigned ? "DECIMAL(20,0)" : "BIGINT";
+                case "YEAR": return "SMALLINT";
+                case "TIME": return "TIME(0)";
+                case "TIMESTAMP": return "DATETIME2";
+            }
+            if (R(t, @"^(ENUM|SET)\s*\(.*\)$", "") == "") return "NVARCHAR(255)";
+            return Ddl("c " + t).Substring(2).Trim();
+        }
+
         /// <summary>Insert, or update the given columns when the key already exists. keyCols must form a primary/unique key.</summary>
         public static string Upsert(string table, IList<string> cols, IList<string> keyCols, IList<string> updateCols = null)
         {

@@ -122,13 +122,18 @@ public static class NeoAppsMigrationExtensions
 
     /// <summary>The audit columns every NeoApps table has.</summary>
     public static ICreateTableColumnOptionOrWithColumnSyntax WithAuditColumns(this ICreateTableWithColumnSyntax table) =>
-        table.WithColumn("createdBy").AsCustom("VARCHAR(255)").NotNullable()
-             .WithColumn("modifiedBy").AsCustom("VARCHAR(255)").NotNullable()
-             .WithColumn("createdAt").AsCustom("DATETIME").NotNullable().WithDefault(SystemMethods.CurrentDateTime)
-             .WithColumn("modifiedAt").AsCustom("DATETIME").NotNullable().WithDefault(SystemMethods.CurrentDateTime)
-             .WithColumn("isActive").AsCustom("TINYINT(1)").NotNullable().WithDefaultValue(1)
-             .WithColumn("created_by_user").AsCustom("VARCHAR(255)").Nullable()
-             .WithColumn("modified_by_user").AsCustom("VARCHAR(255)").Nullable();
+        table.WithColumn("createdBy").AsType("VARCHAR(255)").NotNullable()
+             .WithColumn("modifiedBy").AsType("VARCHAR(255)").NotNullable()
+             .WithColumn("createdAt").AsType("DATETIME").NotNullable().WithDefault(SystemMethods.CurrentDateTime)
+             .WithColumn("modifiedAt").AsType("DATETIME").NotNullable().WithDefault(SystemMethods.CurrentDateTime)
+             .WithColumn("isActive").AsType("TINYINT(1)").NotNullable().WithDefaultValue(1)
+             .WithColumn("created_by_user").AsType("VARCHAR(255)").Nullable()
+             .WithColumn("modified_by_user").AsType("VARCHAR(255)").Nullable();
+
+    /// <summary>A column type written in MySQL syntax (as in schema.sql), translated for the database being migrated.
+    /// Generated migrations use this instead of AsCustom so they run on MySQL and SQL Server alike.</summary>
+    public static TNext AsType<TNext>(this FluentMigrator.Builders.IColumnTypeSyntax<TNext> column, string mysqlType)
+        where TNext : FluentMigrator.Infrastructure.IFluentSyntax => column.AsCustom(Db.ColumnType(mysqlType));
 
     /// <summary>
     /// Registers a new table with RBAC: adds it to entities, gives administrators full access, adds role template rows
