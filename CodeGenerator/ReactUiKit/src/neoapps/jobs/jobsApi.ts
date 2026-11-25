@@ -53,6 +53,10 @@ export const getJob = (id: string) => call<Job>("GET", `/${id}`);
 export const listJobs = (status?: string) => call<Job[]>("GET", status ? `?status=${encodeURIComponent(status)}` : "");
 export const jobEvents = (id: string, after: number, wait: number, signal?: AbortSignal) =>
   call<{ job: Job; events: JobEvent[] }>("GET", `/${id}/events?after=${after}&wait=${wait}`, undefined, signal);
+/** A schedule from ui.config.json jobs.schedules with its state (administrators). */
+export interface JobSchedule { id: string; error?: string | null; status?: string | null; nextRun?: string | null; lastRun?: string | null; runs?: number; lastMessage?: string | null }
+export const listSchedules = () => call<JobSchedule[]>("GET", "/schedules");
+export const runSchedules = () => call<JobSchedule[]>("POST", "/schedules/run");
 export const approveJob = (id: string, decision: Record<string, any>) => call<Job>("POST", `/${id}/approve`, { decision });
 export const rejectJob = (id: string, reason?: string) => call<Job>("POST", `/${id}/reject`, { reason });
 export const cancelJob = (id: string) => call<Job>("POST", `/${id}/cancel`);

@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -85,6 +86,24 @@ namespace nkv.MicroService.API.Controllers
             var id = _store.Create(handler.Kind, title, me, Tenant(), input);
             _queue.Enqueue(id);
             return _store.Get(id).ToJson(withResult: false);
+        });
+
+        /// <summary>Schedules from ui.config.json with their next/last run (administrators).</summary>
+        [HttpGet, Route(Route + "/schedules")]
+        public ActionResult Schedules() => Run(() =>
+        {
+            if (!Me().IsAdmin) throw new JobException("Only administrators can see schedules.");
+            return HttpContext.RequestServices.GetRequiredService<JobScheduler>().Status();
+        });
+
+        /// <summary>Runs every schedule that is due now (administrators); it also happens automatically.</summary>
+        [HttpPost, Route(Route + "/schedules/run")]
+        public ActionResult RunSchedules() => Run(() =>
+        {
+            if (!Me().IsAdmin) throw new JobException("Only administrators can run schedules.");
+            var scheduler = HttpContext.RequestServices.GetRequiredService<JobScheduler>();
+            scheduler.OnTick(HttpContext.RequestAborted).GetAwaiter().GetResult();
+            return scheduler.Status();
         });
 
         [HttpGet, Route(Route)]

@@ -255,6 +255,26 @@ internal static class UiConfigTools
               published to RabbitMQ (topic exchange, routing key = event, MessageId for de-duplication, retries, dead letter).
           "jobs": { "everySeconds": 60, "deadlines": [ { "table": "case_deadlines", "due": "due_at", "met": "met_at", "breached": "is_breached",
                     "escalate": { "table": "case_escalations", "values": { "case_id": "{case_id}", "reason": "Missed {deadline_type}" } } } ] }
+          "jobs": { "schedules": [ ... ] }  Time-based runs (also on serverless cloud apps: a Service Bus scheduled message wakes the
+              app; on RabbitMQ servers a timer checks every minute). Each schedule runs at the END of each period, once even with
+              several API copies, and once after downtime (missed runs are not repeated). One action per schedule:
+                { "id": "biweekly_reports", "every": "14d", "from": "programs.start_date", "until": "programs.end_date",
+                  "at": "08:00", "timezone": "America/Toronto", "workflow": "prepare_report",
+                  "forEach": { "table": "interns", "where": { "status": "active" } },
+                  "note": "Reporting period {periodStart} to {periodEnd}", "notify": ["role:Administrator"] }
+                    // one AI workflow job per matching row; the proposal waits for approval and "notify" + the run-as user are told
+                { "id": "timesheet_reminder", "every": "1d", "at": "17:00", "weekdays": true, "timezone": "America/Toronto",
+                  "remind": { "table": "interns", "where": { "status": "active" }, "userColumn": "email",
+                              "unless": { "table": "timesheets", "column": "intern_id", "date": "work_date" },
+                              "title": "Please log today's timesheet", "label": "full_name", "summaryTo": ["role:Administrator"] } }
+                    // bell + email to the member whose username/email is in userColumn, unless a row exists for that day
+                { "id": "nightly_close", "every": "1d", "at": "02:00", "job": "billing.close-day", "input": {} }
+                    // a JobHandler kind from custom-api; input.schedule has {id, runAt, periodStart, periodEnd}
+              every: Nm (at least 5), Nh, Nd, Nw. from/until: a date or table.column (earliest/latest active row); without
+              "from" weekly runs fall on Mondays. Daily periods are local dates: a 14d run on Dec 21 covers Dec 7-20.
+              where: equality, a list (IN), {"<": "today"} (also <=, >, >=, !=), null. Runs as "runAs" (a username) or the
+              first active administrator; row scopes apply. GET /v1/api/Jobs/schedules shows next/last run and the last result;
+              POST /v1/api/Jobs/schedules/run runs what is due now (admins).
           "limits": [ { "table": "members", "where": { "kind": "employee" }, "max": { "from": "subscriptions", "column": "seats", "where": { "status": "active" } } },
                       { "table": "usage", "sum": "quantity", "period": "month", "max": { "from": "plans", "column": "credits",
                         "join": { "table": "subscriptions", "on": "plan_id" } } } ]     // 402 when exceeded; platform users exempt

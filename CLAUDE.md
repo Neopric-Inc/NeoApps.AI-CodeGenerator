@@ -24,7 +24,7 @@ Work in the app's planning folder `workspace/<App>/` (git-ignored): `requirement
    - **never** reuse a built-in table name: `roles`, `users`, `entities`, `permissionmatrix`, `messagequeue`,
      `s3bucket`, `s3bucket_folders`, `dnd_ui_versions`, `project_dnd_ui_versions`, `workflow`, `workflows`,
      `workflows_projects`, `workflow_builds`, `workflow_runs`, `workflow_deployments`, `workflow_triggers`,
-     `workflow_trigger_conditions`, `ai_files`, `ai_chunks`, `ai_conversations`, `ai_messages`, `ai_runs`, `versioninfo`, `user_tenants`, `login_attempts`, `user_security`, `number_sequences`, `background_jobs`, `background_job_events`, `user_notifications`, `user_notification_settings`, `share_links`, `member_invites`, `user_emails`, `login_codes` (use e.g. `members`, `automation_runs`)
+     `workflow_trigger_conditions`, `ai_files`, `ai_chunks`, `ai_conversations`, `ai_messages`, `ai_runs`, `versioninfo`, `user_tenants`, `login_attempts`, `user_security`, `number_sequences`, `background_jobs`, `background_job_events`, `job_schedules`, `user_notifications`, `user_notification_settings`, `share_links`, `member_invites`, `user_emails`, `login_codes` (use e.g. `members`, `automation_runs`)
    - plain `CREATE TABLE` / `INSERT` only: no `CREATE DATABASE`, `USE`, `DELIMITER`, procedures
    Save it as `workspace/<App>/schema.sql` (copy it to `samples/` if it should be committed).
    **Existing database** (MySQL, PostgreSQL, SQL Server, SQLite): don't write the schema by hand. Have the user
@@ -75,7 +75,7 @@ Work in the app's planning folder `workspace/<App>/` (git-ignored): `requirement
    pause for a person's approval), write a `JobHandler` subclass in `workspace/<App>/custom-api/*.cs` (namespace
    `nkv.MicroService.API.Custom`, replaced by the app name; example `samples/custom-api-example/`). It runs on the
    RabbitMQ worker as the user who started it (`DataGuard.RunAs`), reports progress (`ctx.Progress`), can pause
-   (`ctx.AwaitApproval`) and resume (`ResumeAsync`). API: `POST /v1/api/Jobs {kind, input}`, `GET /Jobs/{id}/events?after=N`
+   (`ctx.AwaitApproval`) and resume (`ResumeAsync`). **Scheduled runs** (every 14 days, daily reminders, nightly jobs) go in ui.config.json `jobs.schedules` (AI workflow per row, a reminder, or a job kind; see the guide): they work on serverless cloud apps too (Service Bus scheduled wake-ups). API: `POST /v1/api/Jobs {kind, input}`, `GET /Jobs/{id}/events?after=N`
    (long-poll), `POST /Jobs/{id}/approve|reject|cancel`, `GET /Jobs`, `GET /Jobs/{id}/files/{name}`. UI: `src/neoapps/jobs/`
    (`startJob`, `useJobFeed`, `<JobFeed/>`, `<JobFiles/>`). Jobs attach evidence with `ctx.AttachFile` (shown inline).
    NuGet packages and Playwright browsers: `custom-api/packages.json` (`{"packages": {...}, "browsers": ["chromium"]}`);
@@ -193,7 +193,7 @@ added to every app table automatically and stamped by DataGuard on every write, 
   `DataGuard.Apply`/`DataGuard.NonQuery`), `DataGuard.Scopes.cs` (row scopes), `DataGuard.Rules.cs` (lifecycles, immutability, audit, outbox, limits, SLA), `DataGuard.Validation.cs` (field validations), `DataGuard.Numbering.cs` (numbering) and
   `GuardJobs*.cs` (outbox publisher, deadline job). Any new data-access code must execute through them.
 - Background jobs live in the template's `<App>.API/Jobs/` (`JobHandler`, `JobStore` = MySQL tables `background_jobs` /
-  `background_job_events`, `JobQueue` = RabbitMQ, `JobSignals` = Redis pub/sub, `JobWorker` = hosted consumer) and
+  `background_job_events`, schedules in `job_schedules`; `JobQueue` = RabbitMQ, `JobSignals` = Redis pub/sub, `JobWorker` = hosted consumer) and
   `Controllers/JobsController.cs`; they're registered in `startup.txt` (the generated Startup.cs comes from it, not from
   the solution folder). Code outside a web request must run inside `DataGuard.RunAs(caller)`: otherwise `DataGuard.Current`
   is null and queries are not scoped. `workspace/<App>/custom-api/` is copied by `NeoAppsTools.CopyCustomApi`, which also writes
