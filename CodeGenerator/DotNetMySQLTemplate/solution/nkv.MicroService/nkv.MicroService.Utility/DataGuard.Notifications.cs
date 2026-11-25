@@ -149,13 +149,18 @@ namespace nkv.MicroService.Utility
             var role = who.StartsWith("role:", StringComparison.OrdinalIgnoreCase);
             using var q = Db.Command(role
                 ? "SELECT u.user_id FROM users u JOIN roles r ON r.role_id = u.role_id WHERE r.role_name = @p AND u.isActive = 1"
-                : @"SELECT user_id FROM users WHERE isActive = 1 AND (username = @p OR CAST(user_id AS CHAR(20)) = @p
-                    OR user_id IN (SELECT user_id FROM user_notification_settings WHERE email = @p))".Replace("AS CHAR(20)", Db.IsSqlServer ? "AS VARCHAR(20)" : "AS CHAR(20)"), c);
+                : @"SELECT user_id FROM users WHERE isActive = 1 AND (username = @p OR " + UserIdText("user_id") + @" = @p
+                    OR user_id IN (SELECT user_id FROM user_notification_settings WHERE email = @p))", c);
             q.Parameters.AddWithValue("@p", role ? who[5..] : who.Trim());
             using var r = q.ExecuteReader();
             while (r.Read()) ids.Add(Convert.ToInt32(r.GetValue(0)));
             return ids;
         }
+
+        // user ids compared as text: the column on the other side may hold an id, a username or an email, and SQL Server
+        // (unlike MySQL) fails the whole statement when it can't convert such text to a number
+        static string UserIdText(string expr) => $"CAST({expr} AS {(Db.IsSqlServer ? "NVARCHAR(20)" : "CHAR(20)")})";
+        static string TextOf(string expr) => Db.IsSqlServer ? $"CAST({expr} AS NVARCHAR(255))" : expr;
 
         static string Render(string template, Dictionary<string, object> row, object id) =>
             Regex.Replace(template, @"\{(\w+)\}", m => m.Groups[1].Value.Equals("id", StringComparison.OrdinalIgnoreCase) ? id?.ToString() ?? ""
@@ -184,14 +189,14 @@ namespace nkv.MicroService.Utility
                 else if (s.StartsWith("role:", StringComparison.OrdinalIgnoreCase))
                 { sql = "SELECT u.user_id FROM users u JOIN roles r ON r.role_id = u.role_id WHERE r.role_name = @p AND u.isActive = 1"; p = s[5..]; }
                 else if (row.GetValueOrDefault(s) is { } val && Str(val) is { } sv)
-                { sql = "SELECT user_id FROM users WHERE (user_id = @p OR username = @p) AND isActive = 1"; p = sv; }
+                { sql = $"SELECT user_id FROM users WHERE ({UserIdText("user_id")} = @p OR username = @p) AND isActive = 1"; p = sv; }
             }
             else if (who is JsonObject o && o["column"]?.GetValue<string>() is { } col && Str(row.GetValueOrDefault(col)) is { } fk)
             {
                 var t = o["table"]?.GetValue<string>();
                 var uc = o["userColumn"]?.GetValue<string>() ?? "user_id";
                 if (t != null && PrimaryKeys.TryGetValue(t, out var key))
-                { sql = $"SELECT u.user_id FROM {Db.Q(SafeIdentifier(t))} x JOIN users u ON (u.user_id = x.{Db.Q(SafeIdentifier(uc))} OR u.username = x.{Db.Q(SafeIdentifier(uc))}) WHERE x.{Db.Q(SafeIdentifier(key))} = @p AND u.isActive = 1"; p = fk; }
+                { sql = $"SELECT u.user_id FROM {Db.Q(SafeIdentifier(t))} x JOIN users u ON ({UserIdText("u.user_id")} = {TextOf("x." + Db.Q(SafeIdentifier(uc)))} OR u.username = {TextOf("x." + Db.Q(SafeIdentifier(uc)))}) WHERE x.{Db.Q(SafeIdentifier(key))} = @p AND u.isActive = 1"; p = fk; }
             }
             if (sql == null) return ids;
             if (TenancyEnabled && caller?.Tenant != null)
