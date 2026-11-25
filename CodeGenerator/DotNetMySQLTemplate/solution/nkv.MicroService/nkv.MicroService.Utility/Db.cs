@@ -225,18 +225,21 @@ namespace nkv.MicroService.Utility
         /// <summary>Columns of the app's tables (or of one table), in table/position order. Names keep their stored case.</summary>
         public static List<Column> Columns(DbConnection c, string table = null)
         {
-            var only = table == null ? "" : " AND c.table_name = @t";
+            var only = table == null ? "" : (IsSqlServer ? " AND o.name = @t" : " AND c.table_name = @t");
+            // SQL Server: the catalog views, not information_schema (whose per-column primary-key lookup took over 30
+            // seconds on a small serverless Azure SQL database and stopped the app from starting)
             var sql = IsSqlServer
-                ? $@"SELECT c.table_name, c.column_name, c.data_type,
-                        c.data_type + CASE WHEN c.character_maximum_length = -1 THEN '(max)' WHEN c.character_maximum_length IS NOT NULL THEN '(' + CAST(c.character_maximum_length AS VARCHAR(10)) + ')'
-                                           WHEN c.data_type IN ('decimal','numeric') THEN '(' + CAST(c.numeric_precision AS VARCHAR(10)) + ',' + CAST(c.numeric_scale AS VARCHAR(10)) + ')' ELSE '' END,
-                        CASE WHEN c.is_nullable = 'YES' THEN 1 ELSE 0 END, CASE WHEN c.column_default IS NULL THEN 0 ELSE 1 END,
-                        CASE WHEN EXISTS (SELECT 1 FROM information_schema.table_constraints tc JOIN information_schema.key_column_usage k
-                                          ON k.constraint_name = tc.constraint_name AND k.table_schema = tc.table_schema
-                                          WHERE tc.constraint_type = 'PRIMARY KEY' AND tc.table_schema = c.table_schema AND tc.table_name = c.table_name AND k.column_name = c.column_name) THEN 1 ELSE 0 END,
-                        COLUMNPROPERTY(OBJECT_ID(QUOTENAME(c.table_schema) + '.' + QUOTENAME(c.table_name)), c.column_name, 'IsIdentity'),
-                        c.ordinal_position
-                   FROM information_schema.columns c WHERE c.table_schema = SCHEMA_NAME(){only} ORDER BY c.table_name, c.ordinal_position"
+                ? $@"SELECT o.name, col.name, ty.name,
+                        ty.name + CASE WHEN ty.name IN ('varchar','char','varbinary','binary') THEN '(' + CASE WHEN col.max_length = -1 THEN 'max' ELSE CAST(col.max_length AS VARCHAR(10)) END + ')'
+                                       WHEN ty.name IN ('nvarchar','nchar') THEN '(' + CASE WHEN col.max_length = -1 THEN 'max' ELSE CAST(col.max_length / 2 AS VARCHAR(10)) END + ')'
+                                       WHEN ty.name IN ('decimal','numeric') THEN '(' + CAST(col.precision AS VARCHAR(10)) + ',' + CAST(col.scale AS VARCHAR(10)) + ')' ELSE '' END,
+                        CASE WHEN col.is_nullable = 1 THEN 1 ELSE 0 END, CASE WHEN col.default_object_id <> 0 THEN 1 ELSE 0 END,
+                        CASE WHEN EXISTS (SELECT 1 FROM sys.indexes i JOIN sys.index_columns ic ON ic.object_id = i.object_id AND ic.index_id = i.index_id
+                                          WHERE i.object_id = o.object_id AND i.is_primary_key = 1 AND ic.column_id = col.column_id) THEN 1 ELSE 0 END,
+                        CASE WHEN col.is_identity = 1 THEN 1 ELSE 0 END,
+                        ROW_NUMBER() OVER (PARTITION BY o.object_id ORDER BY col.column_id)
+                   FROM sys.objects o JOIN sys.columns col ON col.object_id = o.object_id JOIN sys.types ty ON ty.user_type_id = col.user_type_id
+                   WHERE o.type IN ('U','V') AND o.schema_id = SCHEMA_ID(){only} ORDER BY o.name, col.column_id"
                 : $@"SELECT c.table_name, c.column_name, c.data_type, c.column_type, CASE WHEN c.is_nullable = 'YES' THEN 1 ELSE 0 END,
                         CASE WHEN c.column_default IS NULL THEN 0 ELSE 1 END, CASE WHEN c.column_key = 'PRI' THEN 1 ELSE 0 END,
                         CASE WHEN c.extra LIKE '%auto_increment%' THEN 1 ELSE 0 END, c.ordinal_position
