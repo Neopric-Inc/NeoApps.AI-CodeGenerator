@@ -307,7 +307,7 @@ public static class SchemaMigrations
     {
         // schema.sql types arrive with spaces squeezed out (INTUNSIGNED); put them back for the DDL.
         var type = Regex.Replace(c.Type, @"(?<=\S)(UNSIGNED|ZEROFILL)", " $1");
-        var sb = new StringBuilder($".AsCustom({Lit(type)})");
+        var sb = new StringBuilder($".AsType({Lit(type)})");   // translated per database at run time (MigrationSupport)
         sb.Append(c.NotNull || c.Pk ? ".NotNullable()" : ".Nullable()");
         if (c.Pk) sb.Append(".PrimaryKey()");
         if (c.AutoIncrement) sb.Append(".Identity()");
