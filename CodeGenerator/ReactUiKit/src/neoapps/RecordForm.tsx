@@ -88,7 +88,11 @@ export const RecordForm: React.FC<Props> = ({ table, record, defaults, open, onC
   const { config } = useApp();
   const rules = config?.validations?.[table.name] || {};
   const { refs } = useReferences(table);
-  const fields = useMemo(() => (fieldNames || table.formFields).map((n) => table.fields[n]).filter(Boolean), [table, fieldNames]);
+  const { config: appConfig, me: appMe } = useApp();
+  // "editableFields": when this role edits an existing record it may only change the listed columns (the API keeps the rest)
+  const editableOnly: string[] | undefined = record && appMe?.role_name && !appMe.is_admin ? (appConfig as any)?.editableFields?.[appMe.role_name]?.[table.name] : undefined;
+  const fields = useMemo(() => (fieldNames || table.formFields).map((n) => table.fields[n]).filter(Boolean)
+    .map((f) => (editableOnly && !editableOnly.includes(f.name) ? { ...f, readOnly: true } : f)), [table, fieldNames, editableOnly]);
   const [values, setValues] = useState<Record<string, any>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);

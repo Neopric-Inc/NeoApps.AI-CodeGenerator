@@ -590,6 +590,7 @@ namespace nkv.MicroService.Utility
                     Bind(cmd, pm.Groups[1].Value, caller.Tenant.Value);
             var values = SetAssignments(setPart, cmd);
             foreach (var h in HiddenFields(table)) values.Remove(h);
+            foreach (var l in LockedFields(table)) values.Remove(l);
             StampUpdate(cmd, caller, table, afterSet, values);
             GuardScopedWrite(cmd, caller, table, values, col =>
             {

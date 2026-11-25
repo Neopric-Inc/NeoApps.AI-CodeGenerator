@@ -12,6 +12,9 @@ namespace nkv.MicroService.Utility
     /// Per-role field and row visibility (ui.config.json), enforced by the API rather than only by the UI:
     ///   "hiddenFields": { "Client": { "claim_calculations": ["ppa_cap"], "*": ["created_by_user"] } }
     ///     the role never receives these columns (API responses, AI answers) and can't set them (writes keep the stored value).
+    ///   "editableFields": { "Intern": { "tasks": ["status"], "interns": ["phone", "university"] } }
+    ///     when the role updates a row of a listed table it may only change these columns; every other column keeps the
+    ///     stored value (creating rows is unaffected). For "work on it but don't rewrite it" access.
     ///   "readFilters": [ { "roles": ["Client"], "table": "intake_bundles", "column": "status", "in": ["sent", "approved"] } ]
     ///     the role only sees (and can only change) rows matching the filter ("in" or "notIn"); other rows behave as missing.
     /// </summary>
@@ -27,11 +30,25 @@ namespace nkv.MicroService.Utility
 
         static readonly Dictionary<string, Dictionary<string, HashSet<string>>> _hidden = new(StringComparer.OrdinalIgnoreCase);
         static readonly List<ReadFilter> _readFilters = new();
+        static readonly Dictionary<string, Dictionary<string, HashSet<string>>> _editable = new(StringComparer.OrdinalIgnoreCase);
         static readonly HashSet<string> NeverHidden = new(StringComparer.OrdinalIgnoreCase) { "createdby", "modifiedby", "createdat", "modifiedat", "isactive" };
 
         static void LoadFieldAccess()
         {
-            _hidden.Clear(); _readFilters.Clear();
+            _hidden.Clear(); _readFilters.Clear(); _editable.Clear();
+            if (Config["editableFields"] is JsonObject ef)
+                foreach (var (role, tables) in ef)
+                {
+                    if (tables is not JsonObject to) continue;
+                    var map = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
+                    foreach (var (table, cols) in to)
+                    {
+                        var set = Set(cols);
+                        foreach (var c in set) SafeIdentifier(c);
+                        map[table.ToLowerInvariant()] = set;
+                    }
+                    _editable[role] = map;
+                }
             if (Config["hiddenFields"] is JsonObject hf)
                 foreach (var (role, tables) in hf)
                 {
@@ -60,8 +77,8 @@ namespace nkv.MicroService.Utility
                         Values = (negate ? o["notIn"] : o["in"]) is JsonArray vs ? vs.Select(v => v?.ToString() ?? "").ToList() : new List<string>(),
                     });
                 }
-            if (_hidden.Count + _readFilters.Count > 0)
-                Console.WriteLine($"DataGuard: hidden fields for {_hidden.Count} role(s), {_readFilters.Count} read filter(s).");
+            if (_hidden.Count + _readFilters.Count + _editable.Count > 0)
+                Console.WriteLine($"DataGuard: hidden fields for {_hidden.Count} role(s), {_readFilters.Count} read filter(s), editable fields for {_editable.Count} role(s).");
         }
 
         static string CurrentRole(Caller caller) => caller == null || caller.IsSystem ? null : RoleName(null, caller);
@@ -123,10 +140,27 @@ namespace nkv.MicroService.Utility
             return conds;
         }
 
-        /// <summary>UPDATE: assignments to hidden columns keep the stored value.</summary>
+        /// <summary>Columns of `table` the current caller may not change on update because of "editableFields" (empty when unrestricted).</summary>
+        public static HashSet<string> LockedFields(string table)
+        {
+            var locked = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (_editable.Count == 0 || string.IsNullOrEmpty(table) || !Columns.TryGetValue(table, out var cols)) return locked;
+            var role = CurrentRole(Current);
+            if (role == null || !_editable.TryGetValue(role, out var map) || !map.TryGetValue(table, out var allowed)) return locked;
+            foreach (var c in cols)
+            {
+                if (allowed.Contains(c) || NeverHidden.Contains(c) || c.Equals(CreatedByUser, StringComparison.OrdinalIgnoreCase) || c.Equals(ModifiedByUser, StringComparison.OrdinalIgnoreCase)) continue;
+                if (PrimaryKeys.TryGetValue(table, out var pk) && pk.Equals(c, StringComparison.OrdinalIgnoreCase)) continue;
+                locked.Add(c);
+            }
+            return locked;
+        }
+
+        /// <summary>UPDATE: assignments to hidden or locked columns keep the stored value.</summary>
         static void KeepHiddenOnUpdate(DbCommand cmd, string table, int afterSet)
         {
             var hidden = HiddenFields(table);
+            hidden.UnionWith(LockedFields(table));
             if (hidden.Count == 0) return;
             var sql = cmd.CommandText;
             var setPart = sql.Substring(afterSet);
