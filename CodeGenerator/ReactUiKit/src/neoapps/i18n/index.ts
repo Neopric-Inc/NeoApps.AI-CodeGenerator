@@ -30,6 +30,8 @@ const listeners = new Set<() => void>();
 const notify = () => { version++; listeners.forEach((l) => l()); };
 
 export const language = () => current;
+/** Changes whenever the language or the app's translations change (for memo dependencies). */
+export const i18nVersion = () => version;
 export const isRtl = (code = current) => LANGUAGES.find((l) => l.code === code)?.dir === "rtl";
 /** BCP 47 locale for Intl (dates, numbers, currency). */
 export const locale = () => current;
@@ -141,8 +143,8 @@ export function subscribe(l: () => void) { listeners.add(l); return () => { list
 
 /** Re-renders when the language changes. */
 export function useT() {
-  useSyncExternalStore(subscribe, () => version);
-  return { t, tx, language: current, rtl: isRtl(), setLanguage, languages: availableLanguages() };
+  const v = useSyncExternalStore(subscribe, () => version);
+  return { t, tx, language: current, version: v, rtl: isRtl(), setLanguage, languages: availableLanguages() };
 }
 
 // ---------------------------------------------------------------- formatting in the current language

@@ -49,7 +49,7 @@ export const AppProvider: React.FC<{ children?: React.ReactNode }> = ({ children
   const [ai, setAi] = useState<AiStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>();
-  const { language } = useT(); // labels are resolved in the current language
+  const { version: language } = useT(); // labels are resolved in the current language (and the app's translations)
 
   useEffect(() => {
     (async () => {
