@@ -39,16 +39,34 @@ async function loadCard(card: DashboardCard): Promise<number> {
   return total;
 }
 
+/** The list a card counts, as a link: its "where" becomes the list's filters (?f.status=open, f.x.ne=..., a month range). */
+export function cardLink(card: DashboardCard): string {
+  const q = new URLSearchParams();
+  const now = new Date();
+  const day = (y: number, m: number, d: number) => new Date(Date.UTC(y, m, d)).toISOString().slice(0, 10);
+  for (const [col, value] of Object.entries(card.where || {})) {
+    if (typeof value === "object" && value !== null) {
+      if ("notEqual" in value) q.set(`f.${col}.ne`, String(value.notEqual));
+      else if ((value as any).period === "month") {
+        q.set(`f.${col}.from`, day(now.getUTCFullYear(), now.getUTCMonth(), 1));
+        q.set(`f.${col}.to`, day(now.getUTCFullYear(), now.getUTCMonth() + 1, 0));
+      }
+    } else q.set(`f.${col}`, typeof value === "boolean" ? (value ? "1" : "0") : String(value));
+  }
+  const s = q.toString();
+  return `/r/${card.table}${s ? "?" + s : ""}`;
+}
+
 export const Dashboard: React.FC = () => {
   const { config, schema, menu, tables, me } = useApp();
   const navigate = useNavigate();
   const cards = useMemo(() => {
-    const readable = menu.flatMap((group) => group.items);
+    const readable = menu.flatMap((group) => group.items).filter((i) => !i.startsWith("/") && tables[i]);
     const configured: DashboardCard[] = config.dashboard?.cards?.length
       ? config.dashboard.cards
       : readable.slice(0, 8).map((table) => ({ table }));
     return configured.filter(({ table }) => readable.includes(table));
-  }, [config.dashboard?.cards, menu]);
+  }, [config.dashboard?.cards, menu, tables]);
   const [counts, setCounts] = useState<(number | null | undefined)[]>([]);
   const recentName = config.dashboard?.recentTable && menu.some((group) => group.items.includes(config.dashboard!.recentTable!))
     ? config.dashboard.recentTable
@@ -95,7 +113,7 @@ export const Dashboard: React.FC = () => {
       <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr 1fr", md: "repeat(4, 1fr)" }, gap: 2, mb: 3 }}>
         {cards.map((card, index) => (
           <Card key={index} variant="outlined" sx={{ borderRadius: 2 }}>
-            <CardActionArea onClick={() => navigate(`/r/${card.table}`)}>
+            <CardActionArea onClick={() => navigate(cardLink(card))}>
               <CardContent>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1, color: "text.secondary", mb: 1 }}>
                   <Icon name={tables[card.table].icon} />

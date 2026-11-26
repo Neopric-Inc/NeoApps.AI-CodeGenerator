@@ -170,12 +170,12 @@ namespace {projectName}.Manager.Impl
             }
         }
 
-        public APIResponse Filter{tableName}(string ownername,List<FilterModel> filterModels, string andOr, int page = 1, int itemsPerPage = 100, List<OrderByModel> orderBy = null)
+        public APIResponse Filter{tableName}(string ownername,List<FilterModel> filterModels, string andOr, int page = 1, int itemsPerPage = 100, List<OrderByModel> orderBy = null, string searchKey = null)
         {
-            var result = DataAccess.Filter{tableName}(ownername,filterModels, andOr, page, itemsPerPage, orderBy);
+            var result = DataAccess.Filter{tableName}(ownername,filterModels, andOr, page, itemsPerPage, orderBy, searchKey);
             if (result != null && result.Count > 0)
             {
-                var totalRecords = DataAccess.GetFilterTotalRecord{tableName}(ownername,filterModels, andOr);
+                var totalRecords = DataAccess.GetFilterTotalRecord{tableName}(ownername,filterModels, andOr, searchKey);
                 var response = new { records = result, pageNumber = page, pageSize = itemsPerPage, totalRecords = totalRecords };
                 return new APIResponse(ResponseCode.SUCCESS, "Record Found", response);
             }

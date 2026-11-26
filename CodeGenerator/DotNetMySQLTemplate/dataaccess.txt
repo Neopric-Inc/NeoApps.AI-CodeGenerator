@@ -387,7 +387,7 @@ namespace {projectName}.DataAccess.Impl
             finally { mySqlDatabaseConnector.CloseConnection(); }
             return false;
         }
-		public List<{tableName}Model> Filter{tableName}(string ownername,List<FilterModel> filterBy, string andOr, int page, int itemsPerPage, List<OrderByModel> orderBy)
+		public List<{tableName}Model> Filter{tableName}(string ownername,List<FilterModel> filterBy, string andOr, int page, int itemsPerPage, List<OrderByModel> orderBy, string searchKey = null)
         {
             var ret = new List<{tableName}Model>();
             int offset = (page - 1) * itemsPerPage;
@@ -417,11 +417,11 @@ namespace {projectName}.DataAccess.Impl
                             }
                         }
                         whereClause = whereClause.Trim();
-                        cmd.CommandText = cmd.CommandText.Replace("{filterColumns}", "Where t.isActive=1 AND t.createdBy=@ownername AND (" + whereClause + ")");
+                        cmd.CommandText = cmd.CommandText.Replace("{filterColumns}", "Where t.isActive=1 AND t.createdBy=@ownername AND (" + whereClause + ")" + (string.IsNullOrWhiteSpace(searchKey) ? "" : " AND {searchConditions}"));
                     }
                     else
                     {
-                        cmd.CommandText = cmd.CommandText.Replace("{filterColumns}", "Where t.isActive=1 AND t.createdBy=@ownername");
+                        cmd.CommandText = cmd.CommandText.Replace("{filterColumns}", "Where t.isActive=1 AND t.createdBy=@ownername" + (string.IsNullOrWhiteSpace(searchKey) ? "" : " AND {searchConditions}"));
                     }
                     if (orderBy != null && orderBy.Count > 0)
                     {
@@ -431,6 +431,7 @@ namespace {projectName}.DataAccess.Impl
                     cmd.CommandText = cmd.CommandText.Replace("@Offset", $"{offset}");
                     cmd.Parameters.AddWithValue("@ItemsPerPage", itemsPerPage);
                     cmd.CommandText = cmd.CommandText.Replace("@ItemsPerPage", $"{itemsPerPage}");
+                    if (!string.IsNullOrWhiteSpace(searchKey)) cmd.Parameters.AddWithValue("@SearchKey", searchKey.Trim());
                     cmd.Parameters.AddWithValue("@ownername", ownername);
                     if (filterBy != null && filterBy.Count > 0)
                     {
@@ -470,7 +471,7 @@ namespace {projectName}.DataAccess.Impl
             return ret;
         }
 
-        public int GetFilterTotalRecord{tableName}(string ownername,List<FilterModel> filterBy, string andOr)
+        public int GetFilterTotalRecord{tableName}(string ownername,List<FilterModel> filterBy, string andOr, string searchKey = null)
         {
             try
             {
@@ -501,13 +502,14 @@ namespace {projectName}.DataAccess.Impl
                             }
                         }
                         whereClause = whereClause.Trim();
-                        cmd.CommandText = cmd.CommandText.Replace("{filterColumns}", "Where t.isActive=1 AND t.createdBy=@ownername AND (" + whereClause + ")");
+                        cmd.CommandText = cmd.CommandText.Replace("{filterColumns}", "Where t.isActive=1 AND t.createdBy=@ownername AND (" + whereClause + ")" + (string.IsNullOrWhiteSpace(searchKey) ? "" : " AND {searchConditions}"));
                     }
                     else
                     {
-                        cmd.CommandText = cmd.CommandText.Replace("{filterColumns}", "Where t.isActive=1 AND t.createdBy=@ownername");
+                        cmd.CommandText = cmd.CommandText.Replace("{filterColumns}", "Where t.isActive=1 AND t.createdBy=@ownername" + (string.IsNullOrWhiteSpace(searchKey) ? "" : " AND {searchConditions}"));
                     }
 
+                    if (!string.IsNullOrWhiteSpace(searchKey)) cmd.Parameters.AddWithValue("@SearchKey", searchKey.Trim());
                     cmd.Parameters.AddWithValue("@ownername", ownername);
                     if (filterBy != null && filterBy.Count > 0)
                     {

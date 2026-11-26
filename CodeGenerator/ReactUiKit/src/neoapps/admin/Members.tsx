@@ -1,8 +1,10 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  Alert, Box, Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle, MenuItem, Paper, Switch, Table, TableBody,
-  TableCell, TableHead, TableRow, TextField, Typography,
+  Alert, Box, Button, Chip, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, InputAdornment, MenuItem, Paper, Switch, Table, TableBody,
+  TableCell, TableHead, TableRow, TableSortLabel, TextField, Typography,
 } from "@mui/material";
+import SearchIcon from "@mui/icons-material/Search";
+import { Pager } from "../DataTable";
 import PersonAddOutlined from "@mui/icons-material/PersonAddOutlined";
 import { api, listRecords } from "../api";
 import { useApp } from "../AppContext";
@@ -64,6 +66,37 @@ export const Members: React.FC = () => {
   }, []);
   useEffect(() => { load(); }, [load]);
 
+  // role and access changes take effect at once (sessions end), so they are confirmed first
+  const [pending, setPending] = useState<{ m: Member; patch: Partial<Member>; text: string } | null>(null);
+  const roleName = (id: number) => tx(roles.find((r) => r.role_id === id)?.role_name || "");
+  const ask = (m: Member, patch: Partial<Member>) => {
+    const text = patch.role_id !== undefined
+      ? t("Change {name}'s role from {from} to {to}? Their access changes right away.", { name: m.username, from: roleName(m.role_id), to: roleName(patch.role_id) })
+      : patch.isActive === 0
+        ? t("Turn off {name}? They are signed out and can't sign in until turned on again.", { name: m.username })
+        : t("Turn {name} back on? They can sign in again.", { name: m.username });
+    setPending({ m, patch, text });
+  };
+
+  const [search, setSearch] = useState("");
+  const [roleFilter, setRoleFilter] = useState(0);
+  const [sort, setSort] = useState<{ column: "username" | "role" | "createdAt"; dir: "ASC" | "DESC" }>({ column: "username", dir: "ASC" });
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(25);
+  const shown = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const list = members.filter((m) => (!roleFilter || m.role_id === roleFilter)
+      && (!q || [m.username, m.email, tx(m.role_name)].some((v) => v && String(v).toLowerCase().includes(q))));
+    const key = (m: Member) => sort.column === "username" ? m.username.toLowerCase() : sort.column === "role" ? tx(m.role_name).toLowerCase() : String(m.createdAt || "");
+    list.sort((a, b) => (key(a) < key(b) ? -1 : key(a) > key(b) ? 1 : 0) * (sort.dir === "ASC" ? 1 : -1));
+    return list;
+  }, [members, search, roleFilter, sort]);
+  useEffect(() => { setPage(0); }, [search, roleFilter]);
+  const sortBy = (column: typeof sort.column) => setSort((s) => ({ column, dir: s.column === column && s.dir === "ASC" ? "DESC" : "ASC" }));
+  const head = (column: typeof sort.column, label: string) => (
+    <TableSortLabel active={sort.column === column} direction={sort.column === column && sort.dir === "DESC" ? "desc" : "asc"} onClick={() => sortBy(column)}>{label}</TableSortLabel>
+  );
+
   const update = async (m: Member, patch: Partial<Member>) => {
     setError(undefined);
     try {
@@ -117,22 +150,34 @@ export const Members: React.FC = () => {
           ) : undefined}>
           {t("{count} members have no tenant and can't see any data until assigned.", { count: unassigned.length })}</Alert>
       )}
+      <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1.5, mb: 2 }}>
+        <TextField size="small" placeholder={t("Search members")} value={search} onChange={(e) => setSearch(e.target.value)}
+          sx={{ width: { xs: "100%", sm: 280 }, bgcolor: "background.paper" }}
+          slotProps={{ input: { startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> } }} />
+        <TextField select size="small" label={t("Role")} value={roleFilter} onChange={(e) => setRoleFilter(Number(e.target.value))} sx={{ minWidth: 200, bgcolor: "background.paper" }}>
+          <MenuItem value={0}><em>{t("Any")}</em></MenuItem>
+          {roles.map((r) => <MenuItem key={r.role_id} value={r.role_id}>{tx(r.role_name)}</MenuItem>)}
+        </TextField>
+      </Box>
       <Paper variant="outlined" sx={{ borderRadius: 2, overflow: "hidden" }}>
         <Table>
           <TableHead>
             <TableRow sx={{ "& th": { bgcolor: "grey.50", fontWeight: 600, fontSize: 12, textTransform: "uppercase", color: "text.secondary" } }}>
-              <TableCell>{t("Username")}</TableCell><TableCell>{t("Sign-in email")}</TableCell><TableCell>{t("Role")}</TableCell>{(pickTenant || me?.tenancy) && <TableCell>{t("Tenant")}</TableCell>}<TableCell>{t("Active")}</TableCell><TableCell>{t("Added")}</TableCell>
+              <TableCell>{head("username", t("Username"))}</TableCell><TableCell>{t("Sign-in email")}</TableCell><TableCell>{head("role", t("Role"))}</TableCell>{(pickTenant || me?.tenancy) && <TableCell>{t("Tenant")}</TableCell>}<TableCell>{t("Active")}</TableCell><TableCell>{head("createdAt", t("Added"))}</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {members.map((m) => (
+            {shown.length === 0 && (
+              <TableRow><TableCell colSpan={7} align="center" sx={{ py: 5, color: "text.secondary" }}>{members.length ? t("No members match.") : t("No members yet.")}</TableCell></TableRow>
+            )}
+            {shown.slice(page * pageSize, (page + 1) * pageSize).map((m) => (
               <TableRow key={m.user_id}>
                 <TableCell sx={{ fontWeight: 600 }}>{m.username} {m.is_you && <Chip size="small" label="you" sx={{ ml: 1 }} />}</TableCell>
                 <TableCell>
                   <Button size="small" sx={{ textTransform: "none" }} onClick={() => setEmailFor({ m, value: m.email || "" })}>{m.email || t("Add email")}</Button>
                 </TableCell>
                 <TableCell sx={{ width: 240 }}>
-                  <TextField select size="small" fullWidth value={m.role_id} disabled={m.is_you} onChange={(e) => update(m, { role_id: Number(e.target.value) })}>
+                  <TextField select size="small" fullWidth value={m.role_id} disabled={m.is_you} onChange={(e) => ask(m, { role_id: Number(e.target.value) })}>
                     {roles.map((r) => <MenuItem key={r.role_id} value={r.role_id}>{tx(r.role_name)}</MenuItem>)}
                   </TextField>
                 </TableCell>
@@ -146,13 +191,23 @@ export const Members: React.FC = () => {
                     </TextField>
                   </TableCell>
                 ) : me?.tenancy ? <TableCell>{m.tenant_assigned === false ? <Chip size="small" color="warning" label={t("Unassigned")} /> : tenantLabel(m.tenant_id)}</TableCell> : null}
-                <TableCell><Switch checked={m.isActive === 1} disabled={m.is_you} onChange={(e) => update(m, { isActive: e.target.checked ? 1 : 0 })} /></TableCell>
+                <TableCell><Switch checked={m.isActive === 1} disabled={m.is_you} onChange={(e) => ask(m, { isActive: e.target.checked ? 1 : 0 })} /></TableCell>
                 <TableCell>{parseApiDate(m.createdAt, true)?.toLocaleDateString(language()) || "—"}</TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
+        {shown.length > 10 && <Pager total={shown.length} page={page} pageSize={pageSize} onPage={(p, size) => { setPage(p); setPageSize(size); }} />}
       </Paper>
+      <Dialog open={!!pending} onClose={() => setPending(null)} maxWidth="xs" fullWidth>
+        <DialogTitle>{t("Confirm change")}</DialogTitle>
+        <DialogContent><DialogContentText>{pending?.text}</DialogContentText></DialogContent>
+        <DialogActions>
+          <Button onClick={() => setPending(null)}>{t("Cancel")}</Button>
+          <Button variant="contained" color={pending?.patch.isActive === 0 ? "error" : "primary"}
+            onClick={() => { const p = pending; setPending(null); if (p) update(p.m, p.patch); }}>{t("Confirm")}</Button>
+        </DialogActions>
+      </Dialog>
       <Dialog open={inviting} onClose={() => setInviting(false)} fullWidth maxWidth="xs">
         <DialogTitle>{t("Add member")}</DialogTitle>
         <DialogContent dividers>

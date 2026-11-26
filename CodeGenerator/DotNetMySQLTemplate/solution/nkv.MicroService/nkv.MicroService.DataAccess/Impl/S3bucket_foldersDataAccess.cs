@@ -452,7 +452,7 @@ namespace nkv.MicroService.DataAccess.Impl
             finally { mySqlDatabaseConnector.CloseConnection(); }
             return false;
         }
-        public List<S3bucket_foldersModel> FilterS3bucket_folders(string ownername, List<FilterModel> filterBy, string andOr, int page, int itemsPerPage, List<OrderByModel> orderBy)
+        public List<S3bucket_foldersModel> FilterS3bucket_folders(string ownername, List<FilterModel> filterBy, string andOr, int page, int itemsPerPage, List<OrderByModel> orderBy, string searchKey = null)
         {
             var ret = new List<S3bucket_foldersModel>();
             int offset = (page - 1) * itemsPerPage;
@@ -543,7 +543,7 @@ namespace nkv.MicroService.DataAccess.Impl
             return ret;
         }
 
-        public int GetFilterTotalRecordS3bucket_folders(string ownername, List<FilterModel> filterBy, string andOr)
+        public int GetFilterTotalRecordS3bucket_folders(string ownername, List<FilterModel> filterBy, string andOr, string searchKey = null)
         {
             try
             {

@@ -8,105 +8,83 @@ import { extensions } from "./customExtensions";
 
 import { t, tx } from "./i18n";
 /**
- * Breadcrumbs that follow how the user actually got here: a sidebar click starts a new trail, following links
- * (a list row, a child record, a related record) extends it, and going back to a page already in the trail
- * (breadcrumb click or browser Back) trims it. Kept per browser tab in sessionStorage so a reload keeps it.
+ * Breadcrumbs by location, the same however the page was reached: Dashboard › menu group › list › record.
+ * The list crumb returns to that list as it was last shown (its filters, search and page), kept per browser tab.
  */
-const KEY = "neoapps.trail";
-const MAX = 6;
-let fromMenu = false;
-/** Call when navigating from the sidebar: the next page starts a fresh trail. */
-export const markMenuNavigation = () => { fromMenu = true; };
-
-const read = (): string[] => { try { return JSON.parse(sessionStorage.getItem(KEY) || "[]"); } catch { return []; } };
-const write = (t: string[]) => { try { sessionStorage.setItem(KEY, JSON.stringify(t)); } catch { /* storage unavailable */ } };
-const pathOf = (p: string) => p.split("?")[0];
+const LAST_LIST = "neoapps.lastList.";
 const RECORD = /^\/r\/([^/]+)\/([^/]+)$/;
 const LIST = /^\/r\/([^/]+)$/;
-const FIXED: Record<string, string> = {
-  "/assistant": "Assistant", "/jobs": "Background jobs", "/admin/members": "Members",
-  "/admin/roles": "Roles & permissions", "/admin/customize": "Customize UI", // translated where shown
+const ADMIN: Record<string, string> = {
+  "/admin/members": "Members", "/admin/roles": "Roles & permissions", "/admin/customize": "Customize UI", // translated where shown
 };
+const FIXED: Record<string, string> = { "/assistant": "Assistant", "/jobs": "Background jobs" };
 const recordLabels: Record<string, string> = {};
+
+/** Kept for custom code that called it; breadcrumbs no longer depend on how a page was reached. */
+export const markMenuNavigation = () => { /* no-op */ };
+
+const lastList = (table: string) => { try { return sessionStorage.getItem(LAST_LIST + table) || ""; } catch { return ""; } };
 
 export const Breadcrumbs: React.FC = () => {
   const { pathname, search } = useLocation();
-  const { tables, menu } = useApp();
-  const [trail, setTrail] = useState<string[]>([]);
+  const { tables, menu, ai } = useApp();
   const [, rerender] = useState(0);
 
+  // remember each list's filters/search/page, so "Tasks" in a record's breadcrumbs goes back to the same view
   useEffect(() => {
-    let t = fromMenu || pathname === "/" ? [] : read();
-    fromMenu = false;
-    const i = t.findIndex((p) => pathOf(p) === pathname);
-    if (i >= 0) t = t.slice(0, i);
-    t = [...t, pathname + search].filter((p) => pathOf(p) !== "/").slice(-MAX); // the dashboard is always the first crumb
-    delete recordLabels[pathname]; // refresh the current record's name (it may have been edited)
-    write(t);
-    setTrail(t);
+    const m = pathname.match(LIST);
+    if (m) try { sessionStorage.setItem(LAST_LIST + m[1], search); } catch { /* storage unavailable */ }
   }, [pathname, search]);
 
+  const rec = pathname.match(RECORD);
   useEffect(() => {
-    trail.map(pathOf).forEach((path) => {
-      const m = path.match(RECORD);
-      if (!m || recordLabels[path] !== undefined) return;
-      const meta = tables[m[1]];
-      const id = decodeURIComponent(m[2]);
-      const fallback = `${meta?.singular || m[1]} #${id}`;
-      recordLabels[path] = "";
-      getRecord(m[1], id)
-        .then((d: any) => {
-          const r = Array.isArray(d) ? d[0] : d;
-          const v = r && meta?.displayField ? r[meta.displayField] : null;
-          recordLabels[path] = v !== null && v !== undefined && String(v).trim() !== "" ? String(v) : fallback;
-        })
-        .catch(() => { recordLabels[path] = fallback; })
-        .finally(() => rerender((x) => x + 1));
-    });
-  }, [trail, tables]);
+    if (!rec) return;
+    const meta = tables[rec[1]];
+    const id = decodeURIComponent(rec[2]);
+    const fallback = `${meta?.singular || rec[1]} #${id}`;
+    let alive = true;
+    getRecord(rec[1], id)
+      .then((d: any) => {
+        const r = Array.isArray(d) ? d[0] : d;
+        const v = r && meta?.displayField ? r[meta.displayField] : null;
+        recordLabels[pathname] = v !== null && v !== undefined && String(v).trim() !== "" ? String(v) : fallback;
+      })
+      .catch(() => { recordLabels[pathname] = fallback; })
+      .finally(() => alive && rerender((x) => x + 1));
+    return () => { alive = false; };
+  }, [pathname, tables]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (pathname === "/" || trail.length === 0) return null;
+  if (pathname === "/") return null;
 
-  const label = (p: string, prev?: string): string => {
-    const path = pathOf(p);
-    let m = path.match(LIST);
-    if (m) return tables[m[1]]?.label || m[1];
-    m = path.match(RECORD);
-    if (m) {
-      const meta = tables[m[1]];
-      const name = recordLabels[path] || `${meta?.singular || m[1]} #${decodeURIComponent(m[2])}`;
-      // without its list just before it, say what kind of record this is
-      return prev && pathOf(prev) === `/r/${m[1]}` ? name : `${meta?.singular || m[1]}: ${name}`;
-    }
-    const nav = (extensions.nav || []).find((n) => n.to === path);
-    if (nav) return tx(nav.label);
-    return FIXED[path] ? t(FIXED[path]) : path.split("/").filter(Boolean).pop()?.replace(/[-_]/g, " ") || t("Page");
-  };
-
-  // the sidebar group of the first page, shown as plain text for orientation
-  const first = pathOf(trail[0]).match(LIST) || pathOf(trail[0]).match(RECORD);
-  const groupName = first ? menu.find((g) => g.items.includes(first[1]))?.group : undefined;
-  const group = groupName && groupName !== label(trail[0]) ? groupName : undefined; // "Engagements > Engagements" says nothing
+  const crumbs: { label: string; to?: string }[] = [];
+  const table = (pathname.match(LIST) || rec)?.[1];
+  if (table) {
+    const meta = tables[table];
+    const group = menu.find((g) => g.items.includes(table))?.group;
+    if (group && group !== meta?.label) crumbs.push({ label: group });
+    crumbs.push({ label: meta?.label || table, to: rec ? `/r/${table}${lastList(table)}` : undefined });
+    if (rec) crumbs.push({ label: recordLabels[pathname] || `${meta?.singular || table} #${decodeURIComponent(rec[2])}` });
+  } else if (ADMIN[pathname]) {
+    crumbs.push({ label: t("Administration") }, { label: t(ADMIN[pathname]) });
+  } else if (FIXED[pathname]) {
+    const group = menu.find((g) => g.items.includes(pathname))?.group;
+    if (group) crumbs.push({ label: group });
+    crumbs.push({ label: pathname === "/assistant" && ai?.assistantName ? ai.assistantName : t(FIXED[pathname]) });
+  } else {
+    const nav = (extensions.nav || []).find((n) => n.to === pathname);
+    const group = menu.find((g) => g.items.includes(pathname))?.group;
+    if (group) crumbs.push({ label: group });
+    crumbs.push({ label: nav ? tx(nav.label) : pathname.split("/").filter(Boolean).pop()?.replace(/[-_]/g, " ") || t("Page") });
+  }
 
   return (
     <MuiBreadcrumbs separator={<NavigateNextIcon fontSize="small" />} sx={{ mb: 2, "& .MuiBreadcrumbs-ol": { flexWrap: "wrap" } }}>
-      <Link component={RouterLink} to="/" underline="hover" color="inherit" onClick={markMenuNavigation}>{t("Dashboard")}</Link>
-      {group && <Typography
-        sx={{
-          color: "text.secondary",
-          fontSize: "inherit"
-        }}>{group}</Typography>}
-      {trail.map((p, i) => i === trail.length - 1
-        ? <Typography
-        key={p}
-        noWrap
-        sx={{
-          color: "text.primary",
-          fontWeight: 600,
-          fontSize: "inherit",
-          maxWidth: 360
-        }}>{label(p, trail[i - 1])}</Typography>
-        : <Link key={p} component={RouterLink} to={p} underline="hover" color="inherit" sx={{ maxWidth: 260, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{label(p, trail[i - 1])}</Link>)}
+      <Link component={RouterLink} to="/" underline="hover" color="inherit">{t("Dashboard")}</Link>
+      {crumbs.map((c, i) => i === crumbs.length - 1
+        ? <Typography key={i} noWrap sx={{ color: "text.primary", fontWeight: 600, fontSize: "inherit", maxWidth: 420 }}>{c.label}</Typography>
+        : c.to
+          ? <Link key={i} component={RouterLink} to={c.to} underline="hover" color="inherit" sx={{ maxWidth: 260, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.label}</Link>
+          : <Typography key={i} sx={{ color: "text.secondary", fontSize: "inherit" }}>{c.label}</Typography>)}
     </MuiBreadcrumbs>
   );
 };
