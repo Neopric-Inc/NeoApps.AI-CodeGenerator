@@ -13,6 +13,7 @@
 "All {items}": "Kaikki: {items}",
 "Allow 10 more": "Salli 10 lisää",
 "Already a member: {emails}.": "Jo jäsen: {emails}.",
+"Already joined? Sign in to {app} instead.": "Liityitkö jo? Kirjaudu sisään sovellukseen {app}.",
 "Also email me my notifications": "Lähetä ilmoitukseni myös sähköpostiin",
 "Anyone with the link": "Kaikki, joilla on linkki",
 "Anything to focus on? (optional)": "Mihin keskitytään? (valinnainen)",

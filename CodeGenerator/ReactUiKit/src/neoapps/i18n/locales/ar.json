@@ -13,6 +13,7 @@
 "All {items}": "الكل: {items}",
 "Allow 10 more": "السماح بـ10 إضافية",
 "Already a member: {emails}.": "عضو بالفعل: {emails}.",
+"Already joined? Sign in to {app} instead.": "انضممت بالفعل؟ سجّل الدخول إلى {app} بدلًا من ذلك.",
 "Also email me my notifications": "أرسل إليّ إشعاراتي بالبريد الإلكتروني أيضًا",
 "Anyone with the link": "أي شخص لديه الرابط",
 "Anything to focus on? (optional)": "هل هناك ما يجب التركيز عليه؟ (اختياري)",

@@ -13,6 +13,7 @@
 "All {items}": "すべての{items}",
 "Allow 10 more": "あと10件許可",
 "Already a member: {emails}.": "既にメンバーです: {emails}。",
+"Already joined? Sign in to {app} instead.": "すでに参加済みですか？{app} にサインインしてください。",
 "Also email me my notifications": "通知をメールでも受け取る",
 "Anyone with the link": "リンクを知っている全員",
 "Anything to focus on? (optional)": "重点的に見てほしい点は？（任意）",

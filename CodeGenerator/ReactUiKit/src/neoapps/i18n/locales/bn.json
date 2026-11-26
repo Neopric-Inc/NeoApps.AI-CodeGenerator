@@ -13,6 +13,7 @@
 "All {items}": "সব: {items}",
 "Allow 10 more": "আরও ১০টি অনুমতি দিন",
 "Already a member: {emails}.": "ইতিমধ্যে সদস্য: {emails}।",
+"Already joined? Sign in to {app} instead.": "আগেই যোগ দিয়েছেন? বরং {app}-এ সাইন ইন করুন।",
 "Also email me my notifications": "আমার বিজ্ঞপ্তি ইমেলেও পাঠান",
 "Anyone with the link": "লিঙ্ক থাকা যে কেউ",
 "Anything to focus on? (optional)": "কোন বিষয়ে মনোযোগ দেবেন? (ঐচ্ছিক)",
