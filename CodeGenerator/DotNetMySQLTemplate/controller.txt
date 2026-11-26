@@ -219,7 +219,8 @@ namespace {projectName}.API.Controllers
         [CheckPermission("{tableName}", "Post")]
         [HttpPost]
         [Route(APIEndpoint.DefaultRoute + "/filter")]
-        public ActionResult Filter(List<FilterModel> filterColumnList, string andOr = "AND", int page = 1, int itemsPerPage = 100, string orderBy = null)
+        /// <summary>Rows matching every filter (or any, with andOr=OR); searchKey also limits them to rows containing that text, like /search. With a searchKey the filter list may be empty.</summary>
+        public ActionResult Filter(List<FilterModel> filterColumnList, string andOr = "AND", int page = 1, int itemsPerPage = 100, string orderBy = null, string searchKey = null)
         {
             try
             {
@@ -233,11 +234,12 @@ namespace {projectName}.API.Controllers
                 {
                     ValidationResult.AddFieldError("Id", "Invalid page number");
                 }
-                if (filterColumnList == null)
+                var searching = !string.IsNullOrWhiteSpace(searchKey);
+                if (filterColumnList == null && !searching)
                 {
                     ValidationResult.AddFieldError("FilterColumnList", "Filter Column Required");
                 }
-                else if (filterColumnList != null && filterColumnList.Count <= 0)
+                else if (filterColumnList != null && filterColumnList.Count <= 0 && !searching)
                 {
                     ValidationResult.AddFieldError("FilterColumnList", "Filter Column Required");
                 }
@@ -248,7 +250,7 @@ namespace {projectName}.API.Controllers
                 }
                 List<OrderByModel> orderModelList = UtilityCommon.ConvertStringOrderToOrderModel(orderBy);
                 string ownername = HttpContext.Items["OwnerName"] as string;
-                return Ok(Manager.Filter{tableName}(ownername,filterColumnList, andOr, page, itemsPerPage, orderModelList));
+                return Ok(Manager.Filter{tableName}(ownername,filterColumnList ?? new List<FilterModel>(), andOr, page, itemsPerPage, orderModelList, searchKey));
             }catch(DataGuardException gx){ return StatusCode(gx.StatusCode, gx.Body); }catch(Exception ex)
             {
                 return ApiHardening.Error(this, ex);

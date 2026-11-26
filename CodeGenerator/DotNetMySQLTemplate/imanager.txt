@@ -12,7 +12,7 @@ namespace {projectName}.Manager.Interface
         APIResponse Get{tableName}ByCreatedBy(string ownername,int page, int itemsPerPage,List<OrderByModel> orderBy);
         APIResponse Search{tableName}(string searchKey, int page, int itemsPerPage,List<OrderByModel> orderBy);
         APIResponse Search{tableName}ByCreatedBy(string ownername,string searchKey, int page, int itemsPerPage,List<OrderByModel> orderBy);
-		APIResponse Filter{tableName}(string ownername,List<FilterModel> filterModels, string andOr, int page, int itemsPerPage, List<OrderByModel> orderBy);
+		APIResponse Filter{tableName}(string ownername,List<FilterModel> filterModels, string andOr, int page, int itemsPerPage, List<OrderByModel> orderBy, string searchKey = null);
         APIResponse Get{tableName}ByID({primaryKeyListParam});
         APIResponse Get{tableName}ByIDByCreatedBy(string ownername,{primaryKeyListParam});
         {RelationalApiInegrationIManager}

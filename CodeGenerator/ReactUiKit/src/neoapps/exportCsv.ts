@@ -1,4 +1,4 @@
-import { listRecords } from "./api";
+import { queryRecords } from "./api";
 import { parseApiDate } from "./format";
 import { ResolvedTable } from "./types";
 
@@ -13,14 +13,14 @@ function cell(v: any): string {
 }
 
 /**
- * Downloads every row of the current list (same search and sort) as CSV. Rows come through the normal list API, so
+ * Downloads every row of the current list (same filters, search and sort) as CSV. Rows come through the normal list API, so
  * row scopes, tenancy and hidden fields apply exactly as on screen.
  */
 export async function exportCsv(table: ResolvedTable, orderBy: string | undefined, search: string | undefined,
-  labelFor: (field: string, id: any) => string | undefined): Promise<number> {
+  labelFor: (field: string, id: any) => string | undefined, where: { columnName: string; columnCondition: number; columnValue: string }[] = []): Promise<number> {
   const rows: Record<string, any>[] = [];
   for (let page = 1; ; page++) {
-    const res = await listRecords(table.name, page, PAGE, orderBy, search);
+    const res = await queryRecords(table.name, page, PAGE, orderBy, search, where);
     rows.push(...res.records);
     if (res.records.length < PAGE || rows.length >= res.total) break;
   }

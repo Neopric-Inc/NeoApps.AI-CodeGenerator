@@ -719,6 +719,7 @@ WHERE
                 errors_list.Add($"Error in ProcessInterfaceDataAccess: {ex.Message}");
             }
         }
+        static string searchConditions = "(1=0)"; // the search OR-list of the table being generated, for /filter?searchKey=
         static void ProcessStringQuery(ref string query, ref string qry, List<string> tblInfo)
         {
             try
@@ -729,6 +730,7 @@ WHERE
                     : string.Join(" OR ", tblInfo.Select(field => "t." + field + " LIKE CONCAT('%',@SearchKey,'%')"));
                 query += "(" + conds + ")";
                 qry += "(" + conds + ")";
+                searchConditions = "(" + conds + ")";
             }
             catch (Exception ex)
             {
@@ -959,6 +961,7 @@ WHERE
                 string query = "SELECT count(*) TotalCount FROM " + tbl + " t WHERE t.isActive=1 AND ", querybycreatedby = "SELECT count(*) TotalCount FROM " + tbl + " t WHERE t.isActive=1 AND t.createdBy=@ownername AND ", qrybycreatedBy = "SELECT t.* FROM " + tbl + " t WHERE t.isActive=1 AND t.createdBy=@ownername AND ", qry = "SELECT t.* FROM " + tbl + " t WHERE t.isActive=1 AND ";
                 ProcessStringQuery(ref query, ref qry, tblInfo);
                 ProcessStringQuery(ref querybycreatedby, ref qrybycreatedBy, tblInfo);
+                map.Add("{searchConditions}", searchConditions);
                 map.Add("{searchRecordCountQuery}", query);
                 map.Add("{searchRecordCountQueryByCreatedBy}", querybycreatedby);
                 map.Add("{selectAllQuery}", "SELECT  t.* FROM " + tbl + " t  WHERE t.isActive=1 ORDER BY column " + PageClause);
