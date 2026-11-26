@@ -10,6 +10,7 @@ import { Icon } from "./icons";
 import { useReferences } from "./useReferences";
 import { extensions } from "./customExtensions";
 
+import { t, language, lower, tx } from "./i18n";
 async function loadCard(card: DashboardCard): Promise<number> {
   const now = new Date();
   const monthStart = (offset: number) =>
@@ -19,7 +20,7 @@ async function loadCard(card: DashboardCard): Promise<number> {
     if (typeof value === "object" && value !== null) {
       if ("notEqual" in value) return [filter(8, String(value.notEqual))];
       if (value.period === "month") return [filter(6, monthStart(0)), filter(4, monthStart(1))];
-      throw new Error("Unsupported dashboard filter");
+      throw new Error(t("Unsupported dashboard filter"));
     }
     return [filter(5, String(value))];
   });
@@ -77,19 +78,19 @@ export const Dashboard: React.FC = () => {
 
   const display = (value: number | null, card: DashboardCard) => {
     if (value === null) return "—";
-    return card.format === "currency" ? formatMoney(value, card.currencyCode || "INR") : value.toLocaleString();
+    return card.format === "currency" ? formatMoney(value, card.currencyCode || "INR") : value.toLocaleString(language());
   };
 
   return (
     <Box>
       <Typography variant="h5" sx={{
         fontWeight: 700
-      }}>Welcome back{me ? `, ${me.username}` : ""}</Typography>
+      }}>{me ? t("Welcome back, {name}", { name: me.username }) : t("Welcome back")}</Typography>
       <Typography
         sx={{
           color: "text.secondary",
           mb: 3
-        }}>{config.tagline || `Here's what's happening in ${config.appName || schema.app}.`}</Typography>
+        }}>{tx(config.tagline) || t("Here's what's happening in {app}.", { app: tx(config.appName) || schema.app })}</Typography>
       {extensions.dashboardTop && React.createElement(extensions.dashboardTop)}
       <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr 1fr", md: "repeat(4, 1fr)" }, gap: 2, mb: 3 }}>
         {cards.map((card, index) => (
@@ -98,7 +99,7 @@ export const Dashboard: React.FC = () => {
               <CardContent>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1, color: "text.secondary", mb: 1 }}>
                   <Icon name={tables[card.table].icon} />
-                  <Typography variant="body2" noWrap>{card.label || tables[card.table].label}</Typography>
+                  <Typography variant="body2" noWrap>{tx(card.label) || tables[card.table].label}</Typography>
                 </Box>
                 {counts[index] === undefined ? <Skeleton width={48} height={40} /> : <Typography variant="h4" sx={{
                   fontWeight: 700
@@ -117,7 +118,7 @@ export const Dashboard: React.FC = () => {
               py: 1.5,
               borderBottom: 1,
               borderColor: "divider"
-            }}>Recently updated {recent.label.toLowerCase()}</Typography>
+            }}>{t("Recently updated {items}", { items: lower(recent.label) })}</Typography>
           <DataTable table={recent} columns={recent.listColumns.slice(0, 5)} rows={recentRows} total={recentRows.length} loading={loadingRecent}
             page={0} pageSize={5} labelFor={labelFor} dense onOpen={(r) => navigate(`/r/${recent.name}/${r[recent.primaryKey]}`)} />
         </Paper>

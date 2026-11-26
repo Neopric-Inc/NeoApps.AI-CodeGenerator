@@ -1,6 +1,7 @@
 import {
   AppSchema, ColumnSchema, FieldConfig, MenuGroup, ResolvedField, ResolvedTable, TableConfig, TableSchema, UiConfig, Widget,
 } from "./types";
+import { t, optionText, tx } from "./i18n";
 
 export const AUDIT_FIELDS = ["createdBy", "modifiedBy", "createdAt", "modifiedAt", "isActive", "created_by_user", "modified_by_user"];
 
@@ -93,8 +94,10 @@ function defaultListColumns(t: TableSchema, display: string): string[] {
   return ordered.slice(0, 6);
 }
 
+// Labels are resolved in English (config text or derived from column names) and then translated (i18n: the app's
+// own words from ui.config "i18n.translations", then the built-in dictionary).
 export function resolveTable(schema: AppSchema, t: TableSchema, cfg: TableConfig = {}, all: Record<string, TableConfig> = {}, numbered: string[] = []): ResolvedTable {
-  const label = cfg.label || humanize(t.name);
+  const englishLabel = cfg.label || humanize(t.name);
   const displayField = cfg.displayField && t.columns.find((c) => c.name === cfg.displayField) ? cfg.displayField : defaultDisplayField(t);
   const fields: Record<string, ResolvedField> = {};
   for (const col of t.columns) {
@@ -106,7 +109,10 @@ export function resolveTable(schema: AppSchema, t: TableSchema, cfg: TableConfig
       ...fc,
       name: col.name,
       column: col,
-      label: fc.label || (col.references ? referenceLabel(col.references.table, all) : humanize(col.name)),
+      label: tx(fc.label || (col.references ? referenceLabel(col.references.table, all) : humanize(col.name))),
+      help: tx(fc.help),
+      placeholder: tx(fc.placeholder),
+      optionLabel: (v: any) => tx(fc.optionLabels?.[String(v)] ?? optionText(String(v))),
       widget,
       options: fc.options || enumOptions(col),
       hideInForm: isNumbered || (fc.hideInForm ?? (col.isPrimaryKey || col.isAutoIncrement || isAudit)),
@@ -121,10 +127,10 @@ export function resolveTable(schema: AppSchema, t: TableSchema, cfg: TableConfig
   return {
     name: t.name,
     primaryKey: t.primaryKey,
-    label,
-    singular: cfg.singular || singularize(label),
+    label: tx(englishLabel),
+    singular: tx(cfg.singular || singularize(englishLabel)),
     icon: cfg.icon || guessIcon(t.name),
-    description: cfg.description,
+    description: tx(cfg.description),
     displayField,
     listColumns: (cfg.listColumns || defaultListColumns(t, displayField)).filter((n) => fields[n] && !fields[n].hidden),
     formFields,
@@ -147,12 +153,12 @@ export function resolveMenu(tables: Record<string, ResolvedTable>, ui: UiConfig)
   const visible = Object.values(tables).filter((t) => !t.hidden).map((t) => t.name);
   if (ui.menu && ui.menu.length) {
     const listed = new Set(ui.menu.flatMap((g) => g.items));
-    const groups = ui.menu.map((g) => ({ group: g.group, items: g.items.filter((i) => tables[i] && !tables[i].hidden) }));
+    const groups = ui.menu.map((g) => ({ group: tx(g.group), items: g.items.filter((i) => tables[i] && !tables[i].hidden) }));
     const rest = visible.filter((v) => !listed.has(v));
-    if (rest.length) groups.push({ group: "More", items: rest.sort() });
+    if (rest.length) groups.push({ group: t("More"), items: rest.sort() });
     return groups.filter((g) => g.items.length);
   }
-  return [{ group: "Data", items: visible.sort((a, b) => tables[a].label.localeCompare(tables[b].label)) }];
+  return [{ group: t("Data"), items: visible.sort((a, b) => tables[a].label.localeCompare(tables[b].label)) }];
 }
 
 /** Deep-ish merge: later configs override earlier ones; table/field maps merge per key. */

@@ -25,7 +25,7 @@ public static class AppPreview
         "roles", "users", "entities", "permissionmatrix", "messagequeue", "s3bucket", "s3bucket_folders", "dnd_ui_versions",
         "project_dnd_ui_versions", "workflow", "workflows", "workflows_projects", "workflow_builds", "workflow_runs",
         "workflow_deployments", "workflow_triggers", "workflow_trigger_conditions",
-        "ai_files", "ai_chunks", "ai_conversations", "ai_messages", "ai_runs", "versioninfo", "user_tenants", "login_attempts", "user_security", "number_sequences", "background_jobs", "background_job_events", "job_schedules", "user_notifications", "user_notification_settings", "share_links", "member_invites", "user_emails", "login_codes",
+        "ai_files", "ai_chunks", "ai_conversations", "ai_messages", "ai_runs", "versioninfo", "user_tenants", "login_attempts", "user_security", "number_sequences", "background_jobs", "background_job_events", "job_schedules", "user_notifications", "user_notification_settings", "share_links", "member_invites", "user_emails", "login_codes", "user_preferences",
     };
     // Column names become C# property names in the generated API, unescaped.
     internal static readonly HashSet<string> CSharpWords = new(StringComparer.Ordinal)
@@ -211,12 +211,13 @@ public static class AppPreview
             }
         }
         CheckRules(tables, ui, w);
+        AppWords.Check(tables, ui, w);
         return w;
     }
 
     private static readonly HashSet<string> UiKeys = new(StringComparer.Ordinal)
     {
-        "appName", "tagline", "theme", "menu", "scopePicker", "dashboard", "roles", "sharing", "tables", "ai", "jobs", "live",
+        "appName", "tagline", "theme", "menu", "scopePicker", "dashboard", "roles", "sharing", "tables", "ai", "jobs", "live", "i18n",
         "publicApi", "tenancy", "rowScopes", "hiddenFields", "editableFields", "readFilters", "menuByRole", "openByRole", "lifecycles",
         "notifications", "validations", "numbering", "immutable", "audit", "outbox", "limits", "$schema",
     };

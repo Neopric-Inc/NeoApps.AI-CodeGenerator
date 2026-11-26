@@ -10,6 +10,7 @@ import { JobFeed } from "./jobs/JobFeed";
 import { approveJob, FINISHED, rejectJob, startJob, useJobFeed } from "./jobs/jobsApi";
 import { ResolvedTable } from "./types";
 
+import { t, lower } from "./i18n";
 const MAX_ROWS = 5000;
 const NOT_WRITABLE = new Set(["createdby", "modifiedby", "createdat", "modifiedat", "isactive", "created_by_user", "modified_by_user"]);
 
@@ -50,7 +51,7 @@ export const ImportButton: React.FC<{ table: ResolvedTable; onDone: () => void }
   const [open, setOpen] = useState(false);
   return (
     <>
-      <Button variant="outlined" startIcon={<UploadIcon />} onClick={() => setOpen(true)}>Import</Button>
+      <Button variant="outlined" startIcon={<UploadIcon />} onClick={() => setOpen(true)}>{t("Import")}</Button>
       {open && <ImportDialog table={table} onClose={(changed) => { setOpen(false); if (changed) onDone(); }} />}
     </>
   );
@@ -74,8 +75,8 @@ const ImportDialog: React.FC<{ table: ResolvedTable; onClose: (changed: boolean)
   const readFile = async (file: File) => {
     setError(undefined);
     const rows = parseCsv(await file.text());
-    if (rows.length < 2) return setError("The file needs a header row and at least one data row.");
-    if (rows.length - 1 > MAX_ROWS) return setError(`Import up to ${MAX_ROWS} rows at a time; this file has ${rows.length - 1}.`);
+    if (rows.length < 2) return setError(t("The file needs a header row and at least one data row."));
+    if (rows.length - 1 > MAX_ROWS) return setError(t("Import up to {max} rows at a time; this file has {count}.", { max: MAX_ROWS, count: rows.length - 1 }));
     const [head, ...body] = rows;
     setFileName(file.name);
     setHeader(head);
@@ -111,7 +112,7 @@ const ImportDialog: React.FC<{ table: ResolvedTable; onClose: (changed: boolean)
         let v = (r[i] ?? "").trim();
         if (v && refs[field]) {
           const id = refs[field].get(v) ?? refs[field].get(v.toLowerCase());
-          if (id === undefined) problems.push(`Row ${n + 2}: no ${fields.find((f) => f.name === field)?.label} called "${v}".`);
+          if (id === undefined) problems.push(t("Row {row}: no {field} called \"{value}\".", { row: n + 2, field: fields.find((f) => f.name === field)?.label, value: v }));
           else v = String(id);
         }
         o[field] = v;
@@ -126,7 +127,7 @@ const ImportDialog: React.FC<{ table: ResolvedTable; onClose: (changed: boolean)
     setError(undefined);
     try {
       const { rows, problems } = await buildRows();
-      if (problems.length) { setError(problems.slice(0, 8).join(" ") + (problems.length > 8 ? ` …and ${problems.length - 8} more.` : "")); return; }
+      if (problems.length) { setError(problems.slice(0, 8).join(" ") + (problems.length > 8 ? " " + t("…and {count} more.", { count: problems.length - 8 }) : "")); return; }
       const j = await startJob("data.import", { table: table.name, rows, ...(key ? { key } : {}) });
       setJobId(j.job_id);
     } catch (e: any) {
@@ -143,18 +144,18 @@ const ImportDialog: React.FC<{ table: ResolvedTable; onClose: (changed: boolean)
 
   return (
     <Dialog open fullWidth maxWidth="md" onClose={() => onClose(done)}>
-      <DialogTitle>Import {table.label.toLowerCase()}</DialogTitle>
+      <DialogTitle>{t("Import {items}", { items: lower(table.label) })}</DialogTitle>
       <DialogContent dividers>
         {!jobId && (
           <>
             <Button component="label" variant="outlined" startIcon={<UploadIcon />}>
-              {fileName ? "Choose another file" : "Choose a CSV file"}
+              {fileName ? t("Choose another file") : t("Choose a CSV file")}
               <input hidden type="file" accept=".csv,text/csv" onChange={(e) => e.target.files?.[0] && readFile(e.target.files[0])} />
             </Button>
-            {fileName && <Typography variant="body2" sx={{ mt: 1, color: "text.secondary" }}>{fileName}: {data.length} rows. Match each column to a field; leave a column unmatched to ignore it.</Typography>}
+            {fileName && <Typography variant="body2" sx={{ mt: 1, color: "text.secondary" }}>{fileName}: {t("{count} rows. Match each column to a field; leave a column unmatched to ignore it.", { count: data.length })}</Typography>}
             {header.length > 0 && (
               <Table size="small" sx={{ mt: 2 }}>
-                <TableHead><TableRow><TableCell>Column in file</TableCell><TableCell>Field</TableCell><TableCell>First row</TableCell></TableRow></TableHead>
+                <TableHead><TableRow><TableCell>{t("Column in file")}</TableCell><TableCell>{t("Field")}</TableCell><TableCell>{t("First row")}</TableCell></TableRow></TableHead>
                 <TableBody>
                   {header.map((h, i) => (
                     <TableRow key={i}>
@@ -162,7 +163,7 @@ const ImportDialog: React.FC<{ table: ResolvedTable; onClose: (changed: boolean)
                       <TableCell>
                         <TextField select size="small" value={mapping[i] ?? ""} sx={{ minWidth: 200 }} slotProps={{ select: { displayEmpty: true } }}
                           onChange={(e) => setMapping((m) => m.map((x, j) => (j === i ? e.target.value : x)))}>
-                          <MenuItem value=""><em>Ignore</em></MenuItem>
+                          <MenuItem value=""><em>{t("Ignore")}</em></MenuItem>
                           {fields.map((f) => <MenuItem key={f.name} value={f.name}>{f.label}</MenuItem>)}
                         </TextField>
                       </TableCell>
@@ -173,12 +174,12 @@ const ImportDialog: React.FC<{ table: ResolvedTable; onClose: (changed: boolean)
               </Table>
             )}
             {header.length > 0 && (
-              <TextField select size="small" label="Skip rows that already exist, matched by" value={key} onChange={(e) => setKey(e.target.value)} sx={{ mt: 2, minWidth: 320 }} slotProps={{ select: { displayEmpty: true }, inputLabel: { shrink: true } }}>
-                <MenuItem value=""><em>Don't check (import every row)</em></MenuItem>
+              <TextField select size="small" label={t("Skip rows that already exist, matched by")} value={key} onChange={(e) => setKey(e.target.value)} sx={{ mt: 2, minWidth: 320 }} slotProps={{ select: { displayEmpty: true }, inputLabel: { shrink: true } }}>
+                <MenuItem value=""><em>{t("Don't check (import every row)")}</em></MenuItem>
                 {mapping.filter(Boolean).map((m) => <MenuItem key={m} value={m}>{fields.find((f) => f.name === m)?.label}</MenuItem>)}
               </TextField>
             )}
-            {dup && <Alert severity="warning" sx={{ mt: 2 }}>Two columns are matched to {fields.find((f) => f.name === dup)?.label}. Match each field once.</Alert>}
+            {dup && <Alert severity="warning" sx={{ mt: 2 }}>{t("Two columns are matched to {field}. Match each field once.", { field: fields.find((f) => f.name === dup)?.label })}</Alert>}
           </>
         )}
         {jobId && (
@@ -186,9 +187,9 @@ const ImportDialog: React.FC<{ table: ResolvedTable; onClose: (changed: boolean)
             <JobFeed job={job} events={events} error={feedError} />
             {Array.isArray(result?.errors) && result.errors.length > 0 && (
               <Box sx={{ mt: 2 }}>
-                <Typography variant="subtitle2">Rows to fix ({result.errorCount})</Typography>
+                <Typography variant="subtitle2">{t("Rows to fix ({count})", { count: result.errorCount })}</Typography>
                 <Table size="small">
-                  <TableHead><TableRow><TableCell>Row</TableCell><TableCell>Problem</TableCell></TableRow></TableHead>
+                  <TableHead><TableRow><TableCell>{t("Row")}</TableCell><TableCell>{t("Problem")}</TableCell></TableRow></TableHead>
                   <TableBody>
                     {result.errors.slice(0, 50).map((e: any) => (
                       <TableRow key={e.row}><TableCell>{e.row}</TableCell><TableCell>{String(e.message).replace(/'([A-Za-z0-9_]+)'/g, (m: string, n: string) => (table.fields[n] ? `"${table.fields[n].label}"` : m))}</TableCell></TableRow>
@@ -202,15 +203,15 @@ const ImportDialog: React.FC<{ table: ResolvedTable; onClose: (changed: boolean)
         {error && <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>}
       </DialogContent>
       <DialogActions>
-        {!jobId && <Button onClick={() => onClose(false)}>Cancel</Button>}
-        {!jobId && <Button variant="contained" disabled={!mapped || !!dup || busy} onClick={check}>{busy ? "Checking…" : `Check ${data.length} rows`}</Button>}
+        {!jobId && <Button onClick={() => onClose(false)}>{t("Cancel")}</Button>}
+        {!jobId && <Button variant="contained" disabled={!mapped || !!dup || busy} onClick={check}>{busy ? t("Checking…") : t("Check {count} rows", { count: data.length })}</Button>}
         {job?.status === "awaiting_approval" && (
           <>
-            <Button onClick={async () => { await rejectJob(job.job_id, "Cancelled"); onClose(false); }}>Cancel import</Button>
-            <Button variant="contained" onClick={() => approveJob(job.job_id, {}).catch((e) => setError(e.message))}>Import</Button>
+            <Button onClick={async () => { await rejectJob(job.job_id, "Cancelled"); onClose(false); }}>{t("Cancel import")}</Button>
+            <Button variant="contained" onClick={() => approveJob(job.job_id, {}).catch((e) => setError(e.message))}>{t("Import")}</Button>
           </>
         )}
-        {job && FINISHED.includes(job.status) && <Button variant="contained" onClick={() => onClose(done)}>Close</Button>}
+        {job && FINISHED.includes(job.status) && <Button variant="contained" onClick={() => onClose(done)}>{t("Close")}</Button>}
       </DialogActions>
     </Dialog>
   );

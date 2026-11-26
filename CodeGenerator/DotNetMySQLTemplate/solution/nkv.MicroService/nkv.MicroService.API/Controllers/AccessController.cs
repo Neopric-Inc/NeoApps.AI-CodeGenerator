@@ -85,6 +85,7 @@ namespace nkv.MicroService.API.Controllers
                 tenancy = DataGuard.TenancyEnabled,
                 tenant_table = DataGuard.TenantTable,
                 is_admin = IsAdmin,
+                language = UserLanguage.Get(conn, UserId),
                 permissions,
                 hidden_fields = DataGuard.HiddenFieldMap() // per-role hidden columns (never sent by the API)
             }));
@@ -316,6 +317,19 @@ namespace nkv.MicroService.API.Controllers
         public class PasswordChangeInput { public string current_password { get; set; } public string new_password { get; set; } }
 
         /// <summary>Change your own password (needs the current one); other sessions end.</summary>
+        public class LanguageInput { public string language { get; set; } }
+
+        /// <summary>The signed-in user's language (from the UI's language picker); used on every device and for their emails.</summary>
+        [HttpPut]
+        [Route(Route + "/me/language")]
+        public ActionResult SetOwnLanguage(LanguageInput input)
+        {
+            if (!UserLanguage.IsValid(input?.language)) return BadRequest(new APIResponse(ResponseCode.ERROR, "Unknown language."));
+            using var conn = Open();
+            UserLanguage.Set(conn, UserId, input.language);
+            return Ok(new APIResponse(ResponseCode.SUCCESS, "OK", new { language = input.language.Trim() }));
+        }
+
         [HttpPut]
         [Route(Route + "/me/password")]
         public ActionResult ChangeOwnPassword(PasswordChangeInput input)

@@ -2,6 +2,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useS
 import { api } from "./api";
 import { aiStatus, AiStatus } from "./ai/aiApi";
 import { effectiveSaved, mergeConfig, resolveAll, resolveMenu } from "./config";
+import { t, tx, useT } from "./i18n";
 import { AppSchema, Me, MenuGroup, Permission, ResolvedTable, UiConfig } from "./types";
 
 interface AppState {
@@ -48,11 +49,12 @@ export const AppProvider: React.FC<{ children?: React.ReactNode }> = ({ children
   const [ai, setAi] = useState<AiStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>();
+  const { version: language } = useT(); // labels are resolved in the current language (and the app's translations)
 
   useEffect(() => {
     (async () => {
       const [s, c] = await Promise.all([fetchJson("/schema.json"), fetchJson("/ui.config.json")]);
-      if (!s) setError("schema.json not found. Regenerate the frontend with the NeoApps generator.");
+      if (!s) setError(t("schema.json not found. Regenerate the frontend with the NeoApps generator."));
       setSchema(s || { app: "", tables: [] });
       setFileConfig(c || {});
     })();
@@ -63,7 +65,7 @@ export const AppProvider: React.FC<{ children?: React.ReactNode }> = ({ children
       const [meRes, cfgRes] = await Promise.all([api<any>("GET", "Access/me"), api<any>("GET", "Access/ui-config").catch(() => null)]);
       setMe(meRes?.document || null);
       setServerConfig(cfgRes?.document || null);
-      aiStatus().then(setAi).catch(() => setAi({ enabled: false, configured: false, model: "", assistantName: "Assistant", documentTables: [], suggestions: [], workflows: [] }));
+      aiStatus().then(setAi).catch(() => setAi({ enabled: false, configured: false, model: "", assistantName: t("Assistant"), documentTables: [], suggestions: [], workflows: [] }));
     } catch {
       setMe(null); // no session cookie (or it expired): show the sign-in page
     } finally {
@@ -98,7 +100,8 @@ export const AppProvider: React.FC<{ children?: React.ReactNode }> = ({ children
       };
     }
     return all;
-  }, [schema, config, me]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [schema, config, me, language]);
 
   const can = useCallback(
     (table: string, action: keyof Permission) => {
@@ -116,7 +119,7 @@ export const AppProvider: React.FC<{ children?: React.ReactNode }> = ({ children
     // (access itself is still governed by role permissions; this only declutters the menu)
     const only = me?.role_name ? (config as any).menuByRole?.[me.role_name] as string[] | undefined : undefined;
     return groups.map((g) => ({ ...g, items: g.items.filter((i) => can(i, "read") && (!only || only.includes(i))) })).filter((g) => g.items.length);
-  }, [tables, config, can, me]);
+  }, [tables, config, can, me, language]);
 
   /** Table pages a role may open: with config.menuByRole, only its menu tables, their child tables and config.openByRole (typing a URL doesn't bypass the menu). */
   const canOpen = useCallback(
@@ -159,8 +162,17 @@ export const AppProvider: React.FC<{ children?: React.ReactNode }> = ({ children
     setMe(null);
   }, []);
 
+  // the assistant's name, suggestions and workflow buttons come from ui.config: shown in the user's language
+  const aiShown = useMemo(() => ai && {
+    ...ai,
+    assistantName: tx(ai.assistantName),
+    suggestions: (ai.suggestions || []).map((s) => tx(s)),
+    workflows: (ai.workflows || []).map((w) => ({ ...w, label: tx(w.label), description: tx(w.description) })),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ai, language]);
+
   const value: AppState = {
-    loading, error, schema, config, baseConfig, tables, menu, me, ai, can, canOpen, canChangeRecord, refreshSession, saveConfig,
+    loading, error, schema, config, baseConfig, tables, menu, me, ai: aiShown, can, canOpen, canChangeRecord, refreshSession, saveConfig,
     previewConfig: setPreview, logout,
   };
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

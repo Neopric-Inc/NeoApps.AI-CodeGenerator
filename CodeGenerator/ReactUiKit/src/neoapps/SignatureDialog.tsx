@@ -3,6 +3,7 @@ import { Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle, TextF
 import { setSignatureHandler } from "./api";
 import { useApp } from "./AppContext";
 
+import { t, tn } from "./i18n";
 /**
  * Electronic signature prompt for lifecycle steps with "signature" in ui.config.json: shows what the person is
  * signing and asks for their password. The server checks it, records signer, time and statement, and never stores it.
@@ -17,7 +18,7 @@ export const SignatureDialog: React.FC = () => {
     setSignatureHandler((m) => new Promise((resolve) => {
       resolver.current = resolve;
       setPassword("");
-      setMeaning(m || "I approve this step.");
+      setMeaning(m || t("I approve this step."));
     }));
     return () => setSignatureHandler(null);
   }, []);
@@ -32,20 +33,19 @@ export const SignatureDialog: React.FC = () => {
   return (
     <Dialog open={meaning !== null} onClose={() => close(null)} maxWidth="xs" fullWidth>
       <form onSubmit={(e) => { e.preventDefault(); if (password) close(password); }}>
-        <DialogTitle>Sign this step</DialogTitle>
+        <DialogTitle>{t("Sign this step")}</DialogTitle>
         <DialogContent>
           <Alert severity="info" icon={false} sx={{ mb: 2 }}>
             <Typography variant="body2" sx={{ fontWeight: 600 }}>{meaning}</Typography>
           </Alert>
           <Typography variant="body2" sx={{ color: "text.secondary", mb: 1.5 }}>
-            Signing as <b>{me?.username || "you"}</b>. Your name, the time and this statement are recorded.
-          </Typography>
-          <TextField autoFocus fullWidth type="password" label="Your password" autoComplete="current-password"
+            {tn("Signing as {name}. Your name, the time and this statement are recorded.", { name: <b>{me?.username || t("you")}</b> })}</Typography>
+          <TextField autoFocus fullWidth type="password" label={t("Your password")} autoComplete="current-password"
             value={password} onChange={(e) => setPassword(e.target.value)} />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => close(null)}>Cancel</Button>
-          <Button type="submit" variant="contained" disabled={!password}>Sign</Button>
+          <Button onClick={() => close(null)}>{t("Cancel")}</Button>
+          <Button type="submit" variant="contained" disabled={!password}>{t("Sign")}</Button>
         </DialogActions>
       </form>
     </Dialog>

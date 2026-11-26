@@ -8,6 +8,7 @@ import DeleteOutline from "@mui/icons-material/DeleteOutlineOutlined";
 import Refresh from "@mui/icons-material/Refresh";
 import { api } from "../api";
 
+import { t, language, tx } from "../i18n";
 interface Invite {
   id: number; role_id: number; role_name: string; tenant_id?: number | null; label?: string; max_uses: number; uses: number;
   expires_at?: string; is_open: boolean; created_by: string; url: string; email?: string;
@@ -69,9 +70,9 @@ export const InviteLinks: React.FC<{
         const failed = rows.filter((r) => r.invite && !r.sent).map((r) => r.email);
         const already = rows.filter((r) => r.already).map((r) => r.email);
         setSentNote([
-          sent.length ? `Invitation emailed to ${sent.join(", ")}.` : "",
-          failed.length ? `Couldn't email ${failed.join(", ")}: copy their link below and send it yourself.` : "",
-          already.length ? `${already.join(", ")} ${already.length === 1 ? "is" : "are"} already a member.` : "",
+          sent.length ? t("Invitation emailed to {emails}.", { emails: sent.join(", ") }) : "",
+          failed.length ? t("Couldn't email {emails}: copy their link below and send it yourself.", { emails: failed.join(", ") }) : "",
+          already.length ? t("Already a member: {emails}.", { emails: already.join(", ") }) : "",
         ].filter(Boolean).join(" "));
         setEmails("");
         return;
@@ -96,66 +97,63 @@ export const InviteLinks: React.FC<{
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle>Invite people</DialogTitle>
+      <DialogTitle>{t("Invite people")}</DialogTitle>
       <DialogContent dividers>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          Type email addresses and each person gets their own link by email: they click Join and they're in, no password
-          (next time they sign in with a code sent to that email). Or leave the emails empty for one link you send yourself:
-          people who open it choose a username and password.
-        </Typography>
-        {choices.length === 0 ? <Alert severity="info">Create a role first (Roles). Administrators are added directly in Members.</Alert> : (
+          {t("Type email addresses and each person gets their own link by email: they click Join and they're in, no password (next time they sign in with a code sent to that email). Or leave the emails empty for one link you send yourself: people who open it choose a username and password.")}</Typography>
+        {choices.length === 0 ? <Alert severity="info">{t("Create a role first (Roles). Administrators are added directly in Members.")}</Alert> : (
           <Stack spacing={2}>
-            <TextField select size="small" label="Role" value={roleId} onChange={(e) => setRoleId(Number(e.target.value))}>
-              {choices.map((r) => <MenuItem key={r.role_id} value={r.role_id}>{r.role_name}</MenuItem>)}
+            <TextField select size="small" label={t("Role")} value={roleId} onChange={(e) => setRoleId(Number(e.target.value))}>
+              {choices.map((r) => <MenuItem key={r.role_id} value={r.role_id}>{tx(r.role_name)}</MenuItem>)}
             </TextField>
             {pickTenant && (
-              <TextField select size="small" label="Tenant" value={tenantId} onChange={(e) => setTenantId(Number(e.target.value))}>
-                <MenuItem value={0}>Platform</MenuItem>
+              <TextField select size="small" label={t("Tenant")} value={tenantId} onChange={(e) => setTenantId(Number(e.target.value))}>
+                <MenuItem value={0}>{t("Platform")}</MenuItem>
                 {tenants.map((t) => <MenuItem key={t.id} value={t.id}>{t.label}</MenuItem>)}
               </TextField>
             )}
-            <TextField size="small" label="Email addresses (we email each person their own link)" multiline minRows={2} value={emails}
-              onChange={(e) => setEmails(e.target.value)} placeholder="priya@example.com, sam@example.com"
-              helperText="Leave empty to make one link you copy and send yourself." />
-            <TextField size="small" label="Note (who it's for, optional)" value={label} onChange={(e) => setLabel(e.target.value)} />
+            <TextField size="small" label={t("Email addresses (we email each person their own link)")} multiline minRows={2} value={emails}
+              onChange={(e) => setEmails(e.target.value)} placeholder={"priya@example.com, sam@example.com"}
+              helperText={t("Leave empty to make one link you copy and send yourself.")} />
+            <TextField size="small" label={t("Note (who it's for, optional)")} value={label} onChange={(e) => setLabel(e.target.value)} />
             <Box sx={{ display: "flex", gap: 2 }}>
-              {!emails.trim() && <TextField size="small" type="number" label="How many people can use it" value={people} onChange={(e) => setPeople(e.target.value)} sx={{ flex: 1 }}
+              {!emails.trim() && <TextField size="small" type="number" label={t("How many people can use it")} value={people} onChange={(e) => setPeople(e.target.value)} sx={{ flex: 1 }}
                 slotProps={{ htmlInput: { min: 1, max: 1000 } }} />}
-              <TextField size="small" type="date" label="Stops working after" value={expires} onChange={(e) => setExpires(e.target.value)} sx={{ flex: 1 }}
+              <TextField size="small" type="date" label={t("Stops working after")} value={expires} onChange={(e) => setExpires(e.target.value)} sx={{ flex: 1 }}
                 slotProps={{ inputLabel: { shrink: true } }} />
             </Box>
-            <Box><Button variant="contained" onClick={create} disabled={busy || !roleId}>{busy ? <CircularProgress size={20} color="inherit" /> : emails.trim() ? "Send invitations" : "Create invite link"}</Button></Box>
+            <Box><Button variant="contained" onClick={create} disabled={busy || !roleId}>{busy ? <CircularProgress size={20} color="inherit" /> : emails.trim() ? t("Send invitations") : t("Create invite link")}</Button></Box>
             {sentNote && <Alert severity="success">{sentNote}</Alert>}
           </Stack>
         )}
         {error && <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>}
         <Divider sx={{ my: 2.5 }} />
-        <Typography variant="subtitle2" sx={{ mb: 1 }}>Invite links</Typography>
+        <Typography variant="subtitle2" sx={{ mb: 1 }}>{t("Invite links")}</Typography>
         {loading && <CircularProgress size={20} />}
-        {!loading && items.length === 0 && <Typography variant="body2" color="text.secondary">No invite links yet.</Typography>}
+        {!loading && items.length === 0 && <Typography variant="body2" color="text.secondary">{t("No invite links yet.")}</Typography>}
         <Stack spacing={1.5}>
           {items.map((i) => (
             <Box key={i.id} sx={{ border: 1, borderColor: "divider", borderRadius: 1.5, p: 1.5 }}>
               <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap", mb: 1 }}>
-                <Typography variant="body2" sx={{ fontWeight: 600, flex: 1 }}>{i.email || i.label || `Joins as ${i.role_name}`}</Typography>
-                <Chip size="small" label={i.role_name} />
-                <FormControlLabel sx={{ m: 0 }} label={i.is_open ? "On" : "Off"} control={
+                <Typography variant="body2" sx={{ fontWeight: 600, flex: 1 }}>{i.email || i.label || t("Joins as {role}", { role: i.role_name })}</Typography>
+                <Chip size="small" label={tx(i.role_name)} />
+                <FormControlLabel sx={{ m: 0 }} label={i.is_open ? t("On") : t("Off")} control={
                   <Switch size="small" checked={i.is_open} onChange={(e) => change(i, "PUT", { is_open: e.target.checked })} />} />
               </Box>
               <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
                 <TextField size="small" fullWidth value={fullUrl(i.url)} slotProps={{ input: { readOnly: true } }} onFocus={(e) => e.target.select()} />
-                <Tooltip title={copied === i.id ? "Copied" : "Copy link"}><IconButton onClick={() => copy(i)}><ContentCopy fontSize="small" /></IconButton></Tooltip>
-                <Tooltip title="New link (the old one stops working)"><IconButton onClick={() => change(i, "PUT", { regenerate: true })}><Refresh fontSize="small" /></IconButton></Tooltip>
-                <Tooltip title="Delete link"><IconButton onClick={() => change(i, "DELETE")}><DeleteOutline fontSize="small" /></IconButton></Tooltip>
+                <Tooltip title={copied === i.id ? t("Copied") : t("Copy link")}><IconButton onClick={() => copy(i)}><ContentCopy fontSize="small" /></IconButton></Tooltip>
+                <Tooltip title={t("New link (the old one stops working)")}><IconButton onClick={() => change(i, "PUT", { regenerate: true })}><Refresh fontSize="small" /></IconButton></Tooltip>
+                <Tooltip title={t("Delete link")}><IconButton onClick={() => change(i, "DELETE")}><DeleteOutline fontSize="small" /></IconButton></Tooltip>
               </Box>
               <Typography variant="caption" color="text.secondary">
-                Used {i.uses} of {i.max_uses}{i.expires_at ? ` · until ${new Date(i.expires_at).toLocaleDateString()}` : ""} · by {i.created_by}
+                {t("Used {n} of {total}", { n: i.uses, total: i.max_uses })}{i.expires_at ? " · " + t("until {date}", { date: new Date(i.expires_at).toLocaleDateString(language()) }) : ""}{" · "}{t("by {name}", { name: i.created_by })}
               </Typography>
             </Box>
           ))}
         </Stack>
       </DialogContent>
-      <DialogActions><Button onClick={onClose}>Done</Button></DialogActions>
+      <DialogActions><Button onClick={onClose}>{t("Done")}</Button></DialogActions>
     </Dialog>
   );
 };

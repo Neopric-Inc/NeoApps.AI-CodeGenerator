@@ -1,6 +1,7 @@
 // Client for the AI endpoints of the generated API (/v1/api/Ai/...). Responses are plain JSON; errors are {message}.
 import { ApiError, apiFetch } from "../api";
 
+import { t, tx } from "../i18n";
 export interface AiWorkflow {
   id: string;
   label: string;
@@ -82,9 +83,9 @@ async function call<T>(method: string, path: string, body?: any, form?: FormData
   } catch {
     json = null;
   }
-  if (res.status === 401) throw new ApiError(401, "Your session has expired. Sign in again.");
-  if (res.status === 413) throw new ApiError(413, "That file is too large (250 MB max). Split it or upload a ZIP of smaller files.");
-  if (!res.ok) throw new ApiError(res.status, json?.message || res.statusText || "Request failed");
+  if (res.status === 401) throw new ApiError(401, t("Your session has expired. Sign in again."));
+  if (res.status === 413) throw new ApiError(413, t("That file is too large (250 MB max). Split it or upload a ZIP of smaller files."));
+  if (!res.ok) throw new ApiError(res.status, tx(json?.message) || res.statusText || t("Request failed"));
   return json as T;
 }
 
@@ -118,11 +119,11 @@ export const deleteFile = (id: number) => call("DELETE", `files/${id}`);
 export async function openFile(id: number, name: string) {
   const tab = window.open("", "_blank");
   if (!tab) return downloadFile(id, name); // pop-ups blocked: download instead
-  if (tab) { tab.document.title = name; tab.document.body.innerHTML = '<p style="font:14px system-ui,sans-serif;padding:16px;color:#555">Opening\u2026</p>'; }
+  if (tab) { tab.document.title = name; tab.document.body.innerHTML = '<p style="font:14px system-ui,sans-serif;padding:16px;color:#555">' + t("Opening…") + '</p>'; }
   const res = await apiFetch(`Ai/files/${id}/content`);
   if (!res.ok) {
     tab?.close();
-    throw new ApiError(res.status, "Couldn't open the file.");
+    throw new ApiError(res.status, t("Couldn't open the file."));
   }
   const blob = await res.blob();
   const url = URL.createObjectURL(blob);
@@ -139,7 +140,7 @@ export async function openFile(id: number, name: string) {
     const dl = d.createElement("a");
     dl.href = url;
     dl.download = name;
-    dl.textContent = "Download";
+    dl.textContent = t("Download");
     bar.append(title, dl);
     const view = type.startsWith("image/") ? d.createElement("img") : d.createElement("iframe");
     view.setAttribute("src", url);
@@ -159,7 +160,7 @@ export async function openFile(id: number, name: string) {
 /** Downloads an uploaded file (no new tab, so pop-up blockers don't get in the way). */
 export async function downloadFile(id: number, name: string) {
   const res = await apiFetch(`Ai/files/${id}/content`);
-  if (!res.ok) throw new ApiError(res.status, "Couldn't download the file. Please try again.");
+  if (!res.ok) throw new ApiError(res.status, t("Couldn't download the file. Please try again."));
   const url = URL.createObjectURL(await res.blob());
   const a = document.createElement("a");
   a.href = url;

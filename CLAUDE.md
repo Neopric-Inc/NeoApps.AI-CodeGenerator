@@ -24,7 +24,7 @@ Work in the app's planning folder `workspace/<App>/` (git-ignored): `requirement
    - **never** reuse a built-in table name: `roles`, `users`, `entities`, `permissionmatrix`, `messagequeue`,
      `s3bucket`, `s3bucket_folders`, `dnd_ui_versions`, `project_dnd_ui_versions`, `workflow`, `workflows`,
      `workflows_projects`, `workflow_builds`, `workflow_runs`, `workflow_deployments`, `workflow_triggers`,
-     `workflow_trigger_conditions`, `ai_files`, `ai_chunks`, `ai_conversations`, `ai_messages`, `ai_runs`, `versioninfo`, `user_tenants`, `login_attempts`, `user_security`, `number_sequences`, `background_jobs`, `background_job_events`, `job_schedules`, `user_notifications`, `user_notification_settings`, `share_links`, `member_invites`, `user_emails`, `login_codes` (use e.g. `members`, `automation_runs`)
+     `workflow_trigger_conditions`, `ai_files`, `ai_chunks`, `ai_conversations`, `ai_messages`, `ai_runs`, `versioninfo`, `user_tenants`, `login_attempts`, `user_security`, `number_sequences`, `background_jobs`, `background_job_events`, `job_schedules`, `user_notifications`, `user_notification_settings`, `share_links`, `member_invites`, `user_emails`, `login_codes`, `user_preferences` (use e.g. `members`, `automation_runs`)
    - plain `CREATE TABLE` / `INSERT` only: no `CREATE DATABASE`, `USE`, `DELIMITER`, procedures
    Save it as `workspace/<App>/schema.sql` (copy it to `samples/` if it should be committed).
    **Existing database** (MySQL, PostgreSQL, SQL Server, SQLite): don't write the schema by hand. Have the user
@@ -80,6 +80,11 @@ Work in the app's planning folder `workspace/<App>/` (git-ignored): `requirement
    (`startJob`, `useJobFeed`, `<JobFeed/>`, `<JobFiles/>`). Jobs attach evidence with `ctx.AttachFile` (shown inline).
    NuGet packages and Playwright browsers: `custom-api/packages.json` (`{"packages": {...}, "browsers": ["chromium"]}`);
    browser example `samples/custom-api-browser/` (restrict hosts with `Browser:AllowedHosts`).
+   **Languages:** for apps used in more than one language, add `i18n` to ui.config.json (`default`, `languages`,
+   `translations` of the app's own words keyed by the English text shown; see the guide). Built-in screens are already
+   translated into 42 languages (right-to-left included), each user picks theirs (saved per user), and browser page
+   translation is switched off. `./neoapps preview` lists app words still missing a translation per language.
+   Custom screens use `t()` from `src/neoapps/i18n`.
    **Data rules:** for multi-tenant apps, customer portals (customers see only their own rows), status workflows, approvals,
    audit trails, domain events, SLAs, plan limits, field validation (formats, ranges, date order, totals) or automatic numbers (INV-2026-00001), add the `tenancy`, `rowScopes`, `hiddenFields`, `editableFields`, `readFilters`, `lifecycles`, `validations`, `numbering`, `immutable`, `audit`, `outbox`, `jobs` and `limits` sections to ui.config.json (see the guide)
    instead of hand-writing checks: the generated API enforces them on every query (`Utility/DataGuard*.cs`). After deploying,

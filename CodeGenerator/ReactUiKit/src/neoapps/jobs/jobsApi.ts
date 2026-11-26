@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ApiError, apiFetch } from "../api";
 
+import { t, tx } from "../i18n";
 export type JobStatus = "queued" | "running" | "awaiting_approval" | "approved" | "completed" | "failed" | "cancelled" | "rejected";
 
 export interface Job {
@@ -43,8 +44,8 @@ async function call<T>(method: string, path: string, body?: any, signal?: AbortS
   } catch {
     json = null;
   }
-  if (res.status === 401) throw new ApiError(401, "Your session has expired. Sign in again.");
-  if (!res.ok) throw new ApiError(res.status, json?.message || res.statusText || "Request failed");
+  if (res.status === 401) throw new ApiError(401, t("Your session has expired. Sign in again."));
+  if (!res.ok) throw new ApiError(res.status, tx(json?.message) || res.statusText || t("Request failed"));
   return json as T;
 }
 
@@ -64,7 +65,7 @@ export const cancelJob = (id: string) => call<Job>("POST", `/${id}/cancel`);
 /** A file a job attached (screenshot, video, report) as an object URL; fetched with the session cookie. Revoke it when done. */
 export async function jobFileUrl(id: string, name: string): Promise<string> {
   const res = await apiFetch(`Jobs/${id}/files/${encodeURIComponent(name)}`);
-  if (!res.ok) throw new ApiError(res.status, "Couldn't load the file.");
+  if (!res.ok) throw new ApiError(res.status, t("Couldn't load the file."));
   return URL.createObjectURL(await res.blob());
 }
 
@@ -105,7 +106,7 @@ export function useJobFeed(jobId?: string) {
             return;
           }
           failures++;
-          setError(failures > 2 ? "Lost connection to the server; retrying…" : undefined);
+          setError(failures > 2 ? t("Lost connection to the server; retrying…") : undefined);
           const delay = Math.min(10000, 1000 * failures);
           await new Promise((r) => setTimeout(r, delay));
         }

@@ -5,6 +5,7 @@ import DescriptionOutlined from "@mui/icons-material/DescriptionOutlined";
 import { Citation, openFile } from "./aiApi";
 import { useApp } from "../AppContext";
 
+import { t } from "../i18n";
 /** Inline formatting: **bold**, `code`, and [S1] citation chips. Rendered as React nodes (no HTML injection). */
 function inline(text: string, cite: (id: string, key: string) => React.ReactNode): React.ReactNode[] {
   const out: React.ReactNode[] = [];
@@ -35,7 +36,7 @@ const CitationChip: React.FC<{ c?: Citation; id: string }> = ({ c, id }) => {
         sx={{ height: 18, fontSize: 11, mx: 0.25, cursor: "pointer", verticalAlign: "baseline" }} />
       <Popover open={!!anchor} anchorEl={anchor} onClose={() => setAnchor(null)} anchorOrigin={{ vertical: "bottom", horizontal: "left" }}>
         <Box sx={{ p: 2, maxWidth: 460 }}>
-          <Typography variant="subtitle2">{c.file_name} · page {c.page}</Typography>
+          <Typography variant="subtitle2">{c.file_name} · {t("page {n}", { n: c.page })}</Typography>
           {table && can(c.table, "read") && (
             <Typography variant="caption" sx={{
               color: "text.secondary"
@@ -47,8 +48,7 @@ const CitationChip: React.FC<{ c?: Citation; id: string }> = ({ c, id }) => {
             {c.excerpt}
           </Typography>
           <Button size="small" startIcon={<DescriptionOutlined />} sx={{ mt: 1 }} onClick={() => openFile(c.file_id, c.file_name).catch(() => undefined)}>
-            Open document
-          </Button>
+            {t("Open document")}</Button>
         </Box>
       </Popover>
     </>

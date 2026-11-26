@@ -8,6 +8,7 @@ import DeleteOutline from "@mui/icons-material/DeleteOutlineOutlined";
 import { renderValue } from "./format";
 import { ResolvedTable } from "./types";
 
+import { t, lower } from "./i18n";
 interface Props {
   table: ResolvedTable;
   columns: string[];
@@ -58,7 +59,7 @@ export const DataTable: React.FC<Props> = ({
             <TableRow><TableCell colSpan={columns.length + 1} align="center" sx={{ py: 6 }}>
               <Typography sx={{
                 color: "text.secondary"
-              }}>{emptyText || `No ${table.label.toLowerCase()} yet.`}</Typography>
+              }}>{emptyText || t("No {items} yet.", { items: lower(table.label) })}</Typography>
             </TableCell></TableRow>
           )}
           {!loading && rows.map((r) => (
@@ -70,8 +71,8 @@ export const DataTable: React.FC<Props> = ({
               ))}
               {(onEdit || onDelete) && (
                 <TableCell align="right" onClick={(e) => e.stopPropagation()}>
-                  {onEdit && (!canEdit || canEdit(r)) && <Tooltip title="Edit"><IconButton size="small" onClick={() => onEdit(r)}><EditOutlined fontSize="small" /></IconButton></Tooltip>}
-                  {onDelete && (!canDelete || canDelete(r)) && <Tooltip title="Delete"><IconButton size="small" onClick={() => onDelete(r)}><DeleteOutline fontSize="small" /></IconButton></Tooltip>}
+                  {onEdit && (!canEdit || canEdit(r)) && <Tooltip title={t("Edit")}><IconButton size="small" onClick={() => onEdit(r)}><EditOutlined fontSize="small" /></IconButton></Tooltip>}
+                  {onDelete && (!canDelete || canDelete(r)) && <Tooltip title={t("Delete")}><IconButton size="small" onClick={() => onDelete(r)}><DeleteOutline fontSize="small" /></IconButton></Tooltip>}
                 </TableCell>
               )}
             </TableRow>

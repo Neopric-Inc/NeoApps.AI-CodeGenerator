@@ -1,4 +1,8 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import createCache from "@emotion/cache";
+import { CacheProvider } from "@emotion/react";
+import { prefixer } from "stylis";
+import rtlPlugin from "stylis-plugin-rtl";
 import { BrowserRouter, matchPath, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { Alert, Box, CircularProgress, CssBaseline } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
@@ -18,27 +22,88 @@ import { Shell } from "./Shell";
 import { SharedLinkPage } from "./SharedLinkPage";
 import { JoinPage } from "./JoinPage";
 import { extensions } from "./customExtensions";
+import { api } from "./api";
+import { t, initialLanguage, matchLanguage, savedLanguage, setAppI18n, setLanguage, useT } from "./i18n";
 
 registerServiceWorker();
 
+// Page translators (Google, Edge) rewrite text nodes React owns, and React then throws when it updates them.
+// The app translates itself and opts out (translate="no"); this keeps it working if a translator runs anyway.
+if (typeof Node === "function" && Node.prototype && !(Node.prototype as any).__neoappsSafe) {
+  const remove = Node.prototype.removeChild;
+  Node.prototype.removeChild = function <T extends Node>(this: Node, child: T): T {
+    if (child.parentNode !== this) return child;
+    return remove.call(this, child) as T;
+  };
+  const insert = Node.prototype.insertBefore;
+  Node.prototype.insertBefore = function <T extends Node>(this: Node, node: T, ref: Node | null): T {
+    if (ref && ref.parentNode !== this) return node;
+    return insert.call(this, node, ref) as T;
+  };
+  (Node.prototype as any).__neoappsSafe = true;
+}
+
+const caches = {
+  ltr: createCache({ key: "mui", prepend: true }),
+  rtl: createCache({ key: "muirtl", prepend: true, stylisPlugins: [prefixer, rtlPlugin] }),
+};
+
 const Themed: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   const { config } = useApp();
+  const { rtl, language } = useT();
   const theme = useMemo(() => createTheme({
+    direction: rtl ? "rtl" : "ltr",
     palette: {
       primary: { main: config.theme?.primary || "#3b5bdb" },
       secondary: { main: config.theme?.secondary || "#0ca678" },
       background: { default: "#f8f9fb" },
     },
     shape: { borderRadius: 8 },
-    typography: { fontFamily: '"Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif', button: { textTransform: "none", fontWeight: 600 } },
-    components: { MuiButton: { defaultProps: { disableElevation: true } } },
-  }), [config.theme?.primary, config.theme?.secondary]);
-  return <ThemeProvider theme={theme}><CssBaseline />{children}</ThemeProvider>;
+    typography: { fontFamily: '"Inter", "Segoe UI", "Noto Sans", Roboto, Helvetica, Arial, sans-serif', button: { textTransform: "none", fontWeight: 600 } },
+    components: {
+      MuiButton: { defaultProps: { disableElevation: true } },
+      // texts inside MUI components, in the user's language
+      MuiTablePagination: { defaultProps: {
+        labelRowsPerPage: t("Rows per page:"),
+        labelDisplayedRows: ({ from, to, count }: any) => count !== -1 ? t("{from}–{to} of {count}", { from, to, count }) : t("{from}–{to} of more than {to}", { from, to }),
+        getItemAriaLabel: (type: string) => (type === "next" ? t("Go to next page") : type === "previous" ? t("Go to previous page") : type === "first" ? t("Go to first page") : t("Go to last page")),
+      } },
+      MuiAutocomplete: { defaultProps: { noOptionsText: t("No options"), clearText: t("Clear"), openText: t("Open"), closeText: t("Close"), loadingText: t("Loading…") } },
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [config.theme?.primary, config.theme?.secondary, rtl, language]);
+  return <CacheProvider value={rtl ? caches.rtl : caches.ltr}><ThemeProvider theme={theme}><CssBaseline />{children}</ThemeProvider></CacheProvider>;
+};
+
+/**
+ * Picks the language before anything shows: the signed-in user's saved choice, else this browser's, else the
+ * browser languages, else the app default (ui.config "i18n.default"). Children re-mount when the language changes.
+ */
+const Language: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
+  const { config, me } = useApp();
+  const { language } = useT();
+  const [ready, setReady] = useState(false);
+  const i18n = (config as any).i18n;
+  const i18nKey = JSON.stringify(i18n ?? null);
+  const synced = useRef<number | null>(null);
+  useEffect(() => {
+    setAppI18n(i18n);
+    const mine = matchLanguage(me?.language);
+    setLanguage(mine || initialLanguage(), !!mine).finally(() => setReady(true));
+    // a choice made before signing in (on the sign-in page) becomes the user's saved language
+    if (me && !me.language && savedLanguage() && synced.current !== me.user_id) {
+      synced.current = me.user_id;
+      api("PUT", "Access/me/language", { language: savedLanguage() }).catch(() => undefined);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [i18nKey, me?.user_id, me?.language]);
+  if (!ready) return null;
+  return <React.Fragment key={language}>{children}</React.Fragment>;
 };
 
 const AdminOnly: React.FC<{ element: React.JSX.Element }> = ({ element }) => {
   const { me } = useApp();
-  return me?.is_admin ? element : <Alert severity="info">Administrators only.</Alert>;
+  return me?.is_admin ? element : <Alert severity="info">{t("Administrators only.")}</Alert>;
 };
 
 const Routed: React.FC = () => {
@@ -83,9 +148,11 @@ const Routed: React.FC = () => {
 export const NeoApp: React.FC = () => (
   <AppProvider>
     <Themed>
-      <BrowserRouter>
-        <Routed />
-      </BrowserRouter>
+      <Language>
+        <BrowserRouter>
+          <Routed />
+        </BrowserRouter>
+      </Language>
     </Themed>
   </AppProvider>
 );

@@ -9,6 +9,7 @@ import { FieldRule, ResolvedField, ResolvedTable } from "./types";
 import { useApp } from "./AppContext";
 import { invalidateReferences, useReferences } from "./useReferences";
 
+import { t, lower, tx } from "./i18n";
 interface Props {
   table: ResolvedTable;
   record?: Record<string, any> | null; // null/undefined = create
@@ -48,23 +49,23 @@ function ruleError(rule: FieldRule, name: string, row: Record<string, any>): str
   const v = row[name];
   const empty = v === "" || v === null || v === undefined;
   const label = name.replace(/_/g, " ");
-  const msg = (m: string) => rule.message || m;
+  const msg = (m: string) => tx(rule.message) || m;
   if (empty) {
-    if (rule.required) return msg(`${label} is required`);
+    if (rule.required) return msg(t("{field} is required", { field: label }));
     const when = rule.requiredWhen;
     if (when && Object.entries(when).every(([k, want]) => ([] as string[]).concat(want).map(String).includes(String(row[k] ?? ""))))
-      return msg(`${label} is required here`);
+      return msg(t("{field} is required here", { field: label }));
     return undefined;
   }
   const s = String(v);
-  if (rule.format === "email" && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s)) return msg("Enter a valid email address");
-  if (rule.format === "url" && !/^https?:\/\/\S+$/i.test(s)) return msg("Enter a valid web address (https://...)");
-  if (rule.format === "phone" && !/^\+?[0-9 ()./-]{6,20}$/.test(s)) return msg("Enter a valid phone number");
-  if (rule.pattern) { try { if (!new RegExp(rule.pattern).test(s)) return msg(`${label} has the wrong format`); } catch { /* checked by the API */ } }
-  if (rule.minLength !== undefined && s.length < rule.minLength) return msg(`At least ${rule.minLength} characters`);
-  if (rule.maxLength !== undefined && s.length > rule.maxLength) return msg(`At most ${rule.maxLength} characters`);
-  if (rule.min !== undefined && !(Number(s) >= rule.min)) return msg(`Must be at least ${rule.min}`);
-  if (rule.max !== undefined && !(Number(s) <= rule.max)) return msg(`Must be at most ${rule.max}`);
+  if (rule.format === "email" && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s)) return msg(t("Enter a valid email address"));
+  if (rule.format === "url" && !/^https?:\/\/\S+$/i.test(s)) return msg(t("Enter a valid web address (https://...)"));
+  if (rule.format === "phone" && !/^\+?[0-9 ()./-]{6,20}$/.test(s)) return msg(t("Enter a valid phone number"));
+  if (rule.pattern) { try { if (!new RegExp(rule.pattern).test(s)) return msg(t("{field} has the wrong format", { field: label })); } catch { /* checked by the API */ } }
+  if (rule.minLength !== undefined && s.length < rule.minLength) return msg(t("At least {n} characters", { n: rule.minLength }));
+  if (rule.maxLength !== undefined && s.length > rule.maxLength) return msg(t("At most {n} characters", { n: rule.maxLength }));
+  if (rule.min !== undefined && !(Number(s) >= rule.min)) return msg(t("Must be at least {n}", { n: rule.min }));
+  if (rule.max !== undefined && !(Number(s) <= rule.max)) return msg(t("Must be at most {n}", { n: rule.max }));
   const cmp = (a: any, b: any) => {
     const na = Number(a), nb = Number(b);
     if (a !== "" && b !== "" && !isNaN(na) && !isNaN(nb)) return na - nb;
@@ -73,13 +74,13 @@ function ruleError(rule: FieldRule, name: string, row: Record<string, any>): str
     return String(a).localeCompare(String(b));
   };
   const ops: [keyof FieldRule, (c: number) => boolean, string][] = [
-    ["gt", (c) => c > 0, "after / greater than"], ["gte", (c) => c >= 0, "on or after / at least"],
-    ["lt", (c) => c < 0, "before / less than"], ["lte", (c) => c <= 0, "on or before / at most"], ["ne", (c) => c !== 0, "different from"],
+    ["gt", (c) => c > 0, "Must be after / greater than {field}"], ["gte", (c) => c >= 0, "Must be on or after / at least {field}"],
+    ["lt", (c) => c < 0, "Must be before / less than {field}"], ["lte", (c) => c <= 0, "Must be on or before / at most {field}"], ["ne", (c) => c !== 0, "Must be different from {field}"],
   ];
   for (const [op, ok, word] of ops) {
     const other = rule[op] as string | undefined;
     if (other && row[other] !== "" && row[other] !== null && row[other] !== undefined && !ok(cmp(v, row[other])))
-      return msg(`Must be ${word} ${other.replace(/_/g, " ")}`);
+      return msg(t(word, { field: other.replace(/_/g, " ") }));
   }
   return undefined;
 }
@@ -117,10 +118,10 @@ export const RecordForm: React.FC<Props> = ({ table, record, defaults, open, onC
     const e: Record<string, string> = {};
     for (const f of fields) {
       const v = values[f.name];
-      if (f.required && f.widget !== "checkbox" && (v === "" || v === null || v === undefined)) e[f.name] = `${f.label} is required`;
-      else if (f.widget === "email" && v && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)) e[f.name] = "Enter a valid email";
-      else if (["number", "currency", "percent"].includes(f.widget) && v !== "" && isNaN(Number(v))) e[f.name] = "Enter a number";
-      else if (f.column.maxLength && typeof v === "string" && v.length > f.column.maxLength) e[f.name] = `Max ${f.column.maxLength} characters`;
+      if (f.required && f.widget !== "checkbox" && (v === "" || v === null || v === undefined)) e[f.name] = t("{field} is required", { field: f.label });
+      else if (f.widget === "email" && v && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)) e[f.name] = t("Enter a valid email");
+      else if (["number", "currency", "percent"].includes(f.widget) && v !== "" && isNaN(Number(v))) e[f.name] = t("Enter a number");
+      else if (f.column.maxLength && typeof v === "string" && v.length > f.column.maxLength) e[f.name] = t("At most {n} characters", { n: f.column.maxLength });
     }
     const row = { ...(record || {}), ...values };
     for (const [name, rule] of Object.entries(rules)) {
@@ -163,7 +164,7 @@ export const RecordForm: React.FC<Props> = ({ table, record, defaults, open, onC
       const payload = toPayload();
       if (onSubmit) { await onSubmit(payload); onSaved(); return; }
       const res = editing ? await putRecord(table.name, record![table.primaryKey], payload) : await createRecord(table.name, payload);
-      if (res && res.code === 0) throw new Error(res.message || "Save failed");
+      if (res && res.code === 0) throw new Error(res.message || t("Save failed"));
       invalidateReferences(table.name);
       onSaved();
     } catch (e: any) {
@@ -171,11 +172,11 @@ export const RecordForm: React.FC<Props> = ({ table, record, defaults, open, onC
         const fe: Record<string, string> = {};
         for (const [k, msgs] of Object.entries<any>(e.fieldErrors)) {
           const f = table.fields[k];
-          if (f) fe[k] = `${f.label}: ${String(msgs[0] || "invalid").replace(/^The \S+ field /, "")}`;
+          if (f) fe[k] = `${f.label}: ${tx(String(msgs[0] || t("invalid"))).replace(/^The \S+ field /, "")}`;
         }
         setErrors(fe);
       }
-      setError(/foreign key/i.test(e.message) ? "One of the selected related records no longer exists." : e.message);
+      setError(/foreign key/i.test(e.message) ? t("One of the selected related records no longer exists.") : e.message);
     } finally {
       setBusy(false);
     }
@@ -230,7 +231,7 @@ export const RecordForm: React.FC<Props> = ({ table, record, defaults, open, onC
           <TextField {...common} select slotProps={{
             select: { renderValue: (v: any) => (v === "" || v == null ? "" : renderValue(f, v)) as any }
           }}>
-            {!f.required && <MenuItem value=""><em>None</em></MenuItem>}
+            {!f.required && <MenuItem value=""><em>{t("None")}</em></MenuItem>}
             {(f.options || []).map((o) => <MenuItem key={o} value={o}>{renderValue(f, o)}</MenuItem>)}
           </TextField>
         );
@@ -268,17 +269,17 @@ export const RecordForm: React.FC<Props> = ({ table, record, defaults, open, onC
   );
   const saveButton = (
     <Button variant="contained" onClick={save} disabled={busy} data-testid="save-record">
-      {busy ? <CircularProgress size={20} color="inherit" /> : submitLabel || (editing ? "Save changes" : `Create ${table.singular}`)}
+      {busy ? <CircularProgress size={20} color="inherit" /> : submitLabel || (editing ? t("Save changes") : t("Create {item}", { item: lower(table.singular) }))}
     </Button>
   );
   if (inline) return <Box>{grid}{extra}<Box sx={{ mt: 3, display: "flex", justifyContent: "flex-end" }}>{saveButton}</Box></Box>;
 
   return (
     <Dialog open={open} onClose={busy ? undefined : onClose} fullWidth maxWidth="sm">
-      <DialogTitle>{title || (editing ? `Edit ${table.singular}` : `New ${table.singular}`)}</DialogTitle>
+      <DialogTitle>{title || (editing ? t("Edit {item}", { item: lower(table.singular) }) : t("New {item}", { item: lower(table.singular) }))}</DialogTitle>
       <DialogContent dividers>{grid}</DialogContent>
       <DialogActions>
-        <Button onClick={onClose} disabled={busy}>Cancel</Button>
+        <Button onClick={onClose} disabled={busy}>{t("Cancel")}</Button>
         {saveButton}
       </DialogActions>
     </Dialog>

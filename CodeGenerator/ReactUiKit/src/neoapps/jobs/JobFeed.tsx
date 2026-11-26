@@ -10,15 +10,16 @@ import ImageOutlined from "@mui/icons-material/ImageOutlined";
 import { JobFile } from "./JobFile";
 import { FINISHED, Job, JobEvent, JobStatus } from "./jobsApi";
 
+import { t, language } from "../i18n";
 const STATUS: Record<JobStatus, { label: string; color: "default" | "primary" | "success" | "warning" | "error" | "info" }> = {
-  queued: { label: "Queued", color: "default" },
-  running: { label: "Running", color: "primary" },
-  awaiting_approval: { label: "Needs approval", color: "warning" },
-  approved: { label: "Approved", color: "info" },
-  completed: { label: "Done", color: "success" },
-  failed: { label: "Failed", color: "error" },
-  cancelled: { label: "Cancelled", color: "default" },
-  rejected: { label: "Rejected", color: "default" },
+  queued: { label: t("Queued"), color: "default" },
+  running: { label: t("Running"), color: "primary" },
+  awaiting_approval: { label: t("Needs approval"), color: "warning" },
+  approved: { label: t("Approved"), color: "info" },
+  completed: { label: t("Done"), color: "success" },
+  failed: { label: t("Failed"), color: "error" },
+  cancelled: { label: t("Cancelled"), color: "default" },
+  rejected: { label: t("Rejected"), color: "default" },
 };
 
 export const JobStatusChip: React.FC<{ status: JobStatus }> = ({ status }) => {
@@ -38,7 +39,7 @@ const icon = (e: JobEvent) => {
   }
 };
 
-const time = (iso: string) => new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+const time = (iso: string) => new Date(iso).toLocaleTimeString(language(), { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 
 /** Live timeline of a job: a progress bar while it works and one line per step as it happens. */
 export const JobFeed: React.FC<{ job?: Job; events: JobEvent[]; error?: string; maxHeight?: number }> = ({ job, events, error, maxHeight = 260 }) => {
@@ -62,7 +63,7 @@ export const JobFeed: React.FC<{ job?: Job; events: JobEvent[]; error?: string; 
       <Box sx={{ maxHeight, overflowY: "auto", border: 1, borderColor: "divider", borderRadius: 1, p: 1, bgcolor: "action.hover" }}>
         {!events.length && <Typography variant="body2" sx={{
           color: "text.secondary"
-        }}>Starting…</Typography>}
+        }}>{t("Starting…")}</Typography>}
         {events.map((e) => (
           <Box key={e.id} sx={{ display: "flex", gap: 1, alignItems: "flex-start", py: 0.25 }}>
             {icon(e)}

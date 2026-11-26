@@ -11,6 +11,8 @@ import { extensions } from "./customExtensions";
 import { Breadcrumbs, markMenuNavigation } from "./Breadcrumbs";
 import { NotificationBell } from "./NotificationBell";
 
+import { t, tn, tx } from "./i18n";
+import { LanguagePicker } from "./i18n/LanguagePicker";
 const WIDTH = 248;
 
 const NavItem: React.FC<{ to: string; icon: string; label: string; onClick?: () => void }> = ({ to, icon, label, onClick }) => {
@@ -33,7 +35,7 @@ export const Shell: React.FC = () => {
   const desktop = useMediaQuery(theme.breakpoints.up("md"));
   const [open, setOpen] = useState(false);
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
-  const appName = config.appName || schema.app;
+  const appName = tx(config.appName) || schema.app;
   const close = () => !desktop && setOpen(false);
 
   const nav = (
@@ -49,10 +51,10 @@ export const Shell: React.FC = () => {
       <Divider />
       <Box sx={{ overflowY: "auto", flex: 1, py: 1 }}>
         <List dense disablePadding>
-          <NavItem to="/" icon="dashboard" label="Dashboard" onClick={close} />
-          {me && (extensions.nav || []).filter((n) => !n.visible || n.visible(me)).map((n) => <NavItem key={n.to} to={n.to} icon={n.icon} label={n.label} onClick={close} />)}
-          {ai?.enabled && <NavItem to="/assistant" icon="auto_awesome" label={ai.assistantName || "Assistant"} onClick={close} />}
-          {(ai?.enabled || config.jobs?.menu || ((config as any).jobs?.schedules?.length && me?.is_admin)) && !(me?.role_name && (config as any).menuByRole?.[me.role_name] && !(config as any).menuByRole[me.role_name].includes("jobs")) && <NavItem to="/jobs" icon="bolt" label="Background jobs" onClick={close} />}
+          <NavItem to="/" icon="dashboard" label={t("Dashboard")} onClick={close} />
+          {me && (extensions.nav || []).filter((n) => !n.visible || n.visible(me)).map((n) => <NavItem key={n.to} to={n.to} icon={n.icon} label={tx(n.label)} onClick={close} />)}
+          {ai?.enabled && <NavItem to="/assistant" icon="auto_awesome" label={ai.assistantName || t("Assistant")} onClick={close} />}
+          {(ai?.enabled || config.jobs?.menu || ((config as any).jobs?.schedules?.length && me?.is_admin)) && !(me?.role_name && (config as any).menuByRole?.[me.role_name] && !(config as any).menuByRole[me.role_name].includes("jobs")) && <NavItem to="/jobs" icon="bolt" label={t("Background jobs")} onClick={close} />}
         </List>
         {menu.map((g) => (
           <List key={g.group} dense subheader={<ListSubheader sx={{ lineHeight: "32px", fontSize: 11, textTransform: "uppercase", letterSpacing: 0.6, bgcolor: "transparent" }}>{g.group}</ListSubheader>}>
@@ -60,10 +62,10 @@ export const Shell: React.FC = () => {
           </List>
         ))}
         {me?.is_admin && (
-          <List dense subheader={<ListSubheader sx={{ lineHeight: "32px", fontSize: 11, textTransform: "uppercase", letterSpacing: 0.6, bgcolor: "transparent" }}>Administration</ListSubheader>}>
-            <NavItem to="/admin/members" icon="group_add" label="Members" onClick={close} />
-            <NavItem to="/admin/roles" icon="security" label="Roles & permissions" onClick={close} />
-            <NavItem to="/admin/customize" icon="palette" label="Customize UI" onClick={close} />
+          <List dense subheader={<ListSubheader sx={{ lineHeight: "32px", fontSize: 11, textTransform: "uppercase", letterSpacing: 0.6, bgcolor: "transparent" }}>{t("Administration")}</ListSubheader>}>
+            <NavItem to="/admin/members" icon="group_add" label={t("Members")} onClick={close} />
+            <NavItem to="/admin/roles" icon="security" label={t("Roles & permissions")} onClick={close} />
+            <NavItem to="/admin/customize" icon="palette" label={t("Customize UI")} onClick={close} />
           </List>
         )}
       </Box>
@@ -78,15 +80,16 @@ export const Shell: React.FC = () => {
           <Box sx={{ flex: 1 }} />
           {me && (
             <>
+              <LanguagePicker signedIn compact />
               <NotificationBell />
-              <Chip size="small" label={me.role_name || "Member"} color={me.is_admin ? "primary" : "default"} variant="outlined" sx={{ mr: 1.5 }} />
+              <Chip size="small" label={tx(me.role_name) || t("Member")} color={me.is_admin ? "primary" : "default"} variant="outlined" sx={{ mr: 1.5 }} />
               <IconButton onClick={(e) => setAnchor(e.currentTarget)} size="small">
                 <Avatar sx={{ width: 32, height: 32, fontSize: 14, bgcolor: "primary.main" }}>{me.username.slice(0, 1).toUpperCase()}</Avatar>
               </IconButton>
               <Menu anchorEl={anchor} open={!!anchor} onClose={() => setAnchor(null)} anchorOrigin={{ vertical: "bottom", horizontal: "right" }} transformOrigin={{ vertical: "top", horizontal: "right" }}>
-                <MenuItem disabled><Typography variant="body2">Signed in as <b>{me.username}</b></Typography></MenuItem>
+                <MenuItem disabled><Typography variant="body2">{tn("Signed in as {name}", { name: <b>{me.username}</b> })}</Typography></MenuItem>
                 <Divider />
-                <MenuItem onClick={() => { setAnchor(null); logout(); }}>Sign out</MenuItem>
+                <MenuItem onClick={() => { setAnchor(null); logout(); }}>{t("Sign out")}</MenuItem>
               </Menu>
             </>
           )}
