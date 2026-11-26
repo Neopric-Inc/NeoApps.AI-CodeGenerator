@@ -68,7 +68,7 @@ internal static class UiConfigTools
           "tagline": "Studies, documents and startup in one place",
           "theme": { "primary": "#1f6feb", "secondary": "#0ca678" },
           "menu": [                                   // sidebar groups, in order; unlisted tables go under "More"
-            { "group": "Studies", "items": ["studies", "visits", "assessments"] },
+            { "group": "Studies", "items": ["studies", "visits", "assessments", "/progress"] },   // "/..." = a page (custom screen, "/assistant", "/jobs")
             { "group": "Documents", "items": ["documents", "source_documents"] }
           ],
           "scopePicker": { "table": "studies" },     // lists of tables with a FK to studies get a "Study" picker (?scope=ID)
@@ -108,7 +108,8 @@ internal static class UiConfigTools
               "displayField": "title",               // shown wherever another table references a study
               "listColumns": ["protocol_number", "title", "phase", "status", "current_enrollment"],
               "formFields": ["sponsor_id", "protocol_number", "title", "phase", "status"],   // form order
-              "defaultSort": "start_date|DESC",
+              "defaultSort": "start_date|DESC",     // omit for newest first; never a column that is usually empty
+              "filters": ["sponsor_id", "phase", "status", "start_date"],   // list filters (default: relations, options, yes/no, dates)
               "children": ["visits", "documents"],    // related lists shown on a study's page
               "hidden": false,                       // true hides the table from the menu
               "fields": {

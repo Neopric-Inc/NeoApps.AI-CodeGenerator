@@ -118,7 +118,7 @@ export const AppProvider: React.FC<{ children?: React.ReactNode }> = ({ children
     // optional per-role sidebar: config.menuByRole = { "Client": ["documents"] } shows only those tables for that role
     // (access itself is still governed by role permissions; this only declutters the menu)
     const only = me?.role_name ? (config as any).menuByRole?.[me.role_name] as string[] | undefined : undefined;
-    return groups.map((g) => ({ ...g, items: g.items.filter((i) => can(i, "read") && (!only || only.includes(i))) })).filter((g) => g.items.length);
+    return groups.map((g) => ({ ...g, items: g.items.filter((i) => i.startsWith("/") || (can(i, "read") && (!only || only.includes(i)))) })).filter((g) => g.items.length);
   }, [tables, config, can, me, language]);
 
   /** Table pages a role may open: with config.menuByRole, only its menu tables, their child tables and config.openByRole (typing a URL doesn't bypass the menu). */

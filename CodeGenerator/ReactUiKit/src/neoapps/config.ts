@@ -135,6 +135,7 @@ export function resolveTable(schema: AppSchema, t: TableSchema, cfg: TableConfig
     listColumns: (cfg.listColumns || defaultListColumns(t, displayField)).filter((n) => fields[n] && !fields[n].hidden),
     formFields,
     defaultSort: cfg.defaultSort,
+    filters: cfg.filters,
     children,
     hidden: !!cfg.hidden,
     fields,
@@ -153,7 +154,8 @@ export function resolveMenu(tables: Record<string, ResolvedTable>, ui: UiConfig)
   const visible = Object.values(tables).filter((t) => !t.hidden).map((t) => t.name);
   if (ui.menu && ui.menu.length) {
     const listed = new Set(ui.menu.flatMap((g) => g.items));
-    const groups = ui.menu.map((g) => ({ group: tx(g.group), items: g.items.filter((i) => tables[i] && !tables[i].hidden) }));
+    // items are table names, or page paths ("/progress", "/assistant", "/jobs") placed in a group; Shell decides which pages show
+    const groups = ui.menu.map((g) => ({ group: tx(g.group), items: g.items.filter((i) => i.startsWith("/") || (tables[i] && !tables[i].hidden)) }));
     const rest = visible.filter((v) => !listed.has(v));
     if (rest.length) groups.push({ group: t("More"), items: rest.sort() });
     return groups.filter((g) => g.items.length);
