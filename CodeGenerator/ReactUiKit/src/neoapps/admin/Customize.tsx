@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
-  Alert, Box, Button, Checkbox, Dialog, DialogActions, DialogContent, DialogTitle, Divider, MenuItem, Paper, Snackbar, Switch,
+  Alert, Autocomplete, Box, Button, Checkbox, InputAdornment, Dialog, DialogActions, DialogContent, DialogTitle, Divider, MenuItem, Paper, Snackbar, Switch,
   Tab, Table, TableBody, TableCell, TableHead, TableRow, Tabs, TextField, Typography,
 } from "@mui/material";
 import { useApp } from "../AppContext";
@@ -8,7 +8,9 @@ import { resolveTable } from "../config";
 import { ICONS, Icon } from "../icons";
 import { FieldConfig, TableConfig, UiConfig, Widget } from "../types";
 
-import { t } from "../i18n";
+import { t, lower } from "../i18n";
+import SearchIcon from "@mui/icons-material/Search";
+import { useMenuPages } from "../Shell";
 const WIDGETS: Widget[] = ["text", "textarea", "number", "currency", "percent", "date", "datetime", "checkbox", "select", "reference", "email", "url", "color"];
 const clone = <T,>(o: T): T => JSON.parse(JSON.stringify(o || {}));
 
@@ -41,11 +43,23 @@ export const Customize: React.FC = () => {
     return s ? resolveTable(schema, s, (draft.tables || {})[tableName], draft.tables || {}) : undefined;
   }, [schema, tableName, draft]);
 
-  // Menu editor rows: group + order + visible, derived from draft.menu
-  const menuRows = useMemo(() => appTables.map((t) => {
+  // Menu editor rows: tables and pages (custom screens, assistant, background jobs), with group + order + visible from draft.menu
+  const pages = useMenuPages(true);
+  const [menuSearch, setMenuSearch] = useState("");
+  const menuRows = useMemo(() => [...appTables, ...pages.map((p) => p.to)].map((t) => {
     const gi = (draft.menu || []).findIndex((g) => g.items.includes(t));
-    return { table: t, group: gi >= 0 ? draft.menu![gi].group : "", order: gi >= 0 ? gi * 100 + draft.menu![gi].items.indexOf(t) : 9999, hidden: !!(draft.tables || {})[t]?.hidden };
-  }).sort((a, b) => a.order - b.order || tables[a.table]?.label.localeCompare(tables[b.table]?.label)), [appTables, draft, tables]);
+    const page = pages.find((p) => p.to === t);
+    const hidden = page ? (draft.hiddenPages || []).includes(t) : !!(draft.tables || {})[t]?.hidden;
+    return { table: t, label: page ? page.label : tables[t]?.label || t, icon: page ? page.icon : tables[t]?.icon, page: !!page,
+      group: gi >= 0 ? draft.menu![gi].group : "", order: gi >= 0 ? gi * 100 + draft.menu![gi].items.indexOf(t) : page ? -1 : 9999, hidden };
+  }).filter((r) => !menuSearch.trim() || [r.label, r.group, r.table].some((v) => v.toLowerCase().includes(menuSearch.trim().toLowerCase())))
+    .sort((a, b) => a.order - b.order || a.label.localeCompare(b.label)), [appTables, pages, draft, tables, menuSearch]);
+  const setHidden = (key: string, page: boolean, hidden: boolean) => update((d) => {
+    if (!page) { tcfg(d, key).hidden = hidden; return; }
+    const set = new Set(d.hiddenPages || []);
+    if (hidden) set.add(key); else set.delete(key);
+    d.hiddenPages = Array.from(set);
+  });
 
   const setMenuGroup = (table: string, group: string) => update((d) => {
     const groups = (d.menu || []).map((g) => ({ ...g, items: g.items.filter((i) => i !== table) }));
@@ -134,17 +148,22 @@ export const Customize: React.FC = () => {
           </Box>
         )}
 
-        {tab === 1 && (
+        {tab === 1 && (<>
+          <Box sx={{ p: 1.5, display: "flex", alignItems: "center", gap: 2, flexWrap: "wrap" }}>
+            <TextField size="small" placeholder={t("Search the menu")} value={menuSearch} onChange={(e) => setMenuSearch(e.target.value)} sx={{ width: 280 }}
+              slotProps={{ input: { startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> } }} />
+            <Typography variant="body2" sx={{ color: "text.secondary" }}>{t("Pages without a group show at the top of the menu.")}</Typography>
+          </Box>
           <Table size="small">
             <TableHead>
               <TableRow sx={{ "& th": { bgcolor: "grey.50", fontWeight: 600 } }}>
-                <TableCell>{t("Table")}</TableCell><TableCell>{t("Menu group")}</TableCell><TableCell>{t("Order")}</TableCell><TableCell>{t("Show in menu")}</TableCell>
+                <TableCell>{t("Table or page")}</TableCell><TableCell>{t("Menu group")}</TableCell><TableCell>{t("Order")}</TableCell><TableCell>{t("Show in menu")}</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {menuRows.map((r) => (
                 <TableRow key={r.table}>
-                  <TableCell><Box sx={{ display: "flex", alignItems: "center", gap: 1 }}><Icon name={tables[r.table]?.icon} />{tables[r.table]?.label}</Box></TableCell>
+                  <TableCell><Box sx={{ display: "flex", alignItems: "center", gap: 1 }}><Icon name={r.icon || "table"} />{r.label}{r.page && <Typography component="span" variant="caption" sx={{ color: "text.secondary" }}>{lower(t("Page"))}</Typography>}</Box></TableCell>
                   <TableCell sx={{ width: 260 }}>
                     <TextField size="small" fullWidth placeholder={t("e.g. Studies")} value={r.group}
                       onChange={(e) => setMenuGroup(r.table, e.target.value)} slotProps={{
@@ -155,19 +174,20 @@ export const Customize: React.FC = () => {
                     <Button size="small" disabled={!r.group} onClick={() => moveInMenu(r.table, -1)}>↑</Button>
                     <Button size="small" disabled={!r.group} onClick={() => moveInMenu(r.table, 1)}>↓</Button>
                   </TableCell>
-                  <TableCell><Switch checked={!r.hidden} onChange={(e) => update((d) => { tcfg(d, r.table).hidden = !e.target.checked; })} /></TableCell>
+                  <TableCell><Switch checked={!r.hidden} onChange={(e) => setHidden(r.table, r.page, !e.target.checked)} /></TableCell>
                 </TableRow>
               ))}
             </TableBody>
             <datalist id="neoapps-menu-groups">{Array.from(new Set((draft.menu || []).map((g) => g.group))).map((g) => <option key={g} value={g} />)}</datalist>
           </Table>
-        )}
+          {menuRows.length === 0 && <Typography sx={{ p: 3, textAlign: "center", color: "text.secondary" }}>{t("Nothing matches.")}</Typography>}
+        </>)}
 
         {tab === 2 && resolved && (
           <Box sx={{ p: 2.5 }}>
-            <TextField select size="small" label={t("Table")} value={tableName} onChange={(e) => setTableName(e.target.value)} sx={{ minWidth: 280, mb: 2.5 }}>
-              {appTables.map((t) => <MenuItem key={t} value={t}>{tables[t]?.label} ({t})</MenuItem>)}
-            </TextField>
+            <Autocomplete size="small" options={appTables} value={tableName} disableClearable sx={{ width: 320, mb: 2.5 }}
+              onChange={(_, v) => v && setTableName(v)} getOptionLabel={(o) => `${tables[o]?.label || o} (${o})`}
+              renderInput={(p) => <TextField {...p} label={t("Table")} placeholder={t("Search tables")} />} />
             <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "repeat(3, 1fr)" }, gap: 2, mb: 2.5 }}>
               <TextField size="small" label={t("Label (plural)")} value={resolved.label} onChange={(e) => update((d) => { tcfg(d, tableName).label = e.target.value; })} />
               <TextField size="small" label={t("Singular")} value={resolved.singular} onChange={(e) => update((d) => { tcfg(d, tableName).singular = e.target.value; })} />

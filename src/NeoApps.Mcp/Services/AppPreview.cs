@@ -181,11 +181,11 @@ public static class AppPreview
         bool HasCol(string table, string col) => tables.FirstOrDefault(t => t.Name == table)?.Columns.Any(c => c.Name == col) == true;
         foreach (var g in ui["menu"] as JsonArray ?? [])
             foreach (var item in g?["items"] as JsonArray ?? [])
-                if (!names.Contains(item!.GetValue<string>())) w.Add($"ui menu '{g!["group"]}' lists unknown table '{item}'.");
+                if (item!.GetValue<string>() is var it && !it.StartsWith('/') && !names.Contains(it)) w.Add($"ui menu '{g!["group"]}' lists unknown table '{item}'.");
         foreach (var (table, cfg) in ui["tables"] as JsonObject ?? [])
         {
             if (!names.Contains(table)) { w.Add($"ui.tables has config for unknown table '{table}'."); continue; }
-            foreach (var key in new[] { "listColumns", "formFields" })
+            foreach (var key in new[] { "listColumns", "formFields", "filters" })
                 foreach (var c in cfg?[key] as JsonArray ?? [])
                     if (!HasCol(table, c!.GetValue<string>())) w.Add($"ui.tables.{table}.{key}: unknown column '{c}'.");
             if (cfg?["displayField"]?.GetValue<string>() is { } df && !HasCol(table, df)) w.Add($"ui.tables.{table}.displayField: unknown column '{df}'.");
@@ -217,7 +217,7 @@ public static class AppPreview
 
     private static readonly HashSet<string> UiKeys = new(StringComparer.Ordinal)
     {
-        "appName", "tagline", "theme", "menu", "scopePicker", "dashboard", "roles", "sharing", "tables", "ai", "jobs", "live", "i18n",
+        "appName", "tagline", "theme", "menu", "hiddenPages", "scopePicker", "dashboard", "roles", "sharing", "tables", "ai", "jobs", "live", "i18n",
         "publicApi", "tenancy", "rowScopes", "hiddenFields", "editableFields", "readFilters", "menuByRole", "openByRole", "lifecycles",
         "notifications", "validations", "numbering", "immutable", "audit", "outbox", "limits", "$schema",
     };

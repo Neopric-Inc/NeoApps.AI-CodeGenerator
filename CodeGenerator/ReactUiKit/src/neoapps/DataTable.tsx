@@ -1,14 +1,45 @@
 import React from "react";
+import { Link as RouterLink } from "react-router-dom";
 import {
-  Box, CircularProgress, IconButton, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow,
-  TableSortLabel, Tooltip, Typography,
+  Box, IconButton, MenuItem, Pagination, Skeleton, Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
+  TableSortLabel, TextField, Tooltip, Typography,
 } from "@mui/material";
 import EditOutlined from "@mui/icons-material/EditOutlined";
 import DeleteOutline from "@mui/icons-material/DeleteOutlineOutlined";
 import { renderValue } from "./format";
 import { ResolvedTable } from "./types";
 
-import { t, lower } from "./i18n";
+import { t, lower, formatNumber } from "./i18n";
+
+export const PAGE_SIZES = [10, 25, 50, 100, 200];
+
+/** Page numbers, a page-size choice and "go to page" for long lists. `page` is 0-based. */
+export const Pager: React.FC<{ total: number; page: number; pageSize: number; onPage: (page: number, size: number) => void; loading?: boolean }> = ({ total, page, pageSize, onPage, loading }) => {
+  const pages = Math.max(1, Math.ceil(total / pageSize));
+  const [jump, setJump] = React.useState("");
+  const from = total === 0 ? 0 : page * pageSize + 1;
+  const to = Math.min(total, (page + 1) * pageSize);
+  return (
+    <Box sx={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 2, px: 2, py: 1.25, borderTop: 1, borderColor: "divider" }}>
+      <Typography variant="body2" sx={{ color: "text.secondary", minWidth: 120 }}>
+        {loading && total === 0 ? <Skeleton width={100} /> : t("{from}–{to} of {count}", { from: formatNumber(from), to: formatNumber(to), count: formatNumber(total) })}
+      </Typography>
+      <TextField select size="small" variant="standard" value={pageSize} onChange={(e) => onPage(0, parseInt(e.target.value, 10))}
+        slotProps={{ htmlInput: { "aria-label": t("Rows per page:") } }} sx={{ minWidth: 110 }}>
+        {PAGE_SIZES.map((n) => <MenuItem key={n} value={n}>{t("{count} per page", { count: n })}</MenuItem>)}
+      </TextField>
+      <Box sx={{ flex: 1 }} />
+      {pages > 1 && <Pagination count={pages} page={page + 1} onChange={(_, p) => onPage(p - 1, pageSize)} shape="rounded" size="small"
+        siblingCount={1} boundaryCount={1} showFirstButton={pages > 5} showLastButton={pages > 5} />}
+      {pages > 7 && (
+        <form onSubmit={(e) => { e.preventDefault(); const n = parseInt(jump, 10); if (n >= 1 && n <= pages) { onPage(n - 1, pageSize); setJump(""); } }}>
+          <TextField size="small" value={jump} onChange={(e) => setJump(e.target.value.replace(/\D/g, ""))} placeholder={t("Go to page")}
+            slotProps={{ htmlInput: { inputMode: "numeric", "aria-label": t("Go to page"), style: { width: 90 } } }} />
+        </form>
+      )}
+    </Box>
+  );
+};
 interface Props {
   table: ResolvedTable;
   columns: string[];
@@ -36,7 +67,7 @@ export const DataTable: React.FC<Props> = ({
 }) => (
   <Box>
     <TableContainer>
-      <Table size={dense ? "small" : "medium"} sx={{ "& td, & th": { whiteSpace: "nowrap" } }}>
+      <Table size={dense ? "small" : "medium"} sx={{ "& th": { whiteSpace: "nowrap" } }}>
         <TableHead>
           <TableRow>
             {columns.map((c) => (
@@ -52,9 +83,12 @@ export const DataTable: React.FC<Props> = ({
           </TableRow>
         </TableHead>
         <TableBody>
-          {loading && (
-            <TableRow><TableCell colSpan={columns.length + 1} align="center" sx={{ py: 6 }}><CircularProgress size={28} /></TableCell></TableRow>
-          )}
+          {loading && Array.from({ length: Math.min(pageSize, dense ? 5 : 8) }, (_, i) => (
+            <TableRow key={"loading" + i}>
+              {columns.map((c, j) => <TableCell key={c}><Skeleton width={j === 0 ? "70%" : "50%"} /></TableCell>)}
+              {(onEdit || onDelete) && <TableCell />}
+            </TableRow>
+          ))}
           {!loading && rows.length === 0 && (
             <TableRow><TableCell colSpan={columns.length + 1} align="center" sx={{ py: 6 }}>
               <Typography sx={{
@@ -65,8 +99,15 @@ export const DataTable: React.FC<Props> = ({
           {!loading && rows.map((r) => (
             <TableRow key={r[table.primaryKey]} hover sx={{ cursor: onOpen ? "pointer" : undefined }} onClick={() => onOpen && onOpen(r)}>
               {columns.map((c, i) => (
-                <TableCell key={c} sx={{ fontWeight: i === 0 ? 600 : 400, maxWidth: 320, overflow: "hidden", textOverflow: "ellipsis" }}>
-                  {renderValue(table.fields[c], r[c], labelFor(c, r[c]))}
+                <TableCell key={c} title={typeof r[c] === "string" && r[c].length > 40 ? r[c] : undefined}
+                  sx={i === 0 ? { fontWeight: 600, minWidth: 180, maxWidth: 480, whiteSpace: "normal", wordBreak: "break-word" }
+                    : { whiteSpace: "nowrap", maxWidth: 320, overflow: "hidden", textOverflow: "ellipsis" }}>
+                  {i === 0 && onOpen
+                    ? <Box component={RouterLink} to={`/r/${table.name}/${encodeURIComponent(r[table.primaryKey])}`} onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                        sx={{ color: "primary.main", textDecoration: "none", "&:hover": { textDecoration: "underline" } }}>
+                        {renderValue(table.fields[c], r[c], labelFor(c, r[c]))}
+                      </Box>
+                    : renderValue(table.fields[c], r[c], labelFor(c, r[c]))}
                 </TableCell>
               ))}
               {(onEdit || onDelete) && (
@@ -80,9 +121,6 @@ export const DataTable: React.FC<Props> = ({
         </TableBody>
       </Table>
     </TableContainer>
-    {onPage && (
-      <TablePagination component="div" count={total} page={page} rowsPerPage={pageSize} rowsPerPageOptions={[10, 25, 50, 100]}
-        onPageChange={(_, p) => onPage(p, pageSize)} onRowsPerPageChange={(e) => onPage(0, parseInt(e.target.value, 10))} />
-    )}
+    {onPage && <Pager total={total} page={page} pageSize={pageSize} onPage={onPage} loading={loading} />}
   </Box>
 );

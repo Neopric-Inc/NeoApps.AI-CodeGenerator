@@ -4,7 +4,8 @@ import { Alert, Box, Button, CircularProgress, Link, Paper, Tab, Tabs, Typograph
 import AddIcon from "@mui/icons-material/Add";
 import EditOutlined from "@mui/icons-material/EditOutlined";
 import DeleteOutline from "@mui/icons-material/DeleteOutlineOutlined";
-import { getRecord, listRecords } from "./api";
+import { getRecord, queryRecords } from "./api";
+import { Cond, defaultSortOf } from "./listView";
 import { useApp } from "./AppContext";
 import { AUDIT_FIELDS } from "./config";
 import { DataTable } from "./DataTable";
@@ -21,11 +22,14 @@ import { ShareDialog } from "./ShareDialog";
 import ShareOutlined from "@mui/icons-material/ShareOutlined";
 
 import { t, lower, tn, tx } from "./i18n";
-/** Related records of one child table, filtered client-side by the FK pointing at the parent. */
+/** Related records of one child table: the child list filtered to this parent on the server, with paging. */
 const ChildList: React.FC<{ child: ResolvedTable; fk: string; parentId: any }> = ({ child, fk, parentId }) => {
   const { can } = useApp();
   const navigate = useNavigate();
   const [rows, setRows] = useState<Record<string, any>[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(10);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState<Record<string, any> | null | undefined>(undefined);
   const [reload, setReload] = useState(0);
@@ -34,23 +38,25 @@ const ChildList: React.FC<{ child: ResolvedTable; fk: string; parentId: any }> =
   useEffect(() => {
     let alive = true;
     setLoading(true);
-    listRecords(child.name, 1, 1000)
-      .then((p) => alive && setRows(p.records.filter((r) => String(r[fk]) === String(parentId))))
+    queryRecords(child.name, page + 1, pageSize, defaultSortOf(child), undefined, [{ columnName: fk, columnCondition: Cond.Equals, columnValue: String(parentId) }])
+      .then((p) => { if (alive) { setRows(p.records); setTotal(p.total); } })
       .catch(() => alive && setRows([]))
       .finally(() => alive && setLoading(false));
     return () => { alive = false; };
-  }, [child.name, fk, parentId, reload]);
+  }, [child, fk, parentId, reload, page, pageSize]);
 
   const columns = child.listColumns.filter((c) => c !== fk);
+  const listLink = `/r/${child.name}?f.${fk}=${encodeURIComponent(String(parentId))}`;
   return (
     <Box>
-      {can(child.name, "create") && (
-        <Box sx={{ p: 1.5, display: "flex", justifyContent: "flex-end" }}>
-          <Button size="small" startIcon={<AddIcon />} onClick={() => setAdding(null)}>{t("Add {item}", { item: lower(child.singular) })}</Button>
-        </Box>
-      )}
-      <DataTable table={child} columns={columns.length ? columns : child.listColumns} rows={rows} total={rows.length} loading={loading}
-        page={0} pageSize={rows.length} labelFor={labelFor} dense onOpen={(r) => navigate(`/r/${child.name}/${r[child.primaryKey]}`)} />
+      <Box sx={{ p: 1.5, display: "flex", alignItems: "center", gap: 1 }}>
+        <Link component={RouterLink} to={listLink} underline="hover" sx={{ fontSize: 14 }}>{t("Open in {items} list", { items: lower(child.label) })}</Link>
+        <Box sx={{ flex: 1 }} />
+        {can(child.name, "create") && <Button size="small" startIcon={<AddIcon />} onClick={() => setAdding(null)}>{t("Add {item}", { item: lower(child.singular) })}</Button>}
+      </Box>
+      <DataTable table={child} columns={columns.length ? columns : child.listColumns} rows={rows} total={total} loading={loading}
+        page={page} pageSize={pageSize} labelFor={labelFor} dense onOpen={(r) => navigate(`/r/${child.name}/${r[child.primaryKey]}`)}
+        onPage={total > 10 ? (p, size) => { setPage(p); setPageSize(size); } : undefined} />
       <RecordForm table={child} record={null} defaults={{ [fk]: parentId }} open={adding !== undefined}
         onClose={() => setAdding(undefined)} onSaved={() => { setAdding(undefined); setReload((r) => r + 1); }} />
     </Box>

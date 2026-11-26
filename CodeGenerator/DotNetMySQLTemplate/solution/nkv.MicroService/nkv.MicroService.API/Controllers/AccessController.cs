@@ -330,6 +330,30 @@ namespace nkv.MicroService.API.Controllers
             return Ok(new APIResponse(ResponseCode.SUCCESS, "OK", new { language = input.language.Trim() }));
         }
 
+        /// <summary>The signed-in user's saved list views (a JSON document the UI writes); null when none.</summary>
+        [HttpGet]
+        [Route(Route + "/me/views")]
+        public ActionResult OwnViews()
+        {
+            using var conn = Open();
+            return Ok(new APIResponse(ResponseCode.SUCCESS, "OK", UserViews.Get(conn, UserId)));
+        }
+
+        public class ViewsInput { public System.Text.Json.JsonElement views { get; set; } }
+
+        [HttpPut]
+        [Route(Route + "/me/views")]
+        public ActionResult SetOwnViews(ViewsInput input)
+        {
+            if (input == null || input.views.ValueKind != System.Text.Json.JsonValueKind.Object)
+                return BadRequest(new APIResponse(ResponseCode.ERROR, "Views must be a JSON object."));
+            var json = input.views.GetRawText();
+            if (json.Length > UserViews.MaxLength) return BadRequest(new APIResponse(ResponseCode.ERROR, "Too many saved views. Delete some first."));
+            using var conn = Open();
+            UserViews.Set(conn, UserId, json);
+            return Ok(new APIResponse(ResponseCode.SUCCESS, "Saved"));
+        }
+
         [HttpPut]
         [Route(Route + "/me/password")]
         public ActionResult ChangeOwnPassword(PasswordChangeInput input)

@@ -42,12 +42,19 @@ export const Roles: React.FC = () => {
   }, [selected]);
 
   const role = roles.find((r) => r.role_id === selected);
-  // App tables first (labelled), then the generator's internal tables if requested.
+  // App tables first (labelled), then the generator's internal tables if requested. Permission rows may spell the
+  // table name with other casing ("Tasks" for tasks), so match without case.
+  const byLower = useMemo(() => Object.fromEntries(Object.values(tables).map((x) => [x.name.toLowerCase(), x])), [tables]);
+  const meta = (entity: string) => tables[entity] || byLower[entity.toLowerCase()];
   const rows = useMemo(() => {
-    const app = perms.filter((p) => tables[p.entity]).sort((a, b) => tables[a.entity].label.localeCompare(tables[b.entity].label));
-    const sys = perms.filter((p) => !tables[p.entity]);
-    return showSystem ? [...app, ...sys] : app;
-  }, [perms, tables, showSystem]);
+    const app = perms.filter((p) => meta(p.entity)).sort((a, b) => meta(a.entity).label.localeCompare(meta(b.entity).label));
+    const sys = perms.filter((p) => !meta(p.entity));
+    return showSystem || !app.length ? [...app, ...sys] : app;
+  }, [perms, tables, byLower, showSystem]); // eslint-disable-line react-hooks/exhaustive-deps
+  // a heads-up when a role (not administrators) may delete in most tables
+  const appRows = rows.filter((p) => meta(p.entity));
+  const deletable = appRows.filter((p) => p.delete).length;
+  const broad = !role?.is_admin && appRows.length >= 3 && deletable / appRows.length > 0.5;
 
   const toggle = (entity: string, action: keyof Omit<Perm, "entity">, value: boolean) => {
     setPerms((ps) => ps.map((p) => {
@@ -113,6 +120,8 @@ export const Roles: React.FC = () => {
         </Paper>
         <Paper variant="outlined" sx={{ borderRadius: 2, overflow: "hidden" }}>
           {role?.is_admin && <Alert severity="info" sx={{ borderRadius: 0 }}>{t("Administrators always have full access and can manage members, roles and the UI.")}</Alert>}
+          {broad && <Alert severity="warning" sx={{ borderRadius: 0 }}>{t("This role can delete in {count} of {total} tables. Check that this is what you want.", { count: deletable, total: appRows.length })}</Alert>}
+          {!role?.is_admin && role && role.members === 0 && <Alert severity="info" sx={{ borderRadius: 0 }}>{t("No members have this role yet.")}</Alert>}
           <Table size="small">
             <TableHead>
               <TableRow sx={{ "& th": { bgcolor: "grey.50", fontWeight: 600 } }}>
@@ -129,7 +138,7 @@ export const Roles: React.FC = () => {
             <TableBody>
               {rows.map((p) => (
                 <TableRow key={p.entity} hover>
-                  <TableCell>{tables[p.entity]?.label || <Typography variant="body2" sx={{
+                  <TableCell>{meta(p.entity)?.label || <Typography variant="body2" sx={{
                     color: "text.secondary"
                   }}>{t("{name} (system)", { name: p.entity })}</Typography>}</TableCell>
                   {ACTIONS.map((a) => (

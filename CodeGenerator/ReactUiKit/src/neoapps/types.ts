@@ -57,7 +57,9 @@ export interface TableConfig {
   displayField?: string;
   listColumns?: string[];
   formFields?: string[]; // order of fields in the form
-  defaultSort?: string; // "column|ASC"
+  defaultSort?: string; // "column|ASC" (default: newest first)
+  /** Columns offered as list filters (default: relations, options, yes/no and dates, up to 6). */
+  filters?: string[];
   children?: string[]; // child tables shown on the record page
   hidden?: boolean; // hide from the menu
   fields?: Record<string, FieldConfig>;
@@ -83,7 +85,10 @@ export interface UiConfig {
   appName?: string;
   tagline?: string;
   theme?: { primary?: string; secondary?: string };
+  /** Groups of the sidebar. Items are table names or page paths ("/progress", "/assistant", "/jobs"); pages not in a group show at the top. */
   menu?: MenuGroup[];
+  /** Page paths left out of the sidebar ("/jobs"); the pages still open by link. */
+  hiddenPages?: string[];
   dashboard?: { cards?: DashboardCard[]; recentTable?: string };
   tables?: Record<string, TableConfig>;
   /** Lists of tables that reference this table get a picker that limits them to one of its records (kept in ?scope=ID). */
@@ -140,6 +145,7 @@ export interface ResolvedTable {
   listColumns: string[];
   formFields: string[];
   defaultSort?: string;
+  filters?: string[];
   children: string[];
   hidden: boolean;
   fields: Record<string, ResolvedField>;

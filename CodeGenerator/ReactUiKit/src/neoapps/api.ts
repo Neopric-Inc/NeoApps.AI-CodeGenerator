@@ -98,6 +98,21 @@ export async function listRecords(table: string, page = 1, pageSize = 25, orderB
   return { records: doc?.records || [], total: doc?.totalRecords || 0 };
 }
 
+/**
+ * Lists records with filters ({columnName, columnCondition, columnValue}, all must match) and an optional search,
+ * through the generated /filter endpoint; without filters it is listRecords.
+ */
+export async function queryRecords(table: string, page = 1, pageSize = 25, orderBy?: string, search?: string,
+  where: { columnName: string; columnCondition: number; columnValue: string }[] = []): Promise<Page> {
+  if (!where.length) return listRecords(table, page, pageSize, orderBy, search);
+  const params = new URLSearchParams({ page: String(page), itemsPerPage: String(pageSize) });
+  if (orderBy) params.set("orderBy", orderBy);
+  if (search && search.trim()) params.set("searchKey", search.trim());
+  const res = await api<any>("POST", `${table}/filter?${params}`, where);
+  const doc = res && res.code === 1 ? res.document : null;
+  return { records: doc?.records || [], total: doc?.totalRecords || 0 };
+}
+
 export const getRecord = async (table: string, id: any) => {
   const res = await api<any>("GET", `${table}/${encodeURIComponent(id)}`);
   return res?.code === 1 ? res.document : null;
