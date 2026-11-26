@@ -13,6 +13,7 @@
 "All {items}": "{items}ทั้งหมด",
 "Allow 10 more": "อนุญาตเพิ่มอีก 10",
 "Already a member: {emails}.": "เป็นสมาชิกอยู่แล้ว: {emails}",
+"Already joined? Sign in to {app} instead.": "เข้าร่วมแล้วใช่ไหม ลงชื่อเข้าใช้ {app} แทน",
 "Also email me my notifications": "ส่งการแจ้งเตือนของฉันทางอีเมลด้วย",
 "Any": "ทั้งหมด",
 "Anyone with the link": "ทุกคนที่มีลิงก์",

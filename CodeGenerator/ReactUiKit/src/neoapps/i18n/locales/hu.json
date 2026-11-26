@@ -13,6 +13,7 @@
 "All {items}": "Mind: {items}",
 "Allow 10 more": "Még 10 engedélyezése",
 "Already a member: {emails}.": "Már tag: {emails}.",
+"Already joined? Sign in to {app} instead.": "Már csatlakozott? Jelentkezzen be ide: {app}.",
 "Also email me my notifications": "Az értesítéseimet e-mailben is kérem",
 "Any": "Bármelyik",
 "Anyone with the link": "Bárki, akinél a link van",

@@ -13,6 +13,7 @@
 "All {items}": "全部{items}",
 "Allow 10 more": "再允许 10 个",
 "Already a member: {emails}.": "已是成员：{emails}。",
+"Already joined? Sign in to {app} instead.": "已经加入了？请直接登录 {app}。",
 "Also email me my notifications": "同时通过邮件发送我的通知",
 "Any": "任意",
 "Anyone with the link": "任何拥有链接的人",

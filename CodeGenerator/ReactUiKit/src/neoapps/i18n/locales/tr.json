@@ -13,6 +13,7 @@
 "All {items}": "Tümü: {items}",
 "Allow 10 more": "10 tane daha izin ver",
 "Already a member: {emails}.": "Zaten üye: {emails}.",
+"Already joined? Sign in to {app} instead.": "Zaten katıldınız mı? Bunun yerine {app} uygulamasına giriş yapın.",
 "Also email me my notifications": "Bildirimlerimi e-postayla da gönder",
 "Any": "Tümü",
 "Anyone with the link": "Bağlantıya sahip herkes",

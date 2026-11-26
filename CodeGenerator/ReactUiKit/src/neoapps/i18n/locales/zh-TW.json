@@ -13,6 +13,7 @@
 "All {items}": "全部{items}",
 "Allow 10 more": "再允許 10 個",
 "Already a member: {emails}.": "已是成員：{emails}。",
+"Already joined? Sign in to {app} instead.": "已經加入了？請直接登入 {app}。",
 "Also email me my notifications": "同時透過郵件傳送我的通知",
 "Any": "任意",
 "Anyone with the link": "任何擁有連結的人",

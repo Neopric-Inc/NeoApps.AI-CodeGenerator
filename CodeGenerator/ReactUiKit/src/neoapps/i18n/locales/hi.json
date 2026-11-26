@@ -13,6 +13,7 @@
 "All {items}": "सभी: {items}",
 "Allow 10 more": "10 और की अनुमति दें",
 "Already a member: {emails}.": "पहले से सदस्य: {emails}.",
+"Already joined? Sign in to {app} instead.": "पहले ही जुड़ चुके हैं? इसके बजाय {app} में साइन इन करें।",
 "Also email me my notifications": "मेरी सूचनाएँ ईमेल पर भी भेजें",
 "Any": "कोई भी",
 "Anyone with the link": "लिंक वाला कोई भी व्यक्ति",

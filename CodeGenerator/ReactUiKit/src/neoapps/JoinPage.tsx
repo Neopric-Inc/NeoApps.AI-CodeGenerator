@@ -25,6 +25,9 @@ export const JoinPage: React.FC = () => {
   const [invite, setInvite] = useState<{ role: string; label?: string; invitedBy: string; email?: string }>();
   const [problem, setProblem] = useState<string>();
   const [error, setError] = useState<string>();
+  // the link was used up or the person is already a member while joining (410/409): offer sign-in instead
+  const [joined, setJoined] = useState(false);
+  const fail = (err: any) => { setError(err.message); setJoined(err.status === 409 || err.status === 410); };
   const [busy, setBusy] = useState(false);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -43,21 +46,29 @@ export const JoinPage: React.FC = () => {
       await login(username.trim(), password);
       await refreshSession();
       navigate("/", { replace: true });
-    } catch (err: any) { setError(err.message); } finally { setBusy(false); }
+    } catch (err: any) { fail(err); } finally { setBusy(false); }
   };
 
   const joinByEmail = async () => {
     setBusy(true); setError(undefined);
     try { await call("POST", token, {}); await refreshSession(); navigate("/", { replace: true }); }
-    catch (err: any) { setError(err.message); } finally { setBusy(false); }
+    catch (err: any) { fail(err); } finally { setBusy(false); }
   };
+
+  const signIn = <Button variant="contained" fullWidth sx={{ mt: 2 }} onClick={() => navigate("/", { replace: true })}>{t("Go to sign in")}</Button>;
 
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: "background.default", display: "grid", placeItems: "center", p: 2, position: "relative" }}>
       <Box sx={{ position: "absolute", top: 12, right: 12 }}><LanguagePicker /></Box>
       <Paper variant="outlined" sx={{ width: "100%", maxWidth: 420, p: 4, borderRadius: 3 }}>
         <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>{t("Join {name}", { name })}</Typography>
-        {problem ? <Alert severity="info">{problem}</Alert> : !invite ? <CircularProgress /> : invite.email ? (
+        {problem ? (
+          <>
+            <Alert severity="info">{problem}</Alert>
+            <Typography variant="body2" sx={{ mt: 2, color: "text.secondary" }}>{t("Already joined? Sign in to {app} instead.", { app: name })}</Typography>
+            {signIn}
+          </>
+        ) : !invite ? <CircularProgress /> : invite.email ? (
           <>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
               {tn("{inviter} invited {email} as {role}. No password needed: next time, sign in with a code sent to this email.", { inviter: invite.invitedBy, email: <b>{invite.email}</b>, role: <b>{invite.role}</b> })}</Typography>
@@ -65,7 +76,7 @@ export const JoinPage: React.FC = () => {
             <Button variant="contained" fullWidth onClick={joinByEmail} disabled={busy}>
               {busy ? <CircularProgress size={20} color="inherit" /> : t("Join {name}", { name })}
             </Button>
-            {error && /already a member/i.test(error) && <Button fullWidth sx={{ mt: 1 }} onClick={() => navigate("/", { replace: true })}>{t("Go to sign in")}</Button>}
+            {joined && signIn}
           </>
         ) : (
           <form onSubmit={join}>
@@ -79,6 +90,7 @@ export const JoinPage: React.FC = () => {
             <Button type="submit" variant="contained" fullWidth sx={{ mt: 2 }} disabled={busy || !username.trim() || !password}>
               {busy ? <CircularProgress size={20} color="inherit" /> : t("Create account")}
             </Button>
+            {joined && signIn}
           </form>
         )}
       </Paper>
