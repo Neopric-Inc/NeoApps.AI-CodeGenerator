@@ -66,7 +66,8 @@ Work in the app's planning folder `workspace/<App>/` (git-ignored): `requirement
    **Live rooms and 3D** (multiplayer games, presence, live cursors, chat, instant refresh): declare rooms in ui.config.json
    `"live": {"rooms": {"arena": "public", "team": "members"}, "maxPeers": 16}` and use `joinRoom()` from `src/neoapps/live.ts`
    in custom screens (example `samples/space-arena`: Three.js multiplayer dogfight with Web Audio; a WebSocket at `/v1/api/live/{room}` relaying JSON up to 4 KB, 60 a second per player; `arena-<code>`
-   = separate matches; nothing stored). Rooms live in the API process, so apps with live rooms run as one copy. Custom
+   = separate matches; nothing stored). Add `"tables": {"tickets": "facility"}` to `live` and the server tells that room when a row changes (by anyone: screens, API, AI, jobs);
+   screens get `onChange(table, id, action)` and re-read through the API, so no data leaks past the person's access (example `samples/facility-map`: 3D facility map). Rooms live in the API process, so apps with live rooms run as one copy. Custom
    screens can import `three` (Three.js) for 3D; Web Audio needs no package.
    **AI:** if the app needs document Q&A, "ask your data", or AI-driven record creation, add an `ai` section to the
    ui.json (assistant instructions, `documentTables`, `tools`, `workflows`; see the guide) instead of modelling chat

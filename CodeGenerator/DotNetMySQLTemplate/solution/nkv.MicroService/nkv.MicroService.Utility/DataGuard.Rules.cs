@@ -253,10 +253,35 @@ namespace nkv.MicroService.Utility
                 var n = Db.Execute(cmd);
                 if (n > 0) foreach (var a in actions) a(cmd, n);
                 own?.Commit();
+                if (n > 0) FlushChanges(cmd);
                 return n;
             }
             catch { own?.Rollback(); throw; }
-            finally { if (own != null) cmd.Transaction = null; _after.Remove(cmd); }
+            finally { if (own != null) cmd.Transaction = null; _after.Remove(cmd); _changes.Remove(cmd); }
+        }
+
+        // ------------------------------------------------------------------ change signals (live rooms)
+
+        /// <summary>
+        /// Raised after a write is committed: (table, action "create"/"update"/"delete", record id). Live rooms listed in
+        /// ui.config.json "live.tables" forward it to everyone in the room as {"t":"change","table","id","action"}, so screens
+        /// re-read what they may see; no record data is sent. Handlers must be quick and must not throw.
+        /// </summary>
+        public static event Action<string, string, object> RowChanged;
+        static readonly ConditionalWeakTable<DbCommand, List<(string Table, string Action, object Id)>> _changes = new();
+
+        static void QueueChange(DbCommand cmd, string table, string action, object id)
+        {
+            if (RowChanged == null) return;
+            if (!_changes.TryGetValue(cmd, out var list)) _changes.Add(cmd, list = new());
+            list.Add((table, action, id));
+        }
+
+        static void FlushChanges(DbCommand cmd)
+        {
+            if (!_changes.TryGetValue(cmd, out var list)) return;
+            foreach (var (t, a, id) in list)
+                try { RowChanged?.Invoke(t, a, id); } catch { /* a listener must never fail the write */ }
         }
 
         static void After(DbCommand cmd, Action<DbCommand, int> action)
@@ -293,6 +318,7 @@ namespace nkv.MicroService.Utility
                     UpdateSla(c, caller, l, row, id, null, Str(st));
                 }
                 WriteAudit(c, caller, table, "create", id, row, null);
+                QueueChange(c, table, "create", id);
                 WriteOutbox(c, caller, table, "insert", id, row, null);
                 Notify(c, caller, table, "create", id, row, null);
             });
@@ -397,6 +423,7 @@ namespace nkv.MicroService.Utility
                 if (signed != null) audited = new Dictionary<string, object>(changes, StringComparer.OrdinalIgnoreCase) { ["signature"] = $"{caller.User} re-entered their password: {signed.Meaning}" };
                 if (routed != null) audited = new Dictionary<string, object>(audited, StringComparer.OrdinalIgnoreCase) { ["routed"] = routed };
                 WriteAudit(c, caller, table, isSoftDelete ? "delete" : "update", id, audited, current);
+                QueueChange(c, table, isSoftDelete ? "delete" : "update", id);
                 WriteOutbox(c, caller, table, isSoftDelete ? "delete" : "update", id, after, current);
                 if (!isSoftDelete) Notify(c, caller, table, "update", id, after, current);
             });
@@ -410,7 +437,7 @@ namespace nkv.MicroService.Utility
             if (_lifecycles.TryGetValue(table, out var lc) && lc.EditableIn.Count > 0
                 && KeyValue(cmd, table, new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase)) is { } id && LoadVisible(cmd, table, id) is { } current)
                 CheckEditable(cmd, caller, table, lc, Str(current.GetValueOrDefault(lc.Column)), "delete");
-            After(cmd, (c, _) => WriteAudit(c, caller, table, "hard_delete", null, null, null));
+            After(cmd, (c, _) => { WriteAudit(c, caller, table, "hard_delete", null, null, null); QueueChange(c, table, "delete", null); });
         }
 
         // ------------------------------------------------------------------ lifecycle

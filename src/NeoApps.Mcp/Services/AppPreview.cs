@@ -385,6 +385,11 @@ public static class AppPreview
             }
             if (Str(o["column"]) is { } rc) Col(where, table, rc);
         }
+        foreach (var (lt, lr) in ui["live"]?["tables"] as JsonObject ?? [])
+        {
+            Table("live.tables", lt);
+            if (Str(lr) is not { } room || ui["live"]?["rooms"]?[room] == null) w.Add($"live.tables.{lt}: '{Str(lr)}' is not one of live.rooms.");
+        }
         foreach (var (i, b) in Objs(ui["budgets"]).Select((x, i) => (i, x)))
         {
             var where = $"budgets[{i}]";

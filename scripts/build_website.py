@@ -467,6 +467,12 @@ uc = section("app-types", "Use cases", "Start with the kind of app you need.", "
     + '\n        </div>\n        <p style="margin:20px 0 0"><a class="button" href="' + SIGNUP_URL + '">Start free</a> <a class="text-link" href="#prompt-library">Browse more starter prompts →</a></p>')
 for i, (anchor, name, items) in enumerate(INDUSTRIES):
     uc += section(anchor, "Industry", name, None, cards(items), white=bool(i % 2))
+FACILITY_PROMPT = ("Build a real-time 3D apartment building facility map. Include multiple buildings, floors, apartment units and shared "
+    "zones (lobby, laundry room, boiler room) drawn on an interactive 3D floor plan. Colour each unit by its worst open issue: red for a "
+    "safety hold (gas leak, fire hazard), orange for an urgent repair (no hot water, broken A/C), yellow for routine maintenance (leaky "
+    "faucet), green for all clear. Clicking a unit opens a side panel with its appliances and open tickets. Colour changes must appear "
+    "for everyone within a second. Roles: Tenant (own unit only), Handyman (updates repairs), Safety Inspector (the only role that can "
+    "clear a safety hold), Property Manager (full admin). Show me the screens and access rules before building.")
 LIVE_OPS = [
     ("Document triage queue", "Several reviewers work one queue. Each file shows who is reviewing it right now, an SLA countdown, and status changes the client portal sees instantly.",
      "Build a document triage queue for client KYC and tax documents: several staff review incoming files at once, each file shows who is reviewing it right now so two people don't pick the same one, an SLA countdown per file, and status changes appear instantly in the client portal. Only reviewers see the queue; clients see only their own files."),
@@ -486,6 +492,16 @@ def idea_tiles(ideas):
 
 uc += section("live", "Live boards, maps and 3D", "Operations views that update as the work happens.",
     "When a record changes, every screen that shows it updates within a second. Live views use the same sign-in, roles and audit history as the rest of the app.",
+    '        <div class="video-grid" style="margin-bottom:36px"><div class="video-frame"><video controls muted playsinline preload="none" poster="assets/img/facility-map-poster.jpg" '
+    'aria-label="FacilityMap demo: a handyman resolves a repair and the manager sees it turn green, a safety hold is refused for the handyman and cleared by the safety inspector, and a tenant reports an issue that appears on the manager map">'
+    '<source src="assets/video/facility-map-demo.mp4" type="video/mp4"><a href="assets/video/facility-map-demo.mp4">Download the FacilityMap demo (MP4)</a></video></div>'
+    '<div class="video-copy"><h3>FacilityMap: two apartment buildings in 3D</h3><ul>'
+    '<li>Every unit and shared zone (lobby, laundry, boiler room) is coloured by its worst open issue.</li>'
+    '<li>A handyman fixes a repair and the manager&rsquo;s map turns green within a second.</li>'
+    '<li>Only a Safety Inspector can clear a red safety hold. The server refuses everyone else.</li>'
+    '<li>Tenants see only their own unit and report issues from it.</li></ul>'
+    '<details><summary>Starter prompt</summary>' + prompt_box(escape("Use the NeoApps connector. " + FACILITY_PROMPT), "Copy prompt") + '</details>'
+    f'<p><a class="text-link" href="{GITHUB}/tree/main/samples/facility-map">See FacilityMap on GitHub →</a></p></div></div>\n'
     '        <div class="tiles">' + idea_tiles(LIVE_OPS) + '</div>\n'
     '        <h3 style="margin-top:36px">More ideas you can build today</h3><div class="tiles">' + idea_tiles(LIVE_IDEAS) + '</div>\n'
     '        <p class="fine" style="margin-top:20px">The same live engine also runs a 3D multiplayer game: <a class="text-link" href="assets/video/starfall-trailer.mp4">watch the Starfall Arena trailer (MP4)</a>.</p>')
