@@ -471,8 +471,32 @@ uc = section("app-types", "Use cases", "Start with the kind of app you need.", "
         </div>''', first=True) + section("featured", "Examples", "Three workflows to start with.", "These sample screens show how a NeoApps app can work. Choose an example and copy its prompt to plan your own app.",
     '        <div class="featured-grid">\n' + "\n".join(starter_card(*example) for example in FEATURED)
     + '\n        </div>\n        <p style="margin:20px 0 0"><a class="button" href="' + SIGNUP_URL + '">Start free</a> <a class="text-link" href="#prompt-library">Browse more starter prompts →</a></p>')
+MANUFACTURING_IDEAS = [
+    ("Live press-floor board", "Every press on a 2D or 3D floor plan, coloured by status: running, set-up, down or quality hold. A change shows on every screen within a second.",
+     "Build a live production floor board: every injection molding press drawn on a 2D or 3D floor plan, coloured by its status (running, set-up, down, quality hold). Click a press to see the job, mold and part running on it and today's set-up queue. Status changes must appear on every screen within a second. Roles: operator (updates their press), set-up technician, quality (places and releases quality holds), plant manager."),
+    ("Mold and tooling tracker", "Where each mold is stored, shot counts, maintenance due and repair history, with reminders before maintenance is due.",
+     "Build a mold and tooling tracker: each mold with its storage location, the parts and presses it runs on, shot count, maintenance interval and repair history. Send a reminder to the toolroom when a mold is close to its maintenance count, and keep a log of every repair."),
+    ("Setup sheets with change control", "Process settings per part and press, with revisions, approvals and an audit trail. Released sheets can't be edited, only revised.",
+     "Build a process setup sheet app: setup sheets per part and press with process settings and notes, a review and approval step by the process engineer and quality, revision letters, released sheets that can't be edited (only revised), and a full audit history of who changed and approved what."),
+    ("Customer launch portal", "Each customer sees only their own parts, trial results and approval documents, and can comment or approve.",
+     "Build a customer launch portal for new part programs: each part with its milestones, trial runs, sample results and approval documents. Customers sign in and see only their own parts, can download documents and approve or comment. Our team tracks every launch on a dashboard."),
+    ("Quote intake with a 3D view", "Customers send part files and requirements through a shared form; the team reviews the 3D model in the browser and builds the quote.",
+     "Build a quote request app: customers fill in a shared form with part details, annual volume and material, and upload STEP files. Our team sees each request with a 3D view of the part in the browser, assigns an estimator, and tracks the quote from received to sent to won or lost."),
+    ("Machine data from your ERP", "Bring production and machine data from the system you already run into the same app, on a schedule, so boards and dashboards stay current.",
+     "Connect to our existing ERP database and bring in production orders, parts and machine data every 15 minutes, read-only, so our floor board and dashboards stay current without retyping anything, and tell me which tables you will read."),
+]
+
+
+def manufacturing_tiles():
+    return ('        <h3 style="margin-top:36px">Plant-floor apps you can build today</h3><div class="tiles">' + "".join(
+        '<article class="tile"><h3>' + escape(t) + '</h3><p>' + escape(d) + '</p><details><summary>Starter prompt</summary>'
+        + prompt_box(escape("Use the NeoApps connector. " + q + " Show me the screens and access rules before building."), "Copy prompt") + '</details></article>'
+        for t, d, q in MANUFACTURING_IDEAS) + '</div>')
+
+
 for i, (anchor, name, items) in enumerate(INDUSTRIES):
-    uc += section(anchor, "Industry", name, None, cards(items), white=bool(i % 2))
+    inner = cards(items) + ("\n" + manufacturing_tiles() if anchor == "manufacturing" else "")
+    uc += section(anchor, "Industry", name, None, inner, white=bool(i % 2))
 FACILITY_PROMPT = ("Build a real-time 3D apartment building facility map. Include multiple buildings, floors, apartment units and shared "
     "zones (lobby, laundry room, boiler room) drawn on an interactive 3D floor plan. Colour each unit by its worst open issue: red for a "
     "safety hold (gas leak, fire hazard), orange for an urgent repair (no hot water, broken A/C), yellow for routine maintenance (leaky "
