@@ -614,7 +614,7 @@ namespace nkv.MicroService.Utility
                 ["action_code"] = $"{table}.{action}",
                 ["entity_type"] = table,
                 ["entity_ref"] = id?.ToString(),
-                ["details"] = details.ToJsonString(),
+                ["details"] = details.ToJsonString(ReadableJson),
                 ["correlation_ref"] = caller.CorrelationId,
                 ["ip_address"] = caller.Ip,
             }, caller, row);
@@ -736,6 +736,9 @@ namespace nkv.MicroService.Utility
             if (DateTime.TryParse(x, out var tx) && DateTime.TryParse(y, out var ty)) return tx == ty;
             return string.Equals(x, y, StringComparison.Ordinal);
         }
+        /// <summary>Audit details stay readable for people ("can't", "é"), still valid JSON.</summary>
+        static readonly JsonSerializerOptions ReadableJson = new() { Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
+
         static JsonNode Short(object v, int max = 500)
         {
             var s = Str(v);
