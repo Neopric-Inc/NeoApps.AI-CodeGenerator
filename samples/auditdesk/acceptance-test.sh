@@ -3,7 +3,7 @@
 # Run on a FRESH AuditDesk database (it creates members and changes sample rows).
 # AuditDesk acceptance checks: roles, client portal scope, staff scope, locks, phase gate, numbering, append-only,
 # allowed references, monthly budgets (incl. concurrent submits), approval limits with escalation, records created by a
-# step, refused attempts in the audit log.
+# step, automatic routing ("otherwise"), refused and out-of-scope attempts in the audit log.
 set -u
 B=${API:-http://localhost:5100/v1/api}; J='Content-Type: application/json'
 pass=0; fail=0
@@ -98,6 +98,16 @@ code -X PUT $B/Findings/$F3 -H "Authorization: Bearer $M" -H "$J" -d "$(fnd 'Sma
 check "sign-off created one invoice" "$(q "SELECT CONCAT(COUNT(*),' ',MIN(invoice_number),' ',MIN(amount)) FROM invoices WHERE engagement_id=4")" "1 INV-$(date +%Y)-00001 18000.00"
 code "$B/Invoices?pageNo=1&pageSize=50" -H "Authorization: Bearer $C" >/dev/null; check "client doesn't see another client's invoice" "$(n)" 0
 code "$B/Invoices?pageNo=1&pageSize=50" -H "Authorization: Bearer $P" >/dev/null; check "partner sees the invoice" "$(n)" 1
+# a manager's approval of a long day (over 5 h) goes to a partner automatically ("otherwise"), a short one is approved
+code -X PUT $B/Time_entries/$T1 -H "Authorization: Bearer $M" -H "$J" -d "$(te 1 6 'Cash testing' Approved ",\"time_entry_id\":$T1")" >/dev/null; check "manager approval of 6 h is accepted" "$(c1)" 1
+check "6 h entry routed to Partner review" "$(q "SELECT entry_status FROM time_entries WHERE time_entry_id=$T1")" "Partner review"
+check "the routing is in the audit log" "$(q "SELECT COUNT(*) > 0 FROM audit_logs WHERE action_code='time_entries.update' AND entity_ref='$T1' AND details LIKE '%moved to Partner review%'")" 1
+code -X PUT $B/Time_entries/$T3 -H "Authorization: Bearer $M" -H "$J" -d "$(te 1 4 'Payroll walkthrough' Approved ",\"time_entry_id\":$T3")" >/dev/null; check "manager approves 4 h directly" "$(q "SELECT entry_status FROM time_entries WHERE time_entry_id=$T3")" Approved
+code -X PUT $B/Time_entries/$T1 -H "Authorization: Bearer $P" -H "$J" -d "$(te 1 6 'Cash testing' Approved ",\"time_entry_id\":$T1")" >/dev/null; check "partner approves the routed entry" "$(q "SELECT entry_status FROM time_entries WHERE time_entry_id=$T1")" Approved
+# a change aimed at a record outside the person's scope changes nothing and is audited
+OTHER=$(q "SELECT d.document_request_id FROM document_requests d JOIN engagements e ON e.engagement_id=d.engagement_id WHERE e.client_id<>1 LIMIT 1")
+code -X PUT $B/Document_requests/$OTHER -H "Authorization: Bearer $C" -H "$J" -d "$(body 'not mine' Uploaded '')" >/dev/null; check "out-of-scope update changes nothing" "$(q "SELECT COUNT(*) FROM document_requests WHERE document_request_id=$OTHER AND instructions='not mine'")" 0
+check "out-of-scope update is in the audit log" "$(q "SELECT COUNT(*) > 0 FROM audit_logs WHERE action_code='document_requests.denied' AND actor_ref='dana.brooks' AND entity_ref='$OTHER'")" 1
 # refusals and the person behind each step are recorded
 check "refused approval is in the audit log" "$(q "SELECT COUNT(*) > 0 FROM audit_logs WHERE action_code='findings.denied' AND actor_ref='marcus.lee' AND details LIKE '%approval limit%'")" 1
 check "refused time entry is in the audit log" "$(q "SELECT COUNT(*) > 0 FROM audit_logs WHERE action_code='time_entries.denied' AND actor_ref='ana.torres'")" 1

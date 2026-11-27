@@ -92,7 +92,8 @@ export const RecordPage: React.FC = () => {
   useEffect(() => { load(); }, [load]);
   const del = useDelete(name, () => navigate(`/r/${name}`));
 
-  if (!table) return <Alert severity="warning">{t("Unknown table \"{name}\".", { name })}</Alert>;
+  // the app's tables arrive just after sign-in: show nothing until then instead of "Unknown table"
+  if (!table) return Object.keys(tables).length === 0 ? null : <Alert severity="warning">{t("Unknown table \"{name}\".", { name })}</Alert>;
   if (!canOpen(name)) return <Alert severity="info">{t("This page isn't available for your role.")}</Alert>;
   if (loading) return <Box sx={{ display: "grid", placeItems: "center", py: 10 }}><CircularProgress /></Box>;
   if (error || !record) return <Alert severity="error">{tx(error) || t("{item} not found.", { item: table.singular })}</Alert>;

@@ -423,12 +423,41 @@
           "from": "Submitted",
           "to": "Approved",
           "roles": [
-            "Manager",
+            "Manager"
+          ],
+          "check": {
+            "column": "hours",
+            "lte": 5,
+            "message": "entries over 5 hours need a partner"
+          },
+          "otherwise": "Partner review"
+        },
+        {
+          "from": "Submitted",
+          "to": "Approved",
+          "roles": [
             "Partner"
           ]
         },
         {
           "from": "Submitted",
+          "to": "Partner review",
+          "roles": [
+            "Manager"
+          ]
+        },
+        {
+          "from": "Partner review",
+          "to": "Approved",
+          "roles": [
+            "Partner"
+          ]
+        },
+        {
+          "from": [
+            "Submitted",
+            "Partner review"
+          ],
           "to": "Draft",
           "roles": [
             "Manager",
@@ -1020,9 +1049,37 @@
         "createdAt",
         "actor_ref",
         "action_code",
-        "entity_type",
-        "entity_ref"
-      ]
+        "entity_ref",
+        "details"
+      ],
+      "fields": {
+        "actor_ref": {
+          "label": "Who"
+        },
+        "action_code": {
+          "label": "Action"
+        },
+        "entity_type": {
+          "label": "Record type"
+        },
+        "entity_ref": {
+          "label": "Record"
+        },
+        "details": {
+          "label": "Details",
+          "widget": "textarea"
+        },
+        "actor_type": {
+          "label": "Person or AI"
+        },
+        "correlation_ref": {
+          "hidden": true
+        },
+        "ip_address": {
+          "label": "IP address"
+        }
+      },
+      "displayField": "action_code"
     },
     "time_entries": {
       "label": "Time entries",
@@ -1042,11 +1099,13 @@
           "options": [
             "Draft",
             "Submitted",
+            "Partner review",
             "Approved"
           ],
           "colors": {
             "Submitted": "warning",
-            "Approved": "success"
+            "Approved": "success",
+            "Partner review": "info"
           }
         }
       }
@@ -1185,6 +1244,7 @@
         "column": "entry_status",
         "count": [
           "Submitted",
+          "Partner review",
           "Approved"
         ]
       },

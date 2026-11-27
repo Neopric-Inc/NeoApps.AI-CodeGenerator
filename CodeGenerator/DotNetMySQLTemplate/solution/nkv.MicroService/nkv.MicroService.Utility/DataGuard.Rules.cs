@@ -58,6 +58,7 @@ namespace nkv.MicroService.Utility
             public string SignedBy, SignedAt;                // optional columns stamped with the signer and UTC time
             public List<JsonObject> Checks = new();          // conditions on the record and the person ("check")
             public JsonArray Creates;                        // records created by this step ("creates")
+            public string Otherwise;                         // when a "check" fails: move to this state instead of refusing ("otherwise")
         }
         sealed class DistinctRule { public string Column, Table, Key, UserColumn = "user_id", Message; }
         sealed class Requirement
@@ -152,6 +153,7 @@ namespace nkv.MicroService.Utility
                             }
                             if (tn["adminBypass"] != null) t.AdminBypass = Bypass(tn["adminBypass"]);
                             if (tn["check"] is JsonObject chk) t.Checks.Add(chk); else if (tn["check"] is JsonArray chks) t.Checks.AddRange(chks.OfType<JsonObject>());
+                            t.Otherwise = tn["otherwise"]?.GetValue<string>();
                             if (tn["creates"] is JsonObject cro) t.Creates = new JsonArray(cro.DeepClone()); else if (tn["creates"] is JsonArray cra) t.Creates = cra;
                             if (tn["signature"] is JsonValue sv) t.Meaning = sv.TryGetValue<bool>(out var on) ? (on ? $"I approve moving this record to {string.Join("/", t.To)}." : null) : sv.GetValue<string>();
                             else if (tn["signature"] is JsonObject so)
@@ -312,11 +314,20 @@ namespace nkv.MicroService.Utility
                 return;
             }
             var current = LoadVisible(cmd, table, id);
-            if (current == null) return; // not visible: the scoped UPDATE affects nothing
+            if (current == null)
+            {
+                // not visible (outside the person's tenant or row scope, or gone): the scoped UPDATE affects nothing; record the attempt
+                if (!caller.IsSystem)
+                {
+                    _writing.Value = (table, id, values);
+                    RecordDenial(new DataGuardException($"This {Label(table).ToLowerInvariant()} doesn't exist or is outside what you can change.", 404));
+                }
+                return;
+            }
             _writing.Value = (table, id, values);
             var proposed = new Dictionary<string, object>(current, StringComparer.OrdinalIgnoreCase);
             foreach (var (k, v) in values) if (!(v is string ps && ps.StartsWith("@"))) proposed[k] = v;
-            string fromState = null, toState = null;
+            string fromState = null, toState = null, routed = null;
             Transition signed = null, matched = null;
             if (_lifecycles.TryGetValue(table, out var lc))
             {
@@ -327,7 +338,19 @@ namespace nkv.MicroService.Utility
                 if (values.TryGetValue(lc.Column, out var nv) && Str(nv) != null && !string.Equals(Str(nv), fromState, StringComparison.OrdinalIgnoreCase))
                 {
                     toState = Str(nv);
-                    matched = CheckTransition(cmd, caller, table, lc, fromState, toState, id, current, proposed);
+                    try { matched = CheckTransition(cmd, caller, table, lc, fromState, toState, id, current, proposed); }
+                    catch (RouteElsewhere r) when (KeepValue(cmd, lc.Column, r.To))
+                    {
+                        // a "check" failed on a step with "otherwise": the record goes there instead (e.g. above the approver's limit -> Escalated)
+                        routed = $"{toState} refused ({r.Reason}), moved to {r.To} instead";
+                        toState = r.To; values[lc.Column] = r.To; proposed[lc.Column] = r.To;
+                        try { matched = CheckTransition(cmd, caller, table, lc, fromState, toState, id, current, proposed); }
+                        catch (RouteElsewhere r2) { throw new DataGuardException($"This {Label(table).ToLowerInvariant()} can't move to {toState}: {r2.Reason}.", 409); }
+                    }
+                    catch (RouteElsewhere r)
+                    {
+                        throw new DataGuardException($"This {Label(table).ToLowerInvariant()} can't move to {toState}: {r.Reason}.", 409);
+                    }
                     signed = matched;
                     if (signed?.Meaning != null) VerifySignature(cmd, caller, table, toState, signed.Meaning);
                     else signed = null;
@@ -372,6 +395,7 @@ namespace nkv.MicroService.Utility
                 }
                 var audited = changes;
                 if (signed != null) audited = new Dictionary<string, object>(changes, StringComparer.OrdinalIgnoreCase) { ["signature"] = $"{caller.User} re-entered their password: {signed.Meaning}" };
+                if (routed != null) audited = new Dictionary<string, object>(audited, StringComparer.OrdinalIgnoreCase) { ["routed"] = routed };
                 WriteAudit(c, caller, table, isSoftDelete ? "delete" : "update", id, audited, current);
                 WriteOutbox(c, caller, table, isSoftDelete ? "delete" : "update", id, after, current);
                 if (!isSoftDelete) Notify(c, caller, table, "update", id, after, current);
@@ -402,6 +426,13 @@ namespace nkv.MicroService.Utility
             throw new DataGuardException($"This {Label(table).ToLowerInvariant()} is {state}: your role ({role}) can only {verb} it while it is {string.Join(" or ", states)}.", 409);
         }
 
+        /// <summary>A step's "check" failed and the step says where the record goes instead ("otherwise").</summary>
+        sealed class RouteElsewhere : Exception
+        {
+            public readonly string To, Reason;
+            public RouteElsewhere(string to, string reason) : base(reason) { To = to; Reason = reason; }
+        }
+
         static Transition CheckTransition(DbCommand cmd, Caller caller, string table, Lifecycle lc, string from, string to, object id, Dictionary<string, object> current, Dictionary<string, object> proposed = null)
         {
             var role = RoleName(cmd.Connection, caller);
@@ -421,7 +452,7 @@ namespace nkv.MicroService.Utility
             var byRole = byActor.Where(t => t.Roles.Contains("*") || t.Roles.Contains(role ?? "") || Bypasses(t)).ToList();
             if (byRole.Count == 0)
                 throw new DataGuardException($"Your role ({role}) can't move {A(Label(table))} from {from} to {to}.", 403);
-            string firstFailure = null;
+            string firstFailure = null; Transition route = null; string routeReason = null;
             foreach (var t in byRole)
             {
                 // separation of duties and negative requirements apply to everyone, administrators included
@@ -436,9 +467,15 @@ namespace nkv.MicroService.Utility
                 var present = t.Forbids.FirstOrDefault(r => RequirementMet(cmd, table, r, r.LinkFrom != null ? current.GetValueOrDefault(r.LinkFrom) : id));
                 if (present != null) { firstFailure ??= present.Message ?? $"there is a {present.Table} record matching {JsonSerializer.Serialize(present.Where)}"; continue; }
                 var check = t.Checks.Select(ch => CheckFails(table, ch, proposed ?? current, caller)).FirstOrDefault(x => x != null);
-                if (check != null) { firstFailure ??= check; continue; }
+                if (check != null)
+                {
+                    firstFailure ??= check;
+                    if (t.Otherwise != null && route == null && !string.Equals(t.Otherwise, to, StringComparison.OrdinalIgnoreCase)) { route = t; routeReason = check; }
+                    continue;
+                }
                 return t;
             }
+            if (route != null) throw new RouteElsewhere(route.Otherwise, routeReason);
             throw new DataGuardException($"This {Label(table).ToLowerInvariant()} can't move to {to}: {firstFailure}.", 409);
         }
 
@@ -614,7 +651,7 @@ namespace nkv.MicroService.Utility
                 ["action_code"] = $"{table}.{action}",
                 ["entity_type"] = table,
                 ["entity_ref"] = id?.ToString(),
-                ["details"] = details.ToJsonString(),
+                ["details"] = details.ToJsonString(ReadableJson),
                 ["correlation_ref"] = caller.CorrelationId,
                 ["ip_address"] = caller.Ip,
             }, caller, row);
@@ -736,6 +773,9 @@ namespace nkv.MicroService.Utility
             if (DateTime.TryParse(x, out var tx) && DateTime.TryParse(y, out var ty)) return tx == ty;
             return string.Equals(x, y, StringComparison.Ordinal);
         }
+        /// <summary>Audit details stay readable for people ("can't", "é"), still valid JSON.</summary>
+        static readonly JsonSerializerOptions ReadableJson = new() { Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
+
         static JsonNode Short(object v, int max = 500)
         {
             var s = Str(v);
