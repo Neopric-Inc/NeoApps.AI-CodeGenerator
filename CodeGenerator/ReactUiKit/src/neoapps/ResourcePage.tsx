@@ -200,7 +200,8 @@ const TablePage: React.FC = () => {
     }),
   });
 
-  if (!table) return <Alert severity="warning">{tr("Unknown table \"{name}\".", { name })}</Alert>;
+  // the app's tables arrive just after sign-in: show nothing until then instead of "Unknown table"
+  if (!table) return Object.keys(tables).length === 0 ? null : <Alert severity="warning">{tr("Unknown table \"{name}\".", { name })}</Alert>;
   if (!canOpen(name)) return <Alert severity="info">{tr("This page isn't available for your role.")}</Alert>;
   if (!can(name, "read")) return <Alert severity="info">{tr("You don't have access to {items}. Ask an administrator.", { items: table.label })}</Alert>;
 

@@ -356,7 +356,7 @@ namespace nkv.MicroService.Utility
                 {
                     ["actor_type"] = caller.IsSystem ? "system" : caller.IsAi ? "ai" : "human", ["actor_ref"] = caller.User,
                     ["action_code"] = $"{table}.denied", ["entity_type"] = table, ["entity_ref"] = id?.ToString(),
-                    ["details"] = details.ToJsonString(), ["correlation_ref"] = caller.CorrelationId, ["ip_address"] = caller.Ip,
+                    ["details"] = details.ToJsonString(ReadableJson), ["correlation_ref"] = caller.CorrelationId, ["ip_address"] = caller.Ip,
                 }, caller, values);
             }
             catch (Exception) { /* recording a refusal must never hide the refusal itself */ }

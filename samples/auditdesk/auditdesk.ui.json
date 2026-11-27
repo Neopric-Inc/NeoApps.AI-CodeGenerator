@@ -1020,9 +1020,37 @@
         "createdAt",
         "actor_ref",
         "action_code",
-        "entity_type",
-        "entity_ref"
-      ]
+        "entity_ref",
+        "details"
+      ],
+      "fields": {
+        "actor_ref": {
+          "label": "Who"
+        },
+        "action_code": {
+          "label": "Action"
+        },
+        "entity_type": {
+          "label": "Record type"
+        },
+        "entity_ref": {
+          "label": "Record"
+        },
+        "details": {
+          "label": "Details",
+          "widget": "textarea"
+        },
+        "actor_type": {
+          "label": "Person or AI"
+        },
+        "correlation_ref": {
+          "hidden": true
+        },
+        "ip_address": {
+          "label": "IP address"
+        }
+      },
+      "displayField": "action_code"
     },
     "time_entries": {
       "label": "Time entries",
