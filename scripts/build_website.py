@@ -375,7 +375,13 @@ home = """    <section class="hero">
         <div class="featured-grid">
 {home_examples}
         </div>
-        <p><a class="text-link" href="use-cases.html#prompt-library">Browse all starter prompts →</a></p>""") + """
+        <p><a class="text-link" href="use-cases.html#prompt-library">Browse all starter prompts →</a></p>""") \
++ section("showcase", "Built in ChatGPT", "A 3D apartment map, from one conversation", None,
+    '        <div class="video-grid"><div class="video-frame"><video controls muted playsinline preload="none" poster="assets/img/apartment-facility-map-poster.jpg" style="object-fit:contain" aria-label="Apartment Facility Map, built in ChatGPT with NeoApps: the prompt, then each floor as a furnished 3D cutaway, an exploded view of the building, and one apartment isolated with its appliances and open tickets"><source src="assets/video/apartment-facility-map.mp4" type="video/mp4"><a href="assets/video/apartment-facility-map.mp4">Download the Apartment Facility Map video (MP4)</a></video></div>'
+    '<div class="video-copy"><ul><li>Describe the app in ChatGPT with the NeoApps connector: buildings, units, tickets and who can do what.</li>'
+    '<li>Review the plan, publish, and use it: furnished floor plans, an exploded building view, and a side panel for each unit.</li>'
+    '<li>The same roles and rules apply on every screen, enforced by the NeoApps runtime.</li></ul>'
+    '<p><a class="text-link" href="use-cases.html#live">More live boards, maps and 3D →</a></p></div></div>') + """
     <section class="section" id="how-it-works">
       <div class="wrap">
         <div class="section-heading">
@@ -492,16 +498,14 @@ def idea_tiles(ideas):
 
 uc += section("live", "Live boards, maps and 3D", "Operations views that update as the work happens.",
     "When a record changes, every screen that shows it updates within a second. Live views use the same sign-in, roles and audit history as the rest of the app.",
-    '        <div class="video-grid" style="margin-bottom:36px"><div class="video-frame"><video controls muted playsinline preload="none" poster="assets/img/facility-map-poster.jpg" '
-    'aria-label="FacilityMap demo: a handyman resolves a repair and the manager sees it turn green, a safety hold is refused for the handyman and cleared by the safety inspector, and a tenant reports an issue that appears on the manager map">'
-    '<source src="assets/video/facility-map-demo.mp4" type="video/mp4"><a href="assets/video/facility-map-demo.mp4">Download the FacilityMap demo (MP4)</a></video></div>'
-    '<div class="video-copy"><h3>FacilityMap: two apartment buildings in 3D</h3><ul>'
-    '<li>Every unit and shared zone (lobby, laundry, boiler room) is coloured by its worst open issue.</li>'
-    '<li>A handyman fixes a repair and the manager&rsquo;s map turns green within a second.</li>'
-    '<li>Only a Safety Inspector can clear a red safety hold. The server refuses everyone else.</li>'
-    '<li>Tenants see only their own unit and report issues from it.</li></ul>'
+    '        <div class="video-grid" style="margin-bottom:36px"><div class="video-frame"><video controls muted playsinline preload="none" poster="assets/img/apartment-facility-map-poster.jpg" style="object-fit:contain" aria-label="Apartment Facility Map, built in ChatGPT with NeoApps: the prompt, then each floor as a furnished 3D cutaway, an exploded view of the building, and one apartment isolated with its appliances and open tickets"><source src="assets/video/apartment-facility-map.mp4" type="video/mp4"><a href="assets/video/apartment-facility-map.mp4">Download the Apartment Facility Map video (MP4)</a></video></div>'
+    '<div class="video-copy"><h3>Apartment Facility Map, built in ChatGPT</h3><ul>'
+    '<li>Each floor is a furnished 3D cutaway, every unit coloured by its worst open issue.</li>'
+    '<li>Switch buildings and floors, or explode the building to see every floor at once.</li>'
+    '<li>Click a unit for its appliances and open tickets; isolate it in 3D and orbit around it.</li>'
+    '<li>Tenants, handymen, safety inspectors and managers each see and do only what their role allows.</li></ul>'
     '<details><summary>Starter prompt</summary>' + prompt_box(escape("Use the NeoApps connector. " + FACILITY_PROMPT), "Copy prompt") + '</details>'
-    f'<p><a class="text-link" href="{GITHUB}/tree/main/samples/facility-map">See FacilityMap on GitHub →</a></p></div></div>\n'
+    f'<p><a class="text-link" href="{GITHUB}/tree/main/samples/facility-map">See a similar open-source sample on GitHub →</a></p></div></div>\n'
     '        <div class="tiles">' + idea_tiles(LIVE_OPS) + '</div>\n'
     '        <h3 style="margin-top:36px">More ideas you can build today</h3><div class="tiles">' + idea_tiles(LIVE_IDEAS) + '</div>\n'
     '        <p class="fine" style="margin-top:20px">The same live engine also runs a 3D multiplayer game: <a class="text-link" href="assets/video/starfall-trailer.mp4">watch the Starfall Arena trailer (MP4)</a>.</p>')
