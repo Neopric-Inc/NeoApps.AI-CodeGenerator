@@ -10,8 +10,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
-  <meta name="description" content="Describe a business app in your assistant, review its screens and permissions, and choose where to run it with NeoApps.">
-  <title>NeoApps.AI · Build business apps with your AI assistant</title>
+  <meta name="description" content="Build, run, and share web apps as easily as a cloud doc. Describe your idea to your AI assistant, launch in minutes, and sell directly from your app. Roles, approvals and audit history are enforced by an open-source runtime.">
+  <title>NeoApps.AI · Build, run, and share web apps as easily as a cloud doc</title>
   <link rel="stylesheet" href="assets/site.css">
   <style>
     .dropdown { position: relative; }
@@ -20,6 +20,8 @@
       background: #121317; border: 1px solid #2a2d33; border-radius: 12px; box-shadow: 0 24px 60px rgba(0,0,0,.5); z-index: 40; }
     .dropdown:hover .dropdown-menu, .dropdown:focus-within .dropdown-menu { display: block; }
     .dropdown-menu a { display: block; padding: 8px 12px; border-radius: 8px; color: var(--soft); }
+    .dropdown-menu .menu-group { display: block; padding: 10px 12px 4px; color: var(--faint); font-size: .72rem; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; }
+    .dropdown-menu .menu-sep { display: block; height: 1px; margin: 6px 8px; background: #2a2d33; }
     .dropdown-menu a:hover { background: #1a1c21; color: var(--ink); }
     .nav-links a[aria-current="page"], .dropdown > button[aria-current="page"] { color: var(--ink); }
     .faq details { border-bottom: 1px solid var(--line); padding: 18px 0; }
@@ -27,29 +29,36 @@
     .faq p { color: var(--muted); margin: 10px 0 0; }
     .video-frame video { width: 100%; height: 100%; display: block; object-fit: cover; background: #000; }
     .video-copy ul { color: var(--muted); margin: 12px 0 16px; padding-left: 18px; }
+    .video-copy li { margin-bottom: 6px; }
+    .hero .trust { justify-content: center; margin-top: 32px; }
+    .hero h1, .hero .lede { text-wrap: balance; }
+    .bridge { margin: -8px 0 28px; color: var(--soft); font-size: 1.02rem; }
   </style>
 </head>
 <body>
   <header class="topbar">
     <nav class="nav wrap" aria-label="Main navigation">
       <a class="brand" href="index.html" aria-label="NeoApps.AI home"><span class="brand-mark">N</span>NeoApps.AI</a>
-      <div class="nav-links"><a href="index.html" aria-current="page">Home</a><div class="dropdown"><button type="button" onclick="location.href='use-cases.html'">Use cases ▾</button><div class="dropdown-menu"><a href="use-cases.html#healthcare">Healthcare and research</a><a href="use-cases.html#legal">Legal</a><a href="use-cases.html#professional">Accounting and professional services</a><a href="use-cases.html#field">Field operations and compliance</a><a href="use-cases.html#education">Education</a><a href="use-cases.html#insurance">Insurance</a><a href="use-cases.html#property">Property and real estate</a><a href="use-cases.html#public">Nonprofit and government</a><a href="use-cases.html#manufacturing">Manufacturing and quality</a><a href="use-cases.html#live">Live, 3D, maps and charts</a><a href="use-cases.html#prompt-library">Prompt library</a></div></div><a href="pricing.html">Pricing</a><a href="docs.html">Docs</a><div class="dropdown"><button type="button" onclick="location.href='developers.html'">Developers ▾</button><div class="dropdown-menu"><a href="developers.html#open-source">Open source</a><a href="developers.html#local">Run it locally</a><a href="developers.html#rules">Data rules</a><a href="developers.html#extend">Extend it</a><a href="security.html">Security</a><a href="https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator">GitHub ↗</a></div></div><a class="button small" href="get-started.html">Connect assistant</a></div>
+      <div class="nav-links"><a href="index.html" aria-current="page">Home</a><div class="dropdown"><button type="button" onclick="location.href='use-cases.html'">Use cases ▾</button><div class="dropdown-menu"><span class="menu-group">Client and regulated portals</span><a href="use-cases.html#professional">Accounting and professional services</a><a href="use-cases.html#legal">Legal</a><a href="use-cases.html#healthcare">Healthcare and research</a><a href="use-cases.html#insurance">Insurance</a><span class="menu-group">Field and physical operations</span><a href="use-cases.html#field">Field operations and compliance</a><a href="use-cases.html#manufacturing">Manufacturing and quality</a><a href="use-cases.html#property">Property and real estate</a><span class="menu-group">Data and live operations</span><a href="use-cases.html#live">Live boards, maps and 3D floor plans</a><a href="use-cases.html#education">Education</a><a href="use-cases.html#public">Nonprofit and government</a><span class="menu-sep"></span><a href="use-cases.html#prompt-library">Prompt library</a></div></div><a href="pricing.html">Pricing</a><a href="docs.html">Docs</a><div class="dropdown"><button type="button" onclick="location.href='developers.html'">Developers ▾</button><div class="dropdown-menu"><a href="developers.html#open-source">Open source</a><a href="developers.html#local">Run it locally</a><a href="developers.html#rules">Data rules</a><a href="developers.html#extend">Extend it</a><a href="security.html">Security</a><a href="https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator">GitHub ↗</a></div></div><a class="button small" href="https://cloud.neoapps.ai/signup">Start free</a></div>
       <details class="mobile-nav">
         <summary>Menu</summary>
-        <div class="mobile-nav-links"><a href="index.html" aria-current="page">Home</a><a href="use-cases.html">Use cases</a><a href="pricing.html">Pricing</a><a href="docs.html">Docs</a><a href="developers.html">Developers</a><a href="security.html">Security</a><a href="get-started.html">Connect assistant</a></div>
+        <div class="mobile-nav-links"><a href="index.html" aria-current="page">Home</a><a href="use-cases.html">Use cases</a><a href="pricing.html">Pricing</a><a href="docs.html">Docs</a><a href="developers.html">Developers</a><a href="security.html">Security</a><a href="get-started.html">Setup guide</a><a href="https://cloud.neoapps.ai/signup">Start free</a></div>
       </details>
     </nav>
   </header>
   <main id="top">
     <section class="hero">
       <div class="wrap">
-        <h1>Build a business app around the way your team works.</h1>
-        <p class="lede">Describe your workflow in the AI assistant you already use. Review the screens and who can access them, then choose where your app runs.</p>
+        <h1>Build, run, and share web apps as easily as a cloud&nbsp;doc.</h1>
+        <p class="lede">Describe your idea to your AI assistant, launch in minutes, and sell directly from your app.</p>
         <div class="hero-actions">
-          <a class="button" href="get-started.html">Plan my first app</a>
+          <a class="button" href="https://cloud.neoapps.ai/signup">Start free</a>
           <a class="button secondary" href="#industries">See example apps</a>
         </div>
         <p class="fine">Free for up to 2 apps. No card needed.</p>
+        <ul class="trust" aria-label="What IT teams get">
+          <li>Open-source runtime</li><li>Run it in your own cloud</li><li>Access by role and by record</li><li>Audit history, refused attempts included</li><li>Uses the AI plan you already have</li>
+        </ul>
       </div>
     </section>
     <section class="works" aria-label="Assistant setup options">
@@ -64,6 +73,7 @@
           <h2>What you can build</h2>
           <p>Start with a workflow your team already knows.</p>
         </div>
+        <p class="bridge">Different workflows, same guardrails: role-based access, approval history and your choice of cloud, all from a plan you review before launch.</p>
         <div class="featured-grid">
           <article class="featured-card">
             <div class="mock" role="img" aria-label="Illustration: a client portal showing the documents requested and the current status">
@@ -123,7 +133,7 @@
         </div>
         <div class="walk">
           <article class="walk-step"><div class="step-num">01</div><h3>Describe your workflow</h3><p>Tell your assistant what people need to do and what information the app should keep.</p></article>
-          <article class="walk-step"><div class="step-num">02</div><h3>Review screens and permissions</h3><p>Check what each screen shows and who can view, edit, or approve records. Ask for changes to the plan before you approve it.</p><div class="shot"><img src="assets/img/req-plan.webp" width="1390" height="380" loading="lazy" alt="Sample app plan with roles and workflow steps"></div></article>
+          <article class="walk-step"><div class="step-num">02</div><h3>Review the plan before anything runs</h3><p>Every screen, role, field and approval rule is listed in a plan you can read and change. The AI writes the plan, not the security code, and nothing is built until you approve it.</p><div class="shot"><img src="assets/img/req-plan.webp" width="1390" height="380" loading="lazy" alt="Sample app plan with roles and workflow steps"></div></article>
           <article class="walk-step"><div class="step-num">03</div><h3>Publish after approval</h3><p>Ask your assistant to publish the approved plan to NeoApps Cloud. Open the app link when it’s ready. You can also run the app yourself.</p><div class="shot"><img src="assets/img/req-approve.webp" width="1600" height="1000" loading="lazy" alt="Generated app showing the approval workflow"></div></article>
           <article class="walk-step"><div class="step-num">04</div><h3>Improve the app with your team</h3><p>Use the app with your team. Review its activity and ask your assistant to plan changes as your workflow evolves.</p><div class="shot"><img src="assets/img/req-history.webp" width="1600" height="1000" loading="lazy" alt="Approval history in the generated app"></div></article>
         </div>
@@ -132,14 +142,14 @@
     <section class="section" id="positioning">
       <div class="wrap">
         <div class="section-heading">
-          <h2>Set the rules your app should follow</h2>
-          <p>NeoApps turns the reviewed plan into an application with sign-in, records, and roles.</p>
+          <h2>Rules the runtime enforces, not the AI</h2>
+          <p>Sign-in, access and approval rules come from the plan you approved. The NeoApps runtime applies them on every request, the same way every time, including requests made through the app's AI assistant.</p>
         </div>
         <div id="rules" class="includes">
-          <article class="include"><h3>Control access by role</h3><p>Let clients see their own documents and give staff the access they need to review submissions.</p></article>
-          <article class="include"><h3>Keep a record of decisions</h3><p>For workflows configured with approvals and audit history, see who made the decision and when.</p></article>
-          <article class="include"><h3>Share forms and invite people</h3><p>Share a form anyone can fill in, like a job application with a resume. Invite your team by email: they join with no password.</p></article>
-          <article class="include"><h3>Build from an open-source plan</h3><p>Use the open-source generator to build the app from its schema and configuration.</p></article>
+          <article class="include"><h3>Access by role and by record</h3><p>Clients see only their own records. Staff see what their role allows. Hidden fields stay hidden in the API, not just on screen.</p></article>
+          <article class="include"><h3>Approvals with limits</h3><p>Status steps, approval limits, escalation and separation of duties are checked by the server, so a manager can't approve above their limit.</p></article>
+          <article class="include"><h3>Audit history</h3><p>Turn on the audit log to record every change and every refused attempt: who, when, and which rule applied.</p></article>
+          <article class="include"><h3>Open source and inspectable</h3><p>The generator and the runtime that enforces these rules are open source on GitHub. Read the code, run the tests, host it yourself.</p></article>
         </div>
         <p><a class="text-link" href="security.html">Review security controls →</a></p>
       </div>
@@ -147,8 +157,8 @@
     <section class="section" id="own">
       <div class="wrap">
         <div class="section-heading">
-          <h2>Choose where your app runs</h2>
-          <p>Use NeoApps Cloud, arrange setup in your own cloud account, or run the open-source generator on your own infrastructure.</p>
+          <h2>Run it in our cloud or yours</h2>
+          <p>Use NeoApps Cloud, arrange setup in your own cloud account, or run the open-source generator on your own infrastructure. You keep the plan and the generated code either way.</p>
         </div>
         <p><a class="text-link" href="pricing.html#compare">Compare hosting options →</a></p>
       </div>
@@ -165,10 +175,10 @@
     <section class="section" id="live-demo">
       <div class="wrap">
         <div class="section-heading">
-          <div class="kicker">New: live and 3D apps</div>
-          <h2>Starfall Arena, a multiplayer game built on NeoApps</h2>
+          <div class="kicker">See the rules at work</div>
+          <h2>An approval the rules refused, and the audit trail that shows it</h2>
         </div>
-        <div class="video-grid"><div class="video-frame"><video controls muted playsinline preload="none" poster="assets/img/starfall-poster.jpg" aria-label="Starfall Arena trailer: ships fly and fight in a 3D asteroid field"><source src="assets/video/starfall-trailer.mp4" type="video/mp4"><a href="assets/video/starfall-trailer.mp4">Download the Starfall Arena trailer (MP4)</a></video></div><div class="video-copy"><p>Players sign in, pick a ship and fly together in the browser. Everyone sees each other move and fire as it happens.</p><p>The same live connection works for team chat, who’s-online lists and screens that update on their own.</p><p><a class="text-link" href="use-cases.html#live">See live app ideas and prompts →</a></p></div></div>
+        <div class="video-grid"><div class="video-frame"><video controls muted playsinline preload="none" poster="assets/img/audit-trail-poster.jpg" aria-label="AuditDesk demo: a manager's approval above his limit is refused, he escalates, a partner approves, and the audit log shows every step"><source src="assets/video/audit-trail-demo.mp4" type="video/mp4"><a href="assets/video/audit-trail-demo.mp4">Download the AuditDesk demo (MP4)</a></video></div><div class="video-copy"><ul><li>A staff auditor logs a $9,000 finding.</li><li>The manager's approval limit is $5,000, so the app refuses his approval. He escalates it instead.</li><li>A partner approves it. The audit log shows each step, including the refused attempt and the rule behind it.</li></ul><p>Recorded in AuditDesk, an open-source sample app. Its rules are a few lines of reviewed configuration, not code an AI wrote.</p><p><a class="text-link" href="https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator/tree/main/samples/auditdesk">See AuditDesk on GitHub →</a></p><p><a class="text-link" href="use-cases.html#live">Live boards, maps and 3D floor plans →</a></p></div></div>
       </div>
     </section>
     <section class="section" id="plans">
@@ -190,6 +200,8 @@
           <details><summary>Do I need to know how to code?</summary><p>For the Cloud connector, describe the app in your own words and review the plan in your assistant. The <a class="text-link" href="developers.html#local">local setup</a> is available if you prefer to run the tools yourself.</p></details>
           <details><summary>Which assistants can I use?</summary><p>See the <a class="text-link" href="get-started.html#connect">assistant setup guides</a> for supported connection paths and workspace requirements.</p></details>
           <details><summary>What will I see before I publish?</summary><p>The plan describes what the app tracks, its screens, and what each person can do. Ask your assistant to revise anything that needs changing.</p></details>
+          <details><summary>Does the AI decide who can see our data?</summary><p>No. The AI proposes a plan; you review its roles and rules before anything is built. The open-source runtime then enforces those rules on every request. They aren't generated as code that could differ from app to app.</p></details>
+          <details><summary>Do we need another AI subscription?</summary><p>No. You build with the assistant your company already uses, such as Claude, ChatGPT, Codex or Gemini. AI features inside an app use your own provider key when you turn them on.</p></details>
           <details><summary>What if I get stuck?</summary><p>See the <a class="text-link" href="docs.html#troubleshooting">troubleshooting guide</a> for help with connecting, signing in, and publishing.</p></details>
         </div>
       </div>
@@ -200,7 +212,7 @@
         <h2>Plan your first app</h2>
         <p>Connect your assistant and describe a workflow you want to improve.</p>
         <div class="hero-actions">
-          <a class="button" href="get-started.html">Get started</a>
+          <a class="button" href="https://cloud.neoapps.ai/signup">Start free</a>
           <a class="button secondary" href="docs.html#first-app">Read the first-app guide</a>
         </div>
       </div>
@@ -211,7 +223,7 @@
     <div class="wrap footer-row">
       <a class="brand" href="index.html"><span class="brand-mark">N</span>NeoApps.AI</a>
       <span>Custom software, built by your AI, owned by you.</span>
-      <div class="footer-links"><a href="get-started.html">Connect your AI assistant</a><a href="pricing.html">Pricing</a><a href="docs.html">Docs</a><a href="developers.html">Developers</a><a href="security.html">Security</a><a href="llms.txt">For agents</a><a href="https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator">GitHub</a><a href="mailto:info@neopric.com">Contact</a></div>
+      <div class="footer-links"><a href="get-started.html">Assistant setup guide</a><a href="pricing.html">Pricing</a><a href="docs.html">Docs</a><a href="developers.html">Developers</a><a href="security.html">Security</a><a href="llms.txt">For agents</a><a href="https://github.com/Neopric-Inc/NeoApps.AI-CodeGenerator">GitHub</a><a href="mailto:info@neopric.com">Contact</a></div>
     </div>
   </footer>
   <script src="assets/site.js"></script>
