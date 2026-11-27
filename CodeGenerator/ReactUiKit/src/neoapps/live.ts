@@ -7,6 +7,7 @@
 //     onJoin: (peer) => ..., onLeave: (id) => ...,
 //     onMessage: (from, data, at) => ...,     // a message another player sent
 //     onStatus: (s) => ...,                   // "connecting" | "open" | "closed"
+//     onChange: (table, id, action) => ...,   // a record changed (ui.config.json "live.tables"): re-read it
 //   });
 //   room.send({ x, y, z });                   // up to 4 KB, at most 60 a second (extra ones are dropped)
 //   room.close();
@@ -25,6 +26,9 @@ export interface LiveHandlers {
   onLeave?: (id: string) => void;
   onMessage?: (from: string, data: any, at: number) => void;
   onStatus?: (status: LiveStatus) => void;
+  /** A record of a table listed in ui.config.json "live.tables" for this room was created, changed or deleted by anyone.
+   *  Only the table, id and action are sent: re-read the record through the API (which applies the person's access). */
+  onChange?: (table: string, id: any, action: "create" | "update" | "delete", at: number) => void;
 }
 
 export interface LiveRoom {
@@ -64,6 +68,7 @@ export function joinRoom(room: string, h: LiveHandlers = {}): LiveRoom {
       else if (m.t === "join") h.onJoin?.({ id: m.id, name: m.name });
       else if (m.t === "leave") h.onLeave?.(m.id);
       else if (m.t === "msg") h.onMessage?.(m.from, m.d, m.at);
+      else if (m.t === "change") h.onChange?.(m.table, m.id, m.action, m.at);
     };
     ws.onclose = () => {
       id = null;

@@ -1,0 +1,333 @@
+{
+  "appName": "FacilityMap",
+  "tagline": "Every unit, every open issue, live in 3D",
+  "theme": {
+    "primary": "#2563eb"
+  },
+  "menu": [
+    {
+      "label": "Work",
+      "items": [
+        "tickets",
+        "appliances",
+        "residents"
+      ]
+    },
+    {
+      "label": "Property",
+      "items": [
+        "buildings",
+        "floors",
+        "units"
+      ]
+    },
+    {
+      "label": "Admin",
+      "items": [
+        "audit_logs"
+      ]
+    }
+  ],
+  "roles": {
+    "Tenant": {
+      "buildings": "r",
+      "floors": "r",
+      "units": "r",
+      "residents": "r",
+      "appliances": "r",
+      "tickets": "cr"
+    },
+    "Handyman": {
+      "buildings": "r",
+      "floors": "r",
+      "units": "r",
+      "residents": "r",
+      "appliances": "ru",
+      "tickets": "ru"
+    },
+    "Safety Inspector": {
+      "buildings": "r",
+      "floors": "r",
+      "units": "r",
+      "residents": "r",
+      "appliances": "r",
+      "tickets": "ru"
+    },
+    "Property Manager": {
+      "*": "crud",
+      "audit_logs": "r"
+    }
+  },
+  "rowScopes": [
+    {
+      "name": "tenant",
+      "roles": [
+        "Tenant"
+      ],
+      "column": "unit_id",
+      "userValue": {
+        "table": "residents",
+        "match": "login_username",
+        "column": "unit_id"
+      }
+    }
+  ],
+  "editableFields": {
+    "Handyman": {
+      "tickets": [
+        "ticket_status",
+        "work_notes"
+      ],
+      "appliances": [
+        "appliance_status",
+        "last_serviced"
+      ]
+    },
+    "Safety Inspector": {
+      "tickets": [
+        "ticket_status",
+        "work_notes"
+      ]
+    }
+  },
+  "lifecycles": {
+    "tickets": {
+      "column": "ticket_status",
+      "initial": [
+        "Open"
+      ],
+      "adminBypass": false,
+      "transitions": [
+        {
+          "from": "Open",
+          "to": "In progress",
+          "roles": [
+            "Handyman",
+            "Safety Inspector",
+            "Property Manager"
+          ]
+        },
+        {
+          "from": [
+            "Open",
+            "In progress"
+          ],
+          "to": "Resolved",
+          "roles": [
+            "Handyman",
+            "Property Manager"
+          ],
+          "check": {
+            "column": "severity",
+            "ne": "Safety Hold",
+            "message": "only a Safety Inspector can clear a safety hold"
+          }
+        },
+        {
+          "from": [
+            "Open",
+            "In progress"
+          ],
+          "to": "Resolved",
+          "roles": [
+            "Safety Inspector"
+          ]
+        },
+        {
+          "from": "Resolved",
+          "to": "Open",
+          "roles": [
+            "Safety Inspector",
+            "Property Manager"
+          ]
+        }
+      ]
+    }
+  },
+  "immutable": {
+    "tickets": [
+      "severity",
+      "unit_id"
+    ],
+    "audit_logs": [
+      "*"
+    ]
+  },
+  "numbering": {
+    "tickets": {
+      "column": "ticket_number",
+      "pattern": "TKT-{yyyy}-{seq:5}"
+    }
+  },
+  "audit": {
+    "table": "audit_logs"
+  },
+  "live": {
+    "rooms": {
+      "facility": "members"
+    },
+    "tables": {
+      "tickets": "facility",
+      "units": "facility",
+      "appliances": "facility"
+    },
+    "maxPeers": 30
+  },
+  "dashboard": {
+    "cards": [
+      {
+        "table": "tickets",
+        "label": "Safety holds open",
+        "where": {
+          "severity": "Safety Hold",
+          "ticket_status": {
+            "notEqual": "Resolved"
+          }
+        }
+      },
+      {
+        "table": "tickets",
+        "label": "Urgent repairs open",
+        "where": {
+          "severity": "Urgent Repair",
+          "ticket_status": {
+            "notEqual": "Resolved"
+          }
+        }
+      },
+      {
+        "table": "tickets",
+        "label": "Routine jobs open",
+        "where": {
+          "severity": "Routine Maintenance",
+          "ticket_status": {
+            "notEqual": "Resolved"
+          }
+        }
+      }
+    ]
+  },
+  "tables": {
+    "buildings": {
+      "label": "Buildings",
+      "singular": "Building",
+      "icon": "apartment",
+      "displayField": "building_name"
+    },
+    "floors": {
+      "label": "Floors",
+      "singular": "Floor",
+      "icon": "layers",
+      "displayField": "floor_label"
+    },
+    "units": {
+      "label": "Units",
+      "singular": "Unit",
+      "icon": "door_front",
+      "displayField": "unit_label",
+      "fields": {
+        "unit_kind": {
+          "widget": "select",
+          "options": [
+            "Apartment",
+            "Shared"
+          ]
+        }
+      },
+      "listColumns": [
+        "unit_label",
+        "floor_id",
+        "unit_kind",
+        "bedrooms"
+      ]
+    },
+    "residents": {
+      "label": "Residents",
+      "singular": "Resident",
+      "icon": "person",
+      "displayField": "full_name"
+    },
+    "appliances": {
+      "label": "Appliances",
+      "singular": "Appliance",
+      "icon": "kitchen",
+      "displayField": "appliance_type",
+      "fields": {
+        "appliance_status": {
+          "widget": "select",
+          "options": [
+            "Working",
+            "Needs repair",
+            "Out of service"
+          ],
+          "colors": {
+            "Working": "success",
+            "Needs repair": "warning",
+            "Out of service": "error"
+          }
+        }
+      },
+      "listColumns": [
+        "appliance_type",
+        "unit_id",
+        "make_model",
+        "appliance_status",
+        "last_serviced"
+      ]
+    },
+    "tickets": {
+      "label": "Tickets",
+      "singular": "Ticket",
+      "icon": "build",
+      "displayField": "title",
+      "fields": {
+        "severity": {
+          "widget": "select",
+          "options": [
+            "Safety Hold",
+            "Urgent Repair",
+            "Routine Maintenance"
+          ],
+          "colors": {
+            "Safety Hold": "error",
+            "Urgent Repair": "warning",
+            "Routine Maintenance": "info"
+          }
+        },
+        "ticket_status": {
+          "widget": "select",
+          "options": [
+            "Open",
+            "In progress",
+            "Resolved"
+          ],
+          "colors": {
+            "Open": "error",
+            "In progress": "warning",
+            "Resolved": "success"
+          }
+        },
+        "details": {
+          "widget": "textarea"
+        },
+        "work_notes": {
+          "widget": "textarea"
+        }
+      },
+      "listColumns": [
+        "ticket_number",
+        "title",
+        "unit_id",
+        "severity",
+        "ticket_status",
+        "modifiedAt"
+      ]
+    },
+    "audit_logs": {
+      "label": "Audit log",
+      "singular": "Audit entry",
+      "icon": "history",
+      "displayField": "action_code"
+    }
+  }
+}

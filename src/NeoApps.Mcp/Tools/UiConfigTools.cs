@@ -93,6 +93,10 @@ internal static class UiConfigTools
                                                       // screens use joinRoom() from src/neoapps/live.ts; "arena-x1"
                                                       // = a separate match. Apps with live rooms run as one copy.
                                                       // Custom screens may import "three" for 3D.
+                                                      // "tables": { "tickets": "facility" } = the server tells room
+                                                      // "facility" when a tickets row changes (anyone, API, AI, jobs):
+                                                      // joinRoom(..., { onChange: (table, id, action) => reload() }).
+                                                      // Only table/id/action are sent; re-read through the API.
           "sharing": true,                            // share links, on by default: members with "create" on a table get "Share form"
                                                       // (a link anyone can fill in, or members only; expiry, max responses, close,
                                                       // new link) and with "update" a record "Share" (chosen fields of that one

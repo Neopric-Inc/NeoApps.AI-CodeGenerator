@@ -28,6 +28,10 @@ namespace nkv.MicroService.API.Controllers
     ///   server → others:       {"t":"join","id":"p12","name":"Ben"}  /  {"t":"leave","id":"p12"}
     ///   you → server:          any JSON value up to 4 KB (at most 60 a second; extra ones are dropped)
     ///   server → others:       {"t":"msg","from":"p12","d":&lt;your JSON&gt;,"at":&lt;server ms&gt;}
+    /// Record changes: "live": { "tables": { "tickets": "facility", "units": "facility" } } tells everyone in room "facility"
+    /// (and its matches) when a row of those tables is created, changed or deleted, by anyone or anything (screens, API, AI,
+    /// jobs): {"t":"change","table":"tickets","id":12,"action":"update"}. No record data is sent: screens re-read through the
+    /// API, which applies each person's access rules. Use it for boards and maps that must update within a second.
     /// Rooms live in this API process, so an app with live rooms runs a single copy (NeoApps Cloud sets that).
     /// </summary>
     [ApiController]
@@ -38,6 +42,22 @@ namespace nkv.MicroService.API.Controllers
         static readonly ConcurrentDictionary<string, Room> Rooms = new();
         static readonly ConcurrentDictionary<string, int> ConnectionsPerIp = new();
         static long _nextId;
+        static readonly bool _listening = Listen();
+
+        /// <summary>Forwards committed record changes to the rooms named in "live.tables" (see above).</summary>
+        static bool Listen()
+        {
+            DataGuard.RowChanged += (table, action, id) =>
+            {
+                var roomName = DataGuard.Config?["live"]?["tables"]?[table ?? ""]?.ToString();
+                if (string.IsNullOrEmpty(roomName) || Rooms.IsEmpty) return;
+                var text = JsonSerializer.Serialize(new { t = "change", table, id, action, at = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() });
+                foreach (var (name, room) in Rooms)
+                    if (name == roomName || name.StartsWith(roomName + "-", StringComparison.Ordinal))
+                        foreach (var p in room.Peers.Values) _ = Send(p, text, important: true);
+            };
+            return true;
+        }
 
         readonly string[] _allowedOrigins;
         public LiveController(IConfiguration config)
