@@ -88,9 +88,9 @@ Work in the app's planning folder `workspace/<App>/` (git-ignored): `requirement
    **Data rules:** for multi-tenant apps, customer portals (customers see only their own rows), status workflows, approvals,
    audit trails, domain events, SLAs, plan limits, field validation (formats, ranges, date order, totals) or automatic numbers (INV-2026-00001), add the `tenancy`, `rowScopes`, `hiddenFields`, `editableFields`, `readFilters`, `lifecycles`, `validations`, `numbering`, `immutable`, `audit`, `outbox`, `jobs` and `limits` sections to ui.config.json (see the guide).
    Rules that depend on the person (ABAC): `actorProfile` (each person's row), lifecycle step `check` (approval limits and
-   escalation: `{"column": "amount", "lte": {"me": "approval_limit"}}`), step `creates` (an invoice on approval, once),
+   escalation: `{"column": "amount", "lte": {"me": "approval_limit"}}`), step `otherwise` (when the check fails, move the record to that state, e.g. `"Escalated"`, instead of refusing), step `creates` (an invoice on approval, once),
    `allowedReferences` (only assigned, active projects in pickers and on save) and `budgets` (monthly totals per person,
-   checked under a row lock). Refused writes are audited as `<table>.denied`. `samples/auditdesk/acceptance-test.sh` exercises all of them.
+   checked under a row lock). Refused writes, and changes aimed at records outside the person's scope, are audited as `<table>.denied`. `samples/auditdesk/acceptance-test.sh` exercises all of them.
    Use these sections instead of hand-writing checks: the generated API enforces them on every query (`Utility/DataGuard*.cs`). After deploying,
    run `./neoapps test <App>` and report the result (tenant isolation per table, row scopes, append-only tables, lifecycle steps).
 4. **When requirements change** (they will): add a changelog line to `requirements.md`, update the schema and UI config,

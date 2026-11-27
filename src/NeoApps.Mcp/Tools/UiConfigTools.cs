@@ -247,6 +247,8 @@ internal static class UiConfigTools
                 { "from": "Submitted", "to": "Escalated", "roles": ["Manager"], "check": { "column": "amount", "gt": { "me": "approval_limit" } } },
                 { "from": "Escalated", "to": "Approved", "roles": ["Director"] }
                 operators lt, lte, gt, gte, eq, ne, in, notIn; values: a literal, { "me": column } (actorProfile) or { "column": c }.
+                Add "otherwise": "Escalated" to a step with a check to route the record there automatically instead of refusing
+                (the person must also be allowed that step; the audit log notes the routing).
               "creates": records made by the step, in the same transaction, once:
                 "creates": [ { "table": "invoices", "values": { "expense_request_id": "$id", "amount": "$amount", "status": "Open" },
                                "unique": "expense_request_id" } ]   // "$id" = this record, "$col" = its column, "$user", "$now";

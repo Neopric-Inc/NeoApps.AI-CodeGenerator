@@ -475,6 +475,14 @@ public static class AppPreview
                         Ref($"{step} check.{op}", table, spec);
                     }
                 }
+                if (Str(tr["otherwise"]) is { } otherwise)
+                {
+                    State($"{step} otherwise", otherwise);
+                    if (tr["check"] == null) w.Add($"{step}: \"otherwise\" only applies when a \"check\" fails; add a check or remove it.");
+                    var from0 = Set(tr["from"]);
+                    if (!Objs(lc["transitions"]).Any(o => Set(o["to"]).Contains(otherwise) && (Set(o["from"]).Count == 0 || Set(o["from"]).Contains("*") || from0.Any(f => Set(o["from"]).Contains(f)))))
+                        w.Add($"{step}: add a step from {string.Join("/", from0)} to {otherwise} for the same roles, so \"otherwise\" can move the record there.");
+                }
                 foreach (var cr in Objs(tr["creates"]))
                     if (Table($"{step} creates", Str(cr["table"])))
                     {
@@ -681,6 +689,7 @@ public static class AppPreview
                 foreach (var ch in Objs(tr["check"]))
                     extra.Add(Str(ch["message"]) ?? string.Join(", ", ch.Where(kv => kv.Key is not ("column" or "message"))
                         .Select(kv => $"{Str(ch["column"])?.Replace('_', ' ')} {kv.Key switch { "lt" => "<", "lte" => "≤", "gt" => ">", "gte" => "≥", "eq" => "=", "ne" => "≠", "in" => "in", _ => "not in" }} {RefText(kv.Value)}")));
+                if (Str(tr["otherwise"]) is { } ow) extra.Add($"otherwise goes to {ow}");
                 foreach (var cr in Objs(tr["creates"])) extra.Add($"creates one {Label(ui, Str(cr["table"]) ?? "").ToLowerInvariant()}");
                 lines.Add($"{(from.Count == 0 ? "any" : string.Join(" / ", from))} → {string.Join(" / ", Set(tr["to"]))}: {Who(tr["roles"])}{(extra.Count > 0 ? $" ({string.Join("; ", extra)})" : "")}.");
             }

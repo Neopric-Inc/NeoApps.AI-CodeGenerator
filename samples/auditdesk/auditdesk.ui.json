@@ -423,12 +423,41 @@
           "from": "Submitted",
           "to": "Approved",
           "roles": [
-            "Manager",
+            "Manager"
+          ],
+          "check": {
+            "column": "hours",
+            "lte": 5,
+            "message": "entries over 5 hours need a partner"
+          },
+          "otherwise": "Partner review"
+        },
+        {
+          "from": "Submitted",
+          "to": "Approved",
+          "roles": [
             "Partner"
           ]
         },
         {
           "from": "Submitted",
+          "to": "Partner review",
+          "roles": [
+            "Manager"
+          ]
+        },
+        {
+          "from": "Partner review",
+          "to": "Approved",
+          "roles": [
+            "Partner"
+          ]
+        },
+        {
+          "from": [
+            "Submitted",
+            "Partner review"
+          ],
           "to": "Draft",
           "roles": [
             "Manager",
@@ -1070,11 +1099,13 @@
           "options": [
             "Draft",
             "Submitted",
+            "Partner review",
             "Approved"
           ],
           "colors": {
             "Submitted": "warning",
-            "Approved": "success"
+            "Approved": "success",
+            "Partner review": "info"
           }
         }
       }
@@ -1213,6 +1244,7 @@
         "column": "entry_status",
         "count": [
           "Submitted",
+          "Partner review",
           "Approved"
         ]
       },
