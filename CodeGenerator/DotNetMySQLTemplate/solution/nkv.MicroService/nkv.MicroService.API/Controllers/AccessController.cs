@@ -330,6 +330,17 @@ namespace nkv.MicroService.API.Controllers
             return Ok(new APIResponse(ResponseCode.SUCCESS, "OK", new { language = input.language.Trim() }));
         }
 
+        /// <summary>Which records a picker for table.column may offer the signed-in user (ui.config.json "allowedReferences").
+        /// restricted = false: any record the user can see.</summary>
+        [HttpGet]
+        [Route(Route + "/choices/{table}/{column}")]
+        public ActionResult Choices(string table, string column)
+        {
+            using var conn = Open();
+            var ids = DataGuard.AllowedReferenceIds(conn, table, column);
+            return Ok(new APIResponse(ResponseCode.SUCCESS, "OK", new { restricted = ids != null, ids = ids ?? new List<string>() }));
+        }
+
         /// <summary>The signed-in user's saved list views (a JSON document the UI writes); null when none.</summary>
         [HttpGet]
         [Route(Route + "/me/views")]

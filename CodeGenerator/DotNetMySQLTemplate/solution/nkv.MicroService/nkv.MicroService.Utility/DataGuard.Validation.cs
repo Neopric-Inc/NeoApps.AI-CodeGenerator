@@ -126,7 +126,7 @@ namespace nkv.MicroService.Utility
                 }
             }
             if (errors.Count > 0)
-                throw new DataGuardException("Please check: " + string.Join(", ", errors.Keys), 400) { Errors = errors.ToDictionary(kv => kv.Key, kv => kv.Value.ToArray()) };
+                throw new DataGuardException("Please check: " + string.Join(", ", errors.Keys.Select(k => FieldLabel(table, k))), 400) { Errors = errors.ToDictionary(kv => kv.Key, kv => kv.Value.ToArray()) };
         }
 
         static decimal? Num(object v) => v switch

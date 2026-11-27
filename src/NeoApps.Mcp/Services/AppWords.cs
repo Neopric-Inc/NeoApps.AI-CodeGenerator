@@ -75,7 +75,9 @@ public static class AppWords
                 var fc = cfg?["fields"]?[c.Name] as JsonObject;
                 if (True(fc?["hidden"])) continue;
                 var fk = t.ForeignKeys.FirstOrDefault(f => f.Column == c.Name);
-                Add(Str(fc?["label"]) ?? (fk != null ? RefLabel(fk.RefTable) : Humanize(c.Name)));
+                Add(Str(fc?["label"]) ?? (fk != null
+                    ? (t.ForeignKeys.Count(f => f.RefTable == fk.RefTable) > 1 ? Humanize(System.Text.RegularExpressions.Regex.Replace(c.Name, "_id$", "", System.Text.RegularExpressions.RegexOptions.IgnoreCase)) : RefLabel(fk.RefTable))
+                    : Humanize(c.Name)));
                 Add(Str(fc?["help"])); Add(Str(fc?["placeholder"]));
                 var labels = fc?["optionLabels"] as JsonObject;
                 var options = (fc?["options"] as JsonArray)?.Select(o => o?.ToString() ?? "").ToList()

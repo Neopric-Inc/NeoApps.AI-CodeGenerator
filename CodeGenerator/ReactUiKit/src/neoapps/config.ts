@@ -109,7 +109,10 @@ export function resolveTable(schema: AppSchema, t: TableSchema, cfg: TableConfig
       ...fc,
       name: col.name,
       column: col,
-      label: tx(fc.label || (col.references ? referenceLabel(col.references.table, all) : humanize(col.name))),
+      // a link is named after the table it points to, unless the table has several links to it (sender / recipient)
+      label: tx(fc.label || (col.references
+        ? (t.columns.filter((c) => c.references?.table === col.references!.table).length > 1 ? humanize(col.name.replace(/_id$/i, "")) : referenceLabel(col.references.table, all))
+        : humanize(col.name))),
       help: tx(fc.help),
       placeholder: tx(fc.placeholder),
       optionLabel: (v: any) => tx(fc.optionLabels?.[String(v)] ?? optionText(String(v))),

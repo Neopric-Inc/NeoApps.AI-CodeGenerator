@@ -3,10 +3,13 @@
 Client-engagement app for a small accounting firm: engagements move Prepare → Plan → Fieldwork → Report → Signed off,
 clients upload requested documents in their own portal, AI drafts findings from those documents, and a partner signs off.
 
-- `auditdesk.sql`: 11 tables plus sample data (4 staff, 4 clients, 2 client contacts, 4 engagements in different phases)
+- `auditdesk.sql`: 14 tables plus sample data (4 staff, 4 clients, 2 client contacts, 4 engagements in different phases)
 - `auditdesk.ui.json`: roles, client and staff row scopes, hidden fields, status rules with per-role edit locks
   (`editableIn`), validations, numbering, append-only sign-offs, audit log, 8 dashboard cards, 3 AI workflows
-- `acceptance-test.sh`: 22 API checks (scopes, locks, phase gate, numbering, validation, audit log)
+- `acceptance-test.sh`: 43 API checks: scopes, locks, phase gate, numbering, validation, audit log, and the rules that
+  depend on the person: time only on assigned engagements (`allowedReferences`), a monthly hours cap with two
+  simultaneous submissions (`budgets`), approval limits with escalation to a partner (step `check`), an invoice created
+  once on sign-off (step `creates`), refused attempts in the audit log and who changed each phase
 
 Generate and test locally:
 

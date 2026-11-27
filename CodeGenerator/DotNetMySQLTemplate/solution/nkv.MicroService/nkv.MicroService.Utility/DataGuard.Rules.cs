@@ -29,7 +29,7 @@ namespace nkv.MicroService.Utility
             public HashSet<string> Initial;
             public List<Transition> Transitions = new();
             public HashSet<string> Frozen = new(StringComparer.OrdinalIgnoreCase);
-            public string HistoryTable, HistoryFk, HistoryFrom, HistoryTo, HistoryActor, HistoryReason;
+            public string HistoryTable, HistoryFk, HistoryFrom, HistoryTo, HistoryActor, HistoryReason, HistoryBy;
             public Dictionary<string, string> Timestamps = new(StringComparer.OrdinalIgnoreCase);
             public string SlaTable, SlaLink, SlaType, SlaDue, SlaMet;
             public Dictionary<string, double> SlaHours = new(StringComparer.OrdinalIgnoreCase);
@@ -56,6 +56,8 @@ namespace nkv.MicroService.Utility
             public string AdminBypass;                       // overrides the lifecycle's
             public string Meaning;                           // electronic signature: password re-entry + this statement
             public string SignedBy, SignedAt;                // optional columns stamped with the signer and UTC time
+            public List<JsonObject> Checks = new();          // conditions on the record and the person ("check")
+            public JsonArray Creates;                        // records created by this step ("creates")
         }
         sealed class DistinctRule { public string Column, Table, Key, UserColumn = "user_id", Message; }
         sealed class Requirement
@@ -149,6 +151,8 @@ namespace nkv.MicroService.Utility
                                 });
                             }
                             if (tn["adminBypass"] != null) t.AdminBypass = Bypass(tn["adminBypass"]);
+                            if (tn["check"] is JsonObject chk) t.Checks.Add(chk); else if (tn["check"] is JsonArray chks) t.Checks.AddRange(chks.OfType<JsonObject>());
+                            if (tn["creates"] is JsonObject cro) t.Creates = new JsonArray(cro.DeepClone()); else if (tn["creates"] is JsonArray cra) t.Creates = cra;
                             if (tn["signature"] is JsonValue sv) t.Meaning = sv.TryGetValue<bool>(out var on) ? (on ? $"I approve moving this record to {string.Join("/", t.To)}." : null) : sv.GetValue<string>();
                             else if (tn["signature"] is JsonObject so)
                             {
@@ -165,6 +169,7 @@ namespace nkv.MicroService.Utility
                         lc.HistoryTable = h["table"]?.GetValue<string>(); lc.HistoryFk = h["link"]?.GetValue<string>();
                         lc.HistoryFrom = h["from"]?.GetValue<string>(); lc.HistoryTo = h["to"]?.GetValue<string>();
                         lc.HistoryActor = h["actor"]?.GetValue<string>(); lc.HistoryReason = h["reason"]?.GetValue<string>();
+                        lc.HistoryBy = h["by"]?.GetValue<string>();
                     }
                     if (o["timestamps"] is JsonObject tsm) foreach (var (k, v) in tsm) lc.Timestamps[k] = v!.GetValue<string>();
                     if (o["sla"] is JsonObject sla)
@@ -221,12 +226,21 @@ namespace nkv.MicroService.Utility
             if (_outboxTable != null) _immutable[_outboxTable] = new(StringComparer.OrdinalIgnoreCase) { "*" };
             LoadNumbering(c);
             InitNotifications(c);
+            LoadPolicies();
         }
 
         // ------------------------------------------------------------------ write execution
 
         /// <summary>Runs an insert/update/delete with all rules applied; history, audit and outbox rows are written in the same transaction.</summary>
         public static int NonQuery(DbCommand cmd)
+        {
+            var previous = _writing.Value;
+            try { return NonQueryCore(cmd); }
+            catch (DataGuardException e) { RecordDenial(e); throw; }
+            finally { _writing.Value = previous; }
+        }
+
+        static int NonQueryCore(DbCommand cmd)
         {
             Apply(cmd);
             if (!_after.TryGetValue(cmd, out var actions) || actions.Count == 0) return Db.Execute(cmd);
@@ -253,20 +267,23 @@ namespace nkv.MicroService.Utility
 
         static partial void BeforeInsertImpl(DbCommand cmd, Caller caller, string table, Dictionary<string, object> values)
         {
+            _writing.Value = (table, null, values);
             Validate(table, values, null);
+            CheckAllowedReferences(cmd, caller, table, values, null);
             foreach (var lim in _limits.Where(l => l.Table.Equals(table, StringComparison.OrdinalIgnoreCase)))
                 CheckLimit(cmd, caller, lim, values);
             if (_lifecycles.TryGetValue(table, out var lc) && values.TryGetValue(lc.Column, out var sv) && lc.Initial != null)
             {
                 var s = Str(sv);
                 if (s != null && !lc.Initial.Contains(s))
-                    throw new DataGuardException($"New {table} records must start in {string.Join(" / ", lc.Initial)}, not '{s}'.", 409);
+                    throw new DataGuardException($"A new {Label(table).ToLowerInvariant()} must start as {string.Join(" or ", lc.Initial)}, not {s}.", 409);
             }
             After(cmd, (c, _) =>
             {
                 var id = Db.LastInsertedId(c);
                 var row = new Dictionary<string, object>(values, StringComparer.OrdinalIgnoreCase);
                 if (PrimaryKeys.TryGetValue(table, out var pk)) row[pk] = id;
+                CheckBudgets(c, caller, table, row, null);
                 if (_lifecycles.TryGetValue(table, out var l) && row.TryGetValue(l.Column, out var st) && Str(st) != null)
                 {
                     WriteHistory(c, caller, l, row, id, null, Str(st));
@@ -283,7 +300,7 @@ namespace nkv.MicroService.Utility
         {
             var isSoftDelete = values.Count == 1 && values.TryGetValue("isactive", out var ia) && Str(ia) == "0";
             if (_immutable.TryGetValue(table, out var im) && im.Contains("*"))
-                throw new DataGuardException($"{table} is append-only: records can't be changed or deleted.", 409);
+                throw new DataGuardException($"{Label(table)} records can't be changed or deleted once saved.", 409);
             var id = KeyValue(cmd, table, values);
             if (id == null)
             {
@@ -291,23 +308,27 @@ namespace nkv.MicroService.Utility
                 var guarded = (_lifecycles.TryGetValue(table, out var lcx) && values.ContainsKey(lcx.Column))
                     || (_immutable.TryGetValue(table, out var imx) && values.Keys.Any(k => imx.Contains(k)));
                 if (guarded)
-                    throw new DataGuardException($"{table}: change one record at a time, by its key (WHERE {PrimaryKeys.GetValueOrDefault(table, "id")} = @id), so its rules can be checked.", 400);
+                    throw new DataGuardException($"Change one {Label(table).ToLowerInvariant()} at a time (by its key), so its rules can be checked.", 400);
                 return;
             }
             var current = LoadVisible(cmd, table, id);
             if (current == null) return; // not visible: the scoped UPDATE affects nothing
+            _writing.Value = (table, id, values);
+            var proposed = new Dictionary<string, object>(current, StringComparer.OrdinalIgnoreCase);
+            foreach (var (k, v) in values) if (!(v is string ps && ps.StartsWith("@"))) proposed[k] = v;
             string fromState = null, toState = null;
-            Transition signed = null;
+            Transition signed = null, matched = null;
             if (_lifecycles.TryGetValue(table, out var lc))
             {
                 fromState = Str(current.GetValueOrDefault(lc.Column));
                 if (lc.Frozen.Contains(fromState ?? "") && !isSoftDelete)
-                    throw new DataGuardException($"This {table} record is {fromState} and can no longer be changed.", 409);
+                    throw new DataGuardException($"This {Label(table).ToLowerInvariant()} is {fromState} and can no longer be changed.", 409);
                 CheckEditable(cmd, caller, table, lc, fromState, isSoftDelete ? "delete" : "change");
                 if (values.TryGetValue(lc.Column, out var nv) && Str(nv) != null && !string.Equals(Str(nv), fromState, StringComparison.OrdinalIgnoreCase))
                 {
                     toState = Str(nv);
-                    signed = CheckTransition(cmd, caller, table, lc, fromState, toState, id, current);
+                    matched = CheckTransition(cmd, caller, table, lc, fromState, toState, id, current, proposed);
+                    signed = matched;
                     if (signed?.Meaning != null) VerifySignature(cmd, caller, table, toState, signed.Meaning);
                     else signed = null;
                 }
@@ -324,7 +345,7 @@ namespace nkv.MicroService.Utility
                             values[col] = kept;
                             continue;
                         }
-                        throw new DataGuardException($"{table}.{col} is read-only once created.", 409);
+                        throw new DataGuardException($"{FieldLabel(table, col)} can't be changed once the {Label(table).ToLowerInvariant()} is created.", 409);
                     }
             var changes = values.Where(kv => !kv.Key.Equals("modifiedat", StringComparison.OrdinalIgnoreCase) && !kv.Key.Equals("modifiedby", StringComparison.OrdinalIgnoreCase)
                                              && current.ContainsKey(kv.Key) && !SameValue(kv.Value, current[kv.Key]))
@@ -334,11 +355,14 @@ namespace nkv.MicroService.Utility
                 var merged = new Dictionary<string, object>(current, StringComparer.OrdinalIgnoreCase);
                 foreach (var (k, v) in changes) merged[k] = v;
                 Validate(table, merged, changes.Keys);
+                CheckAllowedReferences(cmd, caller, table, changes, current);
             }
             After(cmd, (c, _) =>
             {
                 var after = new Dictionary<string, object>(current, StringComparer.OrdinalIgnoreCase);
                 foreach (var (k, v) in changes) after[k] = v;
+                if (!isSoftDelete) CheckBudgets(c, caller, table, after, current);
+                if (toState != null && matched?.Creates != null) CreateOnTransition(c, caller, table, matched.Creates, id, after);
                 if (toState != null)
                 {
                     WriteHistory(c, caller, lc, after, id, fromState, toState, signed?.Meaning);
@@ -356,8 +380,9 @@ namespace nkv.MicroService.Utility
 
         static partial void BeforeDeleteImpl(DbCommand cmd, Caller caller, string table)
         {
+            _writing.Value = (table, null, null);
             if (_immutable.TryGetValue(table, out var im) && im.Contains("*"))
-                throw new DataGuardException($"{table} is append-only: records can't be deleted.", 409);
+                throw new DataGuardException($"{Label(table)} records can't be deleted.", 409);
             if (_lifecycles.TryGetValue(table, out var lc) && lc.EditableIn.Count > 0
                 && KeyValue(cmd, table, new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase)) is { } id && LoadVisible(cmd, table, id) is { } current)
                 CheckEditable(cmd, caller, table, lc, Str(current.GetValueOrDefault(lc.Column)), "delete");
@@ -374,10 +399,10 @@ namespace nkv.MicroService.Utility
             var role = RoleName(cmd.Connection, caller);
             if (role == null || !lc.EditableIn.TryGetValue(role, out var states)) return;
             if (states.Contains("*") || states.Contains(state ?? "")) return;
-            throw new DataGuardException($"This {table} record is {state}: your role ({role}) can only {verb} it while it is {string.Join(" or ", states)}.", 409);
+            throw new DataGuardException($"This {Label(table).ToLowerInvariant()} is {state}: your role ({role}) can only {verb} it while it is {string.Join(" or ", states)}.", 409);
         }
 
-        static Transition CheckTransition(DbCommand cmd, Caller caller, string table, Lifecycle lc, string from, string to, object id, Dictionary<string, object> current)
+        static Transition CheckTransition(DbCommand cmd, Caller caller, string table, Lifecycle lc, string from, string to, object id, Dictionary<string, object> current, Dictionary<string, object> proposed = null)
         {
             var role = RoleName(cmd.Connection, caller);
             bool Bypasses(Transition t)
@@ -388,14 +413,14 @@ namespace nkv.MicroService.Utility
             }
             var candidates = lc.Transitions.Where(t => (t.From.Contains("*") || t.From.Contains(from ?? "")) && t.To.Contains(to)).ToList();
             if (candidates.Count == 0)
-                throw new DataGuardException($"{table}: moving from '{from}' to '{to}' is not an allowed step.", 409);
+                throw new DataGuardException($"{char.ToUpper(A(Label(table))[0]) + A(Label(table))[1..]} can't go from {from} to {to}.", 409);
             var actor = caller.IsAi ? "ai" : "human";
             var byActor = candidates.Where(t => t.Actors.Contains(actor) || t.Actors.Contains("*")).ToList();
             if (byActor.Count == 0)
-                throw new DataGuardException($"{table}: '{from}' to '{to}' must be done by a person, not the AI.", 403);
+                throw new DataGuardException($"Moving {A(Label(table))} from {from} to {to} must be done by a person, not the AI.", 403);
             var byRole = byActor.Where(t => t.Roles.Contains("*") || t.Roles.Contains(role ?? "") || Bypasses(t)).ToList();
             if (byRole.Count == 0)
-                throw new DataGuardException($"{table}: your role ({role}) can't move a record from '{from}' to '{to}'.", 403);
+                throw new DataGuardException($"Your role ({role}) can't move {A(Label(table))} from {from} to {to}.", 403);
             string firstFailure = null;
             foreach (var t in byRole)
             {
@@ -410,9 +435,11 @@ namespace nkv.MicroService.Utility
                 if (failed != null) { firstFailure ??= failed.Message ?? $"needs a {failed.Table} record matching {JsonSerializer.Serialize(failed.Where)}"; continue; }
                 var present = t.Forbids.FirstOrDefault(r => RequirementMet(cmd, table, r, r.LinkFrom != null ? current.GetValueOrDefault(r.LinkFrom) : id));
                 if (present != null) { firstFailure ??= present.Message ?? $"there is a {present.Table} record matching {JsonSerializer.Serialize(present.Where)}"; continue; }
+                var check = t.Checks.Select(ch => CheckFails(table, ch, proposed ?? current, caller)).FirstOrDefault(x => x != null);
+                if (check != null) { firstFailure ??= check; continue; }
                 return t;
             }
-            throw new DataGuardException($"{table}: can't move to '{to}' yet: {firstFailure}.", 409);
+            throw new DataGuardException($"This {Label(table).ToLowerInvariant()} can't move to {to}: {firstFailure}.", 409);
         }
 
         /// <summary>
@@ -483,6 +510,10 @@ namespace nkv.MicroService.Utility
             if (lc.HistoryFrom != null) vals[lc.HistoryFrom] = from;
             if (lc.HistoryActor != null) vals[lc.HistoryActor] = caller.IsSystem ? "system" : caller.IsAi ? "ai" : "human";
             if (lc.HistoryReason != null) vals[lc.HistoryReason] = meaning == null ? $"by {caller.User}" : $"signed by {caller.User}: {meaning}";
+            // who did it: "by" in the history settings, or a column named like it
+            var by = lc.HistoryBy ?? (Columns.TryGetValue(lc.HistoryTable, out var hc)
+                ? new[] { "changed_by", "actor_ref", "actor_name", "performed_by", "changed_by_user", "user_name" }.FirstOrDefault(n => hc.Contains(n) && n != lc.HistoryActor) : null);
+            if (by != null) vals[by] = caller.IsSystem ? $"system ({caller.User})" : caller.IsAi ? $"{caller.User} via AI" : caller.User;
             InsertInternal(c, lc.HistoryTable, vals, caller, row);
         }
 

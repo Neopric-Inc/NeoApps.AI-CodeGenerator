@@ -171,9 +171,9 @@ namespace nkv.MicroService.Utility
             foreach (var (s, v) in active)
             {
                 if (!s.Covers(table)) continue;
-                if (v == null) throw new DataGuardException($"Your account isn't linked to a {s.Name} yet, so you can't change {table}.", 403);
+                if (v == null) throw new DataGuardException($"Your account isn't linked to a {s.Name} yet, so you can't change {Label(table).ToLowerInvariant()} records.", 403);
                 if (insert && table.Equals(s.Home, StringComparison.OrdinalIgnoreCase))
-                    throw new DataGuardException($"You can't create {table} records.", 403);
+                    throw new DataGuardException($"You can't create {Label(table).ToLowerInvariant()} records.", 403);
                 if (s.Direct.Contains(table) && paramOf(s.Column) is string p)
                 {
                     Bind(cmd, p, v);
@@ -194,7 +194,7 @@ namespace nkv.MicroService.Utility
                 if (refTable.Equals(TenantTable, StringComparison.OrdinalIgnoreCase) == false && caller.Tenant != null)
                     q.Parameters.AddWithValue("@__g_tenant", caller.Tenant.Value);
                 if (Convert.ToInt64(Apply(q).ExecuteScalar()) == 0)
-                    throw new DataGuardException($"{table}.{col} = {val} is outside what you can access.", 403);
+                    throw new DataGuardException($"The {FieldLabel(table, col).ToLowerInvariant()} you chose is outside what you can access.", 403);
             }
         }
     }
