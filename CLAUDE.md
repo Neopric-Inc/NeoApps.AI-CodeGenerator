@@ -86,8 +86,12 @@ Work in the app's planning folder `workspace/<App>/` (git-ignored): `requirement
    translation is switched off. `./neoapps preview` lists app words still missing a translation per language.
    Custom screens use `t()` from `src/neoapps/i18n`.
    **Data rules:** for multi-tenant apps, customer portals (customers see only their own rows), status workflows, approvals,
-   audit trails, domain events, SLAs, plan limits, field validation (formats, ranges, date order, totals) or automatic numbers (INV-2026-00001), add the `tenancy`, `rowScopes`, `hiddenFields`, `editableFields`, `readFilters`, `lifecycles`, `validations`, `numbering`, `immutable`, `audit`, `outbox`, `jobs` and `limits` sections to ui.config.json (see the guide)
-   instead of hand-writing checks: the generated API enforces them on every query (`Utility/DataGuard*.cs`). After deploying,
+   audit trails, domain events, SLAs, plan limits, field validation (formats, ranges, date order, totals) or automatic numbers (INV-2026-00001), add the `tenancy`, `rowScopes`, `hiddenFields`, `editableFields`, `readFilters`, `lifecycles`, `validations`, `numbering`, `immutable`, `audit`, `outbox`, `jobs` and `limits` sections to ui.config.json (see the guide).
+   Rules that depend on the person (ABAC): `actorProfile` (each person's row), lifecycle step `check` (approval limits and
+   escalation: `{"column": "amount", "lte": {"me": "approval_limit"}}`), step `creates` (an invoice on approval, once),
+   `allowedReferences` (only assigned, active projects in pickers and on save) and `budgets` (monthly totals per person,
+   checked under a row lock). Refused writes are audited as `<table>.denied`. `samples/auditdesk/acceptance-test.sh` exercises all of them.
+   Use these sections instead of hand-writing checks: the generated API enforces them on every query (`Utility/DataGuard*.cs`). After deploying,
    run `./neoapps test <App>` and report the result (tenant isolation per table, row scopes, append-only tables, lifecycle steps).
 4. **When requirements change** (they will): add a changelog line to `requirements.md`, update the schema and UI config,
    and run `./neoapps preview <App>`. It opens with **What changed since the last version**: tables and columns added,

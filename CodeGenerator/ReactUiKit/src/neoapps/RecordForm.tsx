@@ -3,7 +3,7 @@ import {
   Alert, Autocomplete, Box, Button, Checkbox, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle,
   FormControlLabel, InputAdornment, MenuItem, TextField,
 } from "@mui/material";
-import { createRecord, putRecord } from "./api";
+import { api, createRecord, putRecord } from "./api";
 import { currencySymbol, renderValue, toApiDate, toApiDateTime, toDateInput, toDateTimeInput } from "./format";
 import { FieldRule, ResolvedField, ResolvedTable } from "./types";
 import { useApp } from "./AppContext";
@@ -95,6 +95,22 @@ export const RecordForm: React.FC<Props> = ({ table, record, defaults, open, onC
   const fields = useMemo(() => (fieldNames || table.formFields).map((n) => table.fields[n]).filter(Boolean)
     .map((f) => (editableOnly && !editableOnly.includes(f.name) ? { ...f, readOnly: true } : f)), [table, fieldNames, editableOnly]);
   const [values, setValues] = useState<Record<string, any>>({});
+  // "allowedReferences": pickers only offer the records this person may choose (the API refuses others)
+  const [allowed, setAllowed] = useState<Record<string, Set<string>>>({});
+  useEffect(() => {
+    const rules: any[] = ((appConfig as any)?.allowedReferences || []).filter((r: any) => r.table === table.name);
+    if (!open || !rules.length) return;
+    let alive = true;
+    Promise.all(Array.from(new Set(rules.map((r) => r.column as string))).map((col) =>
+      api<any>("GET", `Access/choices/${table.name}/${col}`).then((r) => [col, r?.document] as const).catch(() => [col, null] as const)))
+      .then((pairs) => {
+        if (!alive) return;
+        const next: Record<string, Set<string>> = {};
+        for (const [col, d] of pairs) if (d?.restricted) next[col] = new Set((d.ids || []).map(String));
+        setAllowed(next);
+      });
+    return () => { alive = false; };
+  }, [open, table.name, appConfig]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
@@ -236,7 +252,9 @@ export const RecordForm: React.FC<Props> = ({ table, record, defaults, open, onC
           </TextField>
         );
       case "reference": {
-        const opts = refs[f.column.references!.table] || [];
+        const all = refs[f.column.references!.table] || [];
+        const only = allowed[f.name];
+        const opts = only ? all.filter((o) => only.has(String(o.id)) || String(o.id) === String(values[f.name])) : all;
         const selected = opts.find((o) => String(o.id) === String(values[f.name])) || null;
         return (
           <Autocomplete

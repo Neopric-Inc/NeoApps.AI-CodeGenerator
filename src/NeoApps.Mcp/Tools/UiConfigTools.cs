@@ -239,7 +239,38 @@ internal static class UiConfigTools
               too; never the AI or a job), and the signer, UTC time and statement go to the history reason and the audit log
               ("by"/"at": optional columns stamped on the record). The admin UI asks for the password automatically.
               History rows, timestamps and SLA
-              deadline rows are written automatically in the same transaction.
+              deadline rows are written automatically in the same transaction; a history column named changed_by (or "by"
+              in "history") gets the person's name. Two more step options:
+              "check": a condition on the record and the person, e.g. approval limits with escalation:
+                { "from": "Submitted", "to": "Approved", "roles": ["Manager"],
+                  "check": { "column": "amount", "lte": { "me": "approval_limit" }, "message": "above your limit: escalate it" } },
+                { "from": "Submitted", "to": "Escalated", "roles": ["Manager"], "check": { "column": "amount", "gt": { "me": "approval_limit" } } },
+                { "from": "Escalated", "to": "Approved", "roles": ["Director"] }
+                operators lt, lte, gt, gte, eq, ne, in, notIn; values: a literal, { "me": column } (actorProfile) or { "column": c }.
+              "creates": records made by the step, in the same transaction, once:
+                "creates": [ { "table": "invoices", "values": { "expense_request_id": "$id", "amount": "$amount", "status": "Open" },
+                               "unique": "expense_request_id" } ]   // "$id" = this record, "$col" = its column, "$user", "$now";
+                numbering, audit and notifications of the new record apply; the person needs no permission on that table.
+          "actorProfile": { "table": "employee_profiles", "match": "email" }
+              Each person's own row (match = the column holding their sign-in name or email; "matchBy": "user_id" when it holds
+              the user id). Rules read its columns with { "me": "column" }: approval limits, budgets, assigned records.
+          "allowedReferences": [ { "table": "expense_requests", "column": "project_id", "roles": ["Employee"],
+                                   "through": { "table": "project_assignments", "column": "project_id", "me": "profile_id" },
+                                   "targetWhere": { "is_active": 1 }, "message": "Pick one of your active projects." } ]
+              Which records a foreign key may point at: pickers only offer them (GET /Access/choices/{table}/{column}) and the API
+              refuses others on save. "through": a link table whose "me" column is the person's actorProfile key; "targetWhere":
+              conditions on the referenced record. Without "roles": everyone except administrators.
+          "budgets": [ { "table": "expense_requests", "sum": "amount", "per": "submitter_id",
+                         "states": { "column": "status", "count": ["Submitted", "Approved"] },
+                         "period": { "column": "expense_date", "unit": "month" }, "sameAs": ["currency"],
+                         "max": { "table": "employee_profiles", "column": "monthly_budget" },
+                         "message": "This would take you over your monthly budget." } ]
+              Totals per person (the "per" column's record) and period (day, week, month, year of the record's date), checked
+              when a record enters a counted state ("on": [...] to narrow) or a counted value changes. The person's row is
+              locked during the check, so simultaneous submissions can't both slip under the limit. "max": the column on the
+              "per" record, { "me": column }, or a number.
+          Refused writes (any rule above) are written to the audit table as "<table>.denied" with the person, the rule's
+          message and the attempted values. Messages use the labels from "tables", not table names.
           "notifications": [ { "table": "cases", "when": { "to": "submitted" }, "notify": ["role:Manager"],
                                "title": "{case_number} needs review", "channels": ["inApp", "email"] },
                              { "table": "cases", "when": { "to": ["approved", "rejected"] }, "notify": ["creator"],

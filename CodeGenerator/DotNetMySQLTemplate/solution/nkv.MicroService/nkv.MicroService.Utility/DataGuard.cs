@@ -654,7 +654,7 @@ namespace nkv.MicroService.Utility
         {
             if (caller.Tenant == null) return;
             if (TenantTables.Contains(table) || _sharedWritable.Contains(table)) return;
-            throw new DataGuardException($"{table} is shared across tenants and is read-only for tenant users.");
+            throw new DataGuardException($"{Label(table)} records are shared and read-only for your account.");
         }
 
         /// <summary>Every foreign key of a written row must point at a row of the same tenant (composite tenant integrity).</summary>
@@ -671,7 +671,7 @@ namespace nkv.MicroService.Utility
                 if (refTable.Equals(TenantTable, StringComparison.OrdinalIgnoreCase))
                 {
                     if (TenantTables.Contains(table) && col.Equals(TenantColumn, StringComparison.OrdinalIgnoreCase)) continue;
-                    if (Convert.ToString(v) != Convert.ToString(rowTenant)) throw new DataGuardException($"{table}.{col} points at another tenant.");
+                    if (Convert.ToString(v) != Convert.ToString(rowTenant)) throw new DataGuardException($"The {FieldLabel(table, col).ToLowerInvariant()} you chose belongs to another organization.");
                     continue;
                 }
                 if (TenantTables.Contains(refTable)) check = $"SELECT COUNT(*) FROM {Db.Q(refTable)} WHERE {Db.Q(refCol)} = @v AND {Db.Q(TenantColumn)} = @t";
@@ -680,7 +680,7 @@ namespace nkv.MicroService.Utility
                 q.Parameters.AddWithValue("@v", v);
                 q.Parameters.AddWithValue("@t", rowTenant);
                 if (Convert.ToInt64(q.ExecuteScalar()) == 0)
-                    throw new DataGuardException($"{table}.{col} = {v} does not exist in your tenant ({refTable}).");
+                    throw new DataGuardException($"The {FieldLabel(table, col).ToLowerInvariant()} you chose doesn't exist in your organization.");
             }
         }
 

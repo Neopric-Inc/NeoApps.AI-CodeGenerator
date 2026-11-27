@@ -4,6 +4,8 @@ CREATE TABLE staff_members (
   login_username VARCHAR(255) NOT NULL UNIQUE,
   email VARCHAR(255) NOT NULL,
   staff_level VARCHAR(30) NOT NULL DEFAULT 'Staff',
+  approval_limit DECIMAL(16,2),
+  monthly_hours_cap DECIMAL(6,2),
   createdBy VARCHAR(255) NOT NULL,
   modifiedBy VARCHAR(255) NOT NULL,
   createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -51,6 +53,7 @@ CREATE TABLE engagements (
   revenue_benchmark DECIMAL(16,2),
   materiality_amount DECIMAL(16,2),
   performance_materiality DECIMAL(16,2),
+  fee_amount DECIMAL(16,2),
   signed_off_at DATETIME,
   FOREIGN KEY (client_id) REFERENCES clients(client_id),
   FOREIGN KEY (partner_id) REFERENCES staff_members(staff_member_id),
@@ -68,6 +71,7 @@ CREATE TABLE engagement_phase_history (
   old_phase VARCHAR(30) DEFAULT NULL,
   new_phase VARCHAR(30) NOT NULL,
   changed_by_type VARCHAR(80),
+  changed_by VARCHAR(255),
   FOREIGN KEY (engagement_id) REFERENCES engagements(engagement_id),
   createdBy VARCHAR(255) NOT NULL,
   modifiedBy VARCHAR(255) NOT NULL,
@@ -160,6 +164,48 @@ CREATE TABLE sign_offs (
   modifiedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   isActive TINYINT(1) NOT NULL DEFAULT '1'
 );
+CREATE TABLE engagement_assignments (
+  engagement_assignment_id INT AUTO_INCREMENT PRIMARY KEY,
+  engagement_id INT NOT NULL,
+  staff_member_id INT NOT NULL,
+  assignment_role VARCHAR(30) NOT NULL DEFAULT 'Team member',
+  FOREIGN KEY (engagement_id) REFERENCES engagements(engagement_id),
+  FOREIGN KEY (staff_member_id) REFERENCES staff_members(staff_member_id),
+  createdBy VARCHAR(255) NOT NULL,
+  modifiedBy VARCHAR(255) NOT NULL,
+  createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  modifiedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  isActive TINYINT(1) NOT NULL DEFAULT '1'
+);
+CREATE TABLE time_entries (
+  time_entry_id INT AUTO_INCREMENT PRIMARY KEY,
+  engagement_id INT NOT NULL,
+  staff_member_id INT NOT NULL,
+  work_date DATE NOT NULL,
+  hours DECIMAL(5,2) NOT NULL,
+  work_description VARCHAR(500) NOT NULL,
+  entry_status VARCHAR(20) NOT NULL DEFAULT 'Draft',
+  FOREIGN KEY (engagement_id) REFERENCES engagements(engagement_id),
+  FOREIGN KEY (staff_member_id) REFERENCES staff_members(staff_member_id),
+  createdBy VARCHAR(255) NOT NULL,
+  modifiedBy VARCHAR(255) NOT NULL,
+  createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  modifiedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  isActive TINYINT(1) NOT NULL DEFAULT '1'
+);
+CREATE TABLE invoices (
+  invoice_id INT AUTO_INCREMENT PRIMARY KEY,
+  invoice_number VARCHAR(30) DEFAULT NULL UNIQUE,
+  engagement_id INT NOT NULL UNIQUE,
+  amount DECIMAL(16,2),
+  invoice_status VARCHAR(20) NOT NULL DEFAULT 'Open',
+  FOREIGN KEY (engagement_id) REFERENCES engagements(engagement_id),
+  createdBy VARCHAR(255) NOT NULL,
+  modifiedBy VARCHAR(255) NOT NULL,
+  createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  modifiedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  isActive TINYINT(1) NOT NULL DEFAULT '1'
+);
 CREATE TABLE audit_logs (
   audit_log_id INT AUTO_INCREMENT PRIMARY KEY,
   actor_type VARCHAR(50) NOT NULL DEFAULT 'human',
@@ -176,11 +222,11 @@ CREATE TABLE audit_logs (
   modifiedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   isActive TINYINT(1) NOT NULL DEFAULT '1'
 );
-INSERT INTO staff_members (staff_member_id, full_name, login_username, email, staff_level, createdBy, modifiedBy) VALUES
-(1, 'Priya Shah', 'priya.shah', 'priya.shah@example.com', 'Partner', 'sample', 'sample'),
-(2, 'Marcus Lee', 'marcus.lee', 'marcus.lee@example.com', 'Manager', 'sample', 'sample'),
-(3, 'Ana Torres', 'ana.torres', 'ana.torres@example.com', 'Staff', 'sample', 'sample'),
-(4, 'Ben Okafor', 'ben.okafor', 'ben.okafor@example.com', 'Staff', 'sample', 'sample');
+INSERT INTO staff_members (staff_member_id, full_name, login_username, email, staff_level, approval_limit, monthly_hours_cap, createdBy, modifiedBy) VALUES
+(1, 'Priya Shah', 'priya.shah', 'priya.shah@example.com', 'Partner', 1000000, NULL, 'sample', 'sample'),
+(2, 'Marcus Lee', 'marcus.lee', 'marcus.lee@example.com', 'Manager', 5000, NULL, 'sample', 'sample'),
+(3, 'Ana Torres', 'ana.torres', 'ana.torres@example.com', 'Staff', NULL, 10, 'sample', 'sample'),
+(4, 'Ben Okafor', 'ben.okafor', 'ben.okafor@example.com', 'Staff', NULL, 160, 'sample', 'sample');
 INSERT INTO clients (client_id, client_name, industry, fiscal_year_end, risk_rating, client_status, createdBy, modifiedBy) VALUES
 (1, 'Northwind Outfitters Ltd.', 'Retail', '2026-12-31', 'Medium', 'Active', 'sample', 'sample'),
 (2, 'Bluebird Health Clinics', 'Healthcare', '2026-09-30', 'High', 'Active', 'sample', 'sample'),
@@ -189,11 +235,15 @@ INSERT INTO clients (client_id, client_name, industry, fiscal_year_end, risk_rat
 INSERT INTO client_contacts (client_contact_id, client_id, full_name, email, login_username, createdBy, modifiedBy) VALUES
 (1, 1, 'Dana Brooks', 'dana.brooks@example.com', 'dana.brooks', 'sample', 'sample'),
 (2, 2, 'Omar Haddad', 'omar.haddad@example.com', 'omar.haddad', 'sample', 'sample');
-INSERT INTO engagements (engagement_id, engagement_number, client_id, engagement_type, period_end, due_date, phase, partner_id, manager_id, staff_lead_id, revenue_benchmark, materiality_amount, performance_materiality, createdBy, modifiedBy) VALUES
-(1, 'ENG-2026-00001', 1, 'Audit', '2026-12-31', '2027-03-31', 'Fieldwork', 1, 2, 3, 48000000, 240000, 180000, 'sample', 'sample'),
-(2, 'ENG-2026-00002', 2, 'Review', '2026-09-30', '2026-12-15', 'Plan', 1, 2, 4, 21000000, 210000, 157500, 'sample', 'sample'),
-(3, 'ENG-2026-00003', 3, 'Audit', '2026-12-31', '2027-04-15', 'Prepare', 1, 2, 3, NULL, NULL, NULL, 'sample', 'sample'),
-(4, 'ENG-2026-00004', 4, 'Compilation', '2026-06-30', '2026-09-30', 'Report', 1, 2, 4, 9500000, 95000, 71250, 'sample', 'sample');
+INSERT INTO engagements (engagement_id, engagement_number, client_id, engagement_type, period_end, due_date, phase, partner_id, manager_id, staff_lead_id, revenue_benchmark, materiality_amount, performance_materiality, fee_amount, createdBy, modifiedBy) VALUES
+(1, 'ENG-2026-00001', 1, 'Audit', '2026-12-31', '2027-03-31', 'Fieldwork', 1, 2, 3, 48000000, 240000, 180000, 95000, 'sample', 'sample'),
+(2, 'ENG-2026-00002', 2, 'Review', '2026-09-30', '2026-12-15', 'Plan', 1, 2, 4, 21000000, 210000, 157500, 42000, 'sample', 'sample'),
+(3, 'ENG-2026-00003', 3, 'Audit', '2026-12-31', '2027-04-15', 'Prepare', 1, 2, 3, NULL, NULL, NULL, NULL, 'sample', 'sample'),
+(4, 'ENG-2026-00004', 4, 'Compilation', '2026-06-30', '2026-09-30', 'Report', 1, 2, 4, 9500000, 95000, 71250, 18000, 'sample', 'sample');
+INSERT INTO engagement_assignments (engagement_id, staff_member_id, assignment_role, createdBy, modifiedBy) VALUES
+(1, 3, 'Lead', 'sample', 'sample'),
+(2, 4, 'Lead', 'sample', 'sample'),
+(4, 4, 'Lead', 'sample', 'sample');
 INSERT INTO document_requests (request_number, engagement_id, client_contact_id, item_requested, instructions, due_date, request_status, createdBy, modifiedBy) VALUES
 ('DRQ-2026-00001', 1, 1, 'December bank statements, all operating accounts', 'PDF statements for every account open at year end.', '2027-01-15', 'Requested', 'sample', 'sample'),
 ('DRQ-2026-00002', 1, 1, 'Accounts receivable aging at December 31', 'Export from your accounting system, including customer names.', '2027-01-20', 'Requested', 'sample', 'sample'),

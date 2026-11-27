@@ -217,7 +217,7 @@ public static class AppPreview
 
     private static readonly HashSet<string> UiKeys = new(StringComparer.Ordinal)
     {
-        "appName", "tagline", "theme", "menu", "hiddenPages", "scopePicker", "dashboard", "roles", "sharing", "tables", "ai", "jobs", "live", "i18n",
+        "appName", "tagline", "theme", "menu", "hiddenPages", "actorProfile", "budgets", "allowedReferences", "scopePicker", "dashboard", "roles", "sharing", "tables", "ai", "jobs", "live", "i18n",
         "publicApi", "tenancy", "rowScopes", "hiddenFields", "editableFields", "readFilters", "menuByRole", "openByRole", "lifecycles",
         "notifications", "validations", "numbering", "immutable", "audit", "outbox", "limits", "$schema",
     };
@@ -271,7 +271,9 @@ public static class AppPreview
     private static void CheckRules(List<Table> tables, JsonObject ui, List<string> w)
     {
         var names = tables.Select(t => t.Name).ToHashSet();
-        bool HasCol(string table, string col) => tables.FirstOrDefault(t => t.Name == table)?.Columns.Any(c => c.Name == col) == true;
+        // created_by_user / modified_by_user are added to every app table by the generator
+        bool HasCol(string table, string col) => names.Contains(table) && (col is "created_by_user" or "modified_by_user"
+            || tables.FirstOrDefault(t => t.Name == table)?.Columns.Any(c => c.Name == col) == true);
         static string? Str(JsonNode? n) => n is JsonValue v && v.TryGetValue<string>(out var s) ? s : null;
         static IEnumerable<string> Strs(JsonNode? n) => (n as JsonArray ?? []).Select(Str).Where(x => x != null)!;
         // one rule or a list of rules
@@ -331,6 +333,23 @@ public static class AppPreview
                 Col(where + ".userValue.column", Str(uv["table"])!, Str(uv["column"]));
             }
             foreach (var t in Strs(sc["tables"]).Concat(Strs(sc["exclude"]))) Table(where, t);
+            // every listed table must have the column or reach a table that has it through foreign keys (up to 3 links)
+            if (col != null)
+                foreach (var t in Strs(sc["tables"]).Where(names.Contains))
+                    if (!ReachesColumn(t, col))
+                        w.Add($"{where}: {t} has no '{col}' column and no link (foreign key, up to 3 steps) to a table that has it, so the scope can't limit {t}. " +
+                              $"Add a foreign key from {t} to the table that holds '{col}' (e.g. {t}.<parent>_id → <parent>), or remove {t} from the scope.");
+        }
+        bool ReachesColumn(string start, string col)
+        {
+            var seen = new HashSet<string> { start };
+            var frontier = new List<string> { start };
+            for (var depth = 0; depth <= 3 && frontier.Count > 0; depth++)
+            {
+                if (frontier.Any(t => HasCol(t, col) || tables.Any(x => x.Name == t && x.Columns.Any(c => c.Pk && c.Name == col)))) return true;
+                frontier = frontier.SelectMany(t => tables.FirstOrDefault(x => x.Name == t)?.ForeignKeys.Select(f => f.RefTable) ?? []).Where(seen.Add).ToList();
+            }
+            return false;
         }
         foreach (var (role, perTable) in ui["hiddenFields"] as JsonObject ?? [])
         {
@@ -350,6 +369,52 @@ public static class AppPreview
                 Roles(key, new JsonArray(role));
                 foreach (var t in Strs(list)) if (t != "jobs") Table($"{key}.{role}", t);
             }
+
+        // the signed-in person's profile row, read by rules with {"me": column}
+        var profile = ui["actorProfile"] is JsonObject ap ? Str(ap["table"]) : null;
+        if (ui["actorProfile"] is JsonObject apo && Table("actorProfile", profile))
+            if (Str(apo["matchBy"]) != "user_id") Col("actorProfile.match", profile!, Str(apo["match"]) ?? "email");
+        // a rule value: literal, {"me": col} (actorProfile) or {"column": col} (the record)
+        void Ref(string where, string table, JsonNode? spec)
+        {
+            if (spec is not JsonObject o) return;
+            if (Str(o["me"]) is { } me)
+            {
+                if (profile == null) w.Add($"{where}: uses {{\"me\": \"{me}\"}} but there is no actorProfile (the table holding each person's row, e.g. {{\"table\": \"employee_profiles\", \"match\": \"email\"}}).");
+                else Col(where, profile, me);
+            }
+            if (Str(o["column"]) is { } rc) Col(where, table, rc);
+        }
+        foreach (var (i, b) in Objs(ui["budgets"]).Select((x, i) => (i, x)))
+        {
+            var where = $"budgets[{i}]";
+            if (!Table(where, Str(b["table"]))) continue;
+            var t = Str(b["table"])!;
+            if (Str(b["sum"]) == null || Str(b["per"]) == null) w.Add($"{where}: 'sum' and 'per' are required.");
+            Col(where + ".sum", t, Str(b["sum"])); Col(where + ".per", t, Str(b["per"]));
+            Col(where + ".states.column", t, Str(b["states"]?["column"]));
+            Col(where + ".period.column", t, Str(b["period"]?["column"]));
+            foreach (var c in Strs(b["sameAs"])) Col(where + ".sameAs", t, c);
+            if (b["max"] is JsonObject mx && Str(mx["table"]) is { } mt) { if (Table(where + ".max", mt)) Col(where + ".max.column", mt, Str(mx["column"])); }
+            else if (b["max"] == null) w.Add($"{where}: 'max' is required (a number, {{\"me\": column}} or {{\"table\", \"column\"}}).");
+            else Ref(where + ".max", t, b["max"]);
+        }
+        foreach (var (i, r) in Objs(ui["allowedReferences"]).Select((x, i) => (i, x)))
+        {
+            var where = $"allowedReferences[{i}]";
+            if (!Table(where, Str(r["table"]))) continue;
+            var t = Str(r["table"])!; var col = Str(r["column"]);
+            var fk = tables.First(x => x.Name == t).ForeignKeys.FirstOrDefault(f => f.Column == col);
+            if (fk == null) { w.Add($"{where}: {t}.{col} is not a foreign key, so there are no records to limit."); continue; }
+            Roles(where, r["roles"]);
+            if (r["through"] is JsonObject th && Table(where + ".through", Str(th["table"])))
+            {
+                Col(where + ".through.column", Str(th["table"])!, Str(th["column"]) ?? fk.RefColumn);
+                if (Str(th["me"]) is { } m) { Col(where + ".through.me", Str(th["table"])!, m); if (profile == null) w.Add($"{where}: through.me needs an actorProfile."); }
+                Where(where + ".through.where", Str(th["table"])!, th["where"]);
+            }
+            Where(where + ".targetWhere", fk.RefTable, r["targetWhere"]);
+        }
 
         foreach (var (table, node) in ui["lifecycles"] as JsonObject ?? [])
         {
@@ -400,6 +465,27 @@ public static class AppPreview
                             Col($"{step} {kind}.linkFrom", table, Str(rq["linkFrom"]));
                             Where($"{step} {kind}.where", Str(rq["table"])!, rq["where"]);
                         }
+                foreach (var ch in Objs(tr["check"]))
+                {
+                    Col($"{step} check", table, Str(ch["column"]));
+                    foreach (var (op, spec) in ch)
+                    {
+                        if (op is "column" or "message") continue;
+                        if (op is not ("lt" or "lte" or "gt" or "gte" or "eq" or "ne" or "in" or "notIn")) { w.Add($"{step} check: unknown operator '{op}' (lt, lte, gt, gte, eq, ne, in, notIn)."); continue; }
+                        Ref($"{step} check.{op}", table, spec);
+                    }
+                }
+                foreach (var cr in Objs(tr["creates"]))
+                    if (Table($"{step} creates", Str(cr["table"])))
+                    {
+                        var target = Str(cr["table"])!;
+                        foreach (var (k, v) in cr["values"] as JsonObject ?? [])
+                        {
+                            Col($"{step} creates.values", target, k);
+                            if (Str(v) is { } sv && sv.StartsWith("$") && sv is not ("$id" or "$user" or "$now")) Col($"{step} creates.values.{k}", table, sv[1..]);
+                        }
+                        Col($"{step} creates.unique", target, Str(cr["unique"]));
+                    }
                 foreach (var d in tr["distinctFrom"] as JsonArray ?? [])
                     if (d is JsonObject dob) { Col($"{step} distinctFrom", table, Str(dob["column"])); if (Table($"{step} distinctFrom", Str(dob["table"]))) Col($"{step} distinctFrom", Str(dob["table"])!, Str(dob["userColumn"])); }
                     else Col($"{step} distinctFrom", table, Str(d));
@@ -591,6 +677,11 @@ public static class AppPreview
                 if (tr["distinctFrom"] is JsonArray { Count: > 0 }) extra.Add("by a different person");
                 if (Set(tr["actors"]).Contains("ai")) extra.Add("AI may do it");
                 if (tr["signature"] is JsonValue or JsonObject && tr["signature"]?.ToJsonString() != "false") extra.Add("signed with password");
+                string RefText(JsonNode? v) => v is JsonObject ro ? (Str(ro["me"]) is { } me ? $"their {me.Replace('_', ' ')}" : Str(ro["column"])?.Replace('_', ' ') ?? "?") : v?.ToString() ?? "?";
+                foreach (var ch in Objs(tr["check"]))
+                    extra.Add(Str(ch["message"]) ?? string.Join(", ", ch.Where(kv => kv.Key is not ("column" or "message"))
+                        .Select(kv => $"{Str(ch["column"])?.Replace('_', ' ')} {kv.Key switch { "lt" => "<", "lte" => "≤", "gt" => ">", "gte" => "≥", "eq" => "=", "ne" => "≠", "in" => "in", _ => "not in" }} {RefText(kv.Value)}")));
+                foreach (var cr in Objs(tr["creates"])) extra.Add($"creates one {Label(ui, Str(cr["table"]) ?? "").ToLowerInvariant()}");
                 lines.Add($"{(from.Count == 0 ? "any" : string.Join(" / ", from))} → {string.Join(" / ", Set(tr["to"]))}: {Who(tr["roles"])}{(extra.Count > 0 ? $" ({string.Join("; ", extra)})" : "")}.");
             }
             if (Set(lc["frozen"]) is { Count: > 0 } frozen) lines.Add($"Locked once {string.Join(" / ", frozen)}.");
@@ -606,7 +697,15 @@ public static class AppPreview
             foreach (var n in Objs(node)) data.Add($"{Label(ui, table)}: {Str(n["column"])} is numbered automatically ({Str(n["pattern"])}).");
         foreach (var (table, cols) in ui["immutable"] as JsonObject ?? [])
             data.Add(Set(cols).Contains("*") ? $"{Label(ui, table)}: can be added to, never changed or deleted." : $"{Label(ui, table)}: {string.Join(", ", Set(cols))} can't be changed after creation.");
-        if (ui["audit"] is JsonObject au) data.Add($"Every change is recorded in {Label(ui, Str(au["table"]) ?? "the audit log")}.");
+        if (ui["audit"] is JsonObject au) data.Add($"Every change, and every refused attempt, is recorded in {Label(ui, Str(au["table"]) ?? "the audit log")}.");
+        foreach (var b in Objs(ui["budgets"]))
+            data.Add($"{Label(ui, Str(b["table"]) ?? "")}: total {Str(b["sum"])} per {Str(b["per"])?.Replace("_id", "")} per {Str(b["period"]?["unit"]) ?? "period"} may not exceed " +
+                     (b["max"] is JsonObject mx ? (Str(mx["me"]) is { } me ? $"their {me}" : $"{Label(ui, Str(mx["table"]) ?? "")} {Str(mx["column"])}") : b["max"]?.ToString()) +
+                     (b["states"]?["count"] is JsonArray st ? $" (counting {string.Join(" / ", Set(st))})" : "") + "; checked on save, one at a time per person.");
+        foreach (var r in Objs(ui["allowedReferences"]))
+            data.Add($"{Label(ui, Str(r["table"]) ?? "")}: {Str(r["column"])?.Replace("_id", "")} can only be " +
+                     (r["through"] is JsonObject th ? $"one linked to the person in {Label(ui, Str(th["table"]) ?? "")}" : "a matching record") +
+                     (r["targetWhere"] is JsonObject tw ? $" where {string.Join(", ", tw.Select(kv => $"{kv.Key} = {kv.Value}"))}" : "") + " (in pickers and on save).");
         foreach (var n in Objs(ui["notifications"]))
         {
             var wn = n["when"] as JsonObject;
